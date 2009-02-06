@@ -42,7 +42,7 @@ void *thr_reader(void *arg)
 
 	urcu_register_thread();
 
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; i < 100000; i++) {
 		for (j = 0; j < 100000000; j++) {
 			qparity = rcu_read_lock();
 			local_ptr = rcu_dereference(test_rcu_pointer);
@@ -70,18 +70,18 @@ void *thr_writer(void *arg)
 			"writer", pthread_self(), (unsigned long)getpid());
 	sleep(2);
 
-	for (i = 0; i < 100000; i++) {
-		rcu_write_lock();
+	for (i = 0; i < 10000000; i++) {
 		new = malloc(sizeof(struct test_array));
+		rcu_write_lock();
 		old = test_rcu_pointer;
 		if (old) {
 			assert(old->a == 8);
 			assert(old->b == 12);
 			assert(old->c[55] == 2);
 		}
-		new->a = 8;
-		new->b = 12;
 		new->c[55] = 2;
+		new->b = 12;
+		new->a = 8;
 		old = urcu_publish_content((void **)&test_rcu_pointer, new);
 		rcu_write_unlock();
 		/* can be done after unlock */
