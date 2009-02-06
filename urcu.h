@@ -8,6 +8,12 @@
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
+ * Credits for Paul e. McKenney <paulmck@linux.vnet.ibm.com>
+ * for inspiration coming from the Linux kernel RCU and rcu-preempt.
+ *
+ * The barrier, mb, rmb, wmb, atomic_inc, smp_read_barrier_depends, ACCESS_ONCE
+ * and rcu_dereference primitives come from the Linux kernel.
+ *
  * Distributed under GPLv2
  */
 
@@ -19,9 +25,6 @@
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence" ::: "memory")
 
-
-
-/* x86 32 */
 static inline void atomic_inc(int *v)
 {
 	asm volatile("lock; incl %0"
@@ -101,12 +104,18 @@ static inline void rcu_read_unlock(int urcu_parity)
 extern void rcu_write_lock(void);
 extern void rcu_write_unlock(void);
 
-extern void *urcu_publish_content(void **ptr, void *new);
+extern void *_urcu_publish_content(void **ptr, void *new);
+
+/*
+ * gcc does not like automatic &struct ... * -> void **.
+ * Remove the warning. (hopefully this is ok)
+ */
+#define urcu_publish_content(ptr, new) _urcu_publish_content((void **)ptr, new)
 
 /*
  * Reader thread registration.
  */
 extern void urcu_register_thread(void);
-extern void urcu_register_thread(void);
+extern void urcu_unregister_thread(void);
 
 #endif /* _URCU_H */

@@ -117,9 +117,9 @@ void wait_for_quiescent_state(int parity)
  * Return old pointer, OK to free, no more reference exist.
  * Called under rcu_write_lock.
  */
-void *urcu_publish_content(void **ptr, void *new)
+void *_urcu_publish_content(void **ptr, void *new)
 {
-	int ret, prev_parity;
+	int prev_parity;
 	void *oldptr;
 
 	/*
@@ -207,7 +207,6 @@ void urcu_register_thread(void)
 
 void urcu_unregister_thread(void)
 {
-	pthread_t self = pthread_self();
 	rcu_write_lock();
 	urcu_remove_reader(pthread_self());
 	rcu_write_unlock();

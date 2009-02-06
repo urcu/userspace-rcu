@@ -37,7 +37,7 @@ void *thr_reader(void *arg)
 	struct test_array *local_ptr;
 
 	printf("thread %s, thread id : %lu, pid %lu\n",
-			"reader", pthread_self(), getpid());
+			"reader", pthread_self(), (unsigned long)getpid());
 	sleep(2);
 
 	urcu_register_thread();
@@ -67,7 +67,7 @@ void *thr_writer(void *arg)
 	struct test_array *new, *old;
 
 	printf("thread %s, thread id : %lu, pid %lu\n",
-			"writer", pthread_self(), getpid());
+			"writer", pthread_self(), (unsigned long)getpid());
 	sleep(2);
 
 	for (i = 0; i < 100000; i++) {
