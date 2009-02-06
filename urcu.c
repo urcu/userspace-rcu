@@ -185,7 +185,7 @@ void urcu_remove_reader(pthread_t id)
 
 	assert(reader_data != NULL);
 	for (index = reader_data; index < reader_data + num_readers; index++) {
-		if (index->tid == id) {
+		if (pthread_equal(index->tid, id)) {
 			memcpy(index, &reader_data[num_readers - 1],
 				sizeof(struct reader_data));
 			reader_data[num_readers - 1].tid = 0;
