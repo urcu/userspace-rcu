@@ -15,7 +15,7 @@
 static inline void atomic_inc(int *v)
 {
 	asm volatile("lock; incl %0"
-		     : "+m" (v->counter));
+		     : "+m" (*v));
 }
 
 /* Nop everywhere except on alpha. */

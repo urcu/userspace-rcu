@@ -2,6 +2,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "urcu.h"
 
@@ -17,7 +19,7 @@ int __thread urcu_active_readers[2];
 
 struct reader_data {
 	pthread_t tid;
-	int **urcu_active_readers;
+	int *urcu_active_readers;
 };
 
 static struct reader_data *reader_data;
@@ -36,36 +38,35 @@ static int switch_next_urcu_qparity(void)
 
 static void force_mb_all_threads(void)
 {
-	pthread_t *index;
+	struct reader_data *index;
 	/*
 	 * Ask for each threads to execute a mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
 	if (!reader_data)
 		return;
-	sigtask = TASK_FORCE_MB;
 	sig_done = 0;
-	mb();	/* write sig_done and sigtask before sending the signals */
+	mb();	/* write sig_done before sending the signals */
 	for (index = reader_data; index < reader_data + num_readers; index++)
-		pthread_kill(*index, SIGURCU);
+		pthread_kill(index->tid, SIGURCU);
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
 	while (sig_done < num_readers)
 		barrier();
-	mb();	/* read sig_done before writing sigtask */
-	sigtask = TASK_NONE;
+	mb();	/* read sig_done before ending the barrier */
 }
 
 void wait_for_quiescent_state(int parity)
 {
+	struct reader_data *index;
 
 	if (!reader_data)
 		return;
 	/* Wait for each thread urcu_active_readers count to become 0.
 	 */
-	for (index = readers_data; index < reader_data + num_readers; index++) {
+	for (index = reader_data; index < reader_data + num_readers; index++) {
 		/*
 		 * BUSY-LOOP.
 		 */
@@ -91,7 +92,7 @@ void *urcu_publish_content(void **ptr, void *new)
 
 	ret = pthread_mutex_lock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex lock", __func__);
+		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 
@@ -109,7 +110,7 @@ void *urcu_publish_content(void **ptr, void *new)
 	*ptr = new;
 	wmb();		/* Write ptr before changing the qparity */
 	/* All threads should read qparity before ptr */
-	force_rmb_all_threads();
+	force_mb_all_threads();
 	prev_parity = switch_next_urcu_qparity();
 
 	/*
@@ -122,7 +123,7 @@ void *urcu_publish_content(void **ptr, void *new)
 	
 	ret = pthread_mutex_unlock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex lock", __func__);
+		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 	return oldptr;
@@ -130,15 +131,15 @@ void *urcu_publish_content(void **ptr, void *new)
 
 void urcu_add_reader(pthread_t id)
 {
+	struct reader_data *oldarray;
+
 	if (!reader_data) {
 		alloc_readers = INIT_NUM_THREADS;
-		num_readers = 1;
+		num_readers = 0;
 		reader_data =
 			malloc(sizeof(struct reader_data) * alloc_readers);
-		return;
 	}
 	if (alloc_readers < num_readers + 1) {
-		pthread_t *oldarray;
 		oldarray = reader_data;
 		reader_data = malloc(sizeof(struct reader_data)
 				* (alloc_readers << 1));
@@ -179,10 +180,11 @@ void urcu_remove_reader(pthread_t id)
 void urcu_register_thread(void)
 {
 	pthread_t self = pthread_self();
+	int ret;
 
 	ret = pthread_mutex_lock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex lock", __func__);
+		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 
@@ -191,18 +193,19 @@ void urcu_register_thread(void)
 
 	ret = pthread_mutex_unlock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex unlock", __func__);
+		perror("Error in pthread mutex unlock");
 		exit(-1);
 	}
 }
 
-void urcu_register_thread(void)
+void urcu_unregister_thread(void)
 {
 	pthread_t self = pthread_self();
+	int ret;
 
 	ret = pthread_mutex_lock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex lock", __func__);
+		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 
@@ -210,13 +213,13 @@ void urcu_register_thread(void)
 
 	ret = pthread_mutex_unlock(&urcu_mutex);
 	if (ret) {
-		perror("Error in %s pthread mutex unlock", __func__);
+		perror("Error in pthread mutex unlock");
 		exit(-1);
 	}
 
 }
 
-void handler(int signo, siginfo_t *siginfo, void *context)
+void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	mb();
 	atomic_inc(&sig_done);
@@ -229,8 +232,8 @@ void __attribute__((constructor)) urcu_init(void)
 
 	act.sa_sigaction = sigurcu_handler;
 	ret = sigaction(SIGURCU, &act, NULL);
-	if (!ret) {
-		perror("Error in %s sigaction", __func__);
+	if (ret) {
+		perror("Error in sigaction");
 		exit(-1);
 	}
 }
@@ -241,8 +244,8 @@ void __attribute__((destructor)) urcu_exit(void)
 	int ret;
 
 	ret = sigaction(SIGURCU, NULL, &act);
-	if (!ret) {
-		perror("Error in %s sigaction", __func__);
+	if (ret) {
+		perror("Error in sigaction");
 		exit(-1);
 	}
 	assert(act.sa_sigaction == sigurcu_handler);
