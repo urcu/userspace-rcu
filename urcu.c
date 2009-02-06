@@ -101,7 +101,7 @@ void wait_for_quiescent_state(int parity)
 		/*
 		 * BUSY-LOOP.
 		 */
-		while (*index->urcu_active_readers != 0)
+		while (index->urcu_active_readers[parity] != 0)
 			barrier();
 	}
 	/*
@@ -134,8 +134,8 @@ void *urcu_publish_content(void **ptr, void *new)
 	 */
 	oldptr = *ptr;
 	*ptr = new;
-	wmb();		/* Write ptr before changing the qparity */
 	/* All threads should read qparity before ptr */
+	/* Write ptr before changing the qparity */
 	force_mb_all_threads();
 	prev_parity = switch_next_urcu_qparity();
 
