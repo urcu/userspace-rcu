@@ -26,6 +26,27 @@ static struct reader_data *reader_data;
 static int num_readers, alloc_readers;
 static int sig_done;
 
+void rcu_write_lock(void)
+{
+	int ret;
+	ret = pthread_mutex_lock(&urcu_mutex);
+	if (ret) {
+		perror("Error in pthread mutex lock");
+		exit(-1);
+	}
+}
+
+void rcu_write_unlock(void)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&urcu_mutex);
+	if (ret) {
+		perror("Error in pthread mutex unlock");
+		exit(-1);
+	}
+}
+
 /*
  * called with urcu_mutex held.
  */
@@ -84,17 +105,12 @@ void wait_for_quiescent_state(int parity)
 
 /*
  * Return old pointer, OK to free, no more reference exist.
+ * Called under rcu_write_lock.
  */
 void *urcu_publish_content(void **ptr, void *new)
 {
 	int ret, prev_parity;
 	void *oldptr;
-
-	ret = pthread_mutex_lock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
 
 	/*
 	 * We can publish the new pointer before we change the current qparity.
@@ -121,11 +137,6 @@ void *urcu_publish_content(void **ptr, void *new)
 	 * Deleting old data is ok !
 	 */
 	
-	ret = pthread_mutex_unlock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
 	return oldptr;
 }
 
@@ -179,44 +190,17 @@ void urcu_remove_reader(pthread_t id)
 
 void urcu_register_thread(void)
 {
-	pthread_t self = pthread_self();
-	int ret;
-
-	ret = pthread_mutex_lock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
-
-	urcu_add_reader(self);
-
-
-	ret = pthread_mutex_unlock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
+	rcu_write_lock();
+	urcu_add_reader(pthread_self());
+	rcu_write_unlock();
 }
 
 void urcu_unregister_thread(void)
 {
 	pthread_t self = pthread_self();
-	int ret;
-
-	ret = pthread_mutex_lock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
-
-	urcu_remove_reader(self);
-
-	ret = pthread_mutex_unlock(&urcu_mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
-
+	rcu_write_lock();
+	urcu_remove_reader(pthread_self());
+	rcu_write_unlock();
 }
 
 void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
