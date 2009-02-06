@@ -17,8 +17,8 @@ struct test_array {
 
 static struct test_array *test_rcu_pointer;
 
-#define NR_READ 1000
-#define NR_WRITE 50
+#define NR_READ 10
+#define NR_WRITE 5
 
 
 void *thr_reader(void *arg)
@@ -32,7 +32,7 @@ void *thr_reader(void *arg)
 
 	urcu_register_thread();
 
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; i < 1000000; i++) {
 		qparity = rcu_read_lock();
 		local_ptr = rcu_dereference(test_rcu_pointer);
 		if (local_ptr) {
@@ -58,7 +58,7 @@ void *thr_writer(void *arg)
 			"writer", pthread_self(), getpid());
 	sleep(2);
 
-	for (i = 0; i < 1000; i++) {
+	for (i = 0; i < 1000000; i++) {
 		rcu_write_lock();
 		new = malloc(sizeof(struct test_array));
 		old = test_rcu_pointer;
