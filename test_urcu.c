@@ -18,12 +18,12 @@ struct test_array {
 static struct test_array *test_rcu_pointer;
 
 #define NR_READ 10
-#define NR_WRITE 5
+#define NR_WRITE 9
 
 
 void *thr_reader(void *arg)
 {
-	int qparity, i;
+	int qparity, i, j;
 	struct test_array *local_ptr;
 
 	printf("thread %s, thread id : %lu, pid %lu\n",
@@ -32,15 +32,17 @@ void *thr_reader(void *arg)
 
 	urcu_register_thread();
 
-	for (i = 0; i < 1000000; i++) {
-		qparity = rcu_read_lock();
-		local_ptr = rcu_dereference(test_rcu_pointer);
-		if (local_ptr) {
-			assert(local_ptr->a == 8);
-			assert(local_ptr->b == 12);
-			assert(local_ptr->c[55] == 2);
+	for (i = 0; i < 1000; i++) {
+		for (j = 0; j < 100000000; j++) {
+			qparity = rcu_read_lock();
+			local_ptr = rcu_dereference(test_rcu_pointer);
+			if (local_ptr) {
+				assert(local_ptr->a == 8);
+				assert(local_ptr->b == 12);
+				assert(local_ptr->c[55] == 2);
+			}
+			rcu_read_unlock(qparity);
 		}
-		rcu_read_unlock(qparity);
 	}
 
 	urcu_unregister_thread();
@@ -58,7 +60,7 @@ void *thr_writer(void *arg)
 			"writer", pthread_self(), getpid());
 	sleep(2);
 
-	for (i = 0; i < 1000000; i++) {
+	for (i = 0; i < 100000; i++) {
 		rcu_write_lock();
 		new = malloc(sizeof(struct test_array));
 		old = test_rcu_pointer;
@@ -67,13 +69,19 @@ void *thr_writer(void *arg)
 			assert(old->b == 12);
 			assert(old->c[55] == 2);
 		}
-		assert(new->a = 8);
-		assert(new->b = 12);
-		assert(new->c[55] = 2);
+		new->a = 8;
+		new->b = 12;
+		new->c[55] = 2;
 		old = urcu_publish_content(&test_rcu_pointer, new);
 		rcu_write_unlock();
 		/* can be done after unlock */
+		if (old) {
+			old->a = 0;
+			old->b = 0;
+			old->c[55] = 0;
+		}
 		free(old);
+		usleep(1);
 	}
 
 	return ((void*)2);
