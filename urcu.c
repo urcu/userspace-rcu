@@ -1,3 +1,13 @@
+/*
+ * urcu.c
+ *
+ * Userspace RCU library
+ *
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ *
+ * Distributed under GPLv2
+ */
+
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>

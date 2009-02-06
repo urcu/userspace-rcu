@@ -1,6 +1,16 @@
 #ifndef _URCU_H
 #define _URCU_H
 
+/*
+ * urcu.h
+ *
+ * Userspace RCU header
+ *
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ *
+ * Distributed under GPLv2
+ */
+
 /* The "volatile" is due to gcc bugs */
 #define barrier() __asm__ __volatile__("": : :"memory")
 
