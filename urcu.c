@@ -117,7 +117,7 @@ void wait_for_quiescent_state(int parity)
  * Return old pointer, OK to free, no more reference exist.
  * Called under rcu_write_lock.
  */
-void *_urcu_publish_content(void **ptr, void *new)
+void *urcu_publish_content(void **ptr, void *new)
 {
 	int prev_parity;
 	void *oldptr;

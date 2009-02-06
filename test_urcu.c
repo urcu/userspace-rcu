@@ -82,7 +82,7 @@ void *thr_writer(void *arg)
 		new->a = 8;
 		new->b = 12;
 		new->c[55] = 2;
-		old = urcu_publish_content(&test_rcu_pointer, new);
+		old = urcu_publish_content((void **)&test_rcu_pointer, new);
 		rcu_write_unlock();
 		/* can be done after unlock */
 		if (old) {

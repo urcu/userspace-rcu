@@ -104,13 +104,7 @@ static inline void rcu_read_unlock(int urcu_parity)
 extern void rcu_write_lock(void);
 extern void rcu_write_unlock(void);
 
-extern void *_urcu_publish_content(void **ptr, void *new);
-
-/*
- * gcc does not like automatic &struct ... * -> void **.
- * Remove the warning. (hopefully this is ok)
- */
-#define urcu_publish_content(ptr, new) _urcu_publish_content((void **)ptr, new)
+extern void *urcu_publish_content(void **ptr, void *new);
 
 /*
  * Reader thread registration.
