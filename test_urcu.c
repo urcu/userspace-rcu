@@ -17,6 +17,23 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
+#include <sys/syscall.h>
+
+#if defined(_syscall0)
+_syscall0(pid_t, gettid)
+#elif defined(__NR_gettid)
+static inline pid_t gettid(void)
+{
+	return syscall(__NR_gettid);
+}
+#else
+#warning "use pid as tid"
+static inline pid_t gettid(void)
+{
+	return getpid();
+}
+#endif
+
 #include "urcu.h"
 
 struct test_array {
@@ -36,8 +53,8 @@ void *thr_reader(void *arg)
 	int qparity, i, j;
 	struct test_array *local_ptr;
 
-	printf("thread %s, thread id : %lu, pid %lu\n",
-			"reader", pthread_self(), (unsigned long)getpid());
+	printf("thread %s, thread id : %lx, tid %lu\n",
+			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
 	urcu_register_thread();
@@ -66,8 +83,8 @@ void *thr_writer(void *arg)
 	int i;
 	struct test_array *new, *old;
 
-	printf("thread %s, thread id : %lu, pid %lu\n",
-			"writer", pthread_self(), (unsigned long)getpid());
+	printf("thread %s, thread id : %lx, tid %lu\n",
+			"writer", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
 	for (i = 0; i < 10000000; i++) {
@@ -103,6 +120,9 @@ int main()
 	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
 	void *tret;
 	int i;
+
+	printf("thread %-6s, thread id : %lx, tid %lu\n",
+			"main", pthread_self(), (unsigned long)gettid());
 
 	for (i = 0; i < NR_READ; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader, NULL);
