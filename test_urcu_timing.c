@@ -34,46 +34,73 @@ static inline pid_t gettid(void)
 }
 #endif
 
+#define rdtscll(val) do { \
+     unsigned int __a,__d; \
+     asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
+     (val) = ((unsigned long)__a) | (((unsigned long)__d)<<32); \
+} while(0)
+
+typedef unsigned long long cycles_t;
+
+static inline cycles_t get_cycles (void)
+{
+        unsigned long long ret = 0;
+
+        rdtscll(ret);
+        return ret;
+}
+
 #include "urcu.h"
 
 struct test_array {
 	int a;
-	int b;
-	char c[200];
 };
 
 static struct test_array *test_rcu_pointer;
 
+#define OUTER_READ_LOOP	2000U
+#define INNER_READ_LOOP	100000U
+#define READ_LOOP ((unsigned long long)OUTER_READ_LOOP * INNER_READ_LOOP)
+
+#define WRITE_LOOP 2000U
+
 #define NR_READ 10
 #define NR_WRITE 9
 
+static cycles_t reader_time[NR_READ] __attribute__((aligned(128)));
 
 void *thr_reader(void *arg)
 {
 	int qparity, i, j;
 	struct test_array *local_ptr;
+	cycles_t time1, time2;
 
-	printf("thread %s, thread id : %lx, tid %lu\n",
+	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
 	urcu_register_thread();
 
-	for (i = 0; i < 100000; i++) {
-		for (j = 0; j < 100000000; j++) {
+	time1 = get_cycles();
+	for (i = 0; i < OUTER_READ_LOOP; i++) {
+		for (j = 0; j < INNER_READ_LOOP; j++) {
 			qparity = rcu_read_lock();
 			local_ptr = rcu_dereference(test_rcu_pointer);
 			if (local_ptr) {
 				assert(local_ptr->a == 8);
-				assert(local_ptr->b == 12);
-				assert(local_ptr->c[55] == 2);
 			}
 			rcu_read_unlock(qparity);
 		}
 	}
+	time2 = get_cycles();
 
 	urcu_unregister_thread();
 
+	reader_time[(unsigned long)arg] = time2 - time1;
+
+	sleep(2);
+	printf("thread_end %s, thread id : %lx, tid %lu\n",
+			"reader", pthread_self(), (unsigned long)gettid());
 	return ((void*)1);
 
 }
@@ -83,34 +110,30 @@ void *thr_writer(void *arg)
 	int i;
 	struct test_array *new, *old;
 
-	printf("thread %s, thread id : %lx, tid %lu\n",
+	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	for (i = 0; i < 10000000; i++) {
+	for (i = 0; i < WRITE_LOOP; i++) {
 		new = malloc(sizeof(struct test_array));
 		rcu_write_lock();
 		old = test_rcu_pointer;
 		if (old) {
 			assert(old->a == 8);
-			assert(old->b == 12);
-			assert(old->c[55] == 2);
 		}
-		new->c[55] = 2;
-		new->b = 12;
 		new->a = 8;
 		old = urcu_publish_content((void **)&test_rcu_pointer, new);
 		rcu_write_unlock();
 		/* can be done after unlock */
 		if (old) {
 			old->a = 0;
-			old->b = 0;
-			old->c[55] = 0;
 		}
 		free(old);
 		usleep(1);
 	}
 
+	printf("thread_end %s, thread id : %lx, tid %lu\n",
+			"writer", pthread_self(), (unsigned long)gettid());
 	return ((void*)2);
 }
 
@@ -120,12 +143,14 @@ int main()
 	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
 	void *tret;
 	int i;
+	cycles_t tot_time = 0;
 
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
 	for (i = 0; i < NR_READ; i++) {
-		err = pthread_create(&tid_reader[i], NULL, thr_reader, NULL);
+		err = pthread_create(&tid_reader[i], NULL, thr_reader,
+				     (void *)(long)i);
 		if (err != 0)
 			exit(1);
 	}
@@ -141,6 +166,7 @@ int main()
 		err = pthread_join(tid_reader[i], &tret);
 		if (err != 0)
 			exit(1);
+		tot_time += reader_time[i];
 	}
 	for (i = 0; i < NR_WRITE; i++) {
 		err = pthread_join(tid_writer[i], &tret);
@@ -148,6 +174,8 @@ int main()
 			exit(1);
 	}
 	free(test_rcu_pointer);
+	printf("Time per read : %g cycles\n",
+	       (double)tot_time / ((double)NR_READ * (double)READ_LOOP));
 
 	return 0;
 }
