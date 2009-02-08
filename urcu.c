@@ -113,13 +113,35 @@ void wait_for_quiescent_state(int parity)
 	force_mb_all_threads();
 }
 
+static void switch_qparity(void)
+{
+	int prev_parity;
+
+	/* All threads should read qparity before accessing data structure. */
+	/* Write ptr before changing the qparity */
+	force_mb_all_threads();
+	prev_parity = switch_next_urcu_qparity();
+
+	/*
+	 * Wait for previous parity to be empty of readers.
+	 */
+	wait_for_quiescent_state(prev_parity);
+}
+
+void synchronize_rcu(void)
+{
+	rcu_write_lock();
+	switch_qparity();
+	switch_qparity();
+	rcu_write_unlock();
+}
+
 /*
  * Return old pointer, OK to free, no more reference exist.
  * Called under rcu_write_lock.
  */
 void *urcu_publish_content(void **ptr, void *new)
 {
-	int prev_parity;
 	void *oldptr;
 
 	/*
@@ -134,19 +156,10 @@ void *urcu_publish_content(void **ptr, void *new)
 	 */
 	oldptr = *ptr;
 	*ptr = new;
-	/* All threads should read qparity before ptr */
-	/* Write ptr before changing the qparity */
-	force_mb_all_threads();
-	prev_parity = switch_next_urcu_qparity();
 
-	/*
-	 * Wait for previous parity to be empty of readers.
-	 */
-	wait_for_quiescent_state(prev_parity);
-	/*
-	 * Deleting old data is ok !
-	 */
-	
+	switch_qparity();
+	switch_qparity();
+
 	return oldptr;
 }
 
