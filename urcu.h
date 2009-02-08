@@ -77,32 +77,28 @@ static inline int get_urcu_qparity(void)
 }
 
 /*
- * returns urcu_parity.
+ * urcu_parity should be declared on the caller's stack.
  */
-static inline int rcu_read_lock(void)
+static inline void rcu_read_lock(int *urcu_parity)
 {
-	int urcu_parity = get_urcu_qparity();
-	urcu_active_readers[urcu_parity]++;
+	*urcu_parity = get_urcu_qparity();
+	urcu_active_readers[*urcu_parity]++;
 	/*
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	barrier();
-	return urcu_parity;
 }
 
-static inline void rcu_read_unlock(int urcu_parity)
+static inline void rcu_read_unlock(int *urcu_parity)
 {
 	barrier();
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
-	urcu_active_readers[urcu_parity]--;
+	urcu_active_readers[*urcu_parity]--;
 }
-
-extern void rcu_write_lock(void);
-extern void rcu_write_unlock(void);
 
 extern void *urcu_publish_content(void **ptr, void *new);
 

@@ -36,7 +36,7 @@ static struct reader_data *reader_data;
 static int num_readers, alloc_readers;
 static int sig_done;
 
-void rcu_write_lock(void)
+void internal_urcu_lock(void)
 {
 	int ret;
 	ret = pthread_mutex_lock(&urcu_mutex);
@@ -46,7 +46,7 @@ void rcu_write_lock(void)
 	}
 }
 
-void rcu_write_unlock(void)
+void internal_urcu_unlock(void)
 {
 	int ret;
 
@@ -130,10 +130,10 @@ static void switch_qparity(void)
 
 void synchronize_rcu(void)
 {
-	rcu_write_lock();
+	internal_urcu_lock();
 	switch_qparity();
 	switch_qparity();
-	rcu_write_unlock();
+	internal_urcu_lock();
 }
 
 /*
@@ -144,6 +144,7 @@ void *urcu_publish_content(void **ptr, void *new)
 {
 	void *oldptr;
 
+	internal_urcu_lock();
 	/*
 	 * We can publish the new pointer before we change the current qparity.
 	 * Readers seeing the new pointer while being in the previous qparity
@@ -159,6 +160,7 @@ void *urcu_publish_content(void **ptr, void *new)
 
 	switch_qparity();
 	switch_qparity();
+	internal_urcu_unlock();
 
 	return oldptr;
 }
@@ -213,16 +215,16 @@ void urcu_remove_reader(pthread_t id)
 
 void urcu_register_thread(void)
 {
-	rcu_write_lock();
+	internal_urcu_lock();
 	urcu_add_reader(pthread_self());
-	rcu_write_unlock();
+	internal_urcu_unlock();
 }
 
 void urcu_unregister_thread(void)
 {
-	rcu_write_lock();
+	internal_urcu_lock();
 	urcu_remove_reader(pthread_self());
-	rcu_write_unlock();
+	internal_urcu_unlock();
 }
 
 void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)

@@ -52,6 +52,29 @@ static inline cycles_t get_cycles (void)
 
 #include "urcu.h"
 
+pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void rcu_copy_mutex_lock(void)
+{
+	int ret;
+	ret = pthread_mutex_lock(&rcu_copy_mutex);
+	if (ret) {
+		perror("Error in pthread mutex lock");
+		exit(-1);
+	}
+}
+
+void rcu_copy_mutex_unlock(void)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&rcu_copy_mutex);
+	if (ret) {
+		perror("Error in pthread mutex unlock");
+		exit(-1);
+	}
+}
+
 struct test_array {
 	int a;
 };
@@ -84,12 +107,12 @@ void *thr_reader(void *arg)
 	time1 = get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			qparity = rcu_read_lock();
+			rcu_read_lock(&qparity);
 			local_ptr = rcu_dereference(test_rcu_pointer);
 			if (local_ptr) {
 				assert(local_ptr->a == 8);
 			}
-			rcu_read_unlock(qparity);
+			rcu_read_unlock(&qparity);
 		}
 	}
 	time2 = get_cycles();
@@ -116,14 +139,14 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < WRITE_LOOP; i++) {
 		new = malloc(sizeof(struct test_array));
-		rcu_write_lock();
+		rcu_copy_mutex_lock();
 		old = test_rcu_pointer;
 		if (old) {
 			assert(old->a == 8);
 		}
 		new->a = 8;
 		old = urcu_publish_content((void **)&test_rcu_pointer, new);
-		rcu_write_unlock();
+		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
 		if (old) {
 			old->a = 0;

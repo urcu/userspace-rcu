@@ -47,6 +47,28 @@ static struct test_array *test_rcu_pointer;
 #define NR_READ 10
 #define NR_WRITE 9
 
+pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void rcu_copy_mutex_lock(void)
+{
+	int ret;
+	ret = pthread_mutex_lock(&rcu_copy_mutex);
+	if (ret) {
+		perror("Error in pthread mutex lock");
+		exit(-1);
+	}
+}
+
+void rcu_copy_mutex_unlock(void)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&rcu_copy_mutex);
+	if (ret) {
+		perror("Error in pthread mutex unlock");
+		exit(-1);
+	}
+}
 
 void *thr_reader(void *arg)
 {
@@ -61,14 +83,14 @@ void *thr_reader(void *arg)
 
 	for (i = 0; i < 100000; i++) {
 		for (j = 0; j < 100000000; j++) {
-			qparity = rcu_read_lock();
+			rcu_read_lock(&qparity);
 			local_ptr = rcu_dereference(test_rcu_pointer);
 			if (local_ptr) {
 				assert(local_ptr->a == 8);
 				assert(local_ptr->b == 12);
 				assert(local_ptr->c[55] == 2);
 			}
-			rcu_read_unlock(qparity);
+			rcu_read_unlock(&qparity);
 		}
 	}
 
@@ -89,7 +111,7 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < 10000000; i++) {
 		new = malloc(sizeof(struct test_array));
-		rcu_write_lock();
+		rcu_copy_mutex_lock();
 		old = test_rcu_pointer;
 		if (old) {
 			assert(old->a == 8);
@@ -100,7 +122,7 @@ void *thr_writer(void *arg)
 		new->b = 12;
 		new->a = 8;
 		old = urcu_publish_content((void **)&test_rcu_pointer, new);
-		rcu_write_unlock();
+		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
 		if (old) {
 			old->a = 0;
