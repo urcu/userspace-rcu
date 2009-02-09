@@ -174,7 +174,7 @@ void *urcu_publish_content(void **ptr, void *new)
 	 */
 	oldptr = *ptr;
 	debug_yield_write();
-	*ptr = new;
+	rcu_assign_pointer(*ptr, new);
 
 	debug_yield_write();
 	switch_qparity();

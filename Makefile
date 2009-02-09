@@ -33,6 +33,10 @@ urcu-asm.S: urcu-asm.c urcu.h
 urcu-asm.o: urcu-asm.c urcu.h
 	$(CC) ${CFLAGS} -c -o $@ $(SRC_DEP)
 
+#in progress...
+urcutorture.o: urcutorture.c urcu.o urcu.h rcutorture.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
 .PHONY: clean
 
 clean:

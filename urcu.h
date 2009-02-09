@@ -169,7 +169,29 @@ static inline void rcu_read_unlock(void)
 	debug_yield_read();
 }
 
+/**
+ * rcu_assign_pointer - assign (publicize) a pointer to a newly
+ * initialized structure that will be dereferenced by RCU read-side
+ * critical sections.  Returns the value assigned.
+ *
+ * Inserts memory barriers on architectures that require them
+ * (pretty much all of them other than x86), and also prevents
+ * the compiler from reordering the code that initializes the
+ * structure after the pointer assignment.  More importantly, this
+ * call documents which pointers will be dereferenced by RCU read-side
+ * code.
+ */
+
+#define rcu_assign_pointer(p, v) \
+	({ \
+		if (!__builtin_constant_p(v) || \
+		    ((v) != NULL)) \
+			wmb(); \
+		(p) = (v); \
+	})
+
 extern void *urcu_publish_content(void **ptr, void *new);
+extern void synchronize_rcu(void);
 
 /*
  * Reader thread registration.
