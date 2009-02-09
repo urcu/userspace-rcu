@@ -19,8 +19,12 @@
 
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Global grace period counter */
-long urcu_gp_ctr;
+/*
+ * Global grace period counter.
+ * Contains the current RCU_GP_CTR_BIT.
+ * Also has a RCU_GP_CTR_BIT of 1, to accelerate the reader fast path.
+ */
+long urcu_gp_ctr = RCU_GP_COUNT;
 
 long __thread urcu_active_readers;
 
@@ -29,7 +33,7 @@ long __thread urcu_active_readers;
 
 struct reader_data {
 	pthread_t tid;
-	int *urcu_active_readers;
+	long *urcu_active_readers;
 };
 
 #ifdef DEBUG_YIELD

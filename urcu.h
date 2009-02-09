@@ -179,7 +179,7 @@ extern long urcu_gp_ctr;
 
 extern long __thread urcu_active_readers;
 
-static inline int rcu_old_gp_ongoing(int *value)
+static inline int rcu_old_gp_ongoing(long *value)
 {
 	long v;
 
@@ -200,7 +200,7 @@ static inline void rcu_read_lock(void)
 	tmp = urcu_active_readers;
 	debug_yield_read();
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
-		urcu_active_readers = urcu_gp_ctr + RCU_GP_COUNT;
+		urcu_active_readers = urcu_gp_ctr;
 	else
 		urcu_active_readers = tmp + RCU_GP_COUNT;
 	debug_yield_read();
