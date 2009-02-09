@@ -147,7 +147,7 @@ void synchronize_rcu(void)
 	debug_yield_write();
 	switch_qparity();
 	debug_yield_write();
-	internal_urcu_lock();
+	internal_urcu_unlock();
 	debug_yield_write();
 }
 
