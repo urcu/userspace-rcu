@@ -7,7 +7,7 @@ LDFLAGS=-lpthread
 SRC_DEP=`echo $^ | sed 's/[^ ]*.h//g'`
 
 all: test_urcu test_urcu_timing test_rwlock_timing test_urcu_yield urcu-asm.S \
-	urcu-asm.o
+	urcu-asm.o urcutorture urcutorture-yield
 
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -33,9 +33,11 @@ urcu-asm.S: urcu-asm.c urcu.h
 urcu-asm.o: urcu-asm.c urcu.h
 	$(CC) ${CFLAGS} -c -o $@ $(SRC_DEP)
 
-#in progress...
 urcutorture: urcutorture.c urcu.o urcu.h rcutorture.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
+	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 .PHONY: clean
 

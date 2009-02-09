@@ -17,6 +17,7 @@
  * Distributed under GPLv2
  */
 
+#define __USE_GNU
 #include <stdlib.h>
 
 /* The "volatile" is due to gcc bugs */
@@ -109,6 +110,8 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 
 #ifdef DEBUG_YIELD
 #include <sched.h>
+#include <time.h>
+#include <pthread.h>
 
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)

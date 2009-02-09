@@ -392,6 +392,11 @@ int main(int argc, char *argv[])
 	smp_init();
 	//rcu_init();
 
+#ifdef DEBUG_YIELD
+	yield_active |= YIELD_READ;
+	yield_active |= YIELD_WRITE;
+#endif
+
 	if (argc > 1) {
 		nreaders = strtoul(argv[1], NULL, 0);
 		if (argc == 2)
