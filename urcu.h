@@ -23,6 +23,9 @@
 /* The "volatile" is due to gcc bugs */
 #define barrier() __asm__ __volatile__("": : :"memory")
 
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
 /* x86 32/64 specific */
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
@@ -64,7 +67,13 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 			     : "memory");
 		break;
 	case 4:
-		asm volatile("xchgl %0,%1"
+		asm volatile("xchgl %k0,%1"
+			     : "=r" (x)
+			     : "m" (*__xg(ptr)), "0" (x)
+			     : "memory");
+		break;
+	case 8:
+		asm volatile("xchgq %0,%1"
 			     : "=r" (x)
 			     : "m" (*__xg(ptr)), "0" (x)
 			     : "memory");
@@ -160,7 +169,11 @@ static inline void debug_yield_init(void)
 #define RCU_GP_CTR_BIT		(1U << 8)
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
 
-/* Global quiescent period counter with low-order bits unused. */
+/*
+ * Global quiescent period counter with low-order bits unused.
+ * Using a int rather than a char to eliminate false register dependencies
+ * causing stalls on some architectures.
+ */
 extern int urcu_gp_ctr;
 
 extern int __thread urcu_active_readers;
@@ -185,7 +198,7 @@ static inline void rcu_read_lock(void)
 	debug_yield_read();
 	tmp = urcu_active_readers;
 	debug_yield_read();
-	if (!(tmp & RCU_GP_CTR_NEST_MASK))
+	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
 		urcu_active_readers = urcu_gp_ctr + RCU_GP_COUNT;
 	else
 		urcu_active_readers = tmp + RCU_GP_COUNT;
