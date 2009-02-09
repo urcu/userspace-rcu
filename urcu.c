@@ -33,7 +33,8 @@ struct reader_data {
 };
 
 #ifdef DEBUG_YIELD
-int yield_active;
+unsigned int yield_active;
+unsigned int __thread rand_yield;
 #endif
 
 static struct reader_data *reader_data;

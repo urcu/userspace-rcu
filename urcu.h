@@ -72,18 +72,26 @@ static inline void atomic_inc(int *v)
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)
 
-extern int yield_active;
+extern unsigned int yield_active;
+extern unsigned int __thread rand_yield;
 
 static inline void debug_yield_read(void)
 {
 	if (yield_active & YIELD_READ)
-		sched_yield();
+		if (rand_r(&rand_yield) & 0x1)
+			sched_yield();
 }
 
 static inline void debug_yield_write(void)
 {
 	if (yield_active & YIELD_WRITE)
-		sched_yield();
+		if (rand_r(&rand_yield) & 0x1)
+			sched_yield();
+}
+
+static inline void debug_yield_init(void)
+{
+	rand_yield = time(NULL) ^ pthread_self();
 }
 #else
 static inline void debug_yield_read(void)
@@ -92,6 +100,11 @@ static inline void debug_yield_read(void)
 
 static inline void debug_yield_write(void)
 {
+}
+
+static inline void debug_yield_init(void)
+{
+
 }
 #endif
 
