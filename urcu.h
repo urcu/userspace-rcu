@@ -66,6 +66,35 @@ static inline void atomic_inc(int *v)
 
 #define SIGURCU SIGUSR1
 
+#ifdef DEBUG_YIELD
+#include <sched.h>
+
+#define YIELD_READ 	(1 << 0)
+#define YIELD_WRITE	(1 << 1)
+
+extern int yield_active;
+
+static inline void debug_yield_read(void)
+{
+	if (yield_active & YIELD_READ)
+		sched_yield();
+}
+
+static inline void debug_yield_write(void)
+{
+	if (yield_active & YIELD_WRITE)
+		sched_yield();
+}
+#else
+static inline void debug_yield_read(void)
+{
+}
+
+static inline void debug_yield_write(void)
+{
+}
+#endif
+
 /* Global quiescent period parity */
 extern int urcu_qparity;
 
@@ -81,23 +110,30 @@ static inline int get_urcu_qparity(void)
  */
 static inline void rcu_read_lock(int *urcu_parity)
 {
+	debug_yield_read();
 	*urcu_parity = get_urcu_qparity();
+	debug_yield_read();
 	urcu_active_readers[*urcu_parity]++;
+	debug_yield_read();
 	/*
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	barrier();
+	debug_yield_read();
 }
 
 static inline void rcu_read_unlock(int *urcu_parity)
 {
+	debug_yield_read();
 	barrier();
+	debug_yield_read();
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	urcu_active_readers[*urcu_parity]--;
+	debug_yield_read();
 }
 
 extern void *urcu_publish_content(void **ptr, void *new);

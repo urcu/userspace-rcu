@@ -38,11 +38,27 @@ static inline pid_t gettid(void)
 
 struct test_array {
 	int a;
-	int b;
-	char c[200];
 };
 
 static struct test_array *test_rcu_pointer;
+
+static unsigned long duration;
+static time_t start_time;
+static unsigned long __thread duration_interval;
+#define DURATION_TEST_DELAY 100
+
+/*
+ * returns 0 if test should end.
+ */
+static int test_duration(void)
+{
+	if (duration_interval++ >= DURATION_TEST_DELAY) {
+		duration_interval = 0;
+		if (time(NULL) - start_time >= duration)
+			return 0;
+	}
+	return 1;
+}
 
 #define NR_READ 10
 #define NR_WRITE 9
@@ -72,77 +88,99 @@ void rcu_copy_mutex_unlock(void)
 
 void *thr_reader(void *arg)
 {
-	int qparity, i, j;
+	int qparity;
 	struct test_array *local_ptr;
 
-	printf("thread %s, thread id : %lx, tid %lu\n",
+	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
-	sleep(2);
 
 	urcu_register_thread();
 
-	for (i = 0; i < 100000; i++) {
-		for (j = 0; j < 100000000; j++) {
-			rcu_read_lock(&qparity);
-			local_ptr = rcu_dereference(test_rcu_pointer);
-			if (local_ptr) {
-				assert(local_ptr->a == 8);
-				assert(local_ptr->b == 12);
-				assert(local_ptr->c[55] == 2);
-			}
-			rcu_read_unlock(&qparity);
-		}
+	for (;;) {
+		rcu_read_lock(&qparity);
+		local_ptr = rcu_dereference(test_rcu_pointer);
+		if (local_ptr)
+			assert(local_ptr->a == 8);
+		rcu_read_unlock(&qparity);
+		if (!test_duration())
+			break;
 	}
 
 	urcu_unregister_thread();
 
+	printf("thread_end %s, thread id : %lx, tid %lu\n",
+			"reader", pthread_self(), (unsigned long)gettid());
 	return ((void*)1);
 
 }
 
 void *thr_writer(void *arg)
 {
-	int i;
 	struct test_array *new, *old;
 
-	printf("thread %s, thread id : %lx, tid %lu\n",
+	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
-	sleep(2);
 
-	for (i = 0; i < 10000000; i++) {
+	for (;;) {
 		new = malloc(sizeof(struct test_array));
 		rcu_copy_mutex_lock();
 		old = test_rcu_pointer;
-		if (old) {
+		if (old)
 			assert(old->a == 8);
-			assert(old->b == 12);
-			assert(old->c[55] == 2);
-		}
-		new->c[55] = 2;
-		new->b = 12;
 		new->a = 8;
 		old = urcu_publish_content((void **)&test_rcu_pointer, new);
 		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
-		if (old) {
+		if (old)
 			old->a = 0;
-			old->b = 0;
-			old->c[55] = 0;
-		}
 		free(old);
+		if (!test_duration())
+			break;
 		usleep(1);
 	}
 
+	printf("thread_end %s, thread id : %lx, tid %lu\n",
+			"writer", pthread_self(), (unsigned long)gettid());
 	return ((void*)2);
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	int err;
 	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
 	void *tret;
 	int i;
 
+	if (argc < 2) {
+		printf("Usage : %s duration (s) [-r] [-w] "
+		       "(yield reader and/or writer)\n", argv[0]);
+		return -1;
+	}
+
+	err = sscanf(argv[1], "%lu", &duration);
+	if (err != 1) {
+		printf("Usage : %s duration (s) [-r] [-w] "
+		       "(yield reader and/or writer)\n", argv[0]);
+		return -1;
+	}
+
+#ifdef DEBUG_YIELD
+	for (i = 2; i < argc; i++) {
+		if (argv[i][0] != '-')
+			continue;
+		switch (argv[i][1]) {
+		case 'r':
+			yield_active |= YIELD_READ;
+			break;
+		case 'w':
+			yield_active |= YIELD_WRITE;
+			break;
+		}
+	}
+#endif
+
+	printf("running test for %lu seconds.\n", duration);
+	start_time = time(NULL);
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
@@ -156,8 +194,6 @@ int main()
 		if (err != 0)
 			exit(1);
 	}
-
-	sleep(10);
 
 	for (i = 0; i < NR_READ; i++) {
 		err = pthread_join(tid_reader[i], &tret);

@@ -32,6 +32,10 @@ struct reader_data {
 	int *urcu_active_readers;
 };
 
+#ifdef DEBUG_YIELD
+int yield_active;
+#endif
+
 static struct reader_data *reader_data;
 static int num_readers, alloc_readers;
 static int sig_done;
@@ -76,17 +80,24 @@ static void force_mb_all_threads(void)
 	 */
 	if (!reader_data)
 		return;
+	debug_yield_write();
 	sig_done = 0;
+	debug_yield_write();
 	mb();	/* write sig_done before sending the signals */
-	for (index = reader_data; index < reader_data + num_readers; index++)
+	debug_yield_write();
+	for (index = reader_data; index < reader_data + num_readers; index++) {
 		pthread_kill(index->tid, SIGURCU);
+		debug_yield_write();
+	}
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
 	while (sig_done < num_readers)
 		barrier();
+	debug_yield_write();
 	mb();	/* read sig_done before ending the barrier */
+	debug_yield_write();
 }
 
 void wait_for_quiescent_state(int parity)
@@ -120,7 +131,9 @@ static void switch_qparity(void)
 	/* All threads should read qparity before accessing data structure. */
 	/* Write ptr before changing the qparity */
 	force_mb_all_threads();
+	debug_yield_write();
 	prev_parity = switch_next_urcu_qparity();
+	debug_yield_write();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -130,10 +143,15 @@ static void switch_qparity(void)
 
 void synchronize_rcu(void)
 {
+	debug_yield_write();
 	internal_urcu_lock();
+	debug_yield_write();
 	switch_qparity();
+	debug_yield_write();
 	switch_qparity();
+	debug_yield_write();
 	internal_urcu_lock();
+	debug_yield_write();
 }
 
 /*
@@ -144,7 +162,9 @@ void *urcu_publish_content(void **ptr, void *new)
 {
 	void *oldptr;
 
+	debug_yield_write();
 	internal_urcu_lock();
+	debug_yield_write();
 	/*
 	 * We can publish the new pointer before we change the current qparity.
 	 * Readers seeing the new pointer while being in the previous qparity
@@ -156,11 +176,16 @@ void *urcu_publish_content(void **ptr, void *new)
 	 * when the next quiescent state window will be over.
 	 */
 	oldptr = *ptr;
+	debug_yield_write();
 	*ptr = new;
 
+	debug_yield_write();
 	switch_qparity();
+	debug_yield_write();
 	switch_qparity();
+	debug_yield_write();
 	internal_urcu_unlock();
+	debug_yield_write();
 
 	return oldptr;
 }
