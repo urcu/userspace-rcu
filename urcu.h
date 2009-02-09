@@ -199,6 +199,7 @@ static inline void rcu_read_lock(void)
 	debug_yield_read();
 	tmp = urcu_active_readers;
 	debug_yield_read();
+	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
 		urcu_active_readers = urcu_gp_ctr;
 	else
