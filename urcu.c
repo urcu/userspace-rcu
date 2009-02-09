@@ -151,42 +151,6 @@ void synchronize_rcu(void)
 	debug_yield_write();
 }
 
-/*
- * Return old pointer, OK to free, no more reference exist.
- * Called under rcu_write_lock.
- */
-void *urcu_publish_content(void **ptr, void *new)
-{
-	void *oldptr;
-
-	debug_yield_write();
-	internal_urcu_lock();
-	debug_yield_write();
-	/*
-	 * We can publish the new pointer before we change the current qparity.
-	 * Readers seeing the new pointer while being in the previous qparity
-	 * window will make us wait until the end of the quiescent state before
-	 * we release the unrelated memory area. However, given we hold the
-	 * urcu_mutex, we are making sure that no further garbage collection can
-	 * occur until we release the mutex, therefore we guarantee that this
-	 * given reader will have completed its execution using the new pointer
-	 * when the next quiescent state window will be over.
-	 */
-	oldptr = *ptr;
-	debug_yield_write();
-	rcu_assign_pointer(*ptr, new);
-
-	debug_yield_write();
-	switch_qparity();
-	debug_yield_write();
-	switch_qparity();
-	debug_yield_write();
-	internal_urcu_unlock();
-	debug_yield_write();
-
-	return oldptr;
-}
-
 void urcu_add_reader(pthread_t id)
 {
 	struct reader_data *oldarray;

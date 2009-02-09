@@ -33,6 +33,45 @@ static inline void atomic_inc(int *v)
 		     : "+m" (*v));
 }
 
+#define xchg(ptr, v)							\
+	((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), sizeof(*(ptr))))
+
+struct __xchg_dummy {
+	unsigned long a[100];
+};
+#define __xg(x) ((struct __xchg_dummy *)(x))
+
+/*
+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+ * Note 2: xchg has side effect, so that attribute volatile is necessary,
+ *	  but generally the primitive is invalid, *ptr is output argument. --ANK
+ */
+static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+				   int size)
+{
+	switch (size) {
+	case 1:
+		asm volatile("xchgb %b0,%1"
+			     : "=q" (x)
+			     : "m" (*__xg(ptr)), "0" (x)
+			     : "memory");
+		break;
+	case 2:
+		asm volatile("xchgw %w0,%1"
+			     : "=r" (x)
+			     : "m" (*__xg(ptr)), "0" (x)
+			     : "memory");
+		break;
+	case 4:
+		asm volatile("xchgl %0,%1"
+			     : "=r" (x)
+			     : "m" (*__xg(ptr)), "0" (x)
+			     : "memory");
+		break;
+	}
+	return x;
+}
+
 /* Nop everywhere except on alpha. */
 #define smp_read_barrier_depends()
 
@@ -190,8 +229,28 @@ static inline void rcu_read_unlock(void)
 		(p) = (v); \
 	})
 
-extern void *urcu_publish_content(void **ptr, void *new);
+#define rcu_xchg_pointer(p, v) \
+	({ \
+		if (!__builtin_constant_p(v) || \
+		    ((v) != NULL)) \
+			wmb(); \
+		xchg(p, v); \
+	})
+
 extern void synchronize_rcu(void);
+
+/*
+ * Exchanges the pointer and waits for quiescent state.
+ * The pointer returned can be freed.
+ */
+#define urcu_publish_content(p, v) \
+	({ \
+		void *oldptr; \
+		debug_yield_write(); \
+		oldptr = rcu_xchg_pointer(p, v); \
+		synchronize_rcu(); \
+		oldptr; \
+	})
 
 /*
  * Reader thread registration.

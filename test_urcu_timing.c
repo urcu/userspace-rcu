@@ -145,7 +145,7 @@ void *thr_writer(void *arg)
 			assert(old->a == 8);
 		}
 		new->a = 8;
-		old = urcu_publish_content((void **)&test_rcu_pointer, new);
+		old = urcu_publish_content(&test_rcu_pointer, new);
 		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
 		if (old) {
