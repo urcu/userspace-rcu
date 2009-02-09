@@ -94,7 +94,7 @@ static cycles_t reader_time[NR_READ] __attribute__((aligned(128)));
 
 void *thr_reader(void *arg)
 {
-	int qparity, i, j;
+	int i, j;
 	struct test_array *local_ptr;
 	cycles_t time1, time2;
 
@@ -107,12 +107,12 @@ void *thr_reader(void *arg)
 	time1 = get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			rcu_read_lock(&qparity);
+			rcu_read_lock();
 			local_ptr = rcu_dereference(test_rcu_pointer);
 			if (local_ptr) {
 				assert(local_ptr->a == 8);
 			}
-			rcu_read_unlock(&qparity);
+			rcu_read_unlock();
 		}
 	}
 	time2 = get_cycles();

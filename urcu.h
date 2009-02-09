@@ -17,6 +17,8 @@
  * Distributed under GPLv2
  */
 
+#include <stdlib.h>
+
 /* The "volatile" is due to gcc bugs */
 #define barrier() __asm__ __volatile__("": : :"memory")
 
@@ -108,25 +110,43 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-/* Global quiescent period parity */
-extern int urcu_qparity;
+/*
+ * Limiting the nesting level to 256 to keep instructions small in the read
+ * fast-path.
+ */
+#define RCU_GP_COUNT		(1U << 0)
+#define RCU_GP_CTR_BIT		(1U << 8)
+#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
 
-extern int __thread urcu_active_readers[2];
+/* Global quiescent period counter with low-order bits unused. */
+extern int urcu_gp_ctr;
 
-static inline int get_urcu_qparity(void)
+extern int __thread urcu_active_readers;
+
+static inline int rcu_old_gp_ongoing(int *value)
 {
-	return urcu_qparity;
+	int v;
+
+	if (value == NULL)
+		return 0;
+	debug_yield_write();
+	v = ACCESS_ONCE(*value);
+	debug_yield_write();
+	return (v & RCU_GP_CTR_NEST_MASK) &&
+		 ((v ^ ACCESS_ONCE(urcu_gp_ctr)) & RCU_GP_CTR_BIT);
 }
 
-/*
- * urcu_parity should be declared on the caller's stack.
- */
-static inline void rcu_read_lock(int *urcu_parity)
+static inline void rcu_read_lock(void)
 {
+	int tmp;
+
 	debug_yield_read();
-	*urcu_parity = get_urcu_qparity();
+	tmp = urcu_active_readers;
 	debug_yield_read();
-	urcu_active_readers[*urcu_parity]++;
+	if (!(tmp & RCU_GP_CTR_NEST_MASK))
+		urcu_active_readers = urcu_gp_ctr + RCU_GP_COUNT;
+	else
+		urcu_active_readers = tmp + RCU_GP_COUNT;
 	debug_yield_read();
 	/*
 	 * Increment active readers count before accessing the pointer.
@@ -136,7 +156,7 @@ static inline void rcu_read_lock(int *urcu_parity)
 	debug_yield_read();
 }
 
-static inline void rcu_read_unlock(int *urcu_parity)
+static inline void rcu_read_unlock(void)
 {
 	debug_yield_read();
 	barrier();
@@ -145,7 +165,7 @@ static inline void rcu_read_unlock(int *urcu_parity)
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
-	urcu_active_readers[*urcu_parity]--;
+	urcu_active_readers -= RCU_GP_COUNT;
 	debug_yield_read();
 }
 

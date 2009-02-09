@@ -88,7 +88,6 @@ void rcu_copy_mutex_unlock(void)
 
 void *thr_reader(void *arg)
 {
-	int qparity;
 	struct test_array *local_ptr;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -97,11 +96,11 @@ void *thr_reader(void *arg)
 	urcu_register_thread();
 
 	for (;;) {
-		rcu_read_lock(&qparity);
+		rcu_read_lock();
 		local_ptr = rcu_dereference(test_rcu_pointer);
 		if (local_ptr)
 			assert(local_ptr->a == 8);
-		rcu_read_unlock(&qparity);
+		rcu_read_unlock();
 		if (!test_duration())
 			break;
 	}
@@ -144,6 +143,15 @@ void *thr_writer(void *arg)
 	return ((void*)2);
 }
 
+void show_usage(int argc, char **argv)
+{
+	printf("Usage : %s duration (s)", argv[0]);
+#ifdef DEBUG_YIELD
+	printf(" [-r] [-w] (yield reader and/or writer)");
+#endif
+	printf("\n");
+}
+
 int main(int argc, char **argv)
 {
 	int err;
@@ -152,15 +160,13 @@ int main(int argc, char **argv)
 	int i;
 
 	if (argc < 2) {
-		printf("Usage : %s duration (s) [-r] [-w] "
-		       "(yield reader and/or writer)\n", argv[0]);
+		show_usage(argc, argv);
 		return -1;
 	}
 
 	err = sscanf(argv[1], "%lu", &duration);
 	if (err != 1) {
-		printf("Usage : %s duration (s) [-r] [-w] "
-		       "(yield reader and/or writer)\n", argv[0]);
+		show_usage(argc, argv);
 		return -1;
 	}
 

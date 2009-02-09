@@ -19,10 +19,10 @@
 
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Global quiescent period parity */
-int urcu_qparity;
+/* Global grace period counter */
+int urcu_gp_ctr;
 
-int __thread urcu_active_readers[2];
+int __thread urcu_active_readers;
 
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4
@@ -65,11 +65,9 @@ void internal_urcu_unlock(void)
 /*
  * called with urcu_mutex held.
  */
-static int switch_next_urcu_qparity(void)
+static void switch_next_urcu_qparity(void)
 {
-	int old_parity = urcu_qparity;
-	urcu_qparity = 1 - old_parity;
-	return old_parity;
+	urcu_gp_ctr ^= RCU_GP_CTR_BIT;
 }
 
 static void force_mb_all_threads(void)
@@ -101,7 +99,7 @@ static void force_mb_all_threads(void)
 	debug_yield_write();
 }
 
-void wait_for_quiescent_state(int parity)
+void wait_for_quiescent_state(void)
 {
 	struct reader_data *index;
 
@@ -113,7 +111,7 @@ void wait_for_quiescent_state(int parity)
 		/*
 		 * BUSY-LOOP.
 		 */
-		while (index->urcu_active_readers[parity] != 0)
+		while (rcu_old_gp_ongoing(index->urcu_active_readers))
 			barrier();
 	}
 	/*
@@ -127,19 +125,17 @@ void wait_for_quiescent_state(int parity)
 
 static void switch_qparity(void)
 {
-	int prev_parity;
-
 	/* All threads should read qparity before accessing data structure. */
 	/* Write ptr before changing the qparity */
 	force_mb_all_threads();
 	debug_yield_write();
-	prev_parity = switch_next_urcu_qparity();
+	switch_next_urcu_qparity();
 	debug_yield_write();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state(prev_parity);
+	wait_for_quiescent_state();
 }
 
 void synchronize_rcu(void)
@@ -212,7 +208,7 @@ void urcu_add_reader(pthread_t id)
 	}
 	reader_data[num_readers].tid = id;
 	/* reference to the TLS of _this_ reader thread. */
-	reader_data[num_readers].urcu_active_readers = urcu_active_readers;
+	reader_data[num_readers].urcu_active_readers = &urcu_active_readers;
 	num_readers++;
 }
 
