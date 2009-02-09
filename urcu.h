@@ -162,11 +162,12 @@ static inline void debug_yield_init(void)
 #endif
 
 /*
- * Limiting the nesting level to 256 to keep instructions small in the read
- * fast-path.
+ * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
+ * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
  */
 #define RCU_GP_COUNT		(1U << 0)
-#define RCU_GP_CTR_BIT		(1U << 8)
+/* Use the amount of bits equal to half of the architecture long size */
+#define RCU_GP_CTR_BIT		(sizeof(long) << 2)
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
 
 /*
