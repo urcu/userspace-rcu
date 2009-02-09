@@ -37,7 +37,7 @@ static inline pid_t gettid(void)
 #define rdtscll(val) do { \
      unsigned int __a,__d; \
      asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
-     (val) = ((unsigned long)__a) | (((unsigned long)__d)<<32); \
+     (val) = ((unsigned long long)__a) | (((unsigned long long)__d)<<32); \
 } while(0)
 
 typedef unsigned long long cycles_t;
