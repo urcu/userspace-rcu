@@ -17,7 +17,6 @@
  * Distributed under GPLv2
  */
 
-#define __USE_GNU
 #include <stdlib.h>
 #include <pthread.h>
 
