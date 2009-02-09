@@ -165,9 +165,9 @@ static inline void debug_yield_init(void)
  * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
  * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
  */
-#define RCU_GP_COUNT		(1U << 0)
+#define RCU_GP_COUNT		(1UL << 0)
 /* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(sizeof(long) << 2)
+#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
 
 /*
