@@ -20,9 +20,9 @@
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Global grace period counter */
-int urcu_gp_ctr;
+long urcu_gp_ctr;
 
-int __thread urcu_active_readers;
+long __thread urcu_active_readers;
 
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4

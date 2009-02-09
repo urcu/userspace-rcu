@@ -175,13 +175,13 @@ static inline void debug_yield_init(void)
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern int urcu_gp_ctr;
+extern long urcu_gp_ctr;
 
-extern int __thread urcu_active_readers;
+extern long __thread urcu_active_readers;
 
 static inline int rcu_old_gp_ongoing(int *value)
 {
-	int v;
+	long v;
 
 	if (value == NULL)
 		return 0;
@@ -194,7 +194,7 @@ static inline int rcu_old_gp_ongoing(int *value)
 
 static inline void rcu_read_lock(void)
 {
-	int tmp;
+	long tmp;
 
 	debug_yield_read();
 	tmp = urcu_active_readers;
