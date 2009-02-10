@@ -121,9 +121,18 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 #include <sched.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)
+
+/* Updates without DEBUG_FULL_MB are much slower. Account this in the delay */
+#ifdef DEBUG_FULL_MB
+/* maximum sleep delay, in us */
+#define MAX_SLEEP 50
+#else
+#define MAX_SLEEP 30000
+#endif
 
 extern unsigned int yield_active;
 extern unsigned int __thread rand_yield;
@@ -132,14 +141,14 @@ static inline void debug_yield_read(void)
 {
 	if (yield_active & YIELD_READ)
 		if (rand_r(&rand_yield) & 0x1)
-			sched_yield();
+			usleep(rand_r(&rand_yield) % MAX_SLEEP);
 }
 
 static inline void debug_yield_write(void)
 {
 	if (yield_active & YIELD_WRITE)
 		if (rand_r(&rand_yield) & 0x1)
-			sched_yield();
+			usleep(rand_r(&rand_yield) % MAX_SLEEP);
 }
 
 static inline void debug_yield_init(void)
@@ -158,6 +167,18 @@ static inline void debug_yield_write(void)
 static inline void debug_yield_init(void)
 {
 
+}
+#endif
+
+#ifdef DEBUG_FULL_MB
+static inline void read_barrier()
+{
+	mb();
+}
+#else
+static inline void read_barrier()
+{
+	barrier();
 }
 #endif
 
@@ -209,14 +230,14 @@ static inline void rcu_read_lock(void)
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
 	 */
-	barrier();
+	read_barrier();
 	debug_yield_read();
 }
 
 static inline void rcu_read_unlock(void)
 {
 	debug_yield_read();
-	barrier();
+	read_barrier();
 	debug_yield_read();
 	/*
 	 * Finish using rcu before decrementing the pointer.

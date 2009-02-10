@@ -74,6 +74,12 @@ static void switch_next_urcu_qparity(void)
 	urcu_gp_ctr ^= RCU_GP_CTR_BIT;
 }
 
+#ifdef DEBUG_FULL_MB
+static void force_mb_all_threads(void)
+{
+	mb();
+}
+#else
 static void force_mb_all_threads(void)
 {
 	struct reader_data *index;
@@ -102,6 +108,7 @@ static void force_mb_all_threads(void)
 	mb();	/* read sig_done before ending the barrier */
 	debug_yield_write();
 }
+#endif
 
 void wait_for_quiescent_state(void)
 {
@@ -217,6 +224,7 @@ void urcu_unregister_thread(void)
 	internal_urcu_unlock();
 }
 
+#ifndef DEBUG_FULL_MB
 void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	mb();
@@ -249,3 +257,4 @@ void __attribute__((destructor)) urcu_exit(void)
 	assert(act.sa_sigaction == sigurcu_handler);
 	free(reader_data);
 }
+#endif

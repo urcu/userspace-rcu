@@ -1,8 +1,10 @@
 
-CFLAGS=-Wall -O2
+CFLAGS=-Wall -O2 -g
+LDFLAGS=-lpthread
+
 #debug
 #CFLAGS=-Wall -g
-LDFLAGS=-lpthread
+#CFLAGS+=-DDEBUG_FULL_MB
 
 SRC_DEP=`echo $^ | sed 's/[^ ]*.h//g'`
 

@@ -40,6 +40,8 @@ struct test_array {
 	int a;
 };
 
+static int no_writer_delay;
+
 static struct test_array *test_rcu_pointer;
 
 static unsigned long duration;
@@ -86,6 +88,42 @@ void rcu_copy_mutex_unlock(void)
 	}
 }
 
+/*
+ * malloc/free are reusing memory areas too quickly, which does not let us
+ * test races appropriately. Use a large circular array for allocations.
+ * ARRAY_SIZE is larger than NR_WRITE, which insures we never run over our tail.
+ */
+#define ARRAY_SIZE (1048576 * NR_WRITE)
+#define ARRAY_POISON 0xDEADBEEF
+static int array_index;
+static struct test_array test_array[ARRAY_SIZE];
+
+static struct test_array *test_array_alloc(void)
+{
+	struct test_array *ret;
+	int index;
+
+	rcu_copy_mutex_lock();
+	index = array_index % ARRAY_SIZE;
+	assert(test_array[index].a == ARRAY_POISON ||
+		test_array[index].a == 0);
+	ret = &test_array[index];
+	array_index++;
+	if (array_index == ARRAY_SIZE)
+		array_index = 0;
+	rcu_copy_mutex_unlock();
+	return ret;
+}
+
+static void test_array_free(struct test_array *ptr)
+{
+	if (!ptr)
+		return;
+	rcu_copy_mutex_lock();
+	ptr->a = ARRAY_POISON;
+	rcu_copy_mutex_unlock();
+}
+
 void *thr_reader(void *arg)
 {
 	struct test_array *local_ptr;
@@ -98,6 +136,7 @@ void *thr_reader(void *arg)
 	for (;;) {
 		rcu_read_lock();
 		local_ptr = rcu_dereference(test_rcu_pointer);
+		debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		rcu_read_unlock();
@@ -121,7 +160,7 @@ void *thr_writer(void *arg)
 			"writer", pthread_self(), (unsigned long)gettid());
 
 	for (;;) {
-		new = malloc(sizeof(struct test_array));
+		new = test_array_alloc();
 		rcu_copy_mutex_lock();
 		old = test_rcu_pointer;
 		if (old)
@@ -132,10 +171,11 @@ void *thr_writer(void *arg)
 		/* can be done after unlock */
 		if (old)
 			old->a = 0;
-		free(old);
+		test_array_free(old);
 		if (!test_duration())
 			break;
-		usleep(1);
+		if (!no_writer_delay)
+			usleep(1);
 	}
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -149,6 +189,7 @@ void show_usage(int argc, char **argv)
 #ifdef DEBUG_YIELD
 	printf(" [-r] [-w] (yield reader and/or writer)");
 #endif
+	printf(" [-n] (disable writer delay)");
 	printf("\n");
 }
 
@@ -170,20 +211,23 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-#ifdef DEBUG_YIELD
 	for (i = 2; i < argc; i++) {
 		if (argv[i][0] != '-')
 			continue;
 		switch (argv[i][1]) {
+#ifdef DEBUG_YIELD
 		case 'r':
 			yield_active |= YIELD_READ;
 			break;
 		case 'w':
 			yield_active |= YIELD_WRITE;
 			break;
+#endif
+		case 'n':
+			no_writer_delay = 1;
+			break;
 		}
 	}
-#endif
 
 	printf("running test for %lu seconds.\n", duration);
 	start_time = time(NULL);
@@ -211,7 +255,7 @@ int main(int argc, char **argv)
 		if (err != 0)
 			exit(1);
 	}
-	free(test_rcu_pointer);
+	test_array_free(test_rcu_pointer);
 
 	return 0;
 }
