@@ -125,40 +125,69 @@ void wait_for_quiescent_state(void)
 		while (rcu_old_gp_ongoing(index->urcu_active_readers))
 			barrier();
 	}
-	/*
-	 * Locally : read *index->urcu_active_readers before freeing old
-	 * pointer.
-	 * Remote (reader threads) : Order urcu_qparity update and other
-	 * thread's quiescent state counter read.
-	 */
-	force_mb_all_threads();
-}
-
-static void switch_qparity(void)
-{
-	/* All threads should read qparity before accessing data structure. */
-	/* Write ptr before changing the qparity */
-	force_mb_all_threads();
-	debug_yield_write();
-	switch_next_urcu_qparity();
-	debug_yield_write();
-
-	/*
-	 * Wait for previous parity to be empty of readers.
-	 */
-	wait_for_quiescent_state();
 }
 
 void synchronize_rcu(void)
 {
+	/* All threads should read qparity before accessing data structure
+	 * where new ptr points to. */
+	/* Write new ptr before changing the qparity */
+	force_mb_all_threads();
 	debug_yield_write();
+
 	internal_urcu_lock();
 	debug_yield_write();
-	switch_qparity();
+
+	switch_next_urcu_qparity();	/* 0 -> 1 */
 	debug_yield_write();
-	switch_qparity();
+
+	/*
+	 * Must commit qparity update to memory before waiting for parity
+	 * 0 quiescent state. Failure to do so could result in the writer
+	 * waiting forever while new readers are always accessing data (no
+	 * progress).
+	 */
+	mb();
+
+	/*
+	 * Wait for previous parity to be empty of readers.
+	 */
+	wait_for_quiescent_state();	/* Wait readers in parity 0 */
 	debug_yield_write();
+
+	/*
+	 * Must finish waiting for quiescent state for parity 0 before
+	 * committing qparity update to memory. Failure to do so could result in
+	 * the writer waiting forever while new readers are always accessing
+	 * data (no progress).
+	 */
+	mb();
+
+	switch_next_urcu_qparity();	/* 1 -> 0 */
+	debug_yield_write();
+
+	/*
+	 * Must commit qparity update to memory before waiting for parity
+	 * 1 quiescent state. Failure to do so could result in the writer
+	 * waiting forever while new readers are always accessing data (no
+	 * progress).
+	 */
+	mb();
+
+	/*
+	 * Wait for previous parity to be empty of readers.
+	 */
+	wait_for_quiescent_state();	/* Wait readers in parity 1 */
+	debug_yield_write();
+
 	internal_urcu_unlock();
+	debug_yield_write();
+
+	/* All threads should finish using the data referred to by old ptr
+	 * before decrementing their urcu_active_readers count */
+	/* Finish waiting for reader threads before letting the old ptr being
+	 * freed. */
+	force_mb_all_threads();
 	debug_yield_write();
 }
 

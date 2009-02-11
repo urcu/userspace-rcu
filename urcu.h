@@ -207,10 +207,14 @@ static inline int rcu_old_gp_ongoing(long *value)
 	if (value == NULL)
 		return 0;
 	debug_yield_write();
+	/*
+	 * Make sure both tests below are done on the same version of *value
+	 * to insure consistency.
+	 */
 	v = ACCESS_ONCE(*value);
 	debug_yield_write();
 	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ ACCESS_ONCE(urcu_gp_ctr)) & RCU_GP_CTR_BIT);
+		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
 }
 
 static inline void rcu_read_lock(void)
