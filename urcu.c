@@ -92,7 +92,14 @@ static void force_mb_single_thread(pthread_t tid)
 {
 	assert(reader_data);
 	sig_done = 0;
-	smp_mb();	/* write sig_done before sending the signals */
+	/*
+	 * pthread_kill has a smp_mb(). But beware, we assume it performs
+	 * a cache flush on architectures with non-coherent cache. Let's play
+	 * safe and don't assume anything : we use smp_mc() to make sure the
+	 * cache flush is enforced.
+	 * smp_mb();    write sig_done before sending the signals
+	 */
+	smp_mc();	/* write sig_done before sending the signals */
 	pthread_kill(tid, SIGURCU);
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
@@ -115,9 +122,12 @@ static void force_mb_all_threads(void)
 	sig_done = 0;
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
-	 * a cache flush on architectures with non-coherent cache.
+	 * a cache flush on architectures with non-coherent cache. Let's play
+	 * safe and don't assume anything : we use smp_mc() to make sure the
+	 * cache flush is enforced.
 	 * smp_mb();    write sig_done before sending the signals
 	 */
+	smp_mc();	/* write sig_done before sending the signals */
 	for (index = reader_data; index < reader_data + num_readers; index++)
 		pthread_kill(index->tid, SIGURCU);
 	/*
