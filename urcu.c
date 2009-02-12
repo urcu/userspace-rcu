@@ -77,11 +77,32 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef DEBUG_FULL_MB
+static void force_mb_single_thread(pthread_t tid)
+{
+	smp_mb();
+}
+
 static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
 #else
+
+static void force_mb_single_thread(pthread_t tid)
+{
+	assert(reader_data);
+	sig_done = 0;
+	smp_mb();	/* write sig_done before sending the signals */
+	pthread_kill(tid, SIGURCU);
+	/*
+	 * Wait for sighandler (and thus mb()) to execute on every thread.
+	 * BUSY-LOOP.
+	 */
+	while (sig_done < 1)
+		smp_rmb();	/* ensure we re-read sig-done */
+	smp_mb();	/* read sig_done before ending the barrier */
+}
+
 static void force_mb_all_threads(void)
 {
 	struct reader_data *index;
@@ -100,7 +121,7 @@ static void force_mb_all_threads(void)
 	 * BUSY-LOOP.
 	 */
 	while (sig_done < num_readers)
-		barrier();
+		smp_rmb();	/* ensure we re-read sig-done */
 	smp_mb();	/* read sig_done before ending the barrier */
 }
 #endif
@@ -111,14 +132,21 @@ void wait_for_quiescent_state(void)
 
 	if (!reader_data)
 		return;
-	/* Wait for each thread urcu_active_readers count to become 0.
+	/*
+	 * Wait for each thread urcu_active_readers count to become 0.
 	 */
 	for (index = reader_data; index < reader_data + num_readers; index++) {
+		int wait_loops = 0;
 		/*
-		 * BUSY-LOOP.
+		 * BUSY-LOOP. Force the reader thread to commit its
+		 * urcu_active_readers update to memory if we wait for too long.
 		 */
-		while (rcu_old_gp_ongoing(index->urcu_active_readers))
-			barrier();
+		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
+			if (wait_loops++ == KICK_READER_LOOPS) {
+				force_mb_single_thread(index->tid);
+				wait_loops = 0;
+			}
+		}
 	}
 }
 
@@ -243,6 +271,11 @@ void urcu_unregister_thread(void)
 #ifndef DEBUG_FULL_MB
 void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
+	/*
+	 * Executing this smp_mb() is the only purpose of this signal handler.
+	 * It punctually promotes barrier() into smp_mb() on every thread it is
+	 * executed on.
+	 */
 	smp_mb();
 	atomic_inc(&sig_done);
 }

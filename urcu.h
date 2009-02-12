@@ -130,6 +130,13 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 
 #define SIGURCU SIGUSR1
 
+/*
+ * If a reader is really non-cooperative and refuses to commit its
+ * urcu_active_readers count to memory (there is no barrier in the reader
+ * per-se), kick it after a few loops waiting for it.
+ */
+#define KICK_READER_LOOPS 10000
+
 #ifdef DEBUG_YIELD
 #include <sched.h>
 #include <time.h>
@@ -234,6 +241,8 @@ static inline void rcu_read_lock(void)
 
 	tmp = urcu_active_readers;
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
+	/* The data dependency "read urcu_gp_ctr, write urcu_active_readers",
+	 * serializes those two memory operations. */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
 		urcu_active_readers = urcu_gp_ctr;
 	else
