@@ -152,12 +152,13 @@ void wait_for_quiescent_state(void)
 
 void synchronize_rcu(void)
 {
+	internal_urcu_lock();
+
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. */
+	 * where new ptr points to. Must be done within internal_urcu_lock
+	 * because it iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
 	force_mb_all_threads();
-
-	internal_urcu_lock();
 
 	switch_next_urcu_qparity();	/* 0 -> 1 */
 
@@ -197,13 +198,12 @@ void synchronize_rcu(void)
 	 */
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
 
-	internal_urcu_unlock();
-
-	/* All threads should finish using the data referred to by old ptr
-	 * before decrementing their urcu_active_readers count */
 	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. */
+	 * freed. Must be done within internal_urcu_lock because it iterates on
+	 * reader threads. */
 	force_mb_all_threads();
+
+	internal_urcu_unlock();
 }
 
 void urcu_add_reader(pthread_t id)
