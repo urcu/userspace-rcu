@@ -219,13 +219,11 @@ static inline int rcu_old_gp_ongoing(long *value)
 
 	if (value == NULL)
 		return 0;
-	debug_yield_write();
 	/*
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
 	v = ACCESS_ONCE(*value);
-	debug_yield_write();
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
 }
@@ -234,34 +232,27 @@ static inline void rcu_read_lock(void)
 {
 	long tmp;
 
-	debug_yield_read();
 	tmp = urcu_active_readers;
-	debug_yield_read();
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
 		urcu_active_readers = urcu_gp_ctr;
 	else
 		urcu_active_readers = tmp + RCU_GP_COUNT;
-	debug_yield_read();
 	/*
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	read_barrier();
-	debug_yield_read();
 }
 
 static inline void rcu_read_unlock(void)
 {
-	debug_yield_read();
 	read_barrier();
-	debug_yield_read();
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	urcu_active_readers -= RCU_GP_COUNT;
-	debug_yield_read();
 }
 
 /**
@@ -302,7 +293,6 @@ extern void synchronize_rcu(void);
 #define urcu_publish_content(p, v) \
 	({ \
 		void *oldptr; \
-		debug_yield_write(); \
 		oldptr = rcu_xchg_pointer(p, v); \
 		synchronize_rcu(); \
 		oldptr; \

@@ -1,0 +1,139 @@
+diff --git a/urcu.c b/urcu.c
+index 162ce00..018e09b 100644
+--- a/urcu.c
++++ b/urcu.c
+@@ -91,24 +91,17 @@ static void force_mb_all_threads(void)
+ 	 */
+ 	if (!reader_data)
+ 		return;
+-	debug_yield_write();
+ 	sig_done = 0;
+-	debug_yield_write();
+ 	smp_mb();	/* write sig_done before sending the signals */
+-	debug_yield_write();
+-	for (index = reader_data; index < reader_data + num_readers; index++) {
++	for (index = reader_data; index < reader_data + num_readers; index++)
+ 		pthread_kill(index->tid, SIGURCU);
+-		debug_yield_write();
+-	}
+ 	/*
+ 	 * Wait for sighandler (and thus mb()) to execute on every thread.
+ 	 * BUSY-LOOP.
+ 	 */
+ 	while (sig_done < num_readers)
+ 		barrier();
+-	debug_yield_write();
+ 	smp_mb();	/* read sig_done before ending the barrier */
+-	debug_yield_write();
+ }
+ #endif
+ 
+@@ -135,13 +128,10 @@ void synchronize_rcu(void)
+ 	 * where new ptr points to. */
+ 	/* Write new ptr before changing the qparity */
+ 	force_mb_all_threads();
+-	debug_yield_write();
+ 
+ 	internal_urcu_lock();
+-	debug_yield_write();
+ 
+ 	switch_next_urcu_qparity();	/* 0 -> 1 */
+-	debug_yield_write();
+ 
+ 	/*
+ 	 * Must commit qparity update to memory before waiting for parity
+@@ -155,7 +145,6 @@ void synchronize_rcu(void)
+ 	 * Wait for previous parity to be empty of readers.
+ 	 */
+ 	wait_for_quiescent_state();	/* Wait readers in parity 0 */
+-	debug_yield_write();
+ 
+ 	/*
+ 	 * Must finish waiting for quiescent state for parity 0 before
+@@ -166,7 +155,6 @@ void synchronize_rcu(void)
+ 	smp_mb();
+ 
+ 	switch_next_urcu_qparity();	/* 1 -> 0 */
+-	debug_yield_write();
+ 
+ 	/*
+ 	 * Must commit qparity update to memory before waiting for parity
+@@ -180,17 +168,14 @@ void synchronize_rcu(void)
+ 	 * Wait for previous parity to be empty of readers.
+ 	 */
+ 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
+-	debug_yield_write();
+ 
+ 	internal_urcu_unlock();
+-	debug_yield_write();
+ 
+ 	/* All threads should finish using the data referred to by old ptr
+ 	 * before decrementing their urcu_active_readers count */
+ 	/* Finish waiting for reader threads before letting the old ptr being
+ 	 * freed. */
+ 	force_mb_all_threads();
+-	debug_yield_write();
+ }
+ 
+ void urcu_add_reader(pthread_t id)
+diff --git a/urcu.h b/urcu.h
+index 92b31df..1b663c7 100644
+--- a/urcu.h
++++ b/urcu.h
+@@ -219,13 +219,11 @@ static inline int rcu_old_gp_ongoing(long *value)
+ 
+ 	if (value == NULL)
+ 		return 0;
+-	debug_yield_write();
+ 	/*
+ 	 * Make sure both tests below are done on the same version of *value
+ 	 * to insure consistency.
+ 	 */
+ 	v = ACCESS_ONCE(*value);
+-	debug_yield_write();
+ 	return (v & RCU_GP_CTR_NEST_MASK) &&
+ 		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
+ }
+@@ -234,34 +232,27 @@ static inline void rcu_read_lock(void)
+ {
+ 	long tmp;
+ 
+-	debug_yield_read();
+ 	tmp = urcu_active_readers;
+-	debug_yield_read();
+ 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
+ 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
+ 		urcu_active_readers = urcu_gp_ctr;
+ 	else
+ 		urcu_active_readers = tmp + RCU_GP_COUNT;
+-	debug_yield_read();
+ 	/*
+ 	 * Increment active readers count before accessing the pointer.
+ 	 * See force_mb_all_threads().
+ 	 */
+ 	read_barrier();
+-	debug_yield_read();
+ }
+ 
+ static inline void rcu_read_unlock(void)
+ {
+-	debug_yield_read();
+ 	read_barrier();
+-	debug_yield_read();
+ 	/*
+ 	 * Finish using rcu before decrementing the pointer.
+ 	 * See force_mb_all_threads().
+ 	 */
+ 	urcu_active_readers -= RCU_GP_COUNT;
+-	debug_yield_read();
+ }
+ 
+ /**
+@@ -302,7 +293,6 @@ extern void synchronize_rcu(void);
+ #define urcu_publish_content(p, v) \
+ 	({ \
+ 		void *oldptr; \
+-		debug_yield_write(); \
+ 		oldptr = rcu_xchg_pointer(p, v); \
+ 		synchronize_rcu(); \
+ 		oldptr; \

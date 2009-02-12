@@ -91,24 +91,17 @@ static void force_mb_all_threads(void)
 	 */
 	if (!reader_data)
 		return;
-	debug_yield_write();
 	sig_done = 0;
-	debug_yield_write();
 	smp_mb();	/* write sig_done before sending the signals */
-	debug_yield_write();
-	for (index = reader_data; index < reader_data + num_readers; index++) {
+	for (index = reader_data; index < reader_data + num_readers; index++)
 		pthread_kill(index->tid, SIGURCU);
-		debug_yield_write();
-	}
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
 	while (sig_done < num_readers)
 		barrier();
-	debug_yield_write();
 	smp_mb();	/* read sig_done before ending the barrier */
-	debug_yield_write();
 }
 #endif
 
@@ -135,13 +128,10 @@ void synchronize_rcu(void)
 	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
 	force_mb_all_threads();
-	debug_yield_write();
 
 	internal_urcu_lock();
-	debug_yield_write();
 
 	switch_next_urcu_qparity();	/* 0 -> 1 */
-	debug_yield_write();
 
 	/*
 	 * Must commit qparity update to memory before waiting for parity
@@ -155,7 +145,6 @@ void synchronize_rcu(void)
 	 * Wait for previous parity to be empty of readers.
 	 */
 	wait_for_quiescent_state();	/* Wait readers in parity 0 */
-	debug_yield_write();
 
 	/*
 	 * Must finish waiting for quiescent state for parity 0 before
@@ -166,7 +155,6 @@ void synchronize_rcu(void)
 	smp_mb();
 
 	switch_next_urcu_qparity();	/* 1 -> 0 */
-	debug_yield_write();
 
 	/*
 	 * Must commit qparity update to memory before waiting for parity
@@ -180,17 +168,14 @@ void synchronize_rcu(void)
 	 * Wait for previous parity to be empty of readers.
 	 */
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
-	debug_yield_write();
 
 	internal_urcu_unlock();
-	debug_yield_write();
 
 	/* All threads should finish using the data referred to by old ptr
 	 * before decrementing their urcu_active_readers count */
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. */
 	force_mb_all_threads();
-	debug_yield_write();
 }
 
 void urcu_add_reader(pthread_t id)
