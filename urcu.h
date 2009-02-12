@@ -376,7 +376,7 @@ static inline void rcu_read_unlock(void)
 		    ((v) != NULL)) \
 			wmb(); \
 		(p) = (v); \
-		smp_wmc();
+		smp_wmc(); \
 	})
 
 #define rcu_xchg_pointer(p, v) \
