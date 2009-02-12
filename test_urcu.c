@@ -65,6 +65,9 @@ static int test_duration(void)
 #define NR_READ 10
 #define NR_WRITE 9
 
+static unsigned long long __thread nr_writes;
+static unsigned long long __thread nr_reads;
+
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void rcu_copy_mutex_lock(void)
@@ -124,8 +127,9 @@ static void test_array_free(struct test_array *ptr)
 	rcu_copy_mutex_unlock();
 }
 
-void *thr_reader(void *arg)
+void *thr_reader(void *_count)
 {
+	unsigned long long *count = _count;
 	struct test_array *local_ptr;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -140,20 +144,23 @@ void *thr_reader(void *arg)
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		rcu_read_unlock();
+		nr_reads++;
 		if (!test_duration())
 			break;
 	}
 
 	urcu_unregister_thread();
 
+	*count = nr_reads;
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	return ((void*)1);
 
 }
 
-void *thr_writer(void *arg)
+void *thr_writer(void *_count)
 {
+	unsigned long long *count = _count;
 	struct test_array *new, *old;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -172,6 +179,7 @@ void *thr_writer(void *arg)
 		if (old)
 			old->a = 0;
 		test_array_free(old);
+		nr_writes++;
 		if (!test_duration())
 			break;
 		if (!no_writer_delay)
@@ -180,6 +188,7 @@ void *thr_writer(void *arg)
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
+	*count = nr_writes;
 	return ((void*)2);
 }
 
@@ -198,6 +207,8 @@ int main(int argc, char **argv)
 	int err;
 	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
 	void *tret;
+	unsigned long long count_reader[NR_READ], count_writer[NR_WRITE];
+	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i;
 
 	if (argc < 2) {
@@ -235,12 +246,14 @@ int main(int argc, char **argv)
 			"main", pthread_self(), (unsigned long)gettid());
 
 	for (i = 0; i < NR_READ; i++) {
-		err = pthread_create(&tid_reader[i], NULL, thr_reader, NULL);
+		err = pthread_create(&tid_reader[i], NULL, thr_reader,
+				     &count_reader[i]);
 		if (err != 0)
 			exit(1);
 	}
 	for (i = 0; i < NR_WRITE; i++) {
-		err = pthread_create(&tid_writer[i], NULL, thr_writer, NULL);
+		err = pthread_create(&tid_writer[i], NULL, thr_writer,
+				     &count_writer[i]);
 		if (err != 0)
 			exit(1);
 	}
@@ -249,12 +262,16 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_reader[i], &tret);
 		if (err != 0)
 			exit(1);
+		tot_reads += count_reader[i];
 	}
 	for (i = 0; i < NR_WRITE; i++) {
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
+		tot_writes += count_writer[i];
 	}
+	printf("total number of reads : %llu, writes %llu\n", tot_reads,
+	       tot_writes);
 	test_array_free(test_rcu_pointer);
 
 	return 0;
