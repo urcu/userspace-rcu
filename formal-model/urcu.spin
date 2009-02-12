@@ -124,9 +124,13 @@ proctype urcu_reader()
 				break;
 			:: tmp < 4 && reader_progress[tmp] != 0 ->
 				tmp = tmp + 1;
-			:: tmp >= 4 ->
+			:: tmp >= 4 &&
+			   reader_progress[0] == reader_progress[3] ->
 				done = 1;
 				break;
+			:: tmp >= 4 &&
+			   reader_progress[0] != reader_progress[3] ->
+			   	break;
 			od;
 			do
 			:: tmp < 4 && reader_progress[tmp] == 0 ->
