@@ -159,6 +159,8 @@ void wait_for_quiescent_state(void)
 			if (wait_loops++ == KICK_READER_LOOPS) {
 				force_mb_single_thread(index->tid);
 				wait_loops = 0;
+			} else {
+				cpu_relax();
 			}
 		}
 	}
