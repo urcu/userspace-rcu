@@ -26,10 +26,23 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
+/* Assume P4 or newer */
+#define CONFIG_HAS_FENCE 1
+
 /* x86 32/64 specific */
+#ifdef CONFIG_HAS_FENCE
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
-#define wmb()   asm volatile("sfence" ::: "memory")
+#define wmb()   asm volatile("sfence"::: "memory")
+#else
+/*
+ * Some non-Intel clones support out of order store. wmb() ceases to be a
+ * nop for these.
+ */
+#define mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
+#define rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")
+#define wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
+#endif
 
 /* Assume SMP machine, given we don't have this information */
 #define CONFIG_SMP 1
