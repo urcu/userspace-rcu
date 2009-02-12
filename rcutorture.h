@@ -112,7 +112,6 @@ void *rcu_read_perf_test(void *arg)
 {
 	int i;
 	int me = (long)arg;
-	cpu_set_t mask;
 	long long n_reads_local = 0;
 
 	urcu_register_thread();
@@ -150,6 +149,7 @@ void *rcu_update_perf_test(void *arg)
 		n_updates_local++;
 	}
 	__get_thread_var(n_updates_pt) += n_updates_local;
+	return NULL;
 }
 
 void perftestinit(void)
@@ -242,7 +242,7 @@ struct rcu_stress {
 	int mbtest;
 };
 
-struct rcu_stress rcu_stress_array[RCU_STRESS_PIPE_LEN] = { 0 };
+struct rcu_stress rcu_stress_array[RCU_STRESS_PIPE_LEN] = { { 0 } };
 struct rcu_stress *rcu_stress_current;
 int rcu_stress_idx = 0;
 
@@ -314,19 +314,18 @@ void *rcu_update_stress_test(void *arg)
 		synchronize_rcu();
 		n_updates++;
 	}
+	return NULL;
 }
 
 void *rcu_fake_update_stress_test(void *arg)
 {
-	int i;
-	struct rcu_stress *p;
-
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
 		synchronize_rcu();
 		poll(NULL, 0, 1);
 	}
+	return NULL;
 }
 
 void stresstest(int nreaders)
@@ -360,7 +359,7 @@ void stresstest(int nreaders)
 	wait_all_threads();
 	for_each_thread(t)
 		n_reads += per_thread(n_reads_pt, t);
-	printf("n_reads: %lld  n_updates: %ld  n_mberror: %ld\n",
+	printf("n_reads: %lld  n_updates: %ld  n_mberror: %d\n",
 	       n_reads, n_updates, n_mberror);
 	printf("rcu_stress_count:");
 	for (i = 0; i <= RCU_STRESS_PIPE_LEN; i++) {

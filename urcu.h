@@ -244,7 +244,7 @@ static inline void rcu_read_lock(void)
 	/* The data dependency "read urcu_gp_ctr, write urcu_active_readers",
 	 * serializes those two memory operations. */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
-		urcu_active_readers = urcu_gp_ctr;
+		urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr);
 	else
 		urcu_active_readers = tmp + RCU_GP_COUNT;
 	/*
