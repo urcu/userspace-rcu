@@ -26,11 +26,37 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
+/*
+ * Assume the architecture has coherent caches. Blackfin will want this unset.
+ */
+#define CONFIG_HAVE_MEM_COHERENCY 1
+
 /* Assume P4 or newer */
-#define CONFIG_HAS_FENCE 1
+#define CONFIG_HAVE_FENCE 1
+
+/* Assume SMP machine, given we don't have this information */
+#define CONFIG_SMP 1
+
+
+#ifdef CONFIG_HAVE_MEM_COHERENCY
+/*
+ * Caches are coherent, no need to flush them.
+ */
+#define mc()	barrier()
+#define rmc()	barrier()
+#define wmc()	barrier()
+#else
+#error "The architecture must create its own cache flush primitives"
+#define mc()	arch_cache_flush()
+#define rmc()	arch_cache_flush_read()
+#define wmc()	arch_cache_flush_write()
+#endif
+
+
+#ifdef CONFIG_HAVE_MEM_COHERENCY
 
 /* x86 32/64 specific */
-#ifdef CONFIG_HAS_FENCE
+#ifdef CONFIG_HAVE_FENCE
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence"::: "memory")
@@ -44,18 +70,44 @@
 #define wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
 #endif
 
-/* Assume SMP machine, given we don't have this information */
-#define CONFIG_SMP 1
+#else /* !CONFIG_HAVE_MEM_COHERENCY */
+
+/*
+ * Without cache coherency, the memory barriers become cache flushes.
+ */
+#define mb()    mc()
+#define rmb()   rmc()
+#define wmb()   wmc()
+
+#endif /* !CONFIG_HAVE_MEM_COHERENCY */
+
 
 #ifdef CONFIG_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()
+#define smp_mc()	mc()
+#define smp_rmc()	rmc()
+#define smp_wmc()	wmc()
 #else
 #define smp_mb()	barrier()
 #define smp_rmb()	barrier()
 #define smp_wmb()	barrier()
+#define smp_mc()	barrier()
+#define smp_rmc()	barrier()
+#define smp_wmc()	barrier()
 #endif
+
+/* REP NOP (PAUSE) is a good thing to insert into busy-wait loops. */
+static inline void rep_nop(void)
+{
+	asm volatile("rep; nop" ::: "memory");
+}
+
+static inline void cpu_relax(void)
+{
+	rep_nop();
+}
 
 static inline void atomic_inc(int *v)
 {
@@ -75,6 +127,7 @@ struct __xchg_dummy {
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
+ * x is considered local, ptr is considered remote.
  */
 static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 				   int size)
@@ -105,6 +158,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 			     : "memory");
 		break;
 	}
+	smp_wmc();
 	return x;
 }
 
@@ -125,6 +179,25 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
  */
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
+/*
+ * Load a data from remote memory, doing a cache flush if required.
+ */
+#define LOAD_REMOTE(p)	       ({ \
+				smp_rmc(); \
+				typeof(p) _________p1 = ACCESS_ONCE(p); \
+				(_________p1); \
+				})
+
+/*
+ * Store v into x, where x is located in remote memory. Performs the required
+ * cache flush after writing.
+ */
+#define STORE_REMOTE(x, v) \
+	do { \
+		(x) = (v); \
+		smp_wmc; \
+	} while (0)
+
 /**
  * rcu_dereference - fetch an RCU-protected pointer in an
  * RCU read-side critical section.  This pointer may later
@@ -136,10 +209,12 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
  */
 
 #define rcu_dereference(p)     ({ \
-				typeof(p) _________p1 = ACCESS_ONCE(p); \
+				typeof(p) _________p1 = LOAD_REMOTE(p); \
 				smp_read_barrier_depends(); \
 				(_________p1); \
 				})
+
+
 
 #define SIGURCU SIGUSR1
 
@@ -204,12 +279,12 @@ static inline void debug_yield_init(void)
 #endif
 
 #ifdef DEBUG_FULL_MB
-static inline void read_barrier()
+static inline void reader_barrier()
 {
 	smp_mb();
 }
 #else
-static inline void read_barrier()
+static inline void reader_barrier()
 {
 	barrier();
 }
@@ -243,7 +318,7 @@ static inline int rcu_old_gp_ongoing(long *value)
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = ACCESS_ONCE(*value);
+	v = LOAD_REMOTE(*value);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
 }
@@ -254,8 +329,13 @@ static inline void rcu_read_lock(void)
 
 	tmp = urcu_active_readers;
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
-	/* The data dependency "read urcu_gp_ctr, write urcu_active_readers",
-	 * serializes those two memory operations. */
+	/*
+	 * The data dependency "read urcu_gp_ctr, write urcu_active_readers",
+	 * serializes those two memory operations. We are not using STORE_REMOTE
+	 * and LOAD_REMOTE here (although we should) because the writer will
+	 * wake us up with a signal which does a flush in its handler to perform
+	 * urcu_gp_ctr re-read and urcu_active_readers commit to main memory.
+	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
 		urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr);
 	else
@@ -264,12 +344,12 @@ static inline void rcu_read_lock(void)
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
 	 */
-	read_barrier();
+	reader_barrier();
 }
 
 static inline void rcu_read_unlock(void)
 {
-	read_barrier();
+	reader_barrier();
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
@@ -296,6 +376,7 @@ static inline void rcu_read_unlock(void)
 		    ((v) != NULL)) \
 			wmb(); \
 		(p) = (v); \
+		smp_wmc();
 	})
 
 #define rcu_xchg_pointer(p, v) \

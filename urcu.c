@@ -98,8 +98,8 @@ static void force_mb_single_thread(pthread_t tid)
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (sig_done < 1)
-		smp_rmb();	/* ensure we re-read sig-done */
+	while (LOAD_REMOTE(sig_done) < 1)
+		cpu_relax();
 	smp_mb();	/* read sig_done before ending the barrier */
 }
 
@@ -113,15 +113,19 @@ static void force_mb_all_threads(void)
 	if (!reader_data)
 		return;
 	sig_done = 0;
-	smp_mb();	/* write sig_done before sending the signals */
+	/*
+	 * pthread_kill has a smp_mb(). But beware, we assume it performs
+	 * a cache flush on architectures with non-coherent cache.
+	 * smp_mb();    write sig_done before sending the signals
+	 */
 	for (index = reader_data; index < reader_data + num_readers; index++)
 		pthread_kill(index->tid, SIGURCU);
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (sig_done < num_readers)
-		smp_rmb();	/* ensure we re-read sig-done */
+	while (LOAD_REMOTE(sig_done) < num_readers)
+		cpu_relax();
 	smp_mb();	/* read sig_done before ending the barrier */
 }
 #endif
@@ -168,7 +172,7 @@ void synchronize_rcu(void)
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
 	 */
-	smp_mb();
+	smp_mc();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -181,7 +185,7 @@ void synchronize_rcu(void)
 	 * the writer waiting forever while new readers are always accessing
 	 * data (no progress).
 	 */
-	smp_mb();
+	smp_mc();
 
 	switch_next_urcu_qparity();	/* 1 -> 0 */
 
@@ -191,7 +195,7 @@ void synchronize_rcu(void)
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
 	 */
-	smp_mb();
+	smp_mc();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
