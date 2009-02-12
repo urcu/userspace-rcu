@@ -31,6 +31,19 @@
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence" ::: "memory")
 
+/* Assume SMP machine, given we don't have this information */
+#define CONFIG_SMP 1
+
+#ifdef CONFIG_SMP
+#define smp_mb()	mb()
+#define smp_rmb()	rmb()
+#define smp_wmb()	wmb()
+#else
+#define smp_mb()	barrier()
+#define smp_rmb()	barrier()
+#define smp_wmb()	barrier()
+#endif
+
 static inline void atomic_inc(int *v)
 {
 	asm volatile("lock; incl %0"
@@ -173,7 +186,7 @@ static inline void debug_yield_init(void)
 #ifdef DEBUG_FULL_MB
 static inline void read_barrier()
 {
-	mb();
+	smp_mb();
 }
 #else
 static inline void read_barrier()

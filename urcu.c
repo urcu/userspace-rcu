@@ -43,7 +43,9 @@ unsigned int __thread rand_yield;
 
 static struct reader_data *reader_data;
 static int num_readers, alloc_readers;
+#ifndef DEBUG_FULL_MB
 static int sig_done;
+#endif
 
 void internal_urcu_lock(void)
 {
@@ -77,14 +79,14 @@ static void switch_next_urcu_qparity(void)
 #ifdef DEBUG_FULL_MB
 static void force_mb_all_threads(void)
 {
-	mb();
+	smp_mb();
 }
 #else
 static void force_mb_all_threads(void)
 {
 	struct reader_data *index;
 	/*
-	 * Ask for each threads to execute a mb() so we can consider the
+	 * Ask for each threads to execute a smp_mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
 	if (!reader_data)
@@ -92,7 +94,7 @@ static void force_mb_all_threads(void)
 	debug_yield_write();
 	sig_done = 0;
 	debug_yield_write();
-	mb();	/* write sig_done before sending the signals */
+	smp_mb();	/* write sig_done before sending the signals */
 	debug_yield_write();
 	for (index = reader_data; index < reader_data + num_readers; index++) {
 		pthread_kill(index->tid, SIGURCU);
@@ -105,7 +107,7 @@ static void force_mb_all_threads(void)
 	while (sig_done < num_readers)
 		barrier();
 	debug_yield_write();
-	mb();	/* read sig_done before ending the barrier */
+	smp_mb();	/* read sig_done before ending the barrier */
 	debug_yield_write();
 }
 #endif
@@ -147,7 +149,7 @@ void synchronize_rcu(void)
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
 	 */
-	mb();
+	smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -161,7 +163,7 @@ void synchronize_rcu(void)
 	 * the writer waiting forever while new readers are always accessing
 	 * data (no progress).
 	 */
-	mb();
+	smp_mb();
 
 	switch_next_urcu_qparity();	/* 1 -> 0 */
 	debug_yield_write();
@@ -172,7 +174,7 @@ void synchronize_rcu(void)
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
 	 */
-	mb();
+	smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -256,7 +258,7 @@ void urcu_unregister_thread(void)
 #ifndef DEBUG_FULL_MB
 void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
-	mb();
+	smp_mb();
 	atomic_inc(&sig_done);
 }
 
