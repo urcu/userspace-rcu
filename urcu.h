@@ -180,19 +180,19 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
 /*
- * Load a data from remote memory, doing a cache flush if required.
+ * Load a data from shared memory, doing a cache flush if required.
  */
-#define LOAD_REMOTE(p)	       ({ \
+#define LOAD_SHARED(p)	       ({ \
 				smp_rmc(); \
 				typeof(p) _________p1 = ACCESS_ONCE(p); \
 				(_________p1); \
 				})
 
 /*
- * Store v into x, where x is located in remote memory. Performs the required
+ * Store v into x, where x is located in shared memory. Performs the required
  * cache flush after writing.
  */
-#define STORE_REMOTE(x, v) \
+#define STORE_SHARED(x, v) \
 	do { \
 		(x) = (v); \
 		smp_wmc; \
@@ -209,7 +209,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
  */
 
 #define rcu_dereference(p)     ({ \
-				typeof(p) _________p1 = LOAD_REMOTE(p); \
+				typeof(p) _________p1 = LOAD_SHARED(p); \
 				smp_read_barrier_depends(); \
 				(_________p1); \
 				})
@@ -318,7 +318,7 @@ static inline int rcu_old_gp_ongoing(long *value)
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = LOAD_REMOTE(*value);
+	v = LOAD_SHARED(*value);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
 }
@@ -331,8 +331,8 @@ static inline void rcu_read_lock(void)
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
 	/*
 	 * The data dependency "read urcu_gp_ctr, write urcu_active_readers",
-	 * serializes those two memory operations. We are not using STORE_REMOTE
-	 * and LOAD_REMOTE here (although we should) because the writer will
+	 * serializes those two memory operations. We are not using STORE_SHARED
+	 * and LOAD_SHARED here (although we should) because the writer will
 	 * wake us up with a signal which does a flush in its handler to perform
 	 * urcu_gp_ctr re-read and urcu_active_readers commit to main memory.
 	 */

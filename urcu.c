@@ -105,7 +105,7 @@ static void force_mb_single_thread(pthread_t tid)
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (LOAD_REMOTE(sig_done) < 1)
+	while (LOAD_SHARED(sig_done) < 1)
 		cpu_relax();
 	smp_mb();	/* read sig_done before ending the barrier */
 }
@@ -134,7 +134,7 @@ static void force_mb_all_threads(void)
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (LOAD_REMOTE(sig_done) < num_readers)
+	while (LOAD_SHARED(sig_done) < num_readers)
 		cpu_relax();
 	smp_mb();	/* read sig_done before ending the barrier */
 }
