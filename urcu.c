@@ -23,9 +23,14 @@ pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Global grace period counter.
  * Contains the current RCU_GP_CTR_BIT.
  * Also has a RCU_GP_CTR_BIT of 1, to accelerate the reader fast path.
+ * Written to only by writer with mutex taken. Read by both writer and readers.
  */
 long urcu_gp_ctr = RCU_GP_COUNT;
 
+/*
+ * Written to only by each individual reader. Read by both the reader and the
+ * writers.
+ */
 long __thread urcu_active_readers;
 
 /* Thread IDs of registered readers */
@@ -73,7 +78,7 @@ void internal_urcu_unlock(void)
  */
 static void switch_next_urcu_qparity(void)
 {
-	urcu_gp_ctr ^= RCU_GP_CTR_BIT;
+	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr ^ RCU_GP_CTR_BIT);
 }
 
 #ifdef DEBUG_FULL_MB
@@ -183,8 +188,8 @@ void synchronize_rcu(void)
 	 * 0 quiescent state. Failure to do so could result in the writer
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
-	smp_mc();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -196,8 +201,8 @@ void synchronize_rcu(void)
 	 * committing qparity update to memory. Failure to do so could result in
 	 * the writer waiting forever while new readers are always accessing
 	 * data (no progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
-	smp_mc();
 
 	switch_next_urcu_qparity();	/* 1 -> 0 */
 
@@ -206,8 +211,8 @@ void synchronize_rcu(void)
 	 * 1 quiescent state. Failure to do so could result in the writer
 	 * waiting forever while new readers are always accessing data (no
 	 * progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
-	smp_mc();
 
 	/*
 	 * Wait for previous parity to be empty of readers.

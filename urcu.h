@@ -180,13 +180,27 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
 /*
+ * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
+ */
+#define _LOAD_SHARED(p)	       ACCESS_ONCE(p)
+
+/*
  * Load a data from shared memory, doing a cache flush if required.
  */
-#define LOAD_SHARED(p)	       ({ \
-				smp_rmc(); \
-				typeof(p) _________p1 = ACCESS_ONCE(p); \
-				(_________p1); \
-				})
+#define LOAD_SHARED(p) \
+	({ \
+		smp_rmc(); \
+		_LOAD_SHARED(p); \
+	})
+
+
+/*
+ * Identify a shared store. A smp_wmc() or smp_mc() should follow the store.
+ */
+#define _STORE_SHARED(x, v) \
+	do { \
+		(x) = (v); \
+	} while (0)
 
 /*
  * Store v into x, where x is located in shared memory. Performs the required
@@ -194,8 +208,8 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
  */
 #define STORE_SHARED(x, v) \
 	do { \
-		(x) = (v); \
-		smp_wmc; \
+		_STORE_SHARED(x, v); \
+		smp_wmc(); \
 	} while (0)
 
 /**
@@ -213,8 +227,6 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
 				smp_read_barrier_depends(); \
 				(_________p1); \
 				})
-
-
 
 #define SIGURCU SIGUSR1
 
@@ -331,15 +343,15 @@ static inline void rcu_read_lock(void)
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
 	/*
 	 * The data dependency "read urcu_gp_ctr, write urcu_active_readers",
-	 * serializes those two memory operations. We are not using STORE_SHARED
-	 * and LOAD_SHARED here (although we should) because the writer will
-	 * wake us up with a signal which does a flush in its handler to perform
-	 * urcu_gp_ctr re-read and urcu_active_readers commit to main memory.
+	 * serializes those two memory operations. The memory barrier in the
+	 * signal handler ensures we receive the proper memory commit barriers
+	 * required by _STORE_SHARED and _LOAD_SHARED whenever communication
+	 * with the writer is needed.
 	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
-		urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr);
+		_STORE_SHARED(urcu_active_readers, _LOAD_SHARED(urcu_gp_ctr));
 	else
-		urcu_active_readers = tmp + RCU_GP_COUNT;
+		_STORE_SHARED(urcu_active_readers, tmp + RCU_GP_COUNT);
 	/*
 	 * Increment active readers count before accessing the pointer.
 	 * See force_mb_all_threads().
@@ -354,7 +366,7 @@ static inline void rcu_read_unlock(void)
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
-	urcu_active_readers -= RCU_GP_COUNT;
+	_STORE_SHARED(urcu_active_readers, urcu_active_readers - RCU_GP_COUNT);
 }
 
 /**
@@ -375,8 +387,7 @@ static inline void rcu_read_unlock(void)
 		if (!__builtin_constant_p(v) || \
 		    ((v) != NULL)) \
 			wmb(); \
-		(p) = (v); \
-		smp_wmc(); \
+		STORE_SHARED(p, v); \
 	})
 
 #define rcu_xchg_pointer(p, v) \
