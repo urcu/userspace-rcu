@@ -187,10 +187,7 @@ proctype urcu_reader()
 
 proctype urcu_updater()
 {
-	/* Removal statement, e.g., list_del_rcu(). */
-	removed = 1;
-
-	/* synchronize_rcu(), first counter flip. */
+	/* prior synchronize_rcu(), second counter flip. */
 	need_mb = 1;
 	do
 	:: need_mb == 1 -> skip;
@@ -204,15 +201,13 @@ proctype urcu_updater()
 	od;
 	do
 	:: 1 ->
-		printf("urcu_gp_ctr=%x urcu_active_readers=%x\n", urcu_gp_ctr, urcu_active_readers);
-		printf("urcu_gp_ctr&0x7f=%x urcu_active_readers&0x7f=%x\n", urcu_gp_ctr & ~RCU_GP_CTR_NEST_MASK, urcu_active_readers & ~RCU_GP_CTR_NEST_MASK);
 		if
 		:: (urcu_active_readers & RCU_GP_CTR_NEST_MASK) != 0 &&
 		   (urcu_active_readers & ~RCU_GP_CTR_NEST_MASK) !=
 		   (urcu_gp_ctr & ~RCU_GP_CTR_NEST_MASK) ->
 			skip;
 		:: else -> break;
-		fi
+		fi;
 	od;
 	need_mb = 1;
 	do
@@ -220,10 +215,10 @@ proctype urcu_updater()
 	:: need_mb == 0 -> break;
 	od;
 
-	/* Erroneous removal statement, e.g., list_del_rcu(). */
-	/* removed = 1; */
+	/* Removal statement, e.g., list_del_rcu(). */
+	removed = 1;
 
-	/* synchronize_rcu(), second counter flip. */
+	/* current synchronize_rcu(), first counter flip. */
 	need_mb = 1;
 	do
 	:: need_mb == 1 -> skip;
@@ -237,8 +232,34 @@ proctype urcu_updater()
 	od;
 	do
 	:: 1 ->
-		printf("urcu_gp_ctr=%x urcu_active_readers=%x\n", urcu_gp_ctr, urcu_active_readers);
-		printf("urcu_gp_ctr&0x7f=%x urcu_active_readers&0x7f=%x\n", urcu_gp_ctr & ~RCU_GP_CTR_NEST_MASK, urcu_active_readers & ~RCU_GP_CTR_NEST_MASK);
+		if
+		:: (urcu_active_readers & RCU_GP_CTR_NEST_MASK) != 0 &&
+		   (urcu_active_readers & ~RCU_GP_CTR_NEST_MASK) !=
+		   (urcu_gp_ctr & ~RCU_GP_CTR_NEST_MASK) ->
+			skip;
+		:: else -> break;
+		fi;
+	od;
+	need_mb = 1;
+	do
+	:: need_mb == 1 -> skip;
+	:: need_mb == 0 -> break;
+	od;
+
+	/* current synchronize_rcu(), second counter flip. */
+	need_mb = 1;
+	do
+	:: need_mb == 1 -> skip;
+	:: need_mb == 0 -> break;
+	od;
+	urcu_gp_ctr = urcu_gp_ctr + RCU_GP_CTR_BIT;
+	need_mb = 1;
+	do
+	:: need_mb == 1 -> skip;
+	:: need_mb == 0 -> break;
+	od;
+	do
+	:: 1 ->
 		if
 		:: (urcu_active_readers & RCU_GP_CTR_NEST_MASK) != 0 &&
 		   (urcu_active_readers & ~RCU_GP_CTR_NEST_MASK) !=
