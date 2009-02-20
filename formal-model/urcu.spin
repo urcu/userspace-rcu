@@ -27,6 +27,10 @@ bit free = 0;     /* Has RCU reclamation happened, e.g., kfree()? */
 bit need_mb = 0;  /* =1 says need reader mb, =0 for reader response. */
 byte reader_progress[4];
 		  /* Count of read-side statement executions. */
+bit reader_done = 0;
+		  /* =0 says reader still running, =1 says done. */
+bit updater_done = 0;
+		  /* =0 says updater still running, =1 says done. */
 
 /* urcu definitions and variables, taken straight from the algorithm. */
 
@@ -50,7 +54,7 @@ proctype urcu_reader()
 	do
 	:: need_mb == 1 ->
 		need_mb = 0;
-	:: 1 -> skip;
+	:: !updater_done -> skip;
 	:: 1 -> break;
 	od;
 
@@ -92,7 +96,7 @@ proctype urcu_reader()
 				    reader_progress[2] +
 				    reader_progress[3] == 0) && need_mb == 1 ->
 					need_mb = 0;
-				:: 1 -> skip;
+				:: !updater_done -> skip;
 				:: 1 -> break;
 				od;
 				urcu_active_readers = tmp;
@@ -150,7 +154,7 @@ proctype urcu_reader()
 			do
 			:: need_mb == 1 ->
 				need_mb = 0;
-			:: 1 -> skip;
+			:: !updater_done -> skip;
 			:: 1 -> break;
 			od;
 		:: else -> skip;
@@ -167,11 +171,14 @@ proctype urcu_reader()
 	od;
 	assert((tmp_free == 0) || (tmp_removed == 1));
 
+	/* Reader has completed. */
+	reader_done = 1;
+
 	/* Process any late-arriving memory-barrier requests. */
 	do
 	:: need_mb == 1 ->
 		need_mb = 0;
-	:: 1 -> skip;
+	:: !updater_done -> skip;
 	:: 1 -> break;
 	od;
 }
@@ -248,6 +255,12 @@ proctype urcu_updater()
 
 	/* free-up step, e.g., kfree(). */
 	free = 1;
+
+	/*
+	 * Signal updater done, ending any otherwise-infinite loops
+	 * in the reading process.
+	 */
+	updater_done = 1;
 }
 
 /*
