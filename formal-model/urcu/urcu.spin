@@ -225,11 +225,16 @@ active [NR_WRITERS] proctype urcu_writer()
 	ooo_mem(i);
 
 	do
-	:: write_lock == 0 ->
-		write_lock = 1;
-		break;
-	:: else ->
-		skip;
+	:: 1 ->
+		atomic {
+			if
+			:: write_lock == 0 ->
+				write_lock = 1;
+				break;
+			:: else ->
+				skip;
+			fi;
+		}
 	od;
 	smp_mb(i);
 	ooo_mem(i);
@@ -251,11 +256,11 @@ active [NR_WRITERS] proctype urcu_writer()
 #endif
 	ooo_mem(i);
 	smp_mb(i);
-	/* free-up step, e.g., kfree(). */
 	ooo_mem(i);
+	write_lock = 0;
+	/* free-up step, e.g., kfree(). */
 	atomic {
 		last_free_gen = old_gen;
 		free_done = 1;
-		write_lock = 0;
 	}
 }

@@ -44,7 +44,7 @@ asserts: clean
 	rm -f .input.spin.trail
 	spin -a -X .input.spin
 	gcc -w ${CFLAGS} -DSAFETY -o pan pan.c
-	./pan -v -c1 -X -m10000 -w19
+	./pan -v -c1 -X -m10000 -w20
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
 
@@ -87,7 +87,7 @@ urcu_free_ltl:
 	spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
 
 run: pan
-	./pan -a -v -c1 -X -m10000 -w19
+	./pan -a -v -c1 -X -m10000 -w20
 
 pan: pan.c
 	gcc -w ${CFLAGS} -o pan pan.c
