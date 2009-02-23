@@ -21,9 +21,9 @@
 /* Promela validation variables. */
 
 #define NR_READERS 1
-#define NR_WRITERS 1
+#define NR_WRITERS 2
 
-#define NR_PROCS 2
+#define NR_PROCS 3
 
 #define get_pid()	(_pid)
 
@@ -122,6 +122,8 @@ byte last_free_gen = 0;
 bit free_done = 0;
 byte read_generation = 1;
 bit data_access = 0;
+
+bit write_lock = 0;
 
 inline ooo_mem(i)
 {
@@ -222,6 +224,13 @@ active [NR_WRITERS] proctype urcu_writer()
 	}
 	ooo_mem(i);
 
+	do
+	:: write_lock == 0 ->
+		write_lock = 1;
+		break;
+	:: else ->
+		skip;
+	od;
 	smp_mb(i);
 	ooo_mem(i);
 	tmp = READ_CACHED_VAR(urcu_gp_ctr);
@@ -231,6 +240,7 @@ active [NR_WRITERS] proctype urcu_writer()
 	//smp_mc(i);
 	wait_for_quiescent_state(tmp, i, j);
 	//smp_mc(i);
+#ifndef SINGLE_FLIP
 	ooo_mem(i);
 	tmp = READ_CACHED_VAR(urcu_gp_ctr);
 	ooo_mem(i);
@@ -238,6 +248,7 @@ active [NR_WRITERS] proctype urcu_writer()
 	//smp_mc(i);
 	ooo_mem(i);
 	wait_for_quiescent_state(tmp, i, j);
+#endif
 	ooo_mem(i);
 	smp_mb(i);
 	/* free-up step, e.g., kfree(). */
@@ -245,5 +256,6 @@ active [NR_WRITERS] proctype urcu_writer()
 	atomic {
 		last_free_gen = old_gen;
 		free_done = 1;
+		write_lock = 0;
 	}
 }

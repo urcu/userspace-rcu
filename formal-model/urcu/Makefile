@@ -26,6 +26,7 @@ default:
 	make urcu_free_no_rmb | tee urcu_free_no_rmb.log
 	make urcu_free_no_wmb | tee urcu_free_no_wmb.log
 	make urcu_free_no_mb | tee urcu_free_no_mb.log
+	make urcu_free_single_flip | tee urcu_free_single_flip.log
 	make asserts | tee asserts.log
 	make summary
 
@@ -71,6 +72,13 @@ urcu_free_no_mb: clean urcu_free_ltl urcu_free_no_mb_define run
 
 urcu_free_no_mb_define:
 	cp urcu_free_no_mb.define .input.define
+
+urcu_free_single_flip: clean urcu_free_ltl urcu_free_single_flip_define run
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_free_single_flip_define:
+	cp urcu_free_single_flip.define .input.define
 
 urcu_free_ltl:
 	touch .input.define
