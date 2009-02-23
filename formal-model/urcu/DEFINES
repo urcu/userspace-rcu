@@ -1,0 +1,5 @@
+#define RCU_GP_CTR_BIT (1 << 7)
+#define RCU_GP_CTR_NEST_MASK (RCU_GP_CTR_BIT - 1)
+
+#define read_free_race	(read_generation == last_free_gen)
+#define read_free	(free_done && data_access)
