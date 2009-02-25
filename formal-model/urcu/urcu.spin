@@ -21,9 +21,9 @@
 /* Promela validation variables. */
 
 #define NR_READERS 1
-#define NR_WRITERS 2
+#define NR_WRITERS 1
 
-#define NR_PROCS 3
+#define NR_PROCS 2
 
 #define get_pid()	(_pid)
 
@@ -144,16 +144,22 @@ inline ooo_mem(i)
 
 inline wait_for_reader(tmp, id, i)
 {
-	tmp = READ_CACHED_VAR(urcu_active_readers_one);
-	ooo_mem(i);
 	do
-	:: (tmp & RCU_GP_CTR_NEST_MASK) && ((tmp ^ READ_CACHED_VAR(urcu_gp_ctr))
-			& RCU_GP_CTR_BIT)
-		->
-			ooo_mem(i);
+	:: 1 ->
+		ooo_mem(i);
+		tmp = READ_CACHED_VAR(urcu_active_readers_one);
+		if
+		:: (tmp & RCU_GP_CTR_NEST_MASK)
+			&& ((tmp ^ READ_CACHED_VAR(urcu_gp_ctr))
+				& RCU_GP_CTR_BIT) ->
+#ifndef GEN_ERROR_WRITER_PROGRESS
+			smp_mb(i);
+#else
 			skip;
-	:: else	->
+#endif
+		:: else	->
 			break;
+		fi;
 	od;
 }
 
@@ -177,33 +183,48 @@ active [NR_READERS] proctype urcu_reader()
 
 	assert(get_pid() < NR_PROCS);
 
-	ooo_mem(i);
-	tmp = READ_CACHED_VAR(urcu_active_readers_one);
-	ooo_mem(i);
-	if
-	:: (!(tmp & RCU_GP_CTR_NEST_MASK))
-		->
-		tmp2 = READ_CACHED_VAR(urcu_gp_ctr);
+end_reader:
+	do
+	:: 1 ->
+		/*
+		 * We do not test reader's progress here, because we are mainly
+		 * interested in writer's progress. The reader never blocks
+		 * anyway. We have to test for reader/writer's progress
+		 * separately, otherwise we could think the writer is doing
+		 * progress when it's blocked by an always progressing reader.
+		 */
+#ifdef READER_PROGRESS
+progress_reader:
+#endif
 		ooo_mem(i);
-		WRITE_CACHED_VAR(urcu_active_readers_one, tmp2);
-	:: else	->
-		WRITE_CACHED_VAR(urcu_active_readers_one, tmp + 1);
-	fi;
-	ooo_mem(i);
-	smp_mb(i);
-	read_generation = READ_CACHED_VAR(generation_ptr);
-	ooo_mem(i);
-	data_access = 1;
-	ooo_mem(i);
-	data_access = 0;
-	ooo_mem(i);
-	smp_mb(i);
-	ooo_mem(i);
-	tmp2 = READ_CACHED_VAR(urcu_active_readers_one);
-	ooo_mem(i);
-	WRITE_CACHED_VAR(urcu_active_readers_one, tmp2 - 1);
-	ooo_mem(i);
-	//smp_mc(i);	/* added */
+		tmp = READ_CACHED_VAR(urcu_active_readers_one);
+		ooo_mem(i);
+		if
+		:: (!(tmp & RCU_GP_CTR_NEST_MASK))
+			->
+			tmp2 = READ_CACHED_VAR(urcu_gp_ctr);
+			ooo_mem(i);
+			WRITE_CACHED_VAR(urcu_active_readers_one, tmp2);
+		:: else	->
+			WRITE_CACHED_VAR(urcu_active_readers_one, tmp + 1);
+		fi;
+		ooo_mem(i);
+		smp_mb(i);
+		read_generation = READ_CACHED_VAR(generation_ptr);
+		ooo_mem(i);
+		data_access = 1;
+		ooo_mem(i);
+		data_access = 0;
+		ooo_mem(i);
+		smp_mb(i);
+		ooo_mem(i);
+		tmp2 = READ_CACHED_VAR(urcu_active_readers_one);
+		ooo_mem(i);
+		WRITE_CACHED_VAR(urcu_active_readers_one, tmp2 - 1);
+		ooo_mem(i);
+		//wakeup_all(i);
+		//smp_mc(i);	/* added */
+	od;
 }
 
 
@@ -217,50 +238,70 @@ active [NR_WRITERS] proctype urcu_writer()
 
 	assert(get_pid() < NR_PROCS);
 
-	ooo_mem(i);
-	atomic {
-		old_gen = READ_CACHED_VAR(generation_ptr);
-		WRITE_CACHED_VAR(generation_ptr, old_gen + 1);
-	}
-	ooo_mem(i);
+	do
+	:: (READ_CACHED_VAR(generation_ptr) < 5) ->
+#ifdef WRITER_PROGRESS
+progress_writer1:
+#endif
+		ooo_mem(i);
+		atomic {
+			old_gen = READ_CACHED_VAR(generation_ptr);
+			WRITE_CACHED_VAR(generation_ptr, old_gen + 1);
+		}
+		ooo_mem(i);
 
+		do
+		:: 1 ->
+			atomic {
+				if
+				:: write_lock == 0 ->
+					write_lock = 1;
+					break;
+				:: else ->
+					skip;
+				fi;
+			}
+		od;
+		smp_mb(i);
+		ooo_mem(i);
+		tmp = READ_CACHED_VAR(urcu_gp_ctr);
+		ooo_mem(i);
+		WRITE_CACHED_VAR(urcu_gp_ctr, tmp ^ RCU_GP_CTR_BIT);
+		ooo_mem(i);
+		//smp_mc(i);
+		wait_for_quiescent_state(tmp, i, j);
+		//smp_mc(i);
+	#ifndef SINGLE_FLIP
+		ooo_mem(i);
+		tmp = READ_CACHED_VAR(urcu_gp_ctr);
+		ooo_mem(i);
+		WRITE_CACHED_VAR(urcu_gp_ctr, tmp ^ RCU_GP_CTR_BIT);
+		//smp_mc(i);
+		ooo_mem(i);
+		wait_for_quiescent_state(tmp, i, j);
+	#endif
+		ooo_mem(i);
+		smp_mb(i);
+		ooo_mem(i);
+		write_lock = 0;
+		/* free-up step, e.g., kfree(). */
+		atomic {
+			last_free_gen = old_gen;
+			free_done = 1;
+		}
+	:: else -> break;
+	od;
+	/*
+	 * Given the reader loops infinitely, let the writer also busy-loop
+	 * with progress here so, with weak fairness, we can test the
+	 * writer's progress.
+	 */
+end_writer:
 	do
 	:: 1 ->
-		atomic {
-			if
-			:: write_lock == 0 ->
-				write_lock = 1;
-				break;
-			:: else ->
-				skip;
-			fi;
-		}
-	od;
-	smp_mb(i);
-	ooo_mem(i);
-	tmp = READ_CACHED_VAR(urcu_gp_ctr);
-	ooo_mem(i);
-	WRITE_CACHED_VAR(urcu_gp_ctr, tmp ^ RCU_GP_CTR_BIT);
-	ooo_mem(i);
-	//smp_mc(i);
-	wait_for_quiescent_state(tmp, i, j);
-	//smp_mc(i);
-#ifndef SINGLE_FLIP
-	ooo_mem(i);
-	tmp = READ_CACHED_VAR(urcu_gp_ctr);
-	ooo_mem(i);
-	WRITE_CACHED_VAR(urcu_gp_ctr, tmp ^ RCU_GP_CTR_BIT);
-	//smp_mc(i);
-	ooo_mem(i);
-	wait_for_quiescent_state(tmp, i, j);
+#ifdef WRITER_PROGRESS
+progress_writer2:
 #endif
-	ooo_mem(i);
-	smp_mb(i);
-	ooo_mem(i);
-	write_lock = 0;
-	/* free-up step, e.g., kfree(). */
-	atomic {
-		last_free_gen = old_gen;
-		free_done = 1;
-	}
+		skip;
+	od;
 }

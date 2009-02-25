@@ -27,6 +27,9 @@ default:
 	make urcu_free_no_wmb | tee urcu_free_no_wmb.log
 	make urcu_free_no_mb | tee urcu_free_no_mb.log
 	make urcu_free_single_flip | tee urcu_free_single_flip.log
+	make urcu_progress_writer | tee urcu_progress_writer.log
+	make urcu_progress_reader | tee urcu_progress_reader.log
+	make urcu_progress_writer_error | tee urcu_progress_writer_error.log
 	make asserts | tee asserts.log
 	make summary
 
@@ -36,7 +39,7 @@ default:
 summary:
 	@echo
 	@echo "Verification summary"
-	@grep error *.log
+	@grep errors: *.log
 
 asserts: clean
 	cat DEFINES > .input.spin
@@ -85,6 +88,54 @@ urcu_free_ltl:
 	cat DEFINES > pan.ltl
 	cat .input.define >> pan.ltl
 	spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
+
+# Progress checks
+
+urcu_progress_writer: clean urcu_progress_writer_ltl \
+		urcu_progress_writer_define run_weak_fair
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_progress_writer_define:
+	cp urcu_progress_writer.define .input.define
+
+urcu_progress_writer_ltl:
+	touch .input.define
+	cat DEFINES > pan.ltl
+	cat .input.define >> pan.ltl
+	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+
+urcu_progress_reader: clean urcu_progress_reader_ltl \
+		urcu_progress_reader_define run_weak_fair
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_progress_reader_define:
+	cp urcu_progress_reader.define .input.define
+
+urcu_progress_reader_ltl:
+	touch .input.define
+	cat DEFINES > pan.ltl
+	cat .input.define >> pan.ltl
+	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+
+urcu_progress_writer_error: clean urcu_progress_writer_error_ltl \
+		urcu_progress_writer_error_define run_weak_fair
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_progress_writer_error_define:
+	cp urcu_progress_writer_error.define .input.define
+
+urcu_progress_writer_error_ltl:
+	touch .input.define
+	cat DEFINES > pan.ltl
+	cat .input.define >> pan.ltl
+	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+
+
+run_weak_fair: pan
+	./pan -a -f -v -c1 -X -m10000 -w20
 
 run: pan
 	./pan -a -v -c1 -X -m10000 -w20
