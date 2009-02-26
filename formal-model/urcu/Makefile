@@ -93,8 +93,8 @@ urcu_free_single_flip_define:
 
 urcu_free_ltl:
 	touch .input.define
-	cat DEFINES > pan.ltl
 	cat .input.define >> pan.ltl
+	cat DEFINES >> pan.ltl
 	spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
 
 # Progress checks
@@ -109,8 +109,8 @@ urcu_progress_writer_define:
 
 urcu_progress_writer_ltl:
 	touch .input.define
-	cat DEFINES > pan.ltl
-	cat .input.define >> pan.ltl
+	cat .input.define > pan.ltl
+	cat DEFINES >> pan.ltl
 	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
 
 urcu_progress_reader: clean urcu_progress_reader_ltl \
@@ -123,8 +123,8 @@ urcu_progress_reader_define:
 
 urcu_progress_reader_ltl:
 	touch .input.define
-	cat DEFINES > pan.ltl
-	cat .input.define >> pan.ltl
+	cat .input.define > pan.ltl
+	cat DEFINES >> pan.ltl
 	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
 
 urcu_progress_writer_error: clean urcu_progress_writer_error_ltl \
@@ -137,8 +137,8 @@ urcu_progress_writer_error_define:
 
 urcu_progress_writer_error_ltl:
 	touch .input.define
-	cat .input.define >> pan.ltl
-	cat DEFINES > pan.ltl
+	cat .input.define > pan.ltl
+	cat DEFINES >> pan.ltl
 	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
 
 
@@ -152,8 +152,8 @@ pan: pan.c
 	gcc -w ${CFLAGS} -o pan pan.c
 
 pan.c: pan.ltl ${SPINFILE}
-	cat .input.define >> .input.spin
-	cat DEFINES > .input.spin
+	cat .input.define > .input.spin
+	cat DEFINES >> .input.spin
 	cat ${SPINFILE} >> .input.spin
 	rm -f .input.spin.trail
 	spin -a -X -N pan.ltl .input.spin

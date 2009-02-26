@@ -209,7 +209,8 @@ progress_reader:
 				ooo_mem(i);
 				WRITE_CACHED_VAR(urcu_active_readers_one, tmp2);
 			:: else	->
-				WRITE_CACHED_VAR(urcu_active_readers_one, tmp + 1);
+				WRITE_CACHED_VAR(urcu_active_readers_one,
+						 tmp + 1);
 			fi;
 			ooo_mem(i);
 			smp_mb(i);
@@ -285,7 +286,7 @@ progress_writer1:
 		//smp_mc(i);
 		wait_for_quiescent_state(tmp, i, j);
 		//smp_mc(i);
-	#ifndef SINGLE_FLIP
+#ifndef SINGLE_FLIP
 		ooo_mem(i);
 		tmp = READ_CACHED_VAR(urcu_gp_ctr);
 		ooo_mem(i);
@@ -293,7 +294,7 @@ progress_writer1:
 		//smp_mc(i);
 		ooo_mem(i);
 		wait_for_quiescent_state(tmp, i, j);
-	#endif
+#endif
 		ooo_mem(i);
 		smp_mb(i);
 		ooo_mem(i);
