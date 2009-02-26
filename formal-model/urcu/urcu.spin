@@ -178,7 +178,7 @@ inline wait_for_quiescent_state(tmp, i, j)
 
 active [NR_READERS] proctype urcu_reader()
 {
-	byte i;
+	byte i, nest_i;
 	byte tmp, tmp2;
 
 	assert(get_pid() < NR_PROCS);
@@ -196,33 +196,47 @@ end_reader:
 #ifdef READER_PROGRESS
 progress_reader:
 #endif
-		ooo_mem(i);
-		tmp = READ_CACHED_VAR(urcu_active_readers_one);
-		ooo_mem(i);
-		if
-		:: (!(tmp & RCU_GP_CTR_NEST_MASK))
-			->
-			tmp2 = READ_CACHED_VAR(urcu_gp_ctr);
+		nest_i = 0;
+		do
+		:: nest_i < READER_NEST_LEVEL ->
 			ooo_mem(i);
-			WRITE_CACHED_VAR(urcu_active_readers_one, tmp2);
-		:: else	->
-			WRITE_CACHED_VAR(urcu_active_readers_one, tmp + 1);
-		fi;
+			tmp = READ_CACHED_VAR(urcu_active_readers_one);
+			ooo_mem(i);
+			if
+			:: (!(tmp & RCU_GP_CTR_NEST_MASK))
+				->
+				tmp2 = READ_CACHED_VAR(urcu_gp_ctr);
+				ooo_mem(i);
+				WRITE_CACHED_VAR(urcu_active_readers_one, tmp2);
+			:: else	->
+				WRITE_CACHED_VAR(urcu_active_readers_one, tmp + 1);
+			fi;
+			ooo_mem(i);
+			smp_mb(i);
+			nest_i++;
+		:: nest_i >= READER_NEST_LEVEL -> break;
+		od;
+
 		ooo_mem(i);
-		smp_mb(i);
 		read_generation = READ_CACHED_VAR(generation_ptr);
 		ooo_mem(i);
 		data_access = 1;
 		ooo_mem(i);
 		data_access = 0;
+
+		nest_i = 0;
+		do
+		:: nest_i < READER_NEST_LEVEL ->
+			ooo_mem(i);
+			smp_mb(i);
+			ooo_mem(i);
+			tmp2 = READ_CACHED_VAR(urcu_active_readers_one);
+			ooo_mem(i);
+			WRITE_CACHED_VAR(urcu_active_readers_one, tmp2 - 1);
+			nest_i++;
+		:: nest_i >= READER_NEST_LEVEL -> break;
+		od;
 		ooo_mem(i);
-		smp_mb(i);
-		ooo_mem(i);
-		tmp2 = READ_CACHED_VAR(urcu_active_readers_one);
-		ooo_mem(i);
-		WRITE_CACHED_VAR(urcu_active_readers_one, tmp2 - 1);
-		ooo_mem(i);
-		//wakeup_all(i);
 		//smp_mc(i);	/* added */
 	od;
 }

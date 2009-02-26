@@ -23,6 +23,7 @@ SPINFILE=urcu.spin
 
 default:
 	make urcu_free | tee urcu_free.log
+	make urcu_free_nested | tee urcu_free_nested.log
 	make urcu_free_no_rmb | tee urcu_free_no_rmb.log
 	make urcu_free_no_wmb | tee urcu_free_no_wmb.log
 	make urcu_free_no_mb | tee urcu_free_no_mb.log
@@ -54,6 +55,13 @@ asserts: clean
 urcu_free: clean urcu_free_ltl run
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_free_nested: clean urcu_free_ltl urcu_free_nested_define run
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+urcu_free_nested_define:
+	cp urcu_free_nested.define .input.define
 
 urcu_free_no_rmb: clean urcu_free_ltl urcu_free_no_rmb_define run
 	cp .input.spin $@.spin.input
@@ -129,8 +137,8 @@ urcu_progress_writer_error_define:
 
 urcu_progress_writer_error_ltl:
 	touch .input.define
-	cat DEFINES > pan.ltl
 	cat .input.define >> pan.ltl
+	cat DEFINES > pan.ltl
 	spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
 
 
@@ -144,8 +152,8 @@ pan: pan.c
 	gcc -w ${CFLAGS} -o pan pan.c
 
 pan.c: pan.ltl ${SPINFILE}
-	cat DEFINES > .input.spin
 	cat .input.define >> .input.spin
+	cat DEFINES > .input.spin
 	cat ${SPINFILE} >> .input.spin
 	rm -f .input.spin.trail
 	spin -a -X -N pan.ltl .input.spin
