@@ -5,5 +5,5 @@
 #define read_free	(free_done && data_access)
 
 #ifndef READER_NEST_LEVEL
-#define READER_NEST_LEVEL 1
+#define READER_NEST_LEVEL 2
 #endif
