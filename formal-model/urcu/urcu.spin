@@ -80,6 +80,68 @@
 	:: 1 -> skip			\
 	fi;
 
+/*
+ * Remote barriers tests the scheme where a signal (or IPI) is sent to all
+ * reader threads to promote their compiler barrier to a smp_mb().
+ */
+#ifdef REMOTE_BARRIERS
+
+inline smp_rmb_pid(i)
+{
+	atomic {
+		CACHE_READ_FROM_MEM(urcu_gp_ctr, i);
+		CACHE_READ_FROM_MEM(urcu_active_readers_one, i);
+		CACHE_READ_FROM_MEM(generation_ptr, i);
+	}
+}
+
+inline smp_wmb_pid(i)
+{
+	atomic {
+		CACHE_WRITE_TO_MEM(urcu_gp_ctr, i);
+		CACHE_WRITE_TO_MEM(urcu_active_readers_one, i);
+		CACHE_WRITE_TO_MEM(generation_ptr, i);
+	}
+}
+
+inline smp_mb_pid(i)
+{
+	atomic {
+#ifndef NO_WMB
+		smp_wmb_pid(i);
+#endif
+#ifndef NO_RMB
+		smp_rmb_pid(i);
+#endif
+		skip;
+	}
+}
+
+/*
+ * Readers do a simple barrier(), writers are doing a smp_mb() _and_ sending a
+ * signal or IPI to have all readers execute a smp_mb.
+ * We are not modeling the whole rendez-vous between readers and writers here,
+ * we just let the writer update each reader's caches remotely.
+ */
+inline smp_mb(i)
+{
+	if
+	:: get_pid() >= NR_READERS ->
+		smp_mb_pid(get_pid());
+		i = 0;
+		do
+		:: i < NR_READERS ->
+			smp_mb_pid(i);
+			i++;
+		:: i >= NR_READERS -> break
+		od;
+		smp_mb_pid(get_pid());
+	:: else -> skip;
+	fi;
+}
+
+#else
+
 inline smp_rmb(i)
 {
 	atomic {
@@ -110,6 +172,8 @@ inline smp_mb(i)
 		skip;
 	}
 }
+
+#endif
 
 /* Keep in sync manually with smp_rmb, wmp_wmb and ooo_mem */
 DECLARE_CACHED_VAR(byte, urcu_gp_ctr, 1);

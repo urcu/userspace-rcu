@@ -7,3 +7,5 @@
 #ifndef READER_NEST_LEVEL
 #define READER_NEST_LEVEL 2
 #endif
+
+#define REMOTE_BARRIERS
