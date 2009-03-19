@@ -29,7 +29,7 @@
 
 /*
  * Each process have its own data in cache. Caches are randomly updated.
- * smp_wmb and smp_rmb forces cache updates (write and read), wmb_mb forces
+ * smp_wmb and smp_rmb forces cache updates (write and read), smp_mb forces
  * both.
  */
 
@@ -113,7 +113,11 @@ inline smp_mb_pid(i)
 #ifndef NO_RMB
 		smp_rmb_pid(i);
 #endif
-		skip;
+#ifdef NO_WMB
+#ifdef NO_RMB
+		ooo_mem(i);
+#endif
+#endif
 	}
 }
 
@@ -169,7 +173,11 @@ inline smp_mb(i)
 #ifndef NO_RMB
 		smp_rmb(i);
 #endif
-		skip;
+#ifdef NO_WMB
+#ifdef NO_RMB
+		ooo_mem(i);
+#endif
+#endif
 	}
 }
 
@@ -210,7 +218,6 @@ inline wait_for_reader(tmp, id, i)
 {
 	do
 	:: 1 ->
-		ooo_mem(i);
 		tmp = READ_CACHED_VAR(urcu_active_readers_one);
 		ooo_mem(i);
 		if
@@ -220,7 +227,7 @@ inline wait_for_reader(tmp, id, i)
 #ifndef GEN_ERROR_WRITER_PROGRESS
 			smp_mb(i);
 #else
-			skip;
+			ooo_mem(i);
 #endif
 		:: else	->
 			break;
@@ -234,6 +241,12 @@ inline wait_for_quiescent_state(tmp, i, j)
 	do
 	:: i < NR_READERS ->
 		wait_for_reader(tmp, i, j);
+		if
+		:: (NR_READERS > 1) && (i < NR_READERS - 1)
+			-> ooo_mem(j);
+		:: else
+			-> skip;
+		fi;
 		i++
 	:: i >= NR_READERS -> break
 	od;
@@ -259,7 +272,6 @@ inline urcu_one_read(i, nest_i, tmp, tmp2)
 			WRITE_CACHED_VAR(urcu_active_readers_one,
 					 tmp + 1);
 		fi;
-		ooo_mem(i);
 		smp_mb(i);
 		nest_i++;
 	:: nest_i >= READER_NEST_LEVEL -> break;
@@ -275,9 +287,7 @@ inline urcu_one_read(i, nest_i, tmp, tmp2)
 	nest_i = 0;
 	do
 	:: nest_i < READER_NEST_LEVEL ->
-		ooo_mem(i);
 		smp_mb(i);
-		ooo_mem(i);
 		tmp2 = READ_CACHED_VAR(urcu_active_readers_one);
 		ooo_mem(i);
 		WRITE_CACHED_VAR(urcu_active_readers_one, tmp2 - 1);
@@ -347,7 +357,6 @@ progress_writer1:
 			}
 		od;
 		smp_mb(i);
-		ooo_mem(i);
 		tmp = READ_CACHED_VAR(urcu_gp_ctr);
 		ooo_mem(i);
 		WRITE_CACHED_VAR(urcu_gp_ctr, tmp ^ RCU_GP_CTR_BIT);
@@ -364,9 +373,7 @@ progress_writer1:
 		ooo_mem(i);
 		wait_for_quiescent_state(tmp, i, j);
 #endif
-		ooo_mem(i);
 		smp_mb(i);
-		ooo_mem(i);
 		write_lock = 0;
 		/* free-up step, e.g., kfree(). */
 		atomic {
