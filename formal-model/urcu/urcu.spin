@@ -212,6 +212,7 @@ inline wait_for_reader(tmp, id, i)
 	:: 1 ->
 		ooo_mem(i);
 		tmp = READ_CACHED_VAR(urcu_active_readers_one);
+		ooo_mem(i);
 		if
 		:: (tmp & RCU_GP_CTR_NEST_MASK)
 			&& ((tmp ^ READ_CACHED_VAR(urcu_gp_ctr))
