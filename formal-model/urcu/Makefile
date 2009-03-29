@@ -23,7 +23,8 @@ SPINFILE=urcu.spin
 
 default:
 	make urcu_free | tee urcu_free.log
-	make urcu_free_nested | tee urcu_free_nested.log
+	#nested useless with signal test.
+	#make urcu_free_nested | tee urcu_free_nested.log
 	make urcu_free_no_rmb | tee urcu_free_no_rmb.log
 	make urcu_free_no_wmb | tee urcu_free_no_wmb.log
 	make urcu_free_no_mb | tee urcu_free_no_mb.log
@@ -48,7 +49,7 @@ asserts: clean
 	rm -f .input.spin.trail
 	spin -a -X .input.spin
 	gcc -w ${CFLAGS} -DSAFETY -o pan pan.c
-	./pan -v -c1 -X -m10000 -w20
+	./pan -v -c1 -X -m10000000 -w20
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
 
@@ -143,10 +144,10 @@ urcu_progress_writer_error_ltl:
 
 
 run_weak_fair: pan
-	./pan -a -f -v -c1 -X -m10000 -w20
+	./pan -a -f -v -c1 -X -m10000000 -w20
 
 run: pan
-	./pan -a -v -c1 -X -m10000 -w20
+	./pan -a -v -c1 -X -m10000000 -w20
 
 pan: pan.c
 	gcc -w ${CFLAGS} -o pan pan.c

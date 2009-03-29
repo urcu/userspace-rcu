@@ -1,11 +1,20 @@
+
+#define NR_READERS 1
+#define NR_WRITERS 1
+
+#define NR_PROCS 2
+
+#define read_free_race	(read_generation[0] == last_free_gen)
+#define read_free	(free_done && data_access[0])
+
+#define TEST_SIGNAL
+#define TEST_SIGNAL_ON_READ
+
 #define RCU_GP_CTR_BIT (1 << 7)
 #define RCU_GP_CTR_NEST_MASK (RCU_GP_CTR_BIT - 1)
 
-#define read_free_race	(read_generation == last_free_gen)
-#define read_free	(free_done && data_access)
-
 #ifndef READER_NEST_LEVEL
-#define READER_NEST_LEVEL 2
+#define READER_NEST_LEVEL 1
 #endif
 
 #define REMOTE_BARRIERS
