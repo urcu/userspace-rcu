@@ -17,6 +17,12 @@
 # Authors: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 
 #CFLAGS=-DSAFETY
+#for multi-core verif, 15.5GB shared mem, use files if full
+#CFLAGS=-DHASH64 -DMEMLIM=15500 -DNCORE=2
+#CFLAGS=-DHASH64 -DCOLLAPSE -DMA=88 -DMEMLIM=15500 -DNCORE=8
+
+#liveness
+#CFLAGS=-DHASH64 -DCOLLAPSE -DMA=88
 CFLAGS=-DHASH64
 
 SPINFILE=urcu.spin
@@ -48,7 +54,7 @@ asserts: clean
 	cat ${SPINFILE} >> .input.spin
 	rm -f .input.spin.trail
 	spin -a -X .input.spin
-	gcc -w ${CFLAGS} -DSAFETY -o pan pan.c
+	gcc -O2 -w ${CFLAGS} -DSAFETY -o pan pan.c
 	./pan -v -c1 -X -m10000000 -w20
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
@@ -150,7 +156,7 @@ run: pan
 	./pan -a -v -c1 -X -m10000000 -w20
 
 pan: pan.c
-	gcc -w ${CFLAGS} -o pan pan.c
+	gcc -O2 -w ${CFLAGS} -o pan pan.c
 
 pan.c: pan.ltl ${SPINFILE}
 	cat .input.define > .input.spin

@@ -269,6 +269,16 @@ inline wait_for_sighand_exec()
 	sighand_exec = 0;
 	do
 	:: sighand_exec == 0 -> skip;
+	:: else -> break;
+	od;
+}
+
+#ifdef TOO_BIG_STATE_SPACE
+inline wait_for_sighand_exec()
+{
+	sighand_exec = 0;
+	do
+	:: sighand_exec == 0 -> skip;
 	:: else ->
 		if
 		:: 1 -> break;
@@ -277,6 +287,7 @@ inline wait_for_sighand_exec()
 		fi;
 	od;
 }
+#endif
 
 #else
 
