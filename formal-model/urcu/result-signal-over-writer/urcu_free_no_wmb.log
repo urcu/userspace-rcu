@@ -1,0 +1,224 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define >> pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
+cp urcu_free_no_wmb.define .input.define
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -o pan pan.c
+./pan -a -v -c1 -X -m10000000 -w20
+warning: for p.o. reduction to be valid the never claim must be stutter-invariant
+(never claims generated from LTL formulae are stutter-invariant)
+depth 0: Claim reached state 5 (line 742)
+
+(Spin Version 5.1.7 -- 23 December 2008)
+	+ Partial Order Reduction
+
+Full statespace search for:
+	never claim         	+
+	assertion violations	+ (if within scope of claim)
+	acceptance   cycles 	+ (fairness disabled)
+	invalid end states	- (disabled by never claim)
+
+State-vector 56 byte, depth reached 10499, errors: 0
+   159431 states, stored
+  1505398 states, matched
+  1664829 transitions (= stored+matched)
+  5794809 atomic steps
+hash conflicts:     62144 (resolved)
+
+Stats on memory usage (in Megabytes):
+   12.772	equivalent memory usage for states (stored*(State-vector + overhead))
+    8.936	actual memory usage for states (compression: 69.96%)
+         	state-vector as stored = 31 byte + 28 byte overhead
+    8.000	memory used for hash table (-w20)
+  457.764	memory used for DFS stack (-m10000000)
+  474.651	total actual memory usage
+
+unreached in proctype urcu_reader_sig
+	line 402, "pan.___", state 330, "(1)"
+	line 613, "pan.___", state 411, "-end-"
+	(2 of 411 states)
+unreached in proctype urcu_writer
+	line 651, "pan.___", state 213, "(1)"
+	line 402, "pan.___", state 348, "(1)"
+	line 398, "pan.___", state 433, "(1)"
+	line 402, "pan.___", state 447, "(1)"
+	line 402, "pan.___", state 547, "(1)"
+	line 159, "pan.___", state 628, "(1)"
+	line 163, "pan.___", state 636, "(1)"
+	line 163, "pan.___", state 637, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 163, "pan.___", state 637, "else"
+	line 161, "pan.___", state 642, "((j<1))"
+	line 161, "pan.___", state 642, "((j>=1))"
+	line 167, "pan.___", state 648, "(1)"
+	line 167, "pan.___", state 649, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 167, "pan.___", state 649, "else"
+	line 159, "pan.___", state 660, "(1)"
+	line 163, "pan.___", state 668, "(1)"
+	line 163, "pan.___", state 669, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<i))))"
+	line 163, "pan.___", state 669, "else"
+	line 161, "pan.___", state 674, "((j<1))"
+	line 161, "pan.___", state 674, "((j>=1))"
+	line 167, "pan.___", state 680, "(1)"
+	line 167, "pan.___", state 681, "(!((cache_dirty_generation_ptr.bitfield&(1<<i))))"
+	line 167, "pan.___", state 681, "else"
+	line 201, "pan.___", state 686, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<i))))"
+	line 201, "pan.___", state 686, "else"
+	line 213, "pan.___", state 690, "((i<1))"
+	line 213, "pan.___", state 690, "((i>=1))"
+	line 159, "pan.___", state 696, "(1)"
+	line 163, "pan.___", state 704, "(1)"
+	line 163, "pan.___", state 705, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 163, "pan.___", state 705, "else"
+	line 161, "pan.___", state 710, "((j<1))"
+	line 161, "pan.___", state 710, "((j>=1))"
+	line 167, "pan.___", state 716, "(1)"
+	line 167, "pan.___", state 717, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 167, "pan.___", state 717, "else"
+	line 201, "pan.___", state 722, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 201, "pan.___", state 722, "else"
+	line 220, "pan.___", state 723, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 220, "pan.___", state 723, "else"
+	line 355, "pan.___", state 729, "((sighand_exec==1))"
+	line 355, "pan.___", state 729, "else"
+	line 361, "pan.___", state 732, "sighand_exec = 1"
+	line 398, "pan.___", state 745, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<0)))"
+	line 398, "pan.___", state 747, "(1)"
+	line 398, "pan.___", state 748, "((cache_dirty_urcu_gp_ctr.bitfield&(1<<0)))"
+	line 398, "pan.___", state 748, "else"
+	line 398, "pan.___", state 751, "(1)"
+	line 402, "pan.___", state 759, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<0)))"
+	line 402, "pan.___", state 761, "(1)"
+	line 402, "pan.___", state 762, "((cache_dirty_urcu_active_readers.bitfield&(1<<0)))"
+	line 402, "pan.___", state 762, "else"
+	line 402, "pan.___", state 765, "(1)"
+	line 402, "pan.___", state 766, "(1)"
+	line 402, "pan.___", state 766, "(1)"
+	line 400, "pan.___", state 771, "((i<1))"
+	line 400, "pan.___", state 771, "((i>=1))"
+	line 407, "pan.___", state 777, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<0)))"
+	line 408, "pan.___", state 790, "(1)"
+	line 408, "pan.___", state 791, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 408, "pan.___", state 791, "else"
+	line 408, "pan.___", state 794, "(1)"
+	line 408, "pan.___", state 795, "(1)"
+	line 408, "pan.___", state 795, "(1)"
+	line 412, "pan.___", state 803, "(1)"
+	line 412, "pan.___", state 804, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 412, "pan.___", state 804, "else"
+	line 412, "pan.___", state 807, "(1)"
+	line 412, "pan.___", state 808, "(1)"
+	line 412, "pan.___", state 808, "(1)"
+	line 410, "pan.___", state 813, "((i<1))"
+	line 410, "pan.___", state 813, "((i>=1))"
+	line 417, "pan.___", state 820, "(1)"
+	line 417, "pan.___", state 821, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 417, "pan.___", state 821, "else"
+	line 417, "pan.___", state 824, "(1)"
+	line 417, "pan.___", state 825, "(1)"
+	line 417, "pan.___", state 825, "(1)"
+	line 419, "pan.___", state 828, "(1)"
+	line 419, "pan.___", state 828, "(1)"
+	line 361, "pan.___", state 837, "sighand_exec = 1"
+	line 402, "pan.___", state 868, "(1)"
+	line 402, "pan.___", state 965, "(1)"
+	line 398, "pan.___", state 1050, "(1)"
+	line 402, "pan.___", state 1064, "(1)"
+	line 402, "pan.___", state 1164, "(1)"
+	line 159, "pan.___", state 1245, "(1)"
+	line 163, "pan.___", state 1253, "(1)"
+	line 163, "pan.___", state 1254, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 163, "pan.___", state 1254, "else"
+	line 161, "pan.___", state 1259, "((j<1))"
+	line 161, "pan.___", state 1259, "((j>=1))"
+	line 167, "pan.___", state 1265, "(1)"
+	line 167, "pan.___", state 1266, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 167, "pan.___", state 1266, "else"
+	line 159, "pan.___", state 1277, "(1)"
+	line 163, "pan.___", state 1285, "(1)"
+	line 163, "pan.___", state 1286, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<i))))"
+	line 163, "pan.___", state 1286, "else"
+	line 161, "pan.___", state 1291, "((j<1))"
+	line 161, "pan.___", state 1291, "((j>=1))"
+	line 167, "pan.___", state 1297, "(1)"
+	line 167, "pan.___", state 1298, "(!((cache_dirty_generation_ptr.bitfield&(1<<i))))"
+	line 167, "pan.___", state 1298, "else"
+	line 201, "pan.___", state 1303, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<i))))"
+	line 201, "pan.___", state 1303, "else"
+	line 213, "pan.___", state 1307, "((i<1))"
+	line 213, "pan.___", state 1307, "((i>=1))"
+	line 159, "pan.___", state 1313, "(1)"
+	line 163, "pan.___", state 1321, "(1)"
+	line 163, "pan.___", state 1322, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 163, "pan.___", state 1322, "else"
+	line 161, "pan.___", state 1327, "((j<1))"
+	line 161, "pan.___", state 1327, "((j>=1))"
+	line 167, "pan.___", state 1333, "(1)"
+	line 167, "pan.___", state 1334, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 167, "pan.___", state 1334, "else"
+	line 201, "pan.___", state 1339, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 201, "pan.___", state 1339, "else"
+	line 220, "pan.___", state 1340, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 220, "pan.___", state 1340, "else"
+	line 355, "pan.___", state 1346, "((sighand_exec==1))"
+	line 355, "pan.___", state 1346, "else"
+	line 361, "pan.___", state 1349, "sighand_exec = 1"
+	line 398, "pan.___", state 1362, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<0)))"
+	line 398, "pan.___", state 1364, "(1)"
+	line 398, "pan.___", state 1365, "((cache_dirty_urcu_gp_ctr.bitfield&(1<<0)))"
+	line 398, "pan.___", state 1365, "else"
+	line 398, "pan.___", state 1368, "(1)"
+	line 402, "pan.___", state 1376, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<0)))"
+	line 402, "pan.___", state 1378, "(1)"
+	line 402, "pan.___", state 1379, "((cache_dirty_urcu_active_readers.bitfield&(1<<0)))"
+	line 402, "pan.___", state 1379, "else"
+	line 402, "pan.___", state 1382, "(1)"
+	line 402, "pan.___", state 1383, "(1)"
+	line 402, "pan.___", state 1383, "(1)"
+	line 400, "pan.___", state 1388, "((i<1))"
+	line 400, "pan.___", state 1388, "((i>=1))"
+	line 407, "pan.___", state 1394, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<0)))"
+	line 408, "pan.___", state 1407, "(1)"
+	line 408, "pan.___", state 1408, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<0))))"
+	line 408, "pan.___", state 1408, "else"
+	line 408, "pan.___", state 1411, "(1)"
+	line 408, "pan.___", state 1412, "(1)"
+	line 408, "pan.___", state 1412, "(1)"
+	line 412, "pan.___", state 1420, "(1)"
+	line 412, "pan.___", state 1421, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<0))))"
+	line 412, "pan.___", state 1421, "else"
+	line 412, "pan.___", state 1424, "(1)"
+	line 412, "pan.___", state 1425, "(1)"
+	line 412, "pan.___", state 1425, "(1)"
+	line 410, "pan.___", state 1430, "((i<1))"
+	line 410, "pan.___", state 1430, "((i>=1))"
+	line 417, "pan.___", state 1437, "(1)"
+	line 417, "pan.___", state 1438, "(!((cache_dirty_generation_ptr.bitfield&(1<<0))))"
+	line 417, "pan.___", state 1438, "else"
+	line 417, "pan.___", state 1441, "(1)"
+	line 417, "pan.___", state 1442, "(1)"
+	line 417, "pan.___", state 1442, "(1)"
+	line 419, "pan.___", state 1445, "(1)"
+	line 419, "pan.___", state 1445, "(1)"
+	line 361, "pan.___", state 1454, "sighand_exec = 1"
+	line 701, "pan.___", state 1596, "-end-"
+	(111 of 1596 states)
+unreached in proctype :init:
+	(0 of 46 states)
+unreached in proctype :never:
+	line 747, "pan.___", state 8, "-end-"
+	(1 of 8 states)
+
+pan: elapsed time 1.23 seconds
+pan: rate  129618.7 states/second
+pan: avg transition delay 7.3881e-07 usec
+cp .input.spin urcu_free_no_wmb.spin.input
+cp .input.spin.trail urcu_free_no_wmb.spin.input.trail
+make[1]: Leaving directory `/home/compudj/doc/userspace-rcu/formal-model/urcu'
