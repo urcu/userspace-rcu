@@ -25,11 +25,32 @@
 
 /* All signal readers have same PID and uses same reader variable */
 #ifdef TEST_SIGNAL_ON_WRITE
-#define get_pid()	((_pid < 1) -> 0 : 1)
+
+#define NR_READERS 1	/* the writer is also a signal reader */
+#define NR_WRITERS 1
+
+#define NR_PROCS 1
+
+#define get_pid()	(0)
+
 #elif defined(TEST_SIGNAL_ON_READ)
+
 #define get_pid()	((_pid < 2) -> 0 : 1)
+
+#define NR_READERS 1
+#define NR_WRITERS 1
+
+#define NR_PROCS 2
+
 #else
+
 #define get_pid()	(_pid)
+
+#define NR_READERS 1
+#define NR_WRITERS 1
+
+#define NR_PROCS 2
+
 #endif
 
 #define get_readerid()	(get_pid())
@@ -168,21 +189,22 @@ inline smp_mb_pid(i, j)
  * We are not modeling the whole rendez-vous between readers and writers here,
  * we just let the writer update each reader's caches remotely.
  */
-inline smp_mb(i, j)
+inline smp_mb_writer(i, j)
 {
-	if
-	:: get_pid() >= NR_READERS ->
-		smp_mb_pid(get_pid(), j);
-		i = 0;
-		do
-		:: i < NR_READERS ->
-			smp_mb_pid(i, j);
-			i++;
-		:: i >= NR_READERS -> break
-		od;
-		smp_mb_pid(get_pid(), j);
-	:: else -> skip;
-	fi;
+	smp_mb_pid(get_pid(), j);
+	i = 0;
+	do
+	:: i < NR_READERS ->
+		smp_mb_pid(i, j);
+		i++;
+	:: i >= NR_READERS -> break
+	od;
+	smp_mb_pid(get_pid(), j);
+}
+
+inline smp_mb_reader(i, j)
+{
+	skip;
 }
 
 #else
@@ -232,6 +254,16 @@ inline smp_mb(i, j)
 #endif
 #endif
 	}
+}
+
+inline smp_mb_writer(i, j)
+{
+	smp_mb(i, j);
+}
+
+inline smp_mb_reader(i, j)
+{
+	smp_mb(i, j);
 }
 
 #endif
@@ -381,7 +413,7 @@ inline wait_for_reader(tmp, tmp2, i, j)
 			&& ((tmp2 ^ READ_CACHED_VAR(urcu_gp_ctr))
 				& RCU_GP_CTR_BIT) ->
 #ifndef GEN_ERROR_WRITER_PROGRESS
-			smp_mb(i, j);
+			smp_mb_writer(i, j);
 #else
 			ooo_mem(i);
 #endif
@@ -412,6 +444,8 @@ inline wait_for_quiescent_state(tmp, tmp2, i, j)
 
 /* Model the RCU read-side critical section. */
 
+#ifndef TEST_SIGNAL_ON_WRITE
+
 inline urcu_one_read(i, j, nest_i, tmp, tmp2)
 {
 	nest_i = 0;
@@ -434,7 +468,7 @@ inline urcu_one_read(i, j, nest_i, tmp, tmp2)
 			WRITE_CACHED_VAR(urcu_active_readers[get_readerid()],
 					 tmp + 1);
 		fi;
-		smp_mb(i, j);
+		smp_mb_reader(i, j);
 		dispatch_sighand_read_exec();
 		nest_i++;
 	:: nest_i >= READER_NEST_LEVEL -> break;
@@ -447,7 +481,7 @@ inline urcu_one_read(i, j, nest_i, tmp, tmp2)
 	nest_i = 0;
 	do
 	:: nest_i < READER_NEST_LEVEL ->
-		smp_mb(i, j);
+		smp_mb_reader(i, j);
 		dispatch_sighand_read_exec();
 		tmp2 = READ_CACHED_VAR(urcu_active_readers[get_readerid()]);
 		ooo_mem(i);
@@ -481,17 +515,13 @@ end_reader:
 		 * progress when it's blocked by an always progressing reader.
 		 */
 #ifdef READER_PROGRESS
-		/* Only test progress of one random reader. They are all the
-		 * same. */
-		if
-		:: get_readerid() == 0 ->
 progress_reader:
-			skip;
-		fi;
 #endif
 		urcu_one_read(i, j, nest_i, tmp, tmp2);
 	od;
 }
+
+#endif //!TEST_SIGNAL_ON_WRITE
 
 #ifdef TEST_SIGNAL
 /* signal handler reader */
@@ -515,7 +545,7 @@ inline urcu_one_read_sig(i, j, nest_i, tmp, tmp2)
 			WRITE_CACHED_VAR(urcu_active_readers[get_readerid()],
 					 tmp + 1);
 		fi;
-		smp_mb(i, j);
+		smp_mb_reader(i, j);
 		nest_i++;
 	:: nest_i >= READER_NEST_LEVEL -> break;
 	od;
@@ -527,7 +557,7 @@ inline urcu_one_read_sig(i, j, nest_i, tmp, tmp2)
 	nest_i = 0;
 	do
 	:: nest_i < READER_NEST_LEVEL ->
-		smp_mb(i, j);
+		smp_mb_reader(i, j);
 		tmp2 = READ_CACHED_VAR(urcu_active_readers[get_readerid()]);
 		ooo_mem(i);
 		WRITE_CACHED_VAR(urcu_active_readers[get_readerid()], tmp2 - 1);
@@ -559,13 +589,7 @@ end_reader:
 		 * progress when it's blocked by an always progressing reader.
 		 */
 #ifdef READER_PROGRESS
-		/* Only test progress of one random reader. They are all the
-		 * same. */
-		if
-		:: get_readerid() == 0 ->
 progress_reader:
-			skip;
-		fi;
 #endif
 		urcu_one_read_sig(i, j, nest_i, tmp, tmp2);
 	od;
@@ -611,7 +635,7 @@ progress_writer1:
 				fi;
 			}
 		od;
-		smp_mb(i, j);
+		smp_mb_writer(i, j);
 		dispatch_sighand_write_exec();
 		tmp = READ_CACHED_VAR(urcu_gp_ctr);
 		ooo_mem(i);
@@ -634,7 +658,7 @@ progress_writer1:
 		dispatch_sighand_write_exec();
 		wait_for_quiescent_state(tmp, tmp2, i, j);
 #endif
-		smp_mb(i, j);
+		smp_mb_writer(i, j);
 		dispatch_sighand_write_exec();
 		write_lock = 0;
 		/* free-up step, e.g., kfree(). */
