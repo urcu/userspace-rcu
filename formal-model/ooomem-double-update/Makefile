@@ -17,7 +17,8 @@
 # Authors: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 
 #CFLAGS=-DSAFETY
-CFLAGS=-DHASH64 -DREACH
+#CFLAGS=-DHASH64 -DREACH
+CFLAGS=-DHASH64
 
 #try pan -i to get the smallest trace.
 
@@ -44,7 +45,7 @@ asserts: clean
 	rm -f .input.spin.trail
 	spin -a -X .input.spin
 	gcc -w ${CFLAGS} -DSAFETY -o pan pan.c
-	./pan -i -v -c1 -X -m10000 -w19
+	./pan -v -c1 -X -m10000 -w19
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
 
@@ -73,7 +74,7 @@ read_order_ltl:
 	spin -f "!(`cat read_order.ltl | grep -v ^//`)" >> pan.ltl
 
 run: pan
-	./pan -a -i -v -c1 -X -m10000 -w19
+	./pan -a -v -c1 -X -m10000 -w19
 
 pan: pan.c
 	gcc -w ${CFLAGS} -o pan pan.c
