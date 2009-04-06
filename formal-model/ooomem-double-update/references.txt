@@ -1,0 +1,7 @@
+http://spinroot.com/spin/Man/ltl.html
+http://en.wikipedia.org/wiki/Linear_temporal_logic
+http://www.dcs.gla.ac.uk/~muffy/MRS4-2002/lect11.ppt
+
+http://www.lsv.ens-cachan.fr/~gastin/ltl2ba/index.php
+http://spinroot.com/spin/Man/index.html
+http://spinroot.com/spin/Man/promela.html
