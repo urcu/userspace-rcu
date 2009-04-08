@@ -47,14 +47,25 @@ static struct test_array *test_rcu_pointer;
 static unsigned long duration;
 static time_t start_time;
 static unsigned long __thread duration_interval;
-#define DURATION_TEST_DELAY 100
+#define DURATION_TEST_DELAY_WRITE 4
+#define DURATION_TEST_DELAY_READ 100
 
 /*
  * returns 0 if test should end.
  */
-static int test_duration(void)
+static int test_duration_write(void)
 {
-	if (duration_interval++ >= DURATION_TEST_DELAY) {
+	if (duration_interval++ >= DURATION_TEST_DELAY_WRITE) {
+		duration_interval = 0;
+		if (time(NULL) - start_time >= duration)
+			return 0;
+	}
+	return 1;
+}
+
+static int test_duration_read(void)
+{
+	if (duration_interval++ >= DURATION_TEST_DELAY_READ) {
 		duration_interval = 0;
 		if (time(NULL) - start_time >= duration)
 			return 0;
@@ -145,7 +156,7 @@ void *thr_reader(void *_count)
 			assert(local_ptr->a == 8);
 		rcu_read_unlock();
 		nr_reads++;
-		if (!test_duration())
+		if (!test_duration_read())
 			break;
 	}
 
@@ -180,7 +191,7 @@ void *thr_writer(void *_count)
 			old->a = 0;
 		test_array_free(old);
 		nr_writes++;
-		if (!test_duration())
+		if (!test_duration_write())
 			break;
 		if (!no_writer_delay)
 			usleep(1);
@@ -270,6 +281,7 @@ int main(int argc, char **argv)
 			exit(1);
 		tot_writes += count_writer[i];
 	}
+	
 	printf("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	test_array_free(test_rcu_pointer);

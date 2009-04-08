@@ -54,12 +54,17 @@ static int sig_done;
 
 void internal_urcu_lock(void)
 {
+#if 0
 	int ret;
+	/* Mutex sleeping does not play well with busy-waiting loop. */
 	ret = pthread_mutex_lock(&urcu_mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
+#endif
+	while (pthread_mutex_trylock(&urcu_mutex) != 0)
+		cpu_relax();
 }
 
 void internal_urcu_unlock(void)
