@@ -11,6 +11,14 @@ SRC_DEP=`echo $^ | sed 's/[^ ]*.h//g'`
 all: test_urcu test_urcu_timing test_rwlock_timing test_urcu_yield urcu-asm.S \
 	urcu-asm.o urcutorture urcutorture-yield
 
+pthreads-x86: clean
+	cp api_x86.h api.h
+	cp arch_x86.h arch.h
+
+pthreads-ppc: clean
+	cp api_ppc.h api.h
+	cp arch_ppc.h arch.h
+
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 

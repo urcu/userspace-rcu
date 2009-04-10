@@ -34,22 +34,6 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#define rdtscll(val) do { \
-     unsigned int __a,__d; \
-     asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
-     (val) = ((unsigned long long)__a) | (((unsigned long long)__d)<<32); \
-} while(0)
-
-typedef unsigned long long cycles_t;
-
-static inline cycles_t get_cycles (void)
-{
-        unsigned long long ret = 0;
-
-        rdtscll(ret);
-        return ret;
-}
-
 #include "urcu.h"
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;

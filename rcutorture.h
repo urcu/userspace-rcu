@@ -116,7 +116,7 @@ void *rcu_read_perf_test(void *arg)
 
 	urcu_register_thread();
 	run_on(me);
-	__atomic_inc(&nthreadsrunning);
+	atomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	mark_rcu_quiescent_state();
@@ -141,7 +141,7 @@ void *rcu_update_perf_test(void *arg)
 {
 	long long n_updates_local = 0;
 
-	__atomic_inc(&nthreadsrunning);
+	atomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {

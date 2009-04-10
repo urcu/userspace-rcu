@@ -1,5 +1,7 @@
 /* MECHANICALLY GENERATED, DO NOT EDIT!!! */
 
+#define _INCLUDE_API_H
+
 /*
  * common.h: Common Linux kernel-isms.
  *
@@ -148,7 +150,7 @@ static __inline__ int atomic_sub_and_test(int i, atomic_t *v)
  * 
  * Atomically increments @v by 1.
  */ 
-static __inline__ void __atomic_inc(atomic_t *v)
+static __inline__ void atomic_inc(atomic_t *v)
 {
 	__asm__ __volatile__(
 		LOCK_PREFIX "incl %0"

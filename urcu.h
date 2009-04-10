@@ -26,60 +26,8 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
-/*
- * Assume the architecture has coherent caches. Blackfin will want this unset.
- */
-#define CONFIG_HAVE_MEM_COHERENCY 1
-
-/* Assume P4 or newer */
-#define CONFIG_HAVE_FENCE 1
-
 /* Assume SMP machine, given we don't have this information */
 #define CONFIG_SMP 1
-
-
-#ifdef CONFIG_HAVE_MEM_COHERENCY
-/*
- * Caches are coherent, no need to flush them.
- */
-#define mc()	barrier()
-#define rmc()	barrier()
-#define wmc()	barrier()
-#else
-#error "The architecture must create its own cache flush primitives"
-#define mc()	arch_cache_flush()
-#define rmc()	arch_cache_flush_read()
-#define wmc()	arch_cache_flush_write()
-#endif
-
-
-#ifdef CONFIG_HAVE_MEM_COHERENCY
-
-/* x86 32/64 specific */
-#ifdef CONFIG_HAVE_FENCE
-#define mb()    asm volatile("mfence":::"memory")
-#define rmb()   asm volatile("lfence":::"memory")
-#define wmb()   asm volatile("sfence"::: "memory")
-#else
-/*
- * Some non-Intel clones support out of order store. wmb() ceases to be a
- * nop for these.
- */
-#define mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
-#endif
-
-#else /* !CONFIG_HAVE_MEM_COHERENCY */
-
-/*
- * Without cache coherency, the memory barriers become cache flushes.
- */
-#define mb()    mc()
-#define rmb()   rmc()
-#define wmb()   wmc()
-
-#endif /* !CONFIG_HAVE_MEM_COHERENCY */
 
 
 #ifdef CONFIG_SMP
@@ -98,69 +46,7 @@
 #define smp_wmc()	barrier()
 #endif
 
-/* REP NOP (PAUSE) is a good thing to insert into busy-wait loops. */
-static inline void rep_nop(void)
-{
-	asm volatile("rep; nop" ::: "memory");
-}
-
-static inline void cpu_relax(void)
-{
-	rep_nop();
-}
-
-static inline void atomic_inc(int *v)
-{
-	asm volatile("lock; incl %0"
-		     : "+m" (*v));
-}
-
-#define xchg(ptr, v)							\
-	((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), sizeof(*(ptr))))
-
-struct __xchg_dummy {
-	unsigned long a[100];
-};
-#define __xg(x) ((struct __xchg_dummy *)(x))
-
-/*
- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
- * Note 2: xchg has side effect, so that attribute volatile is necessary,
- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
- * x is considered local, ptr is considered remote.
- */
-static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
-				   int size)
-{
-	switch (size) {
-	case 1:
-		asm volatile("xchgb %b0,%1"
-			     : "=q" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
-			     : "memory");
-		break;
-	case 2:
-		asm volatile("xchgw %w0,%1"
-			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
-			     : "memory");
-		break;
-	case 4:
-		asm volatile("xchgl %k0,%1"
-			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
-			     : "memory");
-		break;
-	case 8:
-		asm volatile("xchgq %0,%1"
-			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
-			     : "memory");
-		break;
-	}
-	smp_wmc();
-	return x;
-}
+#include "arch.h"
 
 /* Nop everywhere except on alpha. */
 #define smp_read_barrier_depends()
