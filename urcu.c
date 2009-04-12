@@ -36,7 +36,7 @@ long __thread urcu_active_readers;
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4
 
-struct reader_data {
+struct reader_registry {
 	pthread_t tid;
 	long *urcu_active_readers;
 };
@@ -46,7 +46,7 @@ unsigned int yield_active;
 unsigned int __thread rand_yield;
 #endif
 
-static struct reader_data *reader_data;
+static struct reader_registry *registry;
 static int num_readers, alloc_readers;
 #ifndef DEBUG_FULL_MB
 static int sig_done;
@@ -100,7 +100,7 @@ static void force_mb_all_threads(void)
 
 static void force_mb_single_thread(pthread_t tid)
 {
-	assert(reader_data);
+	assert(registry);
 	sig_done = 0;
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
@@ -122,12 +122,12 @@ static void force_mb_single_thread(pthread_t tid)
 
 static void force_mb_all_threads(void)
 {
-	struct reader_data *index;
+	struct reader_registry *index;
 	/*
 	 * Ask for each threads to execute a smp_mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
-	if (!reader_data)
+	if (!registry)
 		return;
 	sig_done = 0;
 	/*
@@ -138,7 +138,7 @@ static void force_mb_all_threads(void)
 	 * smp_mb();    write sig_done before sending the signals
 	 */
 	smp_mc();	/* write sig_done before sending the signals */
-	for (index = reader_data; index < reader_data + num_readers; index++)
+	for (index = registry; index < registry + num_readers; index++)
 		pthread_kill(index->tid, SIGURCU);
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
@@ -152,14 +152,14 @@ static void force_mb_all_threads(void)
 
 void wait_for_quiescent_state(void)
 {
-	struct reader_data *index;
+	struct reader_registry *index;
 
-	if (!reader_data)
+	if (!registry)
 		return;
 	/*
 	 * Wait for each thread urcu_active_readers count to become 0.
 	 */
-	for (index = reader_data; index < reader_data + num_readers; index++) {
+	for (index = registry; index < registry + num_readers; index++) {
 		int wait_loops = 0;
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
@@ -234,26 +234,26 @@ void synchronize_rcu(void)
 
 void urcu_add_reader(pthread_t id)
 {
-	struct reader_data *oldarray;
+	struct reader_registry *oldarray;
 
-	if (!reader_data) {
+	if (!registry) {
 		alloc_readers = INIT_NUM_THREADS;
 		num_readers = 0;
-		reader_data =
-			malloc(sizeof(struct reader_data) * alloc_readers);
+		registry =
+			malloc(sizeof(struct reader_registry) * alloc_readers);
 	}
 	if (alloc_readers < num_readers + 1) {
-		oldarray = reader_data;
-		reader_data = malloc(sizeof(struct reader_data)
+		oldarray = registry;
+		registry = malloc(sizeof(struct reader_registry)
 				* (alloc_readers << 1));
-		memcpy(reader_data, oldarray,
-			sizeof(struct reader_data) * alloc_readers);
+		memcpy(registry, oldarray,
+			sizeof(struct reader_registry) * alloc_readers);
 		alloc_readers <<= 1;
 		free(oldarray);
 	}
-	reader_data[num_readers].tid = id;
+	registry[num_readers].tid = id;
 	/* reference to the TLS of _this_ reader thread. */
-	reader_data[num_readers].urcu_active_readers = &urcu_active_readers;
+	registry[num_readers].urcu_active_readers = &urcu_active_readers;
 	num_readers++;
 }
 
@@ -263,15 +263,15 @@ void urcu_add_reader(pthread_t id)
  */
 void urcu_remove_reader(pthread_t id)
 {
-	struct reader_data *index;
+	struct reader_registry *index;
 
-	assert(reader_data != NULL);
-	for (index = reader_data; index < reader_data + num_readers; index++) {
+	assert(registry != NULL);
+	for (index = registry; index < registry + num_readers; index++) {
 		if (pthread_equal(index->tid, id)) {
-			memcpy(index, &reader_data[num_readers - 1],
-				sizeof(struct reader_data));
-			reader_data[num_readers - 1].tid = 0;
-			reader_data[num_readers - 1].urcu_active_readers = NULL;
+			memcpy(index, &registry[num_readers - 1],
+				sizeof(struct reader_registry));
+			registry[num_readers - 1].tid = 0;
+			registry[num_readers - 1].urcu_active_readers = NULL;
 			num_readers--;
 			return;
 		}
@@ -330,6 +330,6 @@ void __attribute__((destructor)) urcu_exit(void)
 		exit(-1);
 	}
 	assert(act.sa_sigaction == sigurcu_handler);
-	free(reader_data);
+	free(registry);
 }
 #endif
