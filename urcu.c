@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "urcu.h"
 
@@ -39,6 +40,7 @@ long __thread urcu_active_readers;
 struct reader_registry {
 	pthread_t tid;
 	long *urcu_active_readers;
+	char *need_mb;
 };
 
 #ifdef DEBUG_YIELD
@@ -47,24 +49,34 @@ unsigned int __thread rand_yield;
 #endif
 
 static struct reader_registry *registry;
+static char __thread need_mb;
 static int num_readers, alloc_readers;
-#ifndef DEBUG_FULL_MB
-static int sig_done;
-#endif
 
 void internal_urcu_lock(void)
 {
-#if 0
 	int ret;
-	/* Mutex sleeping does not play well with busy-waiting loop. */
+
+#ifndef DISTRUST_SIGNALS_EXTREME
 	ret = pthread_mutex_lock(&urcu_mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
-#endif
-	while (pthread_mutex_trylock(&urcu_mutex) != 0)
-		cpu_relax();
+#else /* #ifndef DISTRUST_SIGNALS_EXTREME */
+	while ((ret = pthread_mutex_trylock(&urcu_mutex)) != 0) {
+		if (ret != EBUSY && ret != EINTR) {
+			printf("ret = %d, errno = %d\n", ret, errno);
+			perror("Error in pthread mutex lock");
+			exit(-1);
+		}
+		if (need_mb) {
+			smp_mb();
+			need_mb = 0;
+			smp_mb();
+		}
+		poll(NULL,0,10);
+	}
+#endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
 void internal_urcu_unlock(void)
@@ -87,7 +99,7 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef DEBUG_FULL_MB
-static void force_mb_single_thread(pthread_t tid)
+static void force_mb_single_thread(struct reader_registry *index)
 {
 	smp_mb();
 }
@@ -98,26 +110,27 @@ static void force_mb_all_threads(void)
 }
 #else
 
-static void force_mb_single_thread(pthread_t tid)
+static void force_mb_single_thread(struct reader_registry *index)
 {
 	assert(registry);
-	sig_done = 0;
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
 	 * a cache flush on architectures with non-coherent cache. Let's play
 	 * safe and don't assume anything : we use smp_mc() to make sure the
 	 * cache flush is enforced.
-	 * smp_mb();    write sig_done before sending the signals
 	 */
-	smp_mc();	/* write sig_done before sending the signals */
-	pthread_kill(tid, SIGURCU);
+	*index->need_mb = 1;
+	smp_mc();	/* write ->need_mb before sending the signals */
+	pthread_kill(index->tid, SIGURCU);
+	smp_mb();
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (LOAD_SHARED(sig_done) < 1)
-		cpu_relax();
-	smp_mb();	/* read sig_done before ending the barrier */
+	while (*index->need_mb) {
+		poll(NULL, 0, 1);
+	}
+	smp_mb();	/* read ->need_mb before ending the barrier */
 }
 
 static void force_mb_all_threads(void)
@@ -129,24 +142,37 @@ static void force_mb_all_threads(void)
 	 */
 	if (!registry)
 		return;
-	sig_done = 0;
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
 	 * a cache flush on architectures with non-coherent cache. Let's play
 	 * safe and don't assume anything : we use smp_mc() to make sure the
 	 * cache flush is enforced.
-	 * smp_mb();    write sig_done before sending the signals
 	 */
-	smp_mc();	/* write sig_done before sending the signals */
-	for (index = registry; index < registry + num_readers; index++)
+	for (index = registry; index < registry + num_readers; index++) {
+		*index->need_mb = 1;
+		smp_mc();	/* write need_mb before sending the signal */
 		pthread_kill(index->tid, SIGURCU);
+	}
 	/*
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
-	 * BUSY-LOOP.
+	 *
+	 * Note that the pthread_kill() will never be executed on systems
+	 * that correctly deliver signals in a timely manner.  However, it
+	 * is not uncommon for kernels to have bugs that can result in
+	 * lost or unduly delayed signals.
+	 *
+	 * If you are seeing the below pthread_kill() executing much at
+	 * all, we suggest testing the underlying kernel and filing the
+	 * relevant bug report.  For Linux kernels, we recommend getting
+	 * the Linux Test Project (LTP).
 	 */
-	while (LOAD_SHARED(sig_done) < num_readers)
-		cpu_relax();
-	smp_mb();	/* read sig_done before ending the barrier */
+	for (index = registry; index < registry + num_readers; index++) {
+		while (*index->need_mb) {
+			pthread_kill(index->tid, SIGURCU);
+			poll(NULL, 0, 1);
+		}
+	}
+	smp_mb();	/* read ->need_mb before ending the barrier */
 }
 #endif
 
@@ -167,7 +193,7 @@ void wait_for_quiescent_state(void)
 		 */
 		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
 			if (wait_loops++ == KICK_READER_LOOPS) {
-				force_mb_single_thread(index->tid);
+				force_mb_single_thread(index);
 				wait_loops = 0;
 			} else {
 				cpu_relax();
@@ -254,6 +280,7 @@ void urcu_add_reader(pthread_t id)
 	registry[num_readers].tid = id;
 	/* reference to the TLS of _this_ reader thread. */
 	registry[num_readers].urcu_active_readers = &urcu_active_readers;
+	registry[num_readers].need_mb = &need_mb;
 	num_readers++;
 }
 
@@ -303,7 +330,8 @@ void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 	 * executed on.
 	 */
 	smp_mb();
-	atomic_inc(&sig_done);
+	need_mb = 0;
+	smp_mb();
 }
 
 void __attribute__((constructor)) urcu_init(void)
