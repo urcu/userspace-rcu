@@ -53,4 +53,4 @@ urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
 
 clean:
 	rm -f *.o test_urcu test_urcu_timing test_rwlock_timing urcu-asm.S \
-		test_urcu_yield
+		test_urcu_yield urcutorture urcutorture-yield
