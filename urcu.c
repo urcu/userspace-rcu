@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <poll.h>
 
 #include "urcu.h"
 
@@ -99,17 +100,19 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef DEBUG_FULL_MB
+#ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
 	smp_mb();
 }
+#endif /* #ifdef HAS_INCOHERENT_CACHES */
 
 static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
-#else
-
+#else /* #ifdef DEBUG_FULL_MB */
+#ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
 	assert(registry);
@@ -132,6 +135,7 @@ static void force_mb_single_thread(struct reader_registry *index)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
+#endif /* #ifdef HAS_INCOHERENT_CACHES */
 
 static void force_mb_all_threads(void)
 {
@@ -174,7 +178,7 @@ static void force_mb_all_threads(void)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
-#endif
+#endif /* #else #ifdef DEBUG_FULL_MB */
 
 void wait_for_quiescent_state(void)
 {
@@ -186,6 +190,10 @@ void wait_for_quiescent_state(void)
 	 * Wait for each thread urcu_active_readers count to become 0.
 	 */
 	for (index = registry; index < registry + num_readers; index++) {
+#ifndef HAS_INCOHERENT_CACHES
+		while (rcu_old_gp_ongoing(index->urcu_active_readers))
+			cpu_relax();
+#else /* #ifndef HAS_INCOHERENT_CACHES */
 		int wait_loops = 0;
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
@@ -199,6 +207,7 @@ void wait_for_quiescent_state(void)
 				cpu_relax();
 			}
 		}
+#endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
 }
 
@@ -360,4 +369,4 @@ void __attribute__((destructor)) urcu_exit(void)
 	assert(act.sa_sigaction == sigurcu_handler);
 	free(registry);
 }
-#endif
+#endif /* #ifndef DEBUG_FULL_MB */
