@@ -1,0 +1,2 @@
+#define read_one_is_zero (read_one == 0)
+#define read_two_is_zero (read_two == 0)
