@@ -40,26 +40,6 @@
 #define CLEAR_TOKENS(state, bits)	\
 	state = (state) & ~(bits)
 
-/*
- * Bit encoding, proc_one_produced :
- */
-
-#define P1_PROD_NONE	(1 << 0)
-
-#define P1_READ_ONE	(1 << 1)
-#define P1_RMB		(1 << 2)
-#define P1_READ_TWO	(1 << 3)
-
-int proc_one_produced;
-
-#define P2_PROD_NONE	(1 << 0)
-
-#define P2_WRITE_ONE	(1 << 1)
-#define P2_WMB		(1 << 2)
-#define P2_WRITE_TWO	(1 << 3)
-
-int proc_two_produced;
-
 #define NR_PROCS 2
 
 #define get_pid()	(_pid)
@@ -168,6 +148,18 @@ DECLARE_CACHED_VAR(byte, beta, 0);
 byte read_one = 2;
 byte read_two = 2;
 
+/*
+ * Bit encoding, proc_one_produced :
+ */
+
+#define P1_PROD_NONE	(1 << 0)
+
+#define P1_READ_ONE	(1 << 1)
+#define P1_RMB		(1 << 2)
+#define P1_READ_TWO	(1 << 3)
+
+int proc_one_produced;
+
 active proctype test_proc_one()
 {
 	assert(get_pid() < NR_PROCS);
@@ -202,6 +194,19 @@ active proctype test_proc_one()
 	// test : [] (read_one == 1 -> read_two == 1)
 	assert(read_one != 1 || read_two == 1);
 }
+
+
+/*
+ * Bit encoding, proc_two_produced :
+ */
+
+#define P2_PROD_NONE	(1 << 0)
+
+#define P2_WRITE_ONE	(1 << 1)
+#define P2_WMB		(1 << 2)
+#define P2_WRITE_TWO	(1 << 3)
+
+int proc_two_produced;
 
 active proctype test_proc_two()
 {
