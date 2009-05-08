@@ -184,6 +184,9 @@ active proctype test_proc_one()
 #ifdef NO_RMB
 	PRODUCE_TOKENS(proc_one_produced, P1_RMB);
 #endif
+#ifdef NO_SYNC
+	PRODUCE_TOKENS(proc_one_produced, P1_SYNC_CORE);
+#endif
 
 	do
 	:: CONSUME_TOKENS(proc_one_produced, P1_PROD_NONE, P1_WRITE) ->
@@ -230,6 +233,9 @@ active proctype test_proc_two()
 #endif
 #ifdef NO_RMB
 	PRODUCE_TOKENS(proc_two_produced, P2_RMB);
+#endif
+#ifdef NO_SYNC
+	PRODUCE_TOKENS(proc_two_produced, P2_SYNC_CORE);
 #endif
 
 	do
