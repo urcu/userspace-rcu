@@ -87,7 +87,7 @@
  */
 #define _STORE_SHARED(x, v) \
 	do { \
-		(x) = (v); \
+		ACCESS_ONCE(x) = (v); \
 	} while (0)
 
 /*
