@@ -15,6 +15,8 @@
  * and rcu_dereference primitives come from the Linux kernel.
  *
  * Distributed under GPLv2
+ *
+ * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
 #include <stdlib.h>

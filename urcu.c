@@ -6,6 +6,8 @@
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
  * Distributed under GPLv2
+ *
+ * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
 #include <stdio.h>
