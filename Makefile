@@ -11,9 +11,14 @@ LDFLAGS=-lpthread
 
 SRC_DEP=`echo $^ | sed 's/[^ ]*.h//g'`
 
-all: test_urcu test_urcu_dynamic_link test_urcu_timing \
+all: arch-api test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_urcu_yield urcu-asm.S \
 	urcu-asm.o urcutorture urcutorture-yield liburcu.so
+
+arch-api: api.h arch.h
+	# Run either make pthreads-x86 or make pthreads-ppc prior to build
+	# the RCU library. Architecture auto-detectection not implemented
+	# in the build system yet.
 
 pthreads-x86: clean
 	cp api_x86.h api.h
@@ -59,7 +64,7 @@ urcutorture: urcutorture.c urcu.o urcu.h rcutorture.h
 urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-.PHONY: clean install
+.PHONY: clean install arch-api
 
 install: liburcu.so
 	cp -f liburcu.so /usr/lib/

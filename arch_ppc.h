@@ -28,7 +28,7 @@
 #define CONFIG_HAVE_MEM_COHERENCY
 
 #ifndef BITS_PER_LONG
-#define BITS_PER_LONG   (sizeof(unsigned long) * 8)
+#define BITS_PER_LONG	(sizeof(unsigned long) * 8)
 #endif
 
 #define mb()    asm volatile("sync":::"memory")
