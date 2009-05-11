@@ -1,0 +1,32 @@
+Userspace RCU library licensing
+Mathieu Desnoyers
+May 10, 2009
+
+The library part is distributed under LGPLv2.1 or later. See lgpl-2.1.txt for
+details. This applies to :
+
+urcu.h
+urcu.c
+urcu-static.h
+arch_x86.h
+arch_ppc.h
+
+LGPL-compatible source code can statically use the library header using :
+
+#define _LGPL_SOURCE
+#include <urcu.h>
+
+Dynamic-only linking with the LGPL library is used if _LGPL_SOURCE is not
+defined. It permits relinking with newer versions of the library, which is
+required by the LGPL license.
+
+Library test code is distributed under the GPLv2 license. See gpl-2.0.txt for
+details. This applies to :
+
+urcutorture.h
+urcutorture.c
+api_x86.h
+api_ppc.h
+test_urcu.c
+test_urcu_yield.c
+test_rwlock_timing.c

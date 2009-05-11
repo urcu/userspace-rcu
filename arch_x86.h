@@ -2,23 +2,24 @@
 #define _ARCH_X86_H
 
 /*
- * arch_x86.h: Definitions for the x86 architecture, derived from Linux.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; but only version 2 of the License given
- * that this comes from the Linux kernel.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * arch_x86.h: trivial definitions for the x86 architecture.
  *
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+*
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <compiler.h>
@@ -26,6 +27,10 @@
 /* Assume P4 or newer */
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
+
+#ifndef BITS_PER_LONG
+#define BITS_PER_LONG	(sizeof(unsigned long) * 8)
+#endif
 
 #ifdef CONFIG_HAVE_FENCE
 #define mb()    asm volatile("mfence":::"memory")
@@ -89,75 +94,69 @@ static inline void cpu_relax(void)
 	rep_nop();
 }
 
-#ifndef _INCLUDE_API_H
+#define xchg(ptr, v)	\
+	((__typeof__(*(ptr)))__xchg((ptr), (unsigned long)(v), sizeof(*(ptr))))
 
-static inline void atomic_inc(int *v)
-{
-	asm volatile("lock; incl %0"
-		     : "+m" (*v));
-}
-
-#endif /* #ifndef _INCLUDE_API_H */
-
-#define xchg(ptr, v)							\
-	((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), sizeof(*(ptr))))
-
-struct __xchg_dummy {
+struct __xchg_ptr_as_array {
 	unsigned long a[100];
 };
-#define __xg(x) ((struct __xchg_dummy *)(x))
+
+#define __xchg_ptr_as_array(x) ((struct __xchg_ptr_as_array *)(x))
 
 /*
- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
- * Note 2: xchg has side effect, so that attribute volatile is necessary,
- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
+ * xchg always implies a "lock" prefix, even on UP. See Intel documentation.
+ * volatile attribute is neccessary due to xchg side effect.
+ * *ptr is an output argument.
  * x is considered local, ptr is considered remote.
  */
-static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+static inline unsigned long __xchg(volatile void *ptr, unsigned long x,
 				   int size)
 {
 	switch (size) {
 	case 1:
 		asm volatile("xchgb %b0,%1"
 			     : "=q" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
+			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
 			     : "memory");
 		break;
 	case 2:
 		asm volatile("xchgw %w0,%1"
 			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
+			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
 			     : "memory");
 		break;
 	case 4:
 		asm volatile("xchgl %k0,%1"
 			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
+			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
 			     : "memory");
 		break;
+#if (BITS_PER_LONG == 64)
 	case 8:
 		asm volatile("xchgq %0,%1"
 			     : "=r" (x)
-			     : "m" (*__xg(ptr)), "0" (x)
+			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
 			     : "memory");
 		break;
+#endif
 	}
 	smp_wmc();
 	return x;
 }
 
-
-#define rdtscll(val) do { \
-     unsigned int __a,__d; \
-     asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
-     (val) = ((unsigned long long)__a) | (((unsigned long long)__d)<<32); \
-} while(0)
+#define rdtscll(val)							  \
+	do {						  		  \
+	     unsigned int __a, __d;					  \
+	     asm volatile("rdtsc" : "=a" (__a), "=d" (__d));		  \
+	     (val) = ((unsigned long long)__a)				  \
+			| (((unsigned long long)__d) << 32);		  \
+	} while(0)
 
 typedef unsigned long long cycles_t;
 
-static inline cycles_t get_cycles (void)
+static inline cycles_t get_cycles(void)
 {
-        unsigned long long ret = 0;
+        cycles_t ret = 0;
 
         rdtscll(ret);
         return ret;

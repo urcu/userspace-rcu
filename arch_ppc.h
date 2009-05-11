@@ -2,29 +2,34 @@
 #define _ARCH_PPC_H
 
 /*
- * arch_x86.h: Definitions for the x86 architecture, derived from Linux.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; but only version 2 of the License given
- * that this comes from the Linux kernel.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * arch_ppc.h: trivial definitions for the powerpc architecture.
  *
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+*
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <compiler.h>
 
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
+
+#ifndef BITS_PER_LONG
+#define BITS_PER_LONG   (sizeof(unsigned long) * 8)
+#endif
 
 #define mb()    asm volatile("sync":::"memory")
 #define rmb()   asm volatile("sync":::"memory")
@@ -76,25 +81,6 @@ static inline void cpu_relax(void)
 #define LWSYNC_ON_SMP "\n\tlwsync\n"
 #define ISYNC_ON_SMP "\n\tisync\n"
 
-#ifndef _INCLUDE_API_H
-
-static __inline__ void atomic_inc(int *v)
-{
-	int t;
-
-	__asm__ __volatile__(
-"1:	lwarx	%0,0,%2		# atomic_inc\n\
-	addic	%0,%0,1\n"
-	PPC405_ERR77(0,%2)
-"	stwcx.	%0,0,%2 \n\
-	bne-	1b"
-	: "=&r" (t), "+m" (v)
-	: "r" (&v)
-	: "cc", "xer");
-}
-
-#endif /* #ifndef _INCLUDE_API_H */
-
 struct __xchg_dummy {
 	unsigned long a[100];
 };
@@ -103,78 +89,99 @@ struct __xchg_dummy {
 #ifndef _INCLUDE_API_H
 
 /*
- * Atomic exchange
- *
- * Changes the memory location '*ptr' to be val and returns
- * the previous value stored there.
+ * Exchange the 32-bits value pointed to by p, returns the old value.
+ * Might not work with PPC405 (see err 77).
  */
-static __always_inline unsigned long
-__xchg_u32(volatile void *p, unsigned long val)
+static __always_inline
+unsigned int __xchg_u32(volatile void *p, unsigned int val)
 {
-	unsigned long prev;
+	unsigned int prev;
 
-	__asm__ __volatile__(
-	LWSYNC_ON_SMP
-"1:	lwarx	%0,0,%2 \n"
-	PPC405_ERR77(0,%2)
-"	stwcx.	%3,0,%2 \n\
-	bne-	1b"
-	ISYNC_ON_SMP
-	: "=&r" (prev), "+m" (*(volatile unsigned int *)p)
-	: "r" (p), "r" (val)
-	: "cc", "memory");
-
+	__asm__ __volatile__(LWSYNC_ON_SMP
+		"1:\t"	     "lwarx	%0,0,%2\n"
+			     "stwcx.	%3,0,%2\n"
+			     "bne-	1b"
+			     ISYNC_ON_SMP
+			     : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
+			     : "r" (p), "r" (val)
+			     : "cc", "memory");
 	return prev;
 }
 
+#if (BITS_PER_LONG == 64)
 /*
- * This function doesn't exist, so you'll get a linker error
- * if something tries to do an invalid xchg().
+ * Exchange the 64-bits value pointed to by p, returns the old value.
+ * Might not work with PPC405 (see err 77).
  */
-extern void __xchg_called_with_bad_pointer(void);
+static __always_inline
+unsigned long __xchg_u64(volatile void *p, unsigned long val)
+{
+	unsigned long prev;
 
-static __always_inline unsigned long
-__xchg(volatile void *ptr, unsigned long x, unsigned int size)
+	__asm__ __volatile__(LWSYNC_ON_SMP
+		"1:\t"	     "ldarx	%0,0,%2\n"
+			     "stdcx.	%3,0,%2\n"
+			     "bne-	1b"
+			     ISYNC_ON_SMP
+			     : "=&r" (prev), "+m" (*(volatile unsigned long *)p)
+			     : "r" (p), "r" (val)
+			     : "cc", "memory");
+	return prev;
+}
+#endif
+
+static __always_inline
+unsigned long __xchg(volatile void *ptr, unsigned long x, int size)
 {
 	switch (size) {
 	case 4:
 		return __xchg_u32(ptr, x);
-#ifdef CONFIG_PPC64
+#if (BITS_PER_LONG == 64)
 	case 8:
 		return __xchg_u64(ptr, x);
 #endif
 	}
-	__xchg_called_with_bad_pointer();
 	return x;
 }
 
-#define xchg(ptr,x)							     \
-  ({									     \
-     __typeof__(*(ptr)) _x_ = (x);					     \
-     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
-  })
+/*
+ * note : xchg should only be used with pointers to 32 or 64-bits elements.
+ * No build-time check is done on the element size because depending on
+ * non-referenced unexisting symbol at link time to provide an error message
+ * only work when compiling with optimizations.
+ */
+#define xchg(ptr, v)    \
+	((__typeof__(*(ptr)))__xchg((ptr), (unsigned long)(v), sizeof(*(ptr))))
 
 #endif /* #ifndef _INCLUDE_API_H */
 
-#define mftbl()		({unsigned long rval;	\
-			asm volatile("mftbl %0" : "=r" (rval)); rval;})
-#define mftbu()		({unsigned long rval;	\
-			asm volatile("mftbu %0" : "=r" (rval)); rval;})
+#define mftbl()						\
+	({ 						\
+		unsigned long rval;			\
+		asm volatile("mftbl %0" : "=r" (rval));	\
+		rval;					\
+	})
+
+#define mftbu()						\
+	({						\
+		unsigned long rval;			\
+		asm volatile("mftbu %0" : "=r" (rval));	\
+		rval;					\
+	})
 
 typedef unsigned long long cycles_t;
 
 static inline cycles_t get_cycles (void)
 {
-	long h;
-	long l;
+	long h, l;
 
 	for (;;) {
 		h = mftbu();
-		smp_mb();
+		barrier();
 		l = mftbl();
-		smp_mb();
+		barrier();
 		if (mftbu() == h)
-			return (((long long)h) << 32) + l;
+			return (((cycles_t) h) << 32) + l;
 	}
 }
 
