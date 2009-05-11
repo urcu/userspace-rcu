@@ -30,3 +30,4 @@ api_ppc.h
 test_urcu.c
 test_urcu_yield.c
 test_rwlock_timing.c
+urcu-asm.c

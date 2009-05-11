@@ -68,4 +68,4 @@ install: liburcu.so
 clean:
 	rm -f *.o test_urcu test_urcu_timing test_rwlock_timing urcu-asm.S \
 		test_urcu_yield urcutorture urcutorture-yield liburcu.so \
-		test_urcu_dynamic_link
+		test_urcu_dynamic_link api.h arch.h
