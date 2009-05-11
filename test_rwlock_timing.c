@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <sys/syscall.h>
 #include <pthread.h>
+#include <arch.h>
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)

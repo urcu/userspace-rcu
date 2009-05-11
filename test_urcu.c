@@ -34,6 +34,11 @@ static inline pid_t gettid(void)
 }
 #endif
 
+#ifndef DYNAMIC_LINK_TEST
+#define _LGPL_SOURCE
+#else
+#define debug_yield_read()
+#endif
 #include "urcu.h"
 
 struct test_array {
@@ -146,7 +151,7 @@ void *thr_reader(void *_count)
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 
-	urcu_register_thread();
+	rcu_register_thread();
 
 	for (;;) {
 		rcu_read_lock();
@@ -160,7 +165,7 @@ void *thr_reader(void *_count)
 			break;
 	}
 
-	urcu_unregister_thread();
+	rcu_unregister_thread();
 
 	*count = nr_reads;
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -184,7 +189,7 @@ void *thr_writer(void *_count)
 		if (old)
 			assert(old->a == 8);
 		new->a = 8;
-		old = urcu_publish_content(&test_rcu_pointer, new);
+		old = rcu_publish_content(&test_rcu_pointer, new);
 		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
 		if (old)

@@ -114,7 +114,7 @@ void *rcu_read_perf_test(void *arg)
 	int me = (long)arg;
 	long long n_reads_local = 0;
 
-	urcu_register_thread();
+	rcu_register_thread();
 	run_on(me);
 	atomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
@@ -132,7 +132,7 @@ void *rcu_read_perf_test(void *arg)
 	}
 	__get_thread_var(n_reads_pt) += n_reads_local;
 	put_thread_offline();
-	urcu_unregister_thread();
+	rcu_unregister_thread();
 
 	return (NULL);
 }
@@ -258,7 +258,7 @@ void *rcu_read_stress_test(void *arg)
 	struct rcu_stress *p;
 	int pc;
 
-	urcu_register_thread();
+	rcu_register_thread();
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	mark_rcu_quiescent_state();
@@ -285,7 +285,7 @@ void *rcu_read_stress_test(void *arg)
 		}
 	}
 	put_thread_offline();
-	urcu_unregister_thread();
+	rcu_unregister_thread();
 
 	return (NULL);
 }

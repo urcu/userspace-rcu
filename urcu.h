@@ -8,13 +8,15 @@
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
- * Credits for Paul e. McKenney <paulmck@linux.vnet.ibm.com>
+ * Credits for Paul E. McKenney <paulmck@linux.vnet.ibm.com>
  * for inspiration coming from the Linux kernel RCU and rcu-preempt.
  *
- * The barrier, mb, rmb, wmb, atomic_inc, smp_read_barrier_depends, ACCESS_ONCE
- * and rcu_dereference primitives come from the Linux kernel.
+ * LGPL-compatible code should include this header with :
  *
- * Distributed under GPLv2
+ * #define _LGPL_SOURCE
+ * #include <urcu.h>
+ *
+ * Distributed under LGPLv2.1
  *
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
@@ -22,288 +24,55 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-/* The "volatile" is due to gcc bugs */
-#define barrier() __asm__ __volatile__("": : :"memory")
+#ifdef _LGPL_SOURCE
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-
-/* Assume SMP machine, given we don't have this information */
-#define CONFIG_SMP 1
-
-
-#ifdef CONFIG_SMP
-#define smp_mb()	mb()
-#define smp_rmb()	rmb()
-#define smp_wmb()	wmb()
-#define smp_mc()	mc()
-#define smp_rmc()	rmc()
-#define smp_wmc()	wmc()
-#else
-#define smp_mb()	barrier()
-#define smp_rmb()	barrier()
-#define smp_wmb()	barrier()
-#define smp_mc()	barrier()
-#define smp_rmc()	barrier()
-#define smp_wmc()	barrier()
-#endif
-
-#include "arch.h"
-
-/* Nop everywhere except on alpha. */
-#define smp_read_barrier_depends()
+#include <urcu-static.h>
 
 /*
- * Prevent the compiler from merging or refetching accesses.  The compiler
- * is also forbidden from reordering successive instances of ACCESS_ONCE(),
- * but only when the compiler is aware of some particular ordering.  One way
- * to make the compiler aware of ordering is to put the two invocations of
- * ACCESS_ONCE() in different C statements.
- *
- * This macro does absolutely -nothing- to prevent the CPU from reordering,
- * merging, or refetching absolutely anything at any time.  Its main intended
- * use is to mediate communication between process-level code and irq/NMI
- * handlers, all running on the same CPU.
+ * Mappings for static use of the userspace RCU library.
+ * Should only be used in LGPL-compatible code.
  */
-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+
+#define rcu_dereference		_rcu_dereference
+#define rcu_read_lock		_rcu_read_lock
+#define rcu_read_unlock		_rcu_read_unlock
+
+#define rcu_assign_pointer	_rcu_assign_pointer
+#define rcu_xchg_pointer	_rcu_xchg_pointer
+#define rcu_publish_content	_rcu_publish_content
+
+#else /* !_LGPL_SOURCE */
 
 /*
- * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
- */
-#define _LOAD_SHARED(p)	       ACCESS_ONCE(p)
-
-/*
- * Load a data from shared memory, doing a cache flush if required.
- */
-#define LOAD_SHARED(p) \
-	({ \
-		smp_rmc(); \
-		_LOAD_SHARED(p); \
-	})
-
-
-/*
- * Identify a shared store. A smp_wmc() or smp_mc() should follow the store.
- */
-#define _STORE_SHARED(x, v) \
-	do { \
-		ACCESS_ONCE(x) = (v); \
-	} while (0)
-
-/*
- * Store v into x, where x is located in shared memory. Performs the required
- * cache flush after writing.
- */
-#define STORE_SHARED(x, v) \
-	do { \
-		_STORE_SHARED(x, v); \
-		smp_wmc(); \
-	} while (0)
-
-/**
- * rcu_dereference - fetch an RCU-protected pointer in an
- * RCU read-side critical section.  This pointer may later
- * be safely dereferenced.
- *
- * Inserts memory barriers on architectures that require them
- * (currently only the Alpha), and, more importantly, documents
- * exactly which pointers are protected by RCU.
+ * library wrappers to be used by non-LGPL compatible source code.
  */
 
-#define rcu_dereference(p)     ({ \
-				typeof(p) _________p1 = LOAD_SHARED(p); \
-				smp_read_barrier_depends(); \
-				(_________p1); \
-				})
+extern void rcu_read_lock(void);
+extern void rcu_read_unlock(void);
 
-#define SIGURCU SIGUSR1
+extern void *rcu_dereference(void *p);
 
-/*
- * If a reader is really non-cooperative and refuses to commit its
- * urcu_active_readers count to memory (there is no barrier in the reader
- * per-se), kick it after a few loops waiting for it.
- */
-#define KICK_READER_LOOPS 10000
+extern void *rcu_assign_pointer_sym(void **p, void *v);
 
-#ifdef DEBUG_YIELD
-#include <sched.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
+#define rcu_assign_pointer(p, v)			\
+	rcu_assign_pointer_sym((void **)(p), (v))
 
-#define YIELD_READ 	(1 << 0)
-#define YIELD_WRITE	(1 << 1)
+extern void *rcu_xchg_pointer_sym(void **p, void *v);
+#define rcu_xchg_pointer(p, v)				\
+	rcu_xchg_pointer_sym((void **)(p), (v))
 
-/* Updates without DEBUG_FULL_MB are much slower. Account this in the delay */
-#ifdef DEBUG_FULL_MB
-/* maximum sleep delay, in us */
-#define MAX_SLEEP 50
-#else
-#define MAX_SLEEP 30000
-#endif
+extern void *rcu_publish_content_sym(void **p, void *v);
+#define rcu_publish_content(p, v)			\
+	rcu_publish_content_sym((void **)(p), (v))
 
-extern unsigned int yield_active;
-extern unsigned int __thread rand_yield;
-
-static inline void debug_yield_read(void)
-{
-	if (yield_active & YIELD_READ)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
-}
-
-static inline void debug_yield_write(void)
-{
-	if (yield_active & YIELD_WRITE)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
-}
-
-static inline void debug_yield_init(void)
-{
-	rand_yield = time(NULL) ^ pthread_self();
-}
-#else
-static inline void debug_yield_read(void)
-{
-}
-
-static inline void debug_yield_write(void)
-{
-}
-
-static inline void debug_yield_init(void)
-{
-
-}
-#endif
-
-#ifdef DEBUG_FULL_MB
-static inline void reader_barrier()
-{
-	smp_mb();
-}
-#else
-static inline void reader_barrier()
-{
-	barrier();
-}
-#endif
-
-/*
- * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
- * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
- */
-#define RCU_GP_COUNT		(1UL << 0)
-/* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
-#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
-
-/*
- * Global quiescent period counter with low-order bits unused.
- * Using a int rather than a char to eliminate false register dependencies
- * causing stalls on some architectures.
- */
-extern long urcu_gp_ctr;
-
-extern long __thread urcu_active_readers;
-
-static inline int rcu_old_gp_ongoing(long *value)
-{
-	long v;
-
-	if (value == NULL)
-		return 0;
-	/*
-	 * Make sure both tests below are done on the same version of *value
-	 * to insure consistency.
-	 */
-	v = LOAD_SHARED(*value);
-	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
-}
-
-static inline void rcu_read_lock(void)
-{
-	long tmp;
-
-	tmp = urcu_active_readers;
-	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
-	/*
-	 * The data dependency "read urcu_gp_ctr, write urcu_active_readers",
-	 * serializes those two memory operations. The memory barrier in the
-	 * signal handler ensures we receive the proper memory commit barriers
-	 * required by _STORE_SHARED and _LOAD_SHARED whenever communication
-	 * with the writer is needed.
-	 */
-	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
-		_STORE_SHARED(urcu_active_readers, _LOAD_SHARED(urcu_gp_ctr));
-	else
-		_STORE_SHARED(urcu_active_readers, tmp + RCU_GP_COUNT);
-	/*
-	 * Increment active readers count before accessing the pointer.
-	 * See force_mb_all_threads().
-	 */
-	reader_barrier();
-}
-
-static inline void rcu_read_unlock(void)
-{
-	reader_barrier();
-	/*
-	 * Finish using rcu before decrementing the pointer.
-	 * See force_mb_all_threads().
-	 */
-	_STORE_SHARED(urcu_active_readers, urcu_active_readers - RCU_GP_COUNT);
-}
-
-/**
- * rcu_assign_pointer - assign (publicize) a pointer to a newly
- * initialized structure that will be dereferenced by RCU read-side
- * critical sections.  Returns the value assigned.
- *
- * Inserts memory barriers on architectures that require them
- * (pretty much all of them other than x86), and also prevents
- * the compiler from reordering the code that initializes the
- * structure after the pointer assignment.  More importantly, this
- * call documents which pointers will be dereferenced by RCU read-side
- * code.
- */
-
-#define rcu_assign_pointer(p, v) \
-	({ \
-		if (!__builtin_constant_p(v) || \
-		    ((v) != NULL)) \
-			wmb(); \
-		STORE_SHARED(p, v); \
-	})
-
-#define rcu_xchg_pointer(p, v) \
-	({ \
-		if (!__builtin_constant_p(v) || \
-		    ((v) != NULL)) \
-			wmb(); \
-		xchg(p, v); \
-	})
+#endif /* !_LGPL_SOURCE */
 
 extern void synchronize_rcu(void);
 
 /*
- * Exchanges the pointer and waits for quiescent state.
- * The pointer returned can be freed.
- */
-#define urcu_publish_content(p, v) \
-	({ \
-		void *oldptr; \
-		oldptr = rcu_xchg_pointer(p, v); \
-		synchronize_rcu(); \
-		oldptr; \
-	})
-
-/*
  * Reader thread registration.
  */
-extern void urcu_register_thread(void);
-extern void urcu_unregister_thread(void);
+extern void rcu_register_thread(void);
+extern void rcu_unregister_thread(void);
 
 #endif /* _URCU_H */

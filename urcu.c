@@ -5,7 +5,7 @@
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
- * Distributed under GPLv2
+ * Distributed under LGPLv2.1
  *
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu-static.h"
+/* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -269,7 +271,47 @@ void synchronize_rcu(void)
 	internal_urcu_unlock();
 }
 
-void urcu_add_reader(pthread_t id)
+/*
+ * library wrappers to be used by non-LGPL compatible source code.
+ */
+
+void rcu_read_lock(void)
+{
+	_rcu_read_lock();
+}
+
+void rcu_read_unlock(void)
+{
+	_rcu_read_unlock();
+}
+
+void *rcu_dereference(void *p)
+{
+	return _rcu_dereference(p);
+}
+
+void *rcu_assign_pointer_sym(void **p, void *v)
+{
+	wmb();
+	return STORE_SHARED(p, v);
+}
+
+void *rcu_xchg_pointer_sym(void **p, void *v)
+{
+	wmb();
+	return xchg(p, v);
+}
+
+void *rcu_publish_content_sym(void **p, void *v)
+{
+	void *oldptr;
+
+	oldptr = _rcu_xchg_pointer(p, v);
+	synchronize_rcu();
+	return oldptr;
+}
+
+static void rcu_add_reader(pthread_t id)
 {
 	struct reader_registry *oldarray;
 
@@ -299,7 +341,7 @@ void urcu_add_reader(pthread_t id)
  * Never shrink (implementation limitation).
  * This is O(nb threads). Eventually use a hash table.
  */
-void urcu_remove_reader(pthread_t id)
+static void rcu_remove_reader(pthread_t id)
 {
 	struct reader_registry *index;
 
@@ -318,22 +360,22 @@ void urcu_remove_reader(pthread_t id)
 	assert(0);
 }
 
-void urcu_register_thread(void)
+void rcu_register_thread(void)
 {
 	internal_urcu_lock();
-	urcu_add_reader(pthread_self());
+	rcu_add_reader(pthread_self());
 	internal_urcu_unlock();
 }
 
-void urcu_unregister_thread(void)
+void rcu_unregister_thread(void)
 {
 	internal_urcu_lock();
-	urcu_remove_reader(pthread_self());
+	rcu_remove_reader(pthread_self());
 	internal_urcu_unlock();
 }
 
 #ifndef DEBUG_FULL_MB
-void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
+static void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	/*
 	 * Executing this smp_mb() is the only purpose of this signal handler.

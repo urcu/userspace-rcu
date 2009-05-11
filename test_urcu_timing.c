@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/syscall.h>
+#include <arch.h>
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -34,6 +35,7 @@ static inline pid_t gettid(void)
 }
 #endif
 
+#define _LGPL_SOURCE
 #include "urcu.h"
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -86,7 +88,7 @@ void *thr_reader(void *arg)
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	urcu_register_thread();
+	rcu_register_thread();
 
 	time1 = get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
@@ -101,7 +103,7 @@ void *thr_reader(void *arg)
 	}
 	time2 = get_cycles();
 
-	urcu_unregister_thread();
+	rcu_unregister_thread();
 
 	reader_time[(unsigned long)arg] = time2 - time1;
 
@@ -129,7 +131,7 @@ void *thr_writer(void *arg)
 			assert(old->a == 8);
 		}
 		new->a = 8;
-		old = urcu_publish_content(&test_rcu_pointer, new);
+		old = rcu_publish_content(&test_rcu_pointer, new);
 		rcu_copy_mutex_unlock();
 		/* can be done after unlock */
 		if (old) {
