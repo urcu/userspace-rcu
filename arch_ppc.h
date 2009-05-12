@@ -23,6 +23,7 @@
  */
 
 #include <compiler.h>
+#include <arch_atomic.h>
 
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
@@ -76,84 +77,6 @@ static inline void cpu_relax(void)
 {
 	barrier();
 }
-
-#define PPC405_ERR77(ra,rb)
-#define LWSYNC_ON_SMP "\n\tlwsync\n"
-#define ISYNC_ON_SMP "\n\tisync\n"
-
-struct __xchg_dummy {
-	unsigned long a[100];
-};
-#define __xg(x) ((struct __xchg_dummy *)(x))
-
-#ifndef _INCLUDE_API_H
-
-/*
- * Exchange the 32-bits value pointed to by p, returns the old value.
- * Might not work with PPC405 (see err 77).
- */
-static __always_inline
-unsigned int __xchg_u32(volatile void *p, unsigned int val)
-{
-	unsigned int prev;
-
-	__asm__ __volatile__(LWSYNC_ON_SMP
-		"1:\t"	     "lwarx	%0,0,%2\n"
-			     "stwcx.	%3,0,%2\n"
-			     "bne-	1b"
-			     ISYNC_ON_SMP
-			     : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
-			     : "r" (p), "r" (val)
-			     : "cc", "memory");
-	return prev;
-}
-
-#if (BITS_PER_LONG == 64)
-/*
- * Exchange the 64-bits value pointed to by p, returns the old value.
- * Might not work with PPC405 (see err 77).
- */
-static __always_inline
-unsigned long __xchg_u64(volatile void *p, unsigned long val)
-{
-	unsigned long prev;
-
-	__asm__ __volatile__(LWSYNC_ON_SMP
-		"1:\t"	     "ldarx	%0,0,%2\n"
-			     "stdcx.	%3,0,%2\n"
-			     "bne-	1b"
-			     ISYNC_ON_SMP
-			     : "=&r" (prev), "+m" (*(volatile unsigned long *)p)
-			     : "r" (p), "r" (val)
-			     : "cc", "memory");
-	return prev;
-}
-#endif
-
-static __always_inline
-unsigned long __xchg(volatile void *ptr, unsigned long x, int size)
-{
-	switch (size) {
-	case 4:
-		return __xchg_u32(ptr, x);
-#if (BITS_PER_LONG == 64)
-	case 8:
-		return __xchg_u64(ptr, x);
-#endif
-	}
-	return x;
-}
-
-/*
- * note : xchg should only be used with pointers to 32 or 64-bits elements.
- * No build-time check is done on the element size because depending on
- * non-referenced unexisting symbol at link time to provide an error message
- * only work when compiling with optimizations.
- */
-#define xchg(ptr, v)    \
-	((__typeof__(*(ptr)))__xchg((ptr), (unsigned long)(v), sizeof(*(ptr))))
-
-#endif /* #ifndef _INCLUDE_API_H */
 
 #define mftbl()						\
 	({ 						\

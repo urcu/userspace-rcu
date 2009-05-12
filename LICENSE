@@ -2,6 +2,9 @@ Userspace RCU library licensing
 Mathieu Desnoyers
 May 10, 2009
 
+
+* LGPLv2.1
+
 The library part is distributed under LGPLv2.1 or later. See lgpl-2.1.txt for
 details. This applies to :
 
@@ -20,6 +23,23 @@ Dynamic-only linking with the LGPL library is used if _LGPL_SOURCE is not
 defined. It permits relinking with newer versions of the library, which is
 required by the LGPL license.
 
+
+* MIT-style license :
+
+xchg() privimitive has been rewritten from scratch starting from atomic_ops 1.2
+which has a MIT-style license that is intended to allow use in both free and
+proprietary software:
+	http://www.hpl.hp.com/research/linux/atomic_ops/LICENSING.txt
+	http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/
+
+This license applies to :
+
+arch_atomic_x86.h
+arch_atomic_ppc.h
+
+
+* GPLv2
+
 Library test code is distributed under the GPLv2 license. See gpl-2.0.txt for
 details. This applies to :
 
@@ -31,3 +51,10 @@ test_urcu.c
 test_urcu_yield.c
 test_rwlock_timing.c
 urcu-asm.c
+
+
+Various details :
+
+ACCESS_ONCE(), likely(), unlikely() and barrier() are considered trivial enough
+that copyright does not apply to them. I (Mathieu Desnoyers) re-typed them from
+scratch in a mail client just to prove it.

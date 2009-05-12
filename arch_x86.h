@@ -23,6 +23,7 @@
  */
 
 #include <compiler.h>
+#include <arch_atomic.h>
 
 /* Assume P4 or newer */
 #define CONFIG_HAVE_FENCE 1
@@ -92,56 +93,6 @@ static inline void rep_nop(void)
 static inline void cpu_relax(void)
 {
 	rep_nop();
-}
-
-#define xchg(ptr, v)	\
-	((__typeof__(*(ptr)))__xchg((ptr), (unsigned long)(v), sizeof(*(ptr))))
-
-struct __xchg_ptr_as_array {
-	unsigned long a[100];
-};
-
-#define __xchg_ptr_as_array(x) ((struct __xchg_ptr_as_array *)(x))
-
-/*
- * xchg always implies a "lock" prefix, even on UP. See Intel documentation.
- * volatile attribute is neccessary due to xchg side effect.
- * *ptr is an output argument.
- * x is considered local, ptr is considered remote.
- */
-static inline unsigned long __xchg(volatile void *ptr, unsigned long x,
-				   int size)
-{
-	switch (size) {
-	case 1:
-		asm volatile("xchgb %b0,%1"
-			     : "=q" (x)
-			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
-			     : "memory");
-		break;
-	case 2:
-		asm volatile("xchgw %w0,%1"
-			     : "=r" (x)
-			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
-			     : "memory");
-		break;
-	case 4:
-		asm volatile("xchgl %k0,%1"
-			     : "=r" (x)
-			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
-			     : "memory");
-		break;
-#if (BITS_PER_LONG == 64)
-	case 8:
-		asm volatile("xchgq %0,%1"
-			     : "=r" (x)
-			     : "m" (*__xchg_ptr_as_array(ptr)), "0" (x)
-			     : "memory");
-		break;
-#endif
-	}
-	smp_wmc();
-	return x;
 }
 
 #define rdtscll(val)							  \

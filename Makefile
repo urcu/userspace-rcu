@@ -23,10 +23,12 @@ arch-api: api.h arch.h
 pthreads-x86: clean
 	cp api_x86.h api.h
 	cp arch_x86.h arch.h
+	cp arch_atomic_x86.h arch_atomic.h
 
 pthreads-ppc: clean
 	cp api_ppc.h api.h
 	cp arch_ppc.h arch.h
+	cp arch_atomic_ppc.h arch_atomic.h
 
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -68,9 +70,9 @@ urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
 
 install: liburcu.so
 	cp -f liburcu.so /usr/lib/
-	cp -f arch.h compiler.h urcu.h urcu-static.h /usr/include/
+	cp -f arch.h arch_atomic.h compiler.h urcu.h urcu-static.h /usr/include/
 
 clean:
 	rm -f *.o test_urcu test_urcu_timing test_rwlock_timing urcu-asm.S \
 		test_urcu_yield urcutorture urcutorture-yield liburcu.so \
-		test_urcu_dynamic_link api.h arch.h
+		test_urcu_dynamic_link api.h arch.h arch_atomic.h
