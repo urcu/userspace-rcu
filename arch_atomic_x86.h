@@ -27,9 +27,6 @@
 #ifndef _INCLUDE_API_H
 
 /*
- * Using a isync as second barrier for exchange to provide acquire semantic.
- * According to atomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
- * explicit that this also has acquire semantics."
  * Derived from AO_compare_and_swap() and AO_test_and_set_full().
  */
 
