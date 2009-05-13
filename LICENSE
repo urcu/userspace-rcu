@@ -38,6 +38,7 @@ This license applies to :
 
 arch_atomic_x86.h
 arch_atomic_ppc.h
+compiler.h
 
 
 * GPLv2

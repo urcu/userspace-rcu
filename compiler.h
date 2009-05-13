@@ -25,6 +25,11 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define likely()	__builtin_expect(!!(x), 1)
+#define unlikely()	__builtin_expect(!!(x), 0)
+
+#define	barrier()	asm volatile("" : : : "memory");
+
 /*
  * Instruct the compiler to perform only a single access to a variable
  * (prohibits merging and refetching). The compiler is also forbidden to reorder
@@ -37,5 +42,6 @@
  * use is to mediate communication between process-level code and irq/NMI
  * handlers, all running on the same CPU.
  */
+#define ACCESS_ONCE(x)	(*(volatile typeof(x) *)&x)
 
 #endif /* _COMPILER_H */
