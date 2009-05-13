@@ -8,25 +8,18 @@
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
-*
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
+ * OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * IBM's contributions to this file may be relicensed under LGPLv2 or later.
+ * Permission is hereby granted to use or copy this program
+ * for any purpose,  provided the above notices are retained on all copies.
+ * Permission to modify the code and to distribute modified code is granted,
+ * provided the above notices are retained, and a notice that the code was
+ * modified is included with the above copyright notice.
  */
 
-#define likely()	__builtin_expect(!!(x), 1)
-#define unlikely()	__builtin_expect(!!(x), 0)
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
 
 #define	barrier()	asm volatile("" : : : "memory");
 
