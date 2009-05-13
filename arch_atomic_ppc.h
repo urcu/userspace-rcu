@@ -24,7 +24,7 @@
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
-#define ILLEGAL_INSTR	.long	0xd00d00
+#define ILLEGAL_INSTR	".long	0xd00d00"
 
 #ifndef _INCLUDE_API_H
 
@@ -46,7 +46,7 @@ unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
 		"stwcx. %2,0,%1\n"	/* else store conditional */
 		"bne- 1b\n"	 	/* retry if lost reservation */
 		"isync\n"
-			: "=&r"(result),
+			: "=&r"(result)
 			: "r"(addr), "r"(val)
 			: "memory", "cc");
 
@@ -91,8 +91,8 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define xchg(addr, v)	(__typeof__(*(addr)) _atomic_exchange((addr), (v), \
-							    sizeof(*(addr))))
+#define xchg(addr, v)	(__typeof__(*(addr))) _atomic_exchange((addr), (v), \
+							    sizeof(*(addr)))
 
 #endif /* #ifndef _INCLUDE_API_H */
 
