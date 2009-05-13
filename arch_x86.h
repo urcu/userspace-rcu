@@ -94,6 +94,14 @@ static inline void cpu_relax(void)
 	rep_nop();
 }
 
+/*
+ * Serialize core instruction execution. Also acts as a compiler barrier.
+ */
+static inline void sync_core(void)
+{
+	asm volatile("cpuid" : : : "memory", "eax", "ebx", "ecx", "edx");
+}
+
 #define rdtscll(val)							  \
 	do {						  		  \
 	     unsigned int __a, __d;					  \

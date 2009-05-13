@@ -78,6 +78,14 @@ static inline void cpu_relax(void)
 	barrier();
 }
 
+/*
+ * Serialize core instruction execution. Also acts as a compiler barrier.
+ */
+static inline void sync_core()
+{
+	asm volatile("isync" : : : "memory");
+}
+
 #define mftbl()						\
 	({ 						\
 		unsigned long rval;			\
