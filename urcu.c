@@ -249,6 +249,14 @@ void synchronize_rcu(void)
 	 */
 
 	/*
+	 * Current RCU formal verification model assumes sequential execution of
+	 * the write-side. Add core synchronization instructions. Can be removed
+	 * if the formal model is extended to prove that reordering is still
+	 * correct.
+	 */
+	sync_core();	/* Formal model assumes serialized execution */
+
+	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
 	wait_for_quiescent_state();	/* Wait readers in parity 0 */
@@ -261,6 +269,8 @@ void synchronize_rcu(void)
 	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
 
+	sync_core();	/* Formal model assumes serialized execution */
+
 	switch_next_urcu_qparity();	/* 1 -> 0 */
 
 	/*
@@ -270,6 +280,8 @@ void synchronize_rcu(void)
 	 * progress).
 	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
+
+	sync_core();	/* Formal model assumes serialized execution */
 
 	/*
 	 * Wait for previous parity to be empty of readers.
