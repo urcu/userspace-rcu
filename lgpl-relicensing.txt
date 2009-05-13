@@ -1,0 +1,16 @@
+Mathieu Desnoyers
+May 13th, 2009
+
+IBM Corporation allowed LGPLv2.1+ licensing of their contribution to the
+userspace RCU library.
+
+ACCESS_ONCE(), likely(), unlikely() and barrier() are considered trivial enough
+that copyright does not apply to them. I (Mathieu Desnoyers) re-typed them from
+scratch in a mail client just to prove it.
+
+Bert Wesarg <bert.wesarg@googlemail.com> approved LGPL relicensing of his patch.
+
+xchg() primitives has been rewritten from a MIT-licensed cmpxchg for Intel and
+powerpc. They are MIT-licensed and therefore usable in LGPL code.
+
+I am therefore permitted to relicense the userspace RCU library as LGPLv2.1.

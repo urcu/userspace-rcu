@@ -23,6 +23,8 @@ Dynamic-only linking with the LGPL library is used if _LGPL_SOURCE is not
 defined. It permits relinking with newer versions of the library, which is
 required by the LGPL license.
 
+See lgpl-relicensing.txt for details.
+
 
 * MIT-style license :
 
@@ -51,10 +53,3 @@ test_urcu.c
 test_urcu_yield.c
 test_rwlock_timing.c
 urcu-asm.c
-
-
-Various details :
-
-ACCESS_ONCE(), likely(), unlikely() and barrier() are considered trivial enough
-that copyright does not apply to them. I (Mathieu Desnoyers) re-typed them from
-scratch in a mail client just to prove it.
