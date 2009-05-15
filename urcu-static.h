@@ -212,22 +212,16 @@ static inline void _rcu_read_lock(void)
 
 	tmp = urcu_active_readers;
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
-	/*
-	 * The data dependency "read urcu_gp_ctr, write urcu_active_readers",
-	 * serializes those two memory operations. The memory barrier in the
-	 * signal handler ensures we receive the proper memory commit barriers
-	 * required by _STORE_SHARED and _LOAD_SHARED whenever communication
-	 * with the writer is needed.
-	 */
-	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK)))
+	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
 		_STORE_SHARED(urcu_active_readers, _LOAD_SHARED(urcu_gp_ctr));
-	else
+		/*
+		 * Set active readers count for outermost nesting level before
+		 * accessing the pointer. See force_mb_all_threads().
+		 */
+		reader_barrier();
+	} else {
 		_STORE_SHARED(urcu_active_readers, tmp + RCU_GP_COUNT);
-	/*
-	 * Increment active readers count before accessing the pointer.
-	 * See force_mb_all_threads().
-	 */
-	reader_barrier();
+	}
 }
 
 static inline void _rcu_read_unlock(void)
@@ -236,6 +230,9 @@ static inline void _rcu_read_unlock(void)
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
+	 * Formally only needed for outermost nesting level, but leave barrier
+	 * in place for nested unlocks to remove a branch from the common case
+	 * (no nesting).
 	 */
 	_STORE_SHARED(urcu_active_readers, urcu_active_readers - RCU_GP_COUNT);
 }
@@ -263,7 +260,7 @@ static inline void _rcu_read_unlock(void)
 
 /**
  * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
- * pointer to the data structure, which can be safely freed after waitin for a
+ * pointer to the data structure, which can be safely freed after waiting for a
  * quiescent state using synchronize_rcu().
  */
 
