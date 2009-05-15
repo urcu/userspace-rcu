@@ -18,6 +18,10 @@
  * Copyright (c) 2009 Mathieu Desnoyers
  */
 
+/*
+ * Out-of-order memory model _without_ out-of-order instruction scheduling.
+ */
+
 /* Promela validation variables. */
 
 #define NR_READERS 1
