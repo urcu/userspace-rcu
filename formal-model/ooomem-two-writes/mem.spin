@@ -21,24 +21,22 @@
 /* Promela validation variables. */
 
 /*
- * Produced process data flow. Updated after each instruction to show which
- * variables are ready. Assigned using SSA (static single assignment) (defuse
- * analysis must be done on the program to map "real" variables to single define
- * followed by use). Using one-hot bit encoding per variable to save state
- * space.  Used as triggers to execute the instructions having those variables
- * as input.
+ * Produced process control and data flow. Updated after each instruction to
+ * show which variables are ready. Using one-hot bit encoding per variable to
+ * save state space. Used as triggers to execute the instructions having those
+ * variables as input. Leaving bits active to inhibit instruction execution.
+ * Scheme used to make instruction disabling and automatic dependency fall-back
+ * automatic.
  */
 
-#define PRODUCE_TOKENS(state, bits)	\
-	state = (state) | (bits)
+#define CONSUME_TOKENS(state, bits, notbits)			\
+	((!(state & (notbits))) && (state & (bits)) == (bits))
 
-/* All bits must be active to consume. All notbits must be inactive. */
-/* Consuming a token does not clear it, it just waits for it. */
-#define CONSUME_TOKENS(state, bits, notbits)				\
-	((!((state) & (notbits))) && ((state) & (bits)) == (bits))
+#define PRODUCE_TOKENS(state, bits)				\
+	state = state | (bits);
 
-#define CLEAR_TOKENS(state, bits)	\
-	state = (state) & ~(bits)
+#define CLEAR_TOKENS(state, bits)				\
+	state = state & ~(bits)
 
 #define NR_PROCS 2
 

@@ -28,6 +28,7 @@ default:
 	make read_order | tee read_order.log
 	make read_order_no_wmb | tee read_order_no_wmb.log
 	make read_order_no_rmb | tee read_order_no_rmb.log
+	make read_order_no_sync | tee read_order_no_sync.log
 	make asserts | tee asserts.log
 	make summary
 
@@ -52,6 +53,13 @@ asserts: clean
 read_order: clean read_order_ltl run
 	cp .input.spin $@.spin.input
 	-cp .input.spin.trail $@.spin.input.trail
+
+read_order_no_sync: clean read_order_ltl read_order_no_sync_define run
+	cp .input.spin $@.spin.input
+	-cp .input.spin.trail $@.spin.input.trail
+
+read_order_no_sync_define:
+	cp read_order_no_sync.define .input.define
 
 read_order_no_rmb: clean read_order_ltl read_order_no_rmb_define run
 	cp .input.spin $@.spin.input

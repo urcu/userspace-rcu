@@ -1,2 +1,3 @@
-#define read_one_is_zero (read_one == 0)
-#define read_two_is_zero (read_two == 0)
+#define read_one_is_one (read_one == 1)
+#define read_two_is_one (read_two == 1)
+#define read_two_done   (read_two != 2)
