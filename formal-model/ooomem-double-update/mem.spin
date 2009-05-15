@@ -1,5 +1,18 @@
 /*
- * mem.spin: Promela code to validate memory barriers with OOO memory.
+ * mem.spin: Promela code to validate memory barriers with out-of-order memory
+ * and out-of-order instruction scheduling.
+ *
+ * Algorithm verified :
+ *
+ * alpha = 0;
+ * beta = 0;
+ *
+ * Process A                  Process B
+ * alpha = 1;                 x = beta;
+ * wmb();                     rmb();
+ * beta = 1;                  y = alpha;
+ *
+ * if x = 1, then y will = 1 when it is read.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
