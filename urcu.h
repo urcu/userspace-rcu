@@ -34,6 +34,14 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+/*
+ * Important !
+ *
+ * Each thread containing read-side critical sections must be registered
+ * with rcu_register_thread() before calling rcu_read_lock().
+ * rcu_unregister_thread() should be called before the thread exits.
+ */
+
 #ifdef _LGPL_SOURCE
 
 #include <urcu-static.h>
