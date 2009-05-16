@@ -7,5 +7,12 @@ make pthreads-ppc
 make
 make install
 
+Usage :
+
+Registration of _each thread_ calling read-side critical sections must be done
+with rcu_register_thread() before using rcu_read_lock()/rcu_read_unlock().
+
+Unregistration should be performed with rcu_unregister_thread() before exiting
+the thread.
 
      Mathieu Desnoyers
