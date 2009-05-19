@@ -20,6 +20,14 @@
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
+#ifndef __SIZEOF_LONG__
+#ifdef __powerpc64__
+#define __SIZEOF_LONG__ 8
+#else
+#define __SIZEOF_LONG__ 4
+#endif
+#endif
+
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
@@ -67,7 +75,7 @@ unsigned long atomic_exchange_64(volatile unsigned long *addr,
 		"stdcx. %2,0,%1\n"	/* else store conditional */
 		"bne- 1b\n"	 	/* retry if lost reservation */
 		"isync\n"
-			: "=&r"(result),
+			: "=&r"(result)
 			: "r"(addr), "r"(val)
 			: "memory", "cc");
 
