@@ -36,6 +36,11 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
+void __attribute__((constructor)) urcu_init(void);
+void __attribute__((destructor)) urcu_exit(void);
+
+int init_done;
+
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -388,6 +393,7 @@ static void rcu_remove_reader(pthread_t id)
 void rcu_register_thread(void)
 {
 	internal_urcu_lock();
+	urcu_init();	/* In case gcc does not support constructor attribute */
 	rcu_add_reader(pthread_self());
 	internal_urcu_unlock();
 }
@@ -412,10 +418,22 @@ static void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 	smp_mb();
 }
 
-void __attribute__((constructor)) urcu_init(void)
+/*
+ * urcu_init constructor. Called when the library is linked, but also when
+ * reader threads are calling rcu_register_thread().
+ * Should only be called by a single thread at a given time. This is ensured by
+ * holing the internal_urcu_lock() from rcu_register_thread() or by running at
+ * library load time, which should not be executed by multiple threads nor
+ * concurrently with rcu_register_thread() anyway.
+ */
+void urcu_init(void)
 {
 	struct sigaction act;
 	int ret;
+
+	if (init_done)
+		return;
+	init_done = 1;
 
 	act.sa_sigaction = sigurcu_handler;
 	ret = sigaction(SIGURCU, &act, NULL);
@@ -425,7 +443,7 @@ void __attribute__((constructor)) urcu_init(void)
 	}
 }
 
-void __attribute__((destructor)) urcu_exit(void)
+void urcu_exit(void)
 {
 	struct sigaction act;
 	int ret;
