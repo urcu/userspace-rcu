@@ -243,7 +243,6 @@ inline smp_mb(i, j)
 	}
 }
 
-
 #ifdef REMOTE_BARRIERS
 
 bit reader_barrier[NR_READERS];
@@ -269,27 +268,48 @@ inline smp_mb_recv(i, j)
 	:: (reader_barrier[get_readerid()] == 1) ->
 		smp_mb(i, j);
 		reader_barrier[get_readerid()] = 0;
-	:: 1 -> skip;
+	:: 1 ->
+	/*
+	 * Busy-looping waiting for other barrier requests are not considered as
+	 * non-progress.
+	 */
+#ifdef READER_PROGRESS
+progress_reader2:
+#endif
+		skip;
 	:: 1 -> break;
 	od;
 }
 
-inline smp_mb_send(i, j)
-{
-	smp_mb(i, j);
-	i = 0;
-	do
-	:: i < NR_READERS ->
-		reader_barrier[i] = 1;
-		do
-		:: (reader_barrier[i] == 1) -> skip;
-		:: (reader_barrier[i] == 0) -> break;
-		od;
-		i++;
-	:: i >= NR_READERS ->
-		break
-	od;
-	smp_mb(i, j);
+#ifdef WRITER_PROGRESS
+#define PROGRESS_LABEL(progressid)	progress_writer_progid_##progressid:
+#else
+#define PROGRESS_LABEL(progressid)
+#endif
+
+#define smp_mb_send(i, j, progressid)						\
+{										\
+	smp_mb(i, j);								\
+	i = 0;									\
+	do									\
+	:: i < NR_READERS ->							\
+		reader_barrier[i] = 1;						\
+		do								\
+		:: (reader_barrier[i] == 1) ->					\
+		/*								\
+		 * Busy-looping waiting for reader barrier handling is of little\
+		 * interest, given the reader has the ability to totally ignore	\
+		 * barrier requests.						\
+		 */								\
+PROGRESS_LABEL(progressid)							\
+			skip;							\
+		:: (reader_barrier[i] == 0) -> break;				\
+		od;								\
+		i++;								\
+	:: i >= NR_READERS ->							\
+		break								\
+	od;									\
+	smp_mb(i, j);								\
 }
 
 #else
@@ -1046,18 +1066,18 @@ progress_writer2:
 	/* Non-atomic parts of the loop */
 	goto end;
 smp_mb_send1:
-	smp_mb_send(i, j);
+	smp_mb_send(i, j, 1);
 	goto smp_mb_send1_end;
 #ifndef GEN_ERROR_WRITER_PROGRESS
 smp_mb_send2:
-	smp_mb_send(i, j);
+	smp_mb_send(i, j, 2);
 	goto smp_mb_send2_end;
 smp_mb_send3:
-	smp_mb_send(i, j);
+	smp_mb_send(i, j, 3);
 	goto smp_mb_send3_end;
 #endif
 smp_mb_send4:
-	smp_mb_send(i, j);
+	smp_mb_send(i, j, 4);
 	goto smp_mb_send4_end;
 end:
 	skip;
