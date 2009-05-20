@@ -314,7 +314,7 @@ PROGRESS_LABEL(progressid)							\
 
 #else
 
-#define smp_mb_send	smp_mb
+#define smp_mb_send(i, j, progressid)	smp_mb(i, j)
 #define smp_mb_reader	smp_mb
 #define smp_mb_recv(i, j)
 
@@ -907,6 +907,8 @@ progress_writer1:
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_READ_GP);
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WRITE_GP);
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT);
+		/* For single flip, we need to know the current parity */
+		cur_gp_val = cur_gp_val ^ RCU_GP_CTR_BIT;
 #endif
 
 		do :: 1 ->
@@ -939,7 +941,12 @@ smp_mb_send1_end:
 			ooo_mem(i);
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
-			cur_gp_val = cur_gp_val ^ RCU_GP_CTR_BIT;
+#ifndef SINGLE_FLIP
+			/* In normal execution, we are always starting by
+			 * waiting for the even parity.
+			 */
+			cur_gp_val = RCU_GP_CTR_BIT;
+#endif
 			if
 			:: (tmp2 & RCU_GP_CTR_NEST_MASK)
 					&& ((tmp2 ^ cur_gp_val) & RCU_GP_CTR_BIT) ->
@@ -993,10 +1000,9 @@ smp_mb_send2_end:
 			ooo_mem(i);
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
-			cur_gp_val = cur_gp_val ^ RCU_GP_CTR_BIT;
 			if
 			:: (tmp2 & RCU_GP_CTR_NEST_MASK)
-					&& ((tmp2 ^ cur_gp_val) & RCU_GP_CTR_BIT) ->
+					&& ((tmp2 ^ 0) & RCU_GP_CTR_BIT) ->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT_LOOP);
 			:: else	->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT);
