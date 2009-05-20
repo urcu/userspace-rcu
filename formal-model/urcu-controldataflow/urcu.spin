@@ -592,7 +592,7 @@ non_atomic3_end:
 
 		goto non_atomic3_skip;
 non_atomic3:
-		smp_mb_recv(i, j);	
+		smp_mb_recv(i, j);
 		goto non_atomic3_end;
 non_atomic3_skip:
 
@@ -841,6 +841,11 @@ active proctype urcu_writer()
 	byte i, j;
 	byte tmp, tmp2, tmpa;
 	byte old_gen;
+	byte cur_gp_val = 0;	/*
+				 * Keep a local trace of the current parity so
+				 * we don't add non-existing dependencies on the global
+				 * GP update. Needed to test single flip case.
+				 */
 
 	wait_init_done();
 
@@ -884,11 +889,14 @@ progress_writer1:
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT);
 #endif
 
-		do
+		do :: 1 ->
+		atomic {
+		if
 		:: CONSUME_TOKENS(proc_urcu_writer,
 				  WRITE_PROD_NONE,
 				  WRITE_PROC_FIRST_MB) ->
-			smp_mb_send(i, j);
+			goto smp_mb_send1;
+smp_mb_send1_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_MB);
 
 		/* first flip */
@@ -911,9 +919,10 @@ progress_writer1:
 			ooo_mem(i);
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
+			cur_gp_val = cur_gp_val ^ RCU_GP_CTR_BIT;
 			if
 			:: (tmp2 & RCU_GP_CTR_NEST_MASK)
-					&& ((tmp2 ^ RCU_GP_CTR_BIT) & RCU_GP_CTR_BIT) ->
+					&& ((tmp2 ^ cur_gp_val) & RCU_GP_CTR_BIT) ->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_WAIT_LOOP);
 			:: else	->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_WAIT);
@@ -927,7 +936,8 @@ progress_writer1:
 				  | WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  0) ->
 #ifndef GEN_ERROR_WRITER_PROGRESS
-			smp_mb_send(i, j);
+			goto smp_mb_send2;
+smp_mb_send2_end:
 #else
 			ooo_mem(i);
 #endif
@@ -942,7 +952,6 @@ progress_writer1:
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_FIRST_MB,
 				  WRITE_PROC_SECOND_READ_GP) ->
-			//smp_mb_send(i, j);		//TEST
 			ooo_mem(i);
 			tmpa = READ_CACHED_VAR(urcu_gp_ctr);
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_READ_GP);
@@ -964,9 +973,10 @@ progress_writer1:
 			ooo_mem(i);
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
+			cur_gp_val = cur_gp_val ^ RCU_GP_CTR_BIT;
 			if
 			:: (tmp2 & RCU_GP_CTR_NEST_MASK)
-					&& ((tmp2 ^ 0) & RCU_GP_CTR_BIT) ->
+					&& ((tmp2 ^ cur_gp_val) & RCU_GP_CTR_BIT) ->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT_LOOP);
 			:: else	->
 				PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WAIT);
@@ -982,7 +992,8 @@ progress_writer1:
 				  | WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  0) ->
 #ifndef GEN_ERROR_WRITER_PROGRESS
-			smp_mb_send(i, j);
+			goto smp_mb_send3;
+smp_mb_send3_end:
 #else
 			ooo_mem(i);
 #endif
@@ -999,12 +1010,15 @@ progress_writer1:
 				  | WRITE_PROC_SECOND_WRITE_GP
 				  | WRITE_PROC_FIRST_MB,
 				  WRITE_PROC_SECOND_MB) ->
-			smp_mb_send(i, j);
+			goto smp_mb_send4;
+smp_mb_send4_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_MB);
 
 		:: CONSUME_TOKENS(proc_urcu_writer, WRITE_PROC_ALL_TOKENS, 0) ->
 			CLEAR_TOKENS(proc_urcu_writer, WRITE_PROC_ALL_TOKENS_CLEAR);
 			break;
+		fi;
+		}
 		od;
 
 		write_lock = 0;
@@ -1028,6 +1042,25 @@ progress_writer2:
 #endif
 		skip;
 	od;
+
+	/* Non-atomic parts of the loop */
+	goto end;
+smp_mb_send1:
+	smp_mb_send(i, j);
+	goto smp_mb_send1_end;
+#ifndef GEN_ERROR_WRITER_PROGRESS
+smp_mb_send2:
+	smp_mb_send(i, j);
+	goto smp_mb_send2_end;
+smp_mb_send3:
+	smp_mb_send(i, j);
+	goto smp_mb_send3_end;
+#endif
+smp_mb_send4:
+	smp_mb_send(i, j);
+	goto smp_mb_send4_end;
+end:
+	skip;
 }
 
 /* no name clash please */
