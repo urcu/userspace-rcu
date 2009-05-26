@@ -4,6 +4,15 @@
  *      git archive at git://lttng.org/userspace-rcu.git, but with
  *	memory barriers removed.
  *
+ * This validates a single reader against a single updater.  The
+ * updater is assumed to have smp_mb() barriers between each pair
+ * of operations, and this model validates that a signal-mediated
+ * broadcast barrier is required only at the beginning and end of
+ * the synchronize_rcu().
+ *
+ * Note that the second half of a prior synchronize_rcu() is modelled
+ * as well as the current synchronize_rcu().
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -23,11 +32,25 @@
 
 /* Promela validation variables. */
 
-bit removed = 0;  /* Has RCU removal happened, e.g., list_del_rcu()? */
-bit free = 0;     /* Has RCU reclamation happened, e.g., kfree()? */
-bit need_mb = 0;  /* =1 says need reader mb, =0 for reader response. */
-byte reader_progress[4];
-		  /* Count of read-side statement executions. */
+bit removed = 0;  	/* Has RCU removal happened, e.g., list_del_rcu()? */
+bit free = 0;     	/* Has RCU reclamation happened, e.g., kfree()? */
+bit need_mb = 0;  	/* =1 says need reader mb, =0 for reader response. */
+byte reader_progress[4]; /* Count of read-side statement executions. */
+bit reader_done = 0;	/* =0 says reader still running, =1 says done. */
+bit updater_done = 0;	/* =0 says updater still running, =1 says done. */
+
+/* Broadcast memory barriers to enable, prior synchronize_rcu() instance. */
+
+/* #define MB_A */	/* Not required for correctness. */
+/* #define MB_B */	/* Not required for correctness. */
+/* #define MB_C */	/* Not required for correctness. */
+
+/* Broadcast memory barriers to enable, current synchronize_rcu() instance. */
+
+#define MB_D		/* First broadcast barrier in synchronize_rcu(). */
+/* #define MB_E */	/* Not required for correctness. */
+/* #define MB_F */	/* Not required for correctness. */
+#define MB_G		/* Last broadcast barrier in synchronize_rcu(). */
 
 /* urcu definitions and variables, taken straight from the algorithm. */
 
@@ -51,7 +74,6 @@ proctype urcu_reader()
 	do
 	:: need_mb == 1 ->
 		need_mb = 0;
-	:: 1 -> skip;
 	:: 1 -> break;
 	od;
 
@@ -93,7 +115,7 @@ proctype urcu_reader()
 				    reader_progress[2] +
 				    reader_progress[3] == 0) && need_mb == 1 ->
 					need_mb = 0;
-				:: 1 -> skip;
+				:: need_mb == 0 && !updater_done -> skip;
 				:: 1 -> break;
 				od;
 				urcu_active_readers = tmp;
@@ -151,7 +173,6 @@ proctype urcu_reader()
 			do
 			:: need_mb == 1 ->
 				need_mb = 0;
-			:: 1 -> skip;
 			:: 1 -> break;
 			od;
 		:: else -> skip;
@@ -168,11 +189,21 @@ proctype urcu_reader()
 	od;
 	assert((tmp_free == 0) || (tmp_removed == 1));
 
-	/* Process any late-arriving memory-barrier requests. */
+	/* Reader has completed. */
+	reader_done = 1;
+
+	/*
+	 * Process any late-arriving memory-barrier requests, and
+	 * in addition create a progress cycle.
+	 */
+	reader_done = 1;
+
 	do
 	:: need_mb == 1 ->
 		need_mb = 0;
-	:: 1 -> skip;
+	:: 1 ->
+progress_reader:
+		skip;
 	:: 1 -> break;
 	od;
 }
@@ -183,18 +214,27 @@ proctype urcu_updater()
 {
 	byte tmp;
 
+	/*
+	 * ----------------------------------------------------------------
+	 * prior synchronize_rcu().
+	 */
+
 	/* prior synchronize_rcu(), second counter flip. */
-	need_mb = 1; /* mb() A */
+#ifdef MB_A
+	need_mb = 1; /* mb() A (analogous to omitted barrier between E and F) */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_A */
 	urcu_gp_ctr = urcu_gp_ctr + RCU_GP_CTR_BIT;
-	need_mb = 1; /* mb() B */
+#ifdef MB_B
+	need_mb = 1; /* mb() B (analogous to F) */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_B */
 	do
 	:: 1 ->
 		if
@@ -205,27 +245,43 @@ proctype urcu_updater()
 		:: else -> break;
 		fi
 	od;
+#ifdef MB_C
 	need_mb = 1; /* mb() C absolutely required by analogy with G */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_C */
 
 	/* Removal statement, e.g., list_del_rcu(). */
 	removed = 1;
 
+	/*
+	 * prior synchronize_rcu().
+	 * ----------------------------------------------------------------
+	 */
+
+	/*
+	 * ----------------------------------------------------------------
+	 * current synchronize_rcu().
+	 */
+
 	/* current synchronize_rcu(), first counter flip. */
+#ifdef MB_D
 	need_mb = 1; /* mb() D suggested */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_D */
 	urcu_gp_ctr = urcu_gp_ctr + RCU_GP_CTR_BIT;
+#ifdef MB_E
 	need_mb = 1;  /* mb() E required if D not present */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_E */
 
 	/* current synchronize_rcu(), first-flip check plus second flip. */
 	if
@@ -257,11 +313,13 @@ proctype urcu_updater()
 	fi;
 
 	/* current synchronize_rcu(), second counter flip check. */
+#ifdef MB_F
 	need_mb = 1; /* mb() F not required */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_F */
 	do
 	:: 1 ->
 		if
@@ -272,14 +330,32 @@ proctype urcu_updater()
 		:: else -> break;
 		fi;
 	od;
+#ifdef MB_G
 	need_mb = 1; /* mb() G absolutely required */
 	do
-	:: need_mb == 1 -> skip;
-	:: need_mb == 0 -> break;
+	:: need_mb == 1 && !reader_done -> skip;
+	:: need_mb == 0 || reader_done -> break;
 	od;
+#endif /* #ifdef MB_G */
+
+	/*
+	 * current synchronize_rcu().
+	 * ----------------------------------------------------------------
+	 */
 
 	/* free-up step, e.g., kfree(). */
 	free = 1;
+
+	/* We are done, so kill all the infinite loops in the reader. */
+	updater_done = 1;
+
+	/* Create a progress cycle.  Correctness requires we get here. */
+	do
+	:: 1 ->
+progress_updater:
+		skip;
+	:: 1 -> break;
+	od;
 }
 
 /*

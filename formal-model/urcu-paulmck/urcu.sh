@@ -1,3 +1,3 @@
 spin -a urcu-paulmck.spin 
-cc -DSAFETY -o pan pan.c
-./pan
+cc -DNP -o pan pan.c
+./pan -f -l
