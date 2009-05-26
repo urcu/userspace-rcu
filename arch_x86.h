@@ -97,10 +97,22 @@ static inline void cpu_relax(void)
 /*
  * Serialize core instruction execution. Also acts as a compiler barrier.
  */
+#ifdef __PIC__
+/*
+ * Cannot use cpuid because it clobbers the ebx register and clashes
+ * with -fPIC :
+ * error: PIC register 'ebx' clobbered in 'asm'
+ */
+static inline void sync_core(void)
+{
+	mb();
+}
+#else
 static inline void sync_core(void)
 {
 	asm volatile("cpuid" : : : "memory", "eax", "ebx", "ecx", "edx");
 }
+#endif
 
 #define rdtscll(val)							  \
 	do {						  		  \

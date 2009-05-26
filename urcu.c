@@ -254,12 +254,11 @@ void synchronize_rcu(void)
 	 */
 
 	/*
-	 * Current RCU formal verification model assumes sequential execution of
-	 * the write-side. Add core synchronization instructions. Can be removed
-	 * if the formal model is extended to prove that reordering is still
-	 * correct.
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
 	 */
-	sync_core();	/* Formal model assumes serialized execution */
+	smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -274,7 +273,12 @@ void synchronize_rcu(void)
 	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
 
-	sync_core();	/* Formal model assumes serialized execution */
+	/*
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	smp_mb();
 
 	switch_next_urcu_qparity();	/* 1 -> 0 */
 
@@ -286,7 +290,12 @@ void synchronize_rcu(void)
 	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
 
-	sync_core();	/* Formal model assumes serialized execution */
+	/*
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.

@@ -30,7 +30,7 @@
  * Derived from AO_compare_and_swap() and AO_test_and_set_full().
  */
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
 {
 	unsigned int result;
@@ -47,7 +47,7 @@ unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
 
 #if (BITS_PER_LONG == 64)
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned long atomic_exchange_64(volatile unsigned long *addr,
 				 unsigned long val)
 {
@@ -65,7 +65,7 @@ unsigned long atomic_exchange_64(volatile unsigned long *addr,
 
 #endif
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
