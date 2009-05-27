@@ -349,7 +349,7 @@ DECLARE_CACHED_VAR(byte, urcu_active_readers[NR_READERS]);
 /* RCU pointer */
 DECLARE_CACHED_VAR(byte, rcu_ptr);
 /* RCU data */
-DECLARE_CACHED_VAR(byte, rcu_data[2]);
+DECLARE_CACHED_VAR(byte, rcu_data[SLAB_SIZE]);
 
 byte ptr_read[NR_READERS];
 byte data_read[NR_READERS];
