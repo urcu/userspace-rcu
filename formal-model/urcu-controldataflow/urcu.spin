@@ -213,7 +213,14 @@ inline smp_rmb(i, j)
 			i++
 		:: i >= NR_READERS -> break
 		od;
-		CACHE_READ_FROM_MEM(generation_ptr, get_pid());
+		CACHE_READ_FROM_MEM(rcu_ptr, get_pid());
+		i = 0;
+		do
+		:: i < SLAB_SIZE ->
+			CACHE_READ_FROM_MEM(rcu_data[i], get_pid());
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
 	}
 }
 
@@ -229,7 +236,14 @@ inline smp_wmb(i, j)
 			i++
 		:: i >= NR_READERS -> break
 		od;
-		CACHE_WRITE_TO_MEM(generation_ptr, get_pid());
+		CACHE_WRITE_TO_MEM(rcu_ptr, get_pid());
+		i = 0;
+		do
+		:: i < SLAB_SIZE ->
+			CACHE_WRITE_TO_MEM(rcu_data[i], get_pid());
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
 	}
 }
 
@@ -270,14 +284,23 @@ inline smp_mb_recv(i, j)
 		reader_barrier[get_readerid()] = 0;
 	:: 1 ->
 	/*
-	 * Busy-looping waiting for other barrier requests are not considered as
+	 * Busy-looping waiting for other barrier requests is not considered as
 	 * non-progress.
 	 */
 #ifdef READER_PROGRESS
 progress_reader2:
 #endif
+#ifdef WRITER_PROGRESS
+//progress_writer_from_reader1:
+#endif
 		skip;
-	:: 1 -> break;
+	:: 1 ->
+		/* We choose to ignore writer's non-progress caused from the
+		 * reader ignoring the writer's mb() requests */
+#ifdef WRITER_PROGRESS
+//progress_writer_from_reader2:
+#endif
+		break;
 	od;
 }
 
@@ -294,15 +317,14 @@ progress_reader2:
 	do									\
 	:: i < NR_READERS ->							\
 		reader_barrier[i] = 1;						\
-		do								\
-		:: (reader_barrier[i] == 1) ->					\
 		/*								\
 		 * Busy-looping waiting for reader barrier handling is of little\
 		 * interest, given the reader has the ability to totally ignore	\
 		 * barrier requests.						\
 		 */								\
 PROGRESS_LABEL(progressid)							\
-			skip;							\
+		do								\
+		:: (reader_barrier[i] == 1) -> skip;				\
 		:: (reader_barrier[i] == 0) -> break;				\
 		od;								\
 		i++;								\
@@ -320,23 +342,19 @@ PROGRESS_LABEL(progressid)							\
 
 #endif
 
-/* Keep in sync manually with smp_rmb, wmp_wmb, ooo_mem and init() */
+/* Keep in sync manually with smp_rmb, smp_wmb, ooo_mem and init() */
 DECLARE_CACHED_VAR(byte, urcu_gp_ctr);
 /* Note ! currently only two readers */
 DECLARE_CACHED_VAR(byte, urcu_active_readers[NR_READERS]);
-/* pointer generation */
-DECLARE_CACHED_VAR(byte, generation_ptr);
+/* RCU pointer */
+DECLARE_CACHED_VAR(byte, rcu_ptr);
+/* RCU data */
+DECLARE_CACHED_VAR(byte, rcu_data[2]);
 
-byte last_free_gen = 0;
-bit free_done = 0;
-byte read_generation[NR_READERS];
-bit data_access[NR_READERS];
-
-bit write_lock = 0;
+byte ptr_read[NR_READERS];
+byte data_read[NR_READERS];
 
 bit init_done = 0;
-
-bit sighand_exec = 0;
 
 inline wait_init_done()
 {
@@ -358,7 +376,14 @@ inline ooo_mem(i)
 			i++
 		:: i >= NR_READERS -> break
 		od;
-		RANDOM_CACHE_WRITE_TO_MEM(generation_ptr, get_pid());
+		RANDOM_CACHE_WRITE_TO_MEM(rcu_ptr, get_pid());
+		i = 0;
+		do
+		:: i < SLAB_SIZE ->
+			RANDOM_CACHE_WRITE_TO_MEM(rcu_data[i], get_pid());
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
 		RANDOM_CACHE_READ_FROM_MEM(urcu_gp_ctr, get_pid());
 		i = 0;
 		do
@@ -368,7 +393,14 @@ inline ooo_mem(i)
 			i++
 		:: i >= NR_READERS -> break
 		od;
-		RANDOM_CACHE_READ_FROM_MEM(generation_ptr, get_pid());
+		RANDOM_CACHE_READ_FROM_MEM(rcu_ptr, get_pid());
+		i = 0;
+		do
+		:: i < SLAB_SIZE ->
+			RANDOM_CACHE_READ_FROM_MEM(rcu_data[i], get_pid());
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
 	}
 }
 
@@ -635,17 +667,19 @@ non_atomic3_skip:
 					  READ_PROC_FIRST_MB,		/* mb() orders reads */
 					  READ_PROC_READ_GEN) ->
 				ooo_mem(i);
-				read_generation[get_readerid()] =
-					READ_CACHED_VAR(generation_ptr);
+				ptr_read[get_readerid()] =
+					READ_CACHED_VAR(rcu_ptr);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_READ_GEN);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
 					  READ_PROC_FIRST_MB		/* mb() orders reads */
 					  | READ_PROC_READ_GEN,
 					  READ_PROC_ACCESS_GEN) ->
-				ooo_mem(i);
-				goto non_atomic;
-non_atomic_end:
+				/* smp_read_barrier_depends */
+				goto rmb1;
+rmb1_end:
+				data_read[get_readerid()] =
+					READ_CACHED_VAR(rcu_data[ptr_read[get_readerid()]]);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_ACCESS_GEN);
 
 
@@ -712,8 +746,7 @@ non_atomic_end:
 					  | READ_PROC_THIRD_MB,		/* mb() orders reads */
 					  READ_PROC_READ_GEN_UNROLL) ->
 				ooo_mem(i);
-				read_generation[get_readerid()] =
-					READ_CACHED_VAR(generation_ptr);
+				ptr_read[get_readerid()] = READ_CACHED_VAR(rcu_ptr);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_READ_GEN_UNROLL);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -722,9 +755,11 @@ non_atomic_end:
 					  | READ_PROC_SECOND_MB		/* mb() orders reads */
 					  | READ_PROC_THIRD_MB,		/* mb() orders reads */
 					  READ_PROC_ACCESS_GEN_UNROLL) ->
-				ooo_mem(i);
-				goto non_atomic2;
-non_atomic2_end:
+				/* smp_read_barrier_depends */
+				goto rmb2;
+rmb2_end:
+				data_read[get_readerid()] =
+					READ_CACHED_VAR(rcu_data[ptr_read[get_readerid()]]);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_ACCESS_GEN_UNROLL);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -772,14 +807,20 @@ non_atomic2_end:
 	 * to spill its execution on other loop's execution.
 	 */
 	goto end;
-non_atomic:
-	data_access[get_readerid()] = 1;
-	data_access[get_readerid()] = 0;
-	goto non_atomic_end;
-non_atomic2:
-	data_access[get_readerid()] = 1;
-	data_access[get_readerid()] = 0;
-	goto non_atomic2_end;
+rmb1:
+#ifndef NO_RMB
+	smp_rmb(i, j);
+#else
+	ooo_mem();
+#endif
+	goto rmb1_end;
+rmb2:
+#ifndef NO_RMB
+	smp_rmb(i, j);
+#else
+	ooo_mem();
+#endif
+	goto rmb2_end;
 end:
 	skip;
 }
@@ -856,11 +897,14 @@ int _proc_urcu_writer;
 
 #define WRITE_PROC_ALL_TOKENS_CLEAR	((1 << 11) - 1)
 
+/*
+ * Mutexes are implied around writer execution. A single writer at a time.
+ */
 active proctype urcu_writer()
 {
 	byte i, j;
 	byte tmp, tmp2, tmpa;
-	byte old_gen;
+	byte cur_data = 0, old_data, loop_nr = 0;
 	byte cur_gp_val = 0;	/*
 				 * Keep a local trace of the current parity so
 				 * we don't add non-existing dependencies on the global
@@ -872,29 +916,29 @@ active proctype urcu_writer()
 	assert(get_pid() < NR_PROCS);
 
 	do
-	:: (READ_CACHED_VAR(generation_ptr) < 5) ->
+	:: (loop_nr < 3) ->
 #ifdef WRITER_PROGRESS
 progress_writer1:
 #endif
+		loop_nr = loop_nr + 1;
+
+		/* TODO : add instruction scheduling to this code path to test
+		 * missing wmb effect. */
+		/* smp_wmb() ensures order of the following instructions */
+		/* malloc */
+		cur_data = (cur_data + 1) % SLAB_SIZE;
 		ooo_mem(i);
-		atomic {
-			old_gen = READ_CACHED_VAR(generation_ptr);
-			WRITE_CACHED_VAR(generation_ptr, old_gen + 1);
-		}
+		WRITE_CACHED_VAR(rcu_data[cur_data], WINE);
+#ifndef NO_WMB
+		smp_wmb(i, j);
+#else
+		ooo_mem(i);
+#endif
+		old_data = READ_CACHED_VAR(rcu_ptr);
+		ooo_mem(i);
+		WRITE_CACHED_VAR(rcu_ptr, cur_data);	/* rcu_assign_pointer() */
 		ooo_mem(i);
 
-		do
-		:: 1 ->
-			atomic {
-				if
-				:: write_lock == 0 ->
-					write_lock = 1;
-					break;
-				:: else ->
-					skip;
-				fi;
-			}
-		od;
 
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROD_NONE);
 
@@ -1047,12 +1091,8 @@ smp_mb_send4_end:
 		}
 		od;
 
-		write_lock = 0;
-		/* free-up step, e.g., kfree(). */
-		atomic {
-			last_free_gen = old_gen;
-			free_done = 1;
-		}
+		WRITE_CACHED_VAR(rcu_data[old_data], POISON);
+
 	:: else -> break;
 	od;
 	/*
@@ -1099,17 +1139,25 @@ init {
 
 	atomic {
 		INIT_CACHED_VAR(urcu_gp_ctr, 1, j);
-		INIT_CACHED_VAR(generation_ptr, 0, j);
+		INIT_CACHED_VAR(rcu_ptr, 0, j);
 
 		i = 0;
 		do
 		:: i < NR_READERS ->
 			INIT_CACHED_VAR(urcu_active_readers[i], 0, j);
-			read_generation[i] = 1;
-			data_access[i] = 0;
+			data_read[i] = 0;
 			i++;
 		:: i >= NR_READERS -> break
 		od;
+		INIT_CACHED_VAR(rcu_data[0], WINE, j);
+		i = 1;
+		do
+		:: i < SLAB_SIZE ->
+			INIT_CACHED_VAR(rcu_data[i], POISON, j);
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
+
 		init_done = 1;
 	}
 }

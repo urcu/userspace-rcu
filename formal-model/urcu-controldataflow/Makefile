@@ -30,6 +30,8 @@ SPINFILE=urcu.spin
 default:
 	make urcu_free | tee urcu_free.log
 	make urcu_free_no_mb | tee urcu_free_no_mb.log
+	make urcu_free_no_rmb | tee urcu_free_no_rmb.log
+	make urcu_free_no_wmb | tee urcu_free_no_wmb.log
 	make urcu_free_single_flip | tee urcu_free_single_flip.log
 	make urcu_progress_writer | tee urcu_progress_writer.log
 	make urcu_progress_reader | tee urcu_progress_reader.log

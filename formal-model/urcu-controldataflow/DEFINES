@@ -1,9 +1,14 @@
 
-#define read_free_race	(read_generation[0] == last_free_gen)
-#define read_free	(free_done && data_access[0])
+// Poison value for freed memory
+#define POISON 66
+// Memory with correct data
+#define WINE 33
+#define SLAB_SIZE 2
+
+#define read_poison	(data_read[0] == POISON)
 
 #define RCU_GP_CTR_BIT (1 << 7)
 #define RCU_GP_CTR_NEST_MASK (RCU_GP_CTR_BIT - 1)
 
-//FIXME
+//disabled
 //#define REMOTE_BARRIERS
