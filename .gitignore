@@ -1,9 +1,15 @@
+liburcu.so
 test_rwlock_timing
 test_urcu
+test_urcu_dynamic_link
 test_urcu_timing
 test_urcu_yield
 urcu-asm.o
+urcu-asm.S
 urcu.o
 urcutorture
 urcutorture-yield
 urcu-yield.o
+/api.h
+/arch.h
+/arch_atomic.h
