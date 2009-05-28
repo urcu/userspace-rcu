@@ -136,15 +136,19 @@ typedef per_proc_byte {
 	byte val[NR_PROCS];
 };
 
-/* Bitfield has a maximum of 8 procs */
 typedef per_proc_bit {
+	bit val[NR_PROCS];
+};
+
+/* Bitfield has a maximum of 8 procs */
+typedef per_proc_bitfield {
 	byte bitfield;
 };
 
 #define DECLARE_CACHED_VAR(type, x)	\
 	type mem_##x;			\
 	per_proc_##type cached_##x;	\
-	per_proc_bit cache_dirty_##x;
+	per_proc_bitfield cache_dirty_##x;
 
 #define INIT_CACHED_VAR(x, v, j)	\
 	mem_##x = v;			\
@@ -283,29 +287,18 @@ inline smp_mb_recv(i, j)
 		smp_mb(i, j);
 		reader_barrier[get_readerid()] = 0;
 	:: 1 ->
-	/*
-	 * Busy-looping waiting for other barrier requests is not considered as
-	 * non-progress.
-	 */
-#ifdef READER_PROGRESS
-progress_reader2:
-#endif
-#ifdef WRITER_PROGRESS
-//progress_writer_from_reader1:
-#endif
-		skip;
-	:: 1 ->
 		/* We choose to ignore writer's non-progress caused from the
 		 * reader ignoring the writer's mb() requests */
 #ifdef WRITER_PROGRESS
-//progress_writer_from_reader2:
+progress_writer_from_reader:
 #endif
 		break;
 	od;
 }
 
 #ifdef WRITER_PROGRESS
-#define PROGRESS_LABEL(progressid)	progress_writer_progid_##progressid:
+//#define PROGRESS_LABEL(progressid)	progress_writer_progid_##progressid:
+#define PROGRESS_LABEL(progressid)
 #else
 #define PROGRESS_LABEL(progressid)
 #endif
@@ -344,15 +337,24 @@ PROGRESS_LABEL(progressid)							\
 
 /* Keep in sync manually with smp_rmb, smp_wmb, ooo_mem and init() */
 DECLARE_CACHED_VAR(byte, urcu_gp_ctr);
-/* Note ! currently only two readers */
+/* Note ! currently only one reader */
 DECLARE_CACHED_VAR(byte, urcu_active_readers[NR_READERS]);
-/* RCU pointer */
-DECLARE_CACHED_VAR(byte, rcu_ptr);
 /* RCU data */
-DECLARE_CACHED_VAR(byte, rcu_data[SLAB_SIZE]);
+DECLARE_CACHED_VAR(bit, rcu_data[SLAB_SIZE]);
 
-byte ptr_read[NR_READERS];
-byte data_read[NR_READERS];
+/* RCU pointer */
+#if (SLAB_SIZE == 2)
+DECLARE_CACHED_VAR(bit, rcu_ptr);
+bit ptr_read_first[NR_READERS];
+bit ptr_read_second[NR_READERS];
+#else
+DECLARE_CACHED_VAR(byte, rcu_ptr);
+byte ptr_read_first[NR_READERS];
+byte ptr_read_second[NR_READERS];
+#endif
+
+bit data_read_first[NR_READERS];
+bit data_read_second[NR_READERS];
 
 bit init_done = 0;
 
@@ -667,8 +669,7 @@ non_atomic3_skip:
 					  READ_PROC_FIRST_MB,		/* mb() orders reads */
 					  READ_PROC_READ_GEN) ->
 				ooo_mem(i);
-				ptr_read[get_readerid()] =
-					READ_CACHED_VAR(rcu_ptr);
+				ptr_read_first[get_readerid()] = READ_CACHED_VAR(rcu_ptr);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_READ_GEN);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -678,8 +679,8 @@ non_atomic3_skip:
 				/* smp_read_barrier_depends */
 				goto rmb1;
 rmb1_end:
-				data_read[get_readerid()] =
-					READ_CACHED_VAR(rcu_data[ptr_read[get_readerid()]]);
+				data_read_first[get_readerid()] =
+					READ_CACHED_VAR(rcu_data[ptr_read_first[get_readerid()]]);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_ACCESS_GEN);
 
 
@@ -746,7 +747,7 @@ rmb1_end:
 					  | READ_PROC_THIRD_MB,		/* mb() orders reads */
 					  READ_PROC_READ_GEN_UNROLL) ->
 				ooo_mem(i);
-				ptr_read[get_readerid()] = READ_CACHED_VAR(rcu_ptr);
+				ptr_read_second[get_readerid()] = READ_CACHED_VAR(rcu_ptr);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_READ_GEN_UNROLL);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -758,8 +759,8 @@ rmb1_end:
 				/* smp_read_barrier_depends */
 				goto rmb2;
 rmb2_end:
-				data_read[get_readerid()] =
-					READ_CACHED_VAR(rcu_data[ptr_read[get_readerid()]]);
+				data_read_second[get_readerid()] =
+					READ_CACHED_VAR(rcu_data[ptr_read_second[get_readerid()]]);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_ACCESS_GEN_UNROLL);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -811,14 +812,14 @@ rmb1:
 #ifndef NO_RMB
 	smp_rmb(i, j);
 #else
-	ooo_mem();
+	ooo_mem(i);
 #endif
 	goto rmb1_end;
 rmb2:
 #ifndef NO_RMB
 	smp_rmb(i, j);
 #else
-	ooo_mem();
+	ooo_mem(i);
 #endif
 	goto rmb2_end;
 end:
@@ -869,23 +870,32 @@ int _proc_urcu_writer;
 
 #define WRITE_PROD_NONE			(1 << 0)
 
-#define WRITE_PROC_FIRST_MB		(1 << 1)
+#define WRITE_DATA			(1 << 1)
+#define WRITE_PROC_WMB			(1 << 2)
+#define WRITE_XCHG_PTR			(1 << 3)
+
+#define WRITE_PROC_FIRST_MB		(1 << 4)
 
 /* first flip */
-#define WRITE_PROC_FIRST_READ_GP	(1 << 2)
-#define WRITE_PROC_FIRST_WRITE_GP	(1 << 3)
-#define WRITE_PROC_FIRST_WAIT		(1 << 4)
-#define WRITE_PROC_FIRST_WAIT_LOOP	(1 << 5)
+#define WRITE_PROC_FIRST_READ_GP	(1 << 5)
+#define WRITE_PROC_FIRST_WRITE_GP	(1 << 6)
+#define WRITE_PROC_FIRST_WAIT		(1 << 7)
+#define WRITE_PROC_FIRST_WAIT_LOOP	(1 << 8)
 
 /* second flip */
-#define WRITE_PROC_SECOND_READ_GP	(1 << 6)
-#define WRITE_PROC_SECOND_WRITE_GP	(1 << 7)
-#define WRITE_PROC_SECOND_WAIT		(1 << 8)
-#define WRITE_PROC_SECOND_WAIT_LOOP	(1 << 9)
+#define WRITE_PROC_SECOND_READ_GP	(1 << 9)
+#define WRITE_PROC_SECOND_WRITE_GP	(1 << 10)
+#define WRITE_PROC_SECOND_WAIT		(1 << 11)
+#define WRITE_PROC_SECOND_WAIT_LOOP	(1 << 12)
 
-#define WRITE_PROC_SECOND_MB		(1 << 10)
+#define WRITE_PROC_SECOND_MB		(1 << 13)
+
+#define WRITE_FREE			(1 << 14)
 
 #define WRITE_PROC_ALL_TOKENS		(WRITE_PROD_NONE		\
+					| WRITE_DATA			\
+					| WRITE_PROC_WMB		\
+					| WRITE_XCHG_PTR		\
 					| WRITE_PROC_FIRST_MB		\
 					| WRITE_PROC_FIRST_READ_GP	\
 					| WRITE_PROC_FIRST_WRITE_GP	\
@@ -893,9 +903,10 @@ int _proc_urcu_writer;
 					| WRITE_PROC_SECOND_READ_GP	\
 					| WRITE_PROC_SECOND_WRITE_GP	\
 					| WRITE_PROC_SECOND_WAIT	\
-					| WRITE_PROC_SECOND_MB)
+					| WRITE_PROC_SECOND_MB		\
+					| WRITE_FREE)
 
-#define WRITE_PROC_ALL_TOKENS_CLEAR	((1 << 11) - 1)
+#define WRITE_PROC_ALL_TOKENS_CLEAR	((1 << 15) - 1)
 
 /*
  * Mutexes are implied around writer execution. A single writer at a time.
@@ -916,31 +927,17 @@ active proctype urcu_writer()
 	assert(get_pid() < NR_PROCS);
 
 	do
-	:: (loop_nr < 3) ->
+	:: (loop_nr < 4) ->
 #ifdef WRITER_PROGRESS
 progress_writer1:
 #endif
 		loop_nr = loop_nr + 1;
 
-		/* TODO : add instruction scheduling to this code path to test
-		 * missing wmb effect. */
-		/* smp_wmb() ensures order of the following instructions */
-		/* malloc */
-		cur_data = (cur_data + 1) % SLAB_SIZE;
-		ooo_mem(i);
-		WRITE_CACHED_VAR(rcu_data[cur_data], WINE);
-#ifndef NO_WMB
-		smp_wmb(i, j);
-#else
-		ooo_mem(i);
-#endif
-		old_data = READ_CACHED_VAR(rcu_ptr);
-		ooo_mem(i);
-		WRITE_CACHED_VAR(rcu_ptr, cur_data);	/* rcu_assign_pointer() */
-		ooo_mem(i);
-
-
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROD_NONE);
+
+#ifdef NO_WMB
+		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_WMB);
+#endif
 
 #ifdef NO_MB
 		PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_MB);
@@ -958,8 +955,34 @@ progress_writer1:
 		do :: 1 ->
 		atomic {
 		if
+
 		:: CONSUME_TOKENS(proc_urcu_writer,
 				  WRITE_PROD_NONE,
+				  WRITE_DATA) ->
+			ooo_mem(i);
+			cur_data = (cur_data + 1) % SLAB_SIZE;
+			WRITE_CACHED_VAR(rcu_data[cur_data], WINE);
+			PRODUCE_TOKENS(proc_urcu_writer, WRITE_DATA);
+
+
+		:: CONSUME_TOKENS(proc_urcu_writer,
+				  WRITE_DATA,
+				  WRITE_PROC_WMB) ->
+			smp_wmb(i, j);
+			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_WMB);
+
+		:: CONSUME_TOKENS(proc_urcu_writer,
+				  WRITE_PROC_WMB,
+				  WRITE_XCHG_PTR) ->
+			/* rcu_xchg_pointer() */
+			atomic {
+				old_data = READ_CACHED_VAR(rcu_ptr);
+				WRITE_CACHED_VAR(rcu_ptr, cur_data);
+			}
+			PRODUCE_TOKENS(proc_urcu_writer, WRITE_XCHG_PTR);
+
+		:: CONSUME_TOKENS(proc_urcu_writer,
+				  WRITE_DATA | WRITE_PROC_WMB | WRITE_XCHG_PTR,
 				  WRITE_PROC_FIRST_MB) ->
 			goto smp_mb_send1;
 smp_mb_send1_end:
@@ -972,7 +995,8 @@ smp_mb_send1_end:
 			tmpa = READ_CACHED_VAR(urcu_gp_ctr);
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_READ_GP);
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  WRITE_PROC_FIRST_MB | WRITE_PROC_FIRST_READ_GP,
+				  WRITE_PROC_FIRST_MB | WRITE_PROC_WMB
+				  | WRITE_PROC_FIRST_READ_GP,
 				  WRITE_PROC_FIRST_WRITE_GP) ->
 			ooo_mem(i);
 			WRITE_CACHED_VAR(urcu_gp_ctr, tmpa ^ RCU_GP_CTR_BIT);
@@ -1004,6 +1028,7 @@ smp_mb_send1_end:
 				  WRITE_PROC_FIRST_WRITE_GP
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_FIRST_WAIT_LOOP
+				  | WRITE_DATA | WRITE_PROC_WMB | WRITE_XCHG_PTR
 				  | WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  0) ->
 #ifndef GEN_ERROR_WRITER_PROGRESS
@@ -1028,6 +1053,7 @@ smp_mb_send2_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_READ_GP);
 		:: CONSUME_TOKENS(proc_urcu_writer,
 				  WRITE_PROC_FIRST_MB
+				  | WRITE_PROC_WMB
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_FIRST_WRITE_GP
 				  | WRITE_PROC_SECOND_READ_GP,
@@ -1059,6 +1085,7 @@ smp_mb_send2_end:
 				  | WRITE_PROC_SECOND_READ_GP
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_SECOND_WAIT_LOOP
+				  | WRITE_DATA | WRITE_PROC_WMB | WRITE_XCHG_PTR
 				  | WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  0) ->
 #ifndef GEN_ERROR_WRITER_PROGRESS
@@ -1078,11 +1105,26 @@ smp_mb_send3_end:
 				  | WRITE_PROC_SECOND_READ_GP
 				  | WRITE_PROC_FIRST_WRITE_GP
 				  | WRITE_PROC_SECOND_WRITE_GP
+				  | WRITE_DATA | WRITE_PROC_WMB | WRITE_XCHG_PTR
 				  | WRITE_PROC_FIRST_MB,
 				  WRITE_PROC_SECOND_MB) ->
 			goto smp_mb_send4;
 smp_mb_send4_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_MB);
+
+		:: CONSUME_TOKENS(proc_urcu_writer,
+				  WRITE_XCHG_PTR
+				  | WRITE_PROC_FIRST_WAIT
+				  | WRITE_PROC_SECOND_WAIT
+				  | WRITE_PROC_WMB	/* No dependency on
+							 * WRITE_DATA because we
+							 * write to a
+							 * different location. */
+				  | WRITE_PROC_SECOND_MB
+				  | WRITE_PROC_FIRST_MB,
+				  WRITE_FREE) ->
+			WRITE_CACHED_VAR(rcu_data[old_data], POISON);
+			PRODUCE_TOKENS(proc_urcu_writer, WRITE_FREE);
 
 		:: CONSUME_TOKENS(proc_urcu_writer, WRITE_PROC_ALL_TOKENS, 0) ->
 			CLEAR_TOKENS(proc_urcu_writer, WRITE_PROC_ALL_TOKENS_CLEAR);
@@ -1090,9 +1132,13 @@ smp_mb_send4_end:
 		fi;
 		}
 		od;
-
-		WRITE_CACHED_VAR(rcu_data[old_data], POISON);
-
+		/*
+		 * Note : Promela model adds implicit serialization of the
+		 * WRITE_FREE instruction. Normally, it would be permitted to
+		 * spill on the next loop execution. Given the validation we do
+		 * checks for the data entry read to be poisoned, it's ok if
+		 * we do not check "late arriving" memory poisoning.
+		 */
 	:: else -> break;
 	od;
 	/*
@@ -1145,7 +1191,10 @@ init {
 		do
 		:: i < NR_READERS ->
 			INIT_CACHED_VAR(urcu_active_readers[i], 0, j);
-			data_read[i] = 0;
+			ptr_read_first[i] = 1;
+			ptr_read_second[i] = 1;
+			data_read_first[i] = WINE;
+			data_read_second[i] = WINE;
 			i++;
 		:: i >= NR_READERS -> break
 		od;
