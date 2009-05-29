@@ -927,7 +927,7 @@ active proctype urcu_writer()
 	assert(get_pid() < NR_PROCS);
 
 	do
-	:: (loop_nr < 4) ->
+	:: (loop_nr < 3) ->
 #ifdef WRITER_PROGRESS
 progress_writer1:
 #endif

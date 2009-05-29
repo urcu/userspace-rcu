@@ -11,4 +11,4 @@
 #define RCU_GP_CTR_NEST_MASK (RCU_GP_CTR_BIT - 1)
 
 //disabled
-//#define REMOTE_BARRIERS
+#define REMOTE_BARRIERS
