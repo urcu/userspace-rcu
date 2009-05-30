@@ -284,24 +284,25 @@ inline smp_mb_recv(i, j)
 {
 	do
 	:: (reader_barrier[get_readerid()] == 1) ->
+		/*
+		 * We choose to ignore cycles caused by writer busy-looping,
+		 * waiting for the reader, sending barrier requests, and the
+		 * reader always services them without continuing execution.
+		 */
+progress_ignoring_mb1:
 		smp_mb(i, j);
 		reader_barrier[get_readerid()] = 0;
 	:: 1 ->
-		/* We choose to ignore writer's non-progress caused from the
-		 * reader ignoring the writer's mb() requests */
-#ifdef WRITER_PROGRESS
-progress_writer_from_reader:
-#endif
+		/*
+		 * We choose to ignore writer's non-progress caused by the
+		 * reader ignoring the writer's mb() requests.
+		 */
+progress_ignoring_mb2:
 		break;
 	od;
 }
 
-#ifdef WRITER_PROGRESS
-//#define PROGRESS_LABEL(progressid)	progress_writer_progid_##progressid:
-#define PROGRESS_LABEL(progressid)
-#else
-#define PROGRESS_LABEL(progressid)
-#endif
+#define PROGRESS_LABEL(progressid)	progress_writer_progid_##progressid:
 
 #define smp_mb_send(i, j, progressid)						\
 {										\
@@ -315,9 +316,10 @@ progress_writer_from_reader:
 		 * interest, given the reader has the ability to totally ignore	\
 		 * barrier requests.						\
 		 */								\
-PROGRESS_LABEL(progressid)							\
 		do								\
-		:: (reader_barrier[i] == 1) -> skip;				\
+		:: (reader_barrier[i] == 1) ->					\
+PROGRESS_LABEL(progressid)							\
+			skip;							\
 		:: (reader_barrier[i] == 0) -> break;				\
 		od;								\
 		i++;								\
@@ -641,7 +643,6 @@ non_atomic3_end:
 					skip;
 				fi;
 			}
-		:: 1 -> skip;
 		fi;
 
 		goto non_atomic3_skip;
@@ -1151,6 +1152,12 @@ end_writer:
 	:: 1 ->
 #ifdef WRITER_PROGRESS
 progress_writer2:
+#endif
+#ifdef READER_PROGRESS
+		/*
+		 * Make sure we don't block the reader's progress.
+		 */
+		smp_mb_send(i, j, 5);
 #endif
 		skip;
 	od;
