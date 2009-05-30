@@ -1,0 +1,41 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu-controldataflow'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+cat DEFINES > .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -DSAFETY -o pan pan.c
+./pan -v -c1 -X -m10000000 -w20
+Depth=    6408 States=    1e+06 Transitions= 1.63e+08 Memory=   542.717	t=    163 R=   6e+03
+Depth=    7831 States=    2e+06 Transitions= 3.34e+08 Memory=   618.986	t=    343 R=   6e+03
+Depth=    7831 States=    3e+06 Transitions= 5.11e+08 Memory=   695.354	t=    530 R=   6e+03
+pan: resizing hashtable to -w22..  done
+Depth=    7831 States=    4e+06 Transitions= 6.76e+08 Memory=   802.744	t=    697 R=   6e+03
+Depth=    7831 States=    5e+06 Transitions=    9e+08 Memory=   879.014	t=    928 R=   5e+03
+Depth=    7831 States=    6e+06 Transitions= 1.34e+09 Memory=   955.283	t= 1.39e+03 R=   4e+03
+Depth=    7831 States=    7e+06 Transitions= 1.71e+09 Memory=  1031.553	t= 1.79e+03 R=   4e+03
+Depth=    7831 States=    8e+06 Transitions= 2.07e+09 Memory=  1107.920	t= 2.18e+03 R=   4e+03
+Depth=    7831 States=    9e+06 Transitions= 2.39e+09 Memory=  1184.190	t= 2.53e+03 R=   4e+03
+pan: resizing hashtable to -w24..  done
+Depth=    7831 States=    1e+07 Transitions= 2.59e+09 Memory=  1384.553	t= 2.74e+03 R=   4e+03
+Depth=    7831 States=  1.1e+07 Transitions= 2.89e+09 Memory=  1460.822	t= 3.04e+03 R=   4e+03
+Depth=    7831 States=  1.2e+07 Transitions= 3.23e+09 Memory=  1537.092	t= 3.4e+03 R=   4e+03
+Depth=    7831 States=  1.3e+07 Transitions= 3.94e+09 Memory=  1613.459	t= 4.17e+03 R=   3e+03
+Depth=    7831 States=  1.4e+07 Transitions= 4.65e+09 Memory=  1689.729	t= 4.93e+03 R=   3e+03
+Depth=    7831 States=  1.5e+07 Transitions= 5.08e+09 Memory=  1765.998	t= 5.39e+03 R=   3e+03
+Depth=    7831 States=  1.6e+07 Transitions=  5.5e+09 Memory=  1842.268	t= 5.84e+03 R=   3e+03
+Depth=    7831 States=  1.7e+07 Transitions=  5.7e+09 Memory=  1918.635	t= 6.04e+03 R=   3e+03
+Depth=    7831 States=  1.8e+07 Transitions= 6.11e+09 Memory=  1994.904	t= 6.49e+03 R=   3e+03
+Depth=    7831 States=  1.9e+07 Transitions= 6.54e+09 Memory=  2071.174	t= 6.95e+03 R=   3e+03
+Depth=    7831 States=    2e+07 Transitions= 6.89e+09 Memory=  2147.443	t= 7.32e+03 R=   3e+03
+Depth=    7991 States=  2.1e+07 Transitions= 7.11e+09 Memory=  2223.811	t= 7.55e+03 R=   3e+03
+Depth=    7991 States=  2.2e+07 Transitions= 7.39e+09 Memory=  2300.080	t= 7.85e+03 R=   3e+03
+Depth=    7991 States=  2.3e+07 Transitions= 7.59e+09 Memory=  2376.350	t= 8.06e+03 R=   3e+03
+Depth=    7991 States=  2.4e+07 Transitions= 7.86e+09 Memory=  2452.619	t= 8.35e+03 R=   3e+03
+Depth=    7991 States=  2.5e+07 Transitions= 8.07e+09 Memory=  2528.986	t= 8.58e+03 R=   3e+03
+Depth=    7991 States=  2.6e+07 Transitions= 8.31e+09 Memory=  2605.256	t= 8.83e+03 R=   3e+03
+Depth=    7991 States=  2.7e+07 Transitions= 8.55e+09 Memory=  2681.526	t= 9.09e+03 R=   3e+03
+Depth=    7991 States=  2.8e+07 Transitions= 8.79e+09 Memory=  2757.795	t= 9.35e+03 R=   3e+03
+Depth=    7991 States=  2.9e+07 Transitions= 9.03e+09 Memory=  2834.162	t= 9.61e+03 R=   3e+03
+Depth=    7991 States=    3e+07 Transitions= 9.24e+09 Memory=  2910.432	t= 9.83e+03 R=   3e+03

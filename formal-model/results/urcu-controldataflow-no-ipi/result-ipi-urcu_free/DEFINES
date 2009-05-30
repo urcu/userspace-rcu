@@ -1,0 +1,14 @@
+
+// Poison value for freed memory
+#define POISON 1
+// Memory with correct data
+#define WINE 0
+#define SLAB_SIZE 2
+
+#define read_poison	(data_read_first[0] == POISON || data_read_second[0] == POISON)
+
+#define RCU_GP_CTR_BIT (1 << 7)
+#define RCU_GP_CTR_NEST_MASK (RCU_GP_CTR_BIT - 1)
+
+//disabled
+#define REMOTE_BARRIERS
