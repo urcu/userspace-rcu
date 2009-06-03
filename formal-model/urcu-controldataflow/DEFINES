@@ -12,3 +12,7 @@
 
 //disabled
 #define REMOTE_BARRIERS
+
+#define ARCH_ALPHA
+//#define ARCH_INTEL
+//#define ARCH_POWERPC

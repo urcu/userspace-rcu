@@ -127,6 +127,14 @@
  */
 
 /*
+ * Only Alpha has out-of-order cache bank loads. Other architectures (intel,
+ * powerpc, arm) ensure that dependent reads won't be reordered. c.f.
+ * http://www.linuxjournal.com/article/8212)
+#ifdef ARCH_ALPHA
+#define HAVE_OOO_CACHE_READ
+#endif
+
+/*
  * Each process have its own data in cache. Caches are randomly updated.
  * smp_wmb and smp_rmb forces cache updates (write and read), smp_mb forces
  * both.
@@ -206,7 +214,7 @@ typedef per_proc_bitfield {
 	fi;
 
 /* Must consume all prior read tokens. All subsequent reads depend on it. */
-inline smp_rmb(i, j)
+inline smp_rmb(i)
 {
 	atomic {
 		CACHE_READ_FROM_MEM(urcu_gp_ctr, get_pid());
@@ -229,7 +237,7 @@ inline smp_rmb(i, j)
 }
 
 /* Must consume all prior write tokens. All subsequent writes depend on it. */
-inline smp_wmb(i, j)
+inline smp_wmb(i)
 {
 	atomic {
 		CACHE_WRITE_TO_MEM(urcu_gp_ctr, get_pid());
@@ -253,11 +261,11 @@ inline smp_wmb(i, j)
 
 /* Synchronization point. Must consume all prior read and write tokens. All
  * subsequent reads and writes depend on it. */
-inline smp_mb(i, j)
+inline smp_mb(i)
 {
 	atomic {
-		smp_wmb(i, j);
-		smp_rmb(i, j);
+		smp_wmb(i);
+		smp_rmb(i);
 	}
 }
 
@@ -290,7 +298,7 @@ inline smp_mb_recv(i, j)
 		 * reader always services them without continuing execution.
 		 */
 progress_ignoring_mb1:
-		smp_mb(i, j);
+		smp_mb(i);
 		reader_barrier[get_readerid()] = 0;
 	:: 1 ->
 		/*
@@ -306,7 +314,7 @@ progress_ignoring_mb2:
 
 #define smp_mb_send(i, j, progressid)						\
 {										\
-	smp_mb(i, j);								\
+	smp_mb(i);								\
 	i = 0;									\
 	do									\
 	:: i < NR_READERS ->							\
@@ -326,13 +334,13 @@ PROGRESS_LABEL(progressid)							\
 	:: i >= NR_READERS ->							\
 		break								\
 	od;									\
-	smp_mb(i, j);								\
+	smp_mb(i);								\
 }
 
 #else
 
-#define smp_mb_send(i, j, progressid)	smp_mb(i, j)
-#define smp_mb_reader	smp_mb
+#define smp_mb_send(i, j, progressid)	smp_mb(i)
+#define smp_mb_reader	smp_mb(i)
 #define smp_mb_recv(i, j)
 
 #endif
@@ -388,6 +396,7 @@ inline ooo_mem(i)
 			i++
 		:: i >= SLAB_SIZE -> break
 		od;
+#ifdef HAVE_OOO_CACHE_READ
 		RANDOM_CACHE_READ_FROM_MEM(urcu_gp_ctr, get_pid());
 		i = 0;
 		do
@@ -405,6 +414,9 @@ inline ooo_mem(i)
 			i++
 		:: i >= SLAB_SIZE -> break
 		od;
+#else
+		smp_rmb(i);
+#endif /* HAVE_OOO_CACHE_READ */
 	}
 }
 
@@ -811,14 +823,14 @@ rmb2_end:
 	goto end;
 rmb1:
 #ifndef NO_RMB
-	smp_rmb(i, j);
+	smp_rmb(i);
 #else
 	ooo_mem(i);
 #endif
 	goto rmb1_end;
 rmb2:
 #ifndef NO_RMB
-	smp_rmb(i, j);
+	smp_rmb(i);
 #else
 	ooo_mem(i);
 #endif
@@ -969,7 +981,7 @@ progress_writer1:
 		:: CONSUME_TOKENS(proc_urcu_writer,
 				  WRITE_DATA,
 				  WRITE_PROC_WMB) ->
-			smp_wmb(i, j);
+			smp_wmb(i);
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_WMB);
 
 		:: CONSUME_TOKENS(proc_urcu_writer,
