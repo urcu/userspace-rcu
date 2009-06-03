@@ -9,7 +9,7 @@
  *
  * Process A                  Process B
  * alpha = 1;                 beta = 1;
- * wmb();                     rmb();
+ * mb();                      mb();
  * x = beta;                  y = alpha;
  *
  * if x = 1, then y = 1 when read.
