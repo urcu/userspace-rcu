@@ -98,6 +98,15 @@
  * output exchanged. Therefore, i post-dominating j ensures that every path
  * passing by j will pass by i before reaching the output.
  *
+ * Prefetch and speculative execution
+ *
+ * If an instruction depends on the result of a previous branch, but it does not
+ * have side-effects, it can be executed before the branch result is known.
+ * however, it must be restarted if a core-synchronizing instruction is issued.
+ * Note that instructions which depend on the speculative instruction result
+ * but that have side-effects must depend on the branch completion in addition
+ * to the speculatively executed instruction.
+ *
  * Other considerations
  *
  * Note about "volatile" keyword dependency : The compiler will order volatile
@@ -130,6 +139,7 @@
  * Only Alpha has out-of-order cache bank loads. Other architectures (intel,
  * powerpc, arm) ensure that dependent reads won't be reordered. c.f.
  * http://www.linuxjournal.com/article/8212)
+ */
 #ifdef ARCH_ALPHA
 #define HAVE_OOO_CACHE_READ
 #endif
@@ -340,7 +350,7 @@ PROGRESS_LABEL(progressid)							\
 #else
 
 #define smp_mb_send(i, j, progressid)	smp_mb(i)
-#define smp_mb_reader	smp_mb(i)
+#define smp_mb_reader(i, j)		smp_mb(i)
 #define smp_mb_recv(i, j)
 
 #endif
@@ -433,8 +443,8 @@ int _proc_urcu_reader;
 #define READ_PROD_B_IF_FALSE		(1 << 2)
 #define READ_PROD_C_IF_TRUE_READ	(1 << 3)
 
-#define PROCEDURE_READ_LOCK(base, consumetoken, producetoken)				\
-	:: CONSUME_TOKENS(proc_urcu_reader, consumetoken, READ_PROD_A_READ << base) ->	\
+#define PROCEDURE_READ_LOCK(base, consumetoken, consumetoken2, producetoken)		\
+	:: CONSUME_TOKENS(proc_urcu_reader, (consumetoken | consumetoken2), READ_PROD_A_READ << base) ->	\
 		ooo_mem(i);								\
 		tmp = READ_CACHED_VAR(urcu_active_readers[get_readerid()]);		\
 		PRODUCE_TOKENS(proc_urcu_reader, READ_PROD_A_READ << base);		\
@@ -448,13 +458,14 @@ int _proc_urcu_reader;
 			PRODUCE_TOKENS(proc_urcu_reader, READ_PROD_B_IF_FALSE << base);	\
 		fi;									\
 	/* IF TRUE */									\
-	:: CONSUME_TOKENS(proc_urcu_reader, READ_PROD_B_IF_TRUE << base,		\
+	:: CONSUME_TOKENS(proc_urcu_reader, consumetoken, /* prefetch */		\
 			  READ_PROD_C_IF_TRUE_READ << base) ->				\
 		ooo_mem(i);								\
 		tmp2 = READ_CACHED_VAR(urcu_gp_ctr);					\
 		PRODUCE_TOKENS(proc_urcu_reader, READ_PROD_C_IF_TRUE_READ << base);	\
 	:: CONSUME_TOKENS(proc_urcu_reader,						\
-			  (READ_PROD_C_IF_TRUE_READ	/* pre-dominant */		\
+			  (READ_PROD_B_IF_TRUE						\
+			  | READ_PROD_C_IF_TRUE_READ	/* pre-dominant */		\
 			  | READ_PROD_A_READ) << base,		/* WAR */		\
 			  producetoken) ->						\
 		ooo_mem(i);								\
@@ -484,14 +495,14 @@ int _proc_urcu_reader;
 			  consumetoken,							\
 			  READ_PROC_READ_UNLOCK << base) ->				\
 		ooo_mem(i);								\
-		tmp2 = READ_CACHED_VAR(urcu_active_readers[get_readerid()]);		\
+		tmp = READ_CACHED_VAR(urcu_active_readers[get_readerid()]);		\
 		PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_READ_UNLOCK << base);	\
 	:: CONSUME_TOKENS(proc_urcu_reader,						\
 			  consumetoken							\
 			  | (READ_PROC_READ_UNLOCK << base),	/* WAR */		\
 			  producetoken) ->						\
 		ooo_mem(i);								\
-		WRITE_CACHED_VAR(urcu_active_readers[get_readerid()], tmp2 - 1);	\
+		WRITE_CACHED_VAR(urcu_active_readers[get_readerid()], tmp - 1);		\
 		PRODUCE_TOKENS(proc_urcu_reader, producetoken);				\
 	skip
 
@@ -667,7 +678,7 @@ non_atomic3_skip:
 
 		atomic {
 			if
-			PROCEDURE_READ_LOCK(READ_LOCK_BASE, READ_PROD_NONE, READ_LOCK_OUT);
+			PROCEDURE_READ_LOCK(READ_LOCK_BASE, READ_PROD_NONE, 0, READ_LOCK_OUT);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
 					  READ_LOCK_OUT,		/* post-dominant */
@@ -675,7 +686,7 @@ non_atomic3_skip:
 				smp_mb_reader(i, j);
 				PRODUCE_TOKENS(proc_urcu_reader, READ_PROC_FIRST_MB);
 
-			PROCEDURE_READ_LOCK(READ_LOCK_NESTED_BASE, READ_PROC_FIRST_MB | READ_LOCK_OUT,
+			PROCEDURE_READ_LOCK(READ_LOCK_NESTED_BASE, READ_PROC_FIRST_MB, READ_LOCK_OUT,
 					    READ_LOCK_NESTED_OUT);
 
 			:: CONSUME_TOKENS(proc_urcu_reader,
@@ -733,12 +744,12 @@ rmb1_end:
 			/* reading urcu_active_readers, which have been written by
 			 * READ_UNLOCK_OUT : RAW */
 			PROCEDURE_READ_LOCK(READ_LOCK_UNROLL_BASE,
-					    READ_UNLOCK_OUT		/* RAW */
-					    | READ_PROC_SECOND_MB	/* mb() orders reads */
-					    | READ_PROC_FIRST_MB	/* mb() orders reads */
-					    | READ_LOCK_NESTED_OUT	/* RAW */
+					    READ_PROC_SECOND_MB		/* mb() orders reads */
+					    | READ_PROC_FIRST_MB,	/* mb() orders reads */
+					    READ_LOCK_NESTED_OUT	/* RAW */
 					    | READ_LOCK_OUT		/* RAW */
-					    | READ_UNLOCK_NESTED_OUT,	/* RAW */
+					    | READ_UNLOCK_NESTED_OUT	/* RAW */
+					    | READ_UNLOCK_OUT,		/* RAW */
 					    READ_LOCK_OUT_UNROLL);
 
 
@@ -1016,10 +1027,11 @@ smp_mb_send1_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_FIRST_WRITE_GP);
 
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  //WRITE_PROC_FIRST_WRITE_GP	/* TEST ADDING SYNC CORE */
+				  //WRITE_PROC_FIRST_WRITE_GP |	/* TEST ADDING SYNC CORE */
 				  WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  WRITE_PROC_FIRST_WAIT | WRITE_PROC_FIRST_WAIT_LOOP) ->
 			ooo_mem(i);
+			//smp_mb(i);	/* TEST */
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
 #ifndef SINGLE_FLIP
@@ -1047,6 +1059,12 @@ smp_mb_send1_end:
 #ifndef GEN_ERROR_WRITER_PROGRESS
 			goto smp_mb_send2;
 smp_mb_send2_end:
+			/* The memory barrier will invalidate the
+			 * second read done as prefetching. Note that all
+			 * instructions with side-effects depending on
+			 * WRITE_PROC_SECOND_READ_GP should also depend on
+			 * completion of this busy-waiting loop. */
+			CLEAR_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_READ_GP);
 #else
 			ooo_mem(i);
 #endif
@@ -1055,17 +1073,21 @@ smp_mb_send2_end:
 
 		/* second flip */
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  WRITE_PROC_FIRST_WAIT		/* Control dependency : need to branch out of
-								 * the loop to execute the next flip (CHECK) */
-				  | WRITE_PROC_FIRST_WRITE_GP
+				  //WRITE_PROC_FIRST_WAIT |	//test	/* no dependency. Could pre-fetch, no side-effect. */
+				  WRITE_PROC_FIRST_WRITE_GP
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_FIRST_MB,
 				  WRITE_PROC_SECOND_READ_GP) ->
 			ooo_mem(i);
+			//smp_mb(i);	/* TEST */
 			tmpa = READ_CACHED_VAR(urcu_gp_ctr);
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_READ_GP);
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  WRITE_PROC_FIRST_MB
+				  WRITE_PROC_FIRST_WAIT			/* dependency on first wait, because this
+									 * instruction has globally observable
+									 * side-effects.
+									 */
+				  | WRITE_PROC_FIRST_MB
 				  | WRITE_PROC_WMB
 				  | WRITE_PROC_FIRST_READ_GP
 				  | WRITE_PROC_FIRST_WRITE_GP
@@ -1076,11 +1098,12 @@ smp_mb_send2_end:
 			PRODUCE_TOKENS(proc_urcu_writer, WRITE_PROC_SECOND_WRITE_GP);
 
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  //WRITE_PROC_FIRST_WRITE_GP	/* TEST ADDING SYNC CORE */
+				  //WRITE_PROC_FIRST_WRITE_GP |	/* TEST ADDING SYNC CORE */
 				  WRITE_PROC_FIRST_WAIT
 				  | WRITE_PROC_FIRST_MB,	/* can be reordered before/after flips */
 				  WRITE_PROC_SECOND_WAIT | WRITE_PROC_SECOND_WAIT_LOOP) ->
 			ooo_mem(i);
+			//smp_mb(i);	/* TEST */
 			/* ONLY WAITING FOR READER 0 */
 			tmp2 = READ_CACHED_VAR(urcu_active_readers[0]);
 			if
@@ -1092,7 +1115,7 @@ smp_mb_send2_end:
 			fi;
 
 		:: CONSUME_TOKENS(proc_urcu_writer,
-				  //WRITE_PROC_FIRST_WRITE_GP	/* TEST ADDING SYNC CORE */
+				  //WRITE_PROC_FIRST_WRITE_GP |	/* TEST ADDING SYNC CORE */
 				  WRITE_PROC_SECOND_WRITE_GP
 				  | WRITE_PROC_FIRST_WRITE_GP
 				  | WRITE_PROC_SECOND_READ_GP
