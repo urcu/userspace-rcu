@@ -6,13 +6,16 @@
  *
  * alpha = 0;
  * beta = 0;
+ * x = 2;
+ * y = 2;
  *
  * Process A                  Process B
  * alpha = 1;                 beta = 1;
  * mb();                      mb();
  * x = beta;                  y = alpha;
  *
- * if x = 1, then y = 1 when read.
+ * if x = 0, then y != 0
+ * if y = 0, then x != 0
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
