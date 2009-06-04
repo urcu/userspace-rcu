@@ -6,8 +6,8 @@
  *
  * alpha = 0;
  * beta = 0;
- * x = 2;
- * y = 2;
+ * x = 1;
+ * y = 1;
  *
  * Process A                  Process B
  * alpha = 1;                 beta = 1;
@@ -158,9 +158,8 @@ inline smp_mb()
 DECLARE_CACHED_VAR(byte, alpha, 0);
 DECLARE_CACHED_VAR(byte, beta, 0);
 
-/* value 2 is uninitialized */
-byte read_one = 2;
-byte read_two = 2;
+byte read_one = 1;
+byte read_two = 1;
 
 /*
  * Bit encoding, proc_one_produced :
