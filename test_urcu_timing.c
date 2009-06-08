@@ -87,11 +87,14 @@ static struct test_array *test_rcu_pointer;
 #define INNER_WRITE_LOOP 200U
 #define WRITE_LOOP ((unsigned long long)OUTER_WRITE_LOOP * INNER_WRITE_LOOP)
 
-#define NR_READ 10
-#define NR_WRITE 9
+static int num_read;
+static int num_write;
 
-static cycles_t reader_time[NR_READ] __attribute__((aligned(128)));
-static cycles_t writer_time[NR_WRITE] __attribute__((aligned(128)));
+#define NR_READ num_read
+#define NR_WRITE num_write
+
+static cycles_t __attribute__((aligned(128))) *reader_time;
+static cycles_t __attribute__((aligned(128))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -167,14 +170,26 @@ void *thr_writer(void *arg)
 	return ((void*)2);
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	int err;
-	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
+	pthread_t *tid_reader, *tid_writer;
 	void *tret;
 	int i;
 	cycles_t tot_rtime = 0;
 	cycles_t tot_wtime = 0;
+
+	if (argc < 2) {
+		printf("Usage : %s nr_readers nr_writers\n", argv[0]);
+		exit(-1);
+	}
+	num_read = atoi(argv[1]);
+	num_write = atoi(argv[2]);
+
+	reader_time = malloc(sizeof(*reader_time) * num_read);
+	writer_time = malloc(sizeof(*writer_time) * num_write);
+	tid_reader = malloc(sizeof(*tid_reader) * num_read);
+	tid_writer = malloc(sizeof(*tid_writer) * num_write);
 
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
@@ -211,6 +226,11 @@ int main()
 	       (double)tot_rtime / ((double)NR_READ * (double)READ_LOOP));
 	printf("Time per write : %g cycles\n",
 	       (double)tot_wtime / ((double)NR_WRITE * (double)WRITE_LOOP));
+
+	free(reader_time);
+	free(writer_time);
+	free(tid_reader);
+	free(tid_writer);
 
 	return 0;
 }
