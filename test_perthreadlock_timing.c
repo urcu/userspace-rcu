@@ -1,7 +1,7 @@
 /*
- * test_urcu.c
+ * test_perthreadloc_timing.c
  *
- * Userspace RCU library - test program
+ * Per thread locks - test program
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
@@ -54,9 +54,13 @@ struct test_array {
 	int a;
 };
 
-pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
-
 static struct test_array test_array = { 8 };
+
+struct per_thread_lock {
+	pthread_mutex_t lock;
+} __attribute__((aligned(128)));	/* cache-line aligned */
+
+static struct per_thread_lock *per_thread_lock;
 
 #define OUTER_READ_LOOP	200U
 #define INNER_READ_LOOP	100000U
@@ -76,6 +80,7 @@ void *thr_reader(void *arg)
 {
 	int i, j;
 	cycles_t time1, time2;
+	long tidx = (long)arg;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
@@ -84,14 +89,14 @@ void *thr_reader(void *arg)
 	time1 = get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			pthread_rwlock_rdlock(&lock);
+			pthread_mutex_lock(&per_thread_lock[tidx].lock);
 			assert(test_array.a == 8);
-			pthread_rwlock_unlock(&lock);
+			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
 	}
 	time2 = get_cycles();
 
-	reader_time[(unsigned long)arg] = time2 - time1;
+	reader_time[tidx] = time2 - time1;
 
 	sleep(2);
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -103,6 +108,7 @@ void *thr_reader(void *arg)
 void *thr_writer(void *arg)
 {
 	int i, j;
+	long tidx;
 	cycles_t time1, time2;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -112,13 +118,17 @@ void *thr_writer(void *arg)
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
 			time1 = get_cycles();
-			pthread_rwlock_wrlock(&lock);
+			for (tidx = 0; tidx < NR_READ; tidx++) {
+				pthread_mutex_lock(&per_thread_lock[tidx].lock);
+			}
 			test_array.a = 8;
-			pthread_rwlock_unlock(&lock);
+			for (tidx = NR_READ - 1; tidx >= 0; tidx--) {
+				pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+			}
 			time2 = get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
-			usleep(1);
 		}
+		usleep(1);
 	}
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -138,6 +148,11 @@ int main()
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
+	per_thread_lock = malloc(sizeof(struct per_thread_lock) * NR_READ);
+
+	for (i = 0; i < NR_READ; i++) {
+		pthread_mutex_init(&per_thread_lock[i].lock, NULL);
+	}
 	for (i = 0; i < NR_READ; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,
 				     (void *)(long)i);
@@ -169,6 +184,7 @@ int main()
 	       (double)tot_rtime / ((double)NR_READ * (double)READ_LOOP));
 	printf("Time per write : %g cycles\n",
 	       (double)tot_wtime / ((double)NR_WRITE * (double)WRITE_LOOP));
+	free(per_thread_lock);
 
 	return 0;
 }

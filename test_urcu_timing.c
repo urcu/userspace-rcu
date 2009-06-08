@@ -83,12 +83,15 @@ static struct test_array *test_rcu_pointer;
 #define INNER_READ_LOOP	100000U
 #define READ_LOOP ((unsigned long long)OUTER_READ_LOOP * INNER_READ_LOOP)
 
-#define WRITE_LOOP 2000U
+#define OUTER_WRITE_LOOP 10U
+#define INNER_WRITE_LOOP 200U
+#define WRITE_LOOP ((unsigned long long)OUTER_WRITE_LOOP * INNER_WRITE_LOOP)
 
 #define NR_READ 10
 #define NR_WRITE 9
 
 static cycles_t reader_time[NR_READ] __attribute__((aligned(128)));
+static cycles_t writer_time[NR_WRITE] __attribute__((aligned(128)));
 
 void *thr_reader(void *arg)
 {
@@ -128,28 +131,34 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
-	int i;
+	int i, j;
 	struct test_array *new, *old;
+	cycles_t time1, time2;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	for (i = 0; i < WRITE_LOOP; i++) {
-		new = malloc(sizeof(struct test_array));
-		rcu_copy_mutex_lock();
-		old = test_rcu_pointer;
-		if (old) {
-			assert(old->a == 8);
+	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
+		time1 = get_cycles();
+		for (j = 0; j < INNER_WRITE_LOOP; j++) {
+			new = malloc(sizeof(struct test_array));
+			rcu_copy_mutex_lock();
+			old = test_rcu_pointer;
+			if (old) {
+				assert(old->a == 8);
+			}
+			new->a = 8;
+			old = rcu_publish_content(&test_rcu_pointer, new);
+			rcu_copy_mutex_unlock();
+			/* can be done after unlock */
+			if (old) {
+				old->a = 0;
+			}
+			free(old);
 		}
-		new->a = 8;
-		old = rcu_publish_content(&test_rcu_pointer, new);
-		rcu_copy_mutex_unlock();
-		/* can be done after unlock */
-		if (old) {
-			old->a = 0;
-		}
-		free(old);
+		time2 = get_cycles();
+		writer_time[(unsigned long)arg] += time2 - time1;
 		usleep(1);
 	}
 
@@ -164,7 +173,8 @@ int main()
 	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
 	void *tret;
 	int i;
-	cycles_t tot_time = 0;
+	cycles_t tot_rtime = 0;
+	cycles_t tot_wtime = 0;
 
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
@@ -176,7 +186,8 @@ int main()
 			exit(1);
 	}
 	for (i = 0; i < NR_WRITE; i++) {
-		err = pthread_create(&tid_writer[i], NULL, thr_writer, NULL);
+		err = pthread_create(&tid_writer[i], NULL, thr_writer,
+				     (void *)(long)i);
 		if (err != 0)
 			exit(1);
 	}
@@ -187,16 +198,19 @@ int main()
 		err = pthread_join(tid_reader[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_time += reader_time[i];
+		tot_rtime += reader_time[i];
 	}
 	for (i = 0; i < NR_WRITE; i++) {
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
+		tot_wtime += writer_time[i];
 	}
 	free(test_rcu_pointer);
 	printf("Time per read : %g cycles\n",
-	       (double)tot_time / ((double)NR_READ * (double)READ_LOOP));
+	       (double)tot_rtime / ((double)NR_READ * (double)READ_LOOP));
+	printf("Time per write : %g cycles\n",
+	       (double)tot_wtime / ((double)NR_WRITE * (double)WRITE_LOOP));
 
 	return 0;
 }
