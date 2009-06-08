@@ -127,8 +127,8 @@ void *thr_writer(void *arg)
 			}
 			time2 = get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
+			usleep(1);
 		}
-		usleep(1);
 	}
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",

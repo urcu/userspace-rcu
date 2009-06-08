@@ -140,8 +140,8 @@ void *thr_writer(void *arg)
 	sleep(2);
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
-		time1 = get_cycles();
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
+			time1 = get_cycles();
 			new = malloc(sizeof(struct test_array));
 			rcu_copy_mutex_lock();
 			old = test_rcu_pointer;
@@ -156,10 +156,10 @@ void *thr_writer(void *arg)
 				old->a = 0;
 			}
 			free(old);
+			time2 = get_cycles();
+			writer_time[(unsigned long)arg] += time2 - time1;
+			usleep(1);
 		}
-		time2 = get_cycles();
-		writer_time[(unsigned long)arg] += time2 - time1;
-		usleep(1);
 	}
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
