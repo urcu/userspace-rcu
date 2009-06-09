@@ -13,7 +13,7 @@ SRC_DEP=`echo $^ | sed 's/[^ ]*\.h//g'`
 
 all: arch-api test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
-	test_urcu_yield \
+	test_perthreadlock test_urcu_yield \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield liburcu.so
 
@@ -39,6 +39,9 @@ test_qsbr: urcu-qsbr.o test_qsbr.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_rwlock: urcu.o test_rwlock.c urcu.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_perthreadlock: urcu.o test_perthreadlock.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_dynamic_link: urcu.o test_urcu.c urcu.h
