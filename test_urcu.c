@@ -31,6 +31,8 @@
 #include <assert.h>
 #include <sys/syscall.h>
 
+#include "arch.h"
+
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
 #elif defined(__NR_gettid)
@@ -170,6 +172,7 @@ void *thr_reader(void *_count)
 	while (!test_go)
 	{
 	}
+	smp_mb();
 
 	for (;;) {
 		rcu_read_lock();
@@ -203,6 +206,7 @@ void *thr_writer(void *_count)
 	while (!test_go)
 	{
 	}
+	smp_mb();
 
 	for (;;) {
 		new = test_array_alloc();
@@ -236,7 +240,7 @@ void show_usage(int argc, char **argv)
 #ifdef DEBUG_YIELD
 	printf(" [-r] [-w] (yield reader and/or writer)");
 #endif
-	printf(" [-d delay] (writer period)");
+	printf(" [-d delay] (writer period (us))");
 	printf("\n");
 }
 
@@ -285,7 +289,7 @@ int main(int argc, char **argv)
 			break;
 #endif
 		case 'd':
-			if (argc < i + 1) {
+			if (argc < i + 2) {
 				show_usage(argc, argv);
 				return -1;
 			}
@@ -297,7 +301,6 @@ int main(int argc, char **argv)
 	printf("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
 	printf("Writer delay : %u us.\n", wdelay);
-	start_time = time(NULL);
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
@@ -320,7 +323,9 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
+	start_time = time(NULL);
 	test_go = 1;
+	smp_mb();
 
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_join(tid_reader[i], &tret);
