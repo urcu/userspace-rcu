@@ -57,7 +57,9 @@ struct test_array {
 	int a;
 };
 
-static int no_writer_delay;
+static volatile int test_go;
+
+static int wdelay;
 
 static struct test_array *test_rcu_pointer;
 
@@ -90,11 +92,11 @@ static int test_duration_read(void)
 	return 1;
 }
 
-#define NR_READ 10
-#define NR_WRITE 9
-
 static unsigned long long __thread nr_writes;
 static unsigned long long __thread nr_reads;
+
+static unsigned int nr_readers;
+static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -122,12 +124,12 @@ void rcu_copy_mutex_unlock(void)
 /*
  * malloc/free are reusing memory areas too quickly, which does not let us
  * test races appropriately. Use a large circular array for allocations.
- * ARRAY_SIZE is larger than NR_WRITE, which insures we never run over our tail.
+ * ARRAY_SIZE is larger than nr_writers, which insures we never run over our tail.
  */
-#define ARRAY_SIZE (1048576 * NR_WRITE)
+#define ARRAY_SIZE (1048576 * nr_writers)
 #define ARRAY_POISON 0xDEADBEEF
 static int array_index;
-static struct test_array test_array[ARRAY_SIZE];
+static struct test_array *test_array;
 
 static struct test_array *test_array_alloc(void)
 {
@@ -165,6 +167,10 @@ void *thr_reader(void *_count)
 
 	rcu_register_thread();
 
+	while (!test_go)
+	{
+	}
+
 	for (;;) {
 		rcu_read_lock();
 		local_ptr = rcu_dereference(test_rcu_pointer);
@@ -194,6 +200,10 @@ void *thr_writer(void *_count)
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 
+	while (!test_go)
+	{
+	}
+
 	for (;;) {
 		new = test_array_alloc();
 		rcu_copy_mutex_lock();
@@ -210,8 +220,8 @@ void *thr_writer(void *_count)
 		nr_writes++;
 		if (!test_duration_write())
 			break;
-		if (!no_writer_delay)
-			usleep(1);
+		if (wdelay)
+			usleep(wdelay);
 	}
 
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -222,35 +232,47 @@ void *thr_writer(void *_count)
 
 void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s duration (s)", argv[0]);
+	printf("Usage : %s nr_readers nr_writers duration (s)", argv[0]);
 #ifdef DEBUG_YIELD
 	printf(" [-r] [-w] (yield reader and/or writer)");
 #endif
-	printf(" [-n] (disable writer delay)");
+	printf(" [-d delay] (writer period)");
 	printf("\n");
 }
 
 int main(int argc, char **argv)
 {
 	int err;
-	pthread_t tid_reader[NR_READ], tid_writer[NR_WRITE];
+	pthread_t *tid_reader, *tid_writer;
 	void *tret;
-	unsigned long long count_reader[NR_READ], count_writer[NR_WRITE];
+	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i;
 
-	if (argc < 2) {
+	if (argc < 4) {
 		show_usage(argc, argv);
 		return -1;
 	}
 
-	err = sscanf(argv[1], "%lu", &duration);
+	err = sscanf(argv[1], "%u", &nr_readers);
 	if (err != 1) {
 		show_usage(argc, argv);
 		return -1;
 	}
 
-	for (i = 2; i < argc; i++) {
+	err = sscanf(argv[2], "%u", &nr_writers);
+	if (err != 1) {
+		show_usage(argc, argv);
+		return -1;
+	}
+	
+	err = sscanf(argv[3], "%lu", &duration);
+	if (err != 1) {
+		show_usage(argc, argv);
+		return -1;
+	}
+
+	for (i = 4; i < argc; i++) {
 		if (argv[i][0] != '-')
 			continue;
 		switch (argv[i][1]) {
@@ -262,37 +284,51 @@ int main(int argc, char **argv)
 			yield_active |= YIELD_WRITE;
 			break;
 #endif
-		case 'n':
-			no_writer_delay = 1;
+		case 'd':
+			if (argc < i + 1) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			wdelay = atoi(argv[++i]);
 			break;
 		}
 	}
 
-	printf("running test for %lu seconds.\n", duration);
+	printf("running test for %lu seconds, %u readers, %u writers.\n",
+		duration, nr_readers, nr_writers);
+	printf("Writer delay : %u us.\n", wdelay);
 	start_time = time(NULL);
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
-	for (i = 0; i < NR_READ; i++) {
+	test_array = malloc(sizeof(*test_array) * ARRAY_SIZE);
+	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
+	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
+	count_reader = malloc(sizeof(*count_reader) * nr_readers);
+	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+
+	for (i = 0; i < nr_readers; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,
 				     &count_reader[i]);
 		if (err != 0)
 			exit(1);
 	}
-	for (i = 0; i < NR_WRITE; i++) {
+	for (i = 0; i < nr_writers; i++) {
 		err = pthread_create(&tid_writer[i], NULL, thr_writer,
 				     &count_writer[i]);
 		if (err != 0)
 			exit(1);
 	}
 
-	for (i = 0; i < NR_READ; i++) {
+	test_go = 1;
+
+	for (i = 0; i < nr_readers; i++) {
 		err = pthread_join(tid_reader[i], &tret);
 		if (err != 0)
 			exit(1);
 		tot_reads += count_reader[i];
 	}
-	for (i = 0; i < NR_WRITE; i++) {
+	for (i = 0; i < nr_writers; i++) {
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
@@ -302,6 +338,10 @@ int main(int argc, char **argv)
 	printf("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	test_array_free(test_rcu_pointer);
-
+	free(test_array);
+	free(tid_reader);
+	free(tid_writer);
+	free(count_reader);
+	free(count_writer);
 	return 0;
 }
