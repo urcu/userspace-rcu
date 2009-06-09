@@ -36,8 +36,14 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
+#ifndef DEBUG_FULL_MB
 void __attribute__((constructor)) urcu_init(void);
 void __attribute__((destructor)) urcu_exit(void);
+#else
+static inline urcu_init(void)
+{
+}
+#endif
 
 int init_done;
 

@@ -13,7 +13,7 @@ SRC_DEP=`echo $^ | sed 's/[^ ]*\.h//g'`
 
 all: arch-api test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
-	test_perthreadlock test_urcu_yield \
+	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield liburcu.so
 
@@ -34,6 +34,9 @@ pthreads-ppc: clean
 
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_urcu_mb: urcu-mb.o test_urcu.c urcu.h
+	$(CC) -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_qsbr: urcu-qsbr.o test_qsbr.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -64,6 +67,9 @@ test_perthreadlock_timing: urcu.o test_perthreadlock_timing.c urcu.h
 
 urcu.o: urcu.c urcu.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+
+urcu-mb.o: urcu.c urcu.h
+	$(CC) -fPIC -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
