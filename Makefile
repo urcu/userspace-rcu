@@ -12,8 +12,9 @@ LDFLAGS=-lpthread
 SRC_DEP=`echo $^ | sed 's/[^ ]*\.h//g'`
 
 all: arch-api test_urcu test_urcu_dynamic_link test_urcu_timing \
-	test_rwlock_timing test_perthreadlock_timing test_urcu_yield urcu-asm.S \
-	test_qsbr_timing urcu-asm.o urcutorture urcutorture-yield liburcu.so
+	test_rwlock_timing test_perthreadlock_timing test_urcu_yield \
+	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
+	urcutorture-yield liburcu.so
 
 arch-api: api.h arch.h
 	# Run either make pthreads-x86 or make pthreads-ppc prior to build
@@ -31,6 +32,9 @@ pthreads-ppc: clean
 	cp arch_atomic_ppc.h arch_atomic.h
 
 test_urcu: urcu.o test_urcu.c urcu.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_qsbr: urcu-qsbr.o test_qsbr.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_dynamic_link: urcu.o test_urcu.c urcu.h
