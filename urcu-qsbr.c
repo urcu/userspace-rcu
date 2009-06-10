@@ -36,11 +36,6 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
-void __attribute__((constructor)) urcu_init(void);
-void __attribute__((destructor)) urcu_exit(void);
-
-int init_done;
-
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -110,7 +105,6 @@ void internal_urcu_unlock(void)
 	}
 }
 
-#ifdef DEBUG_FULL_MB
 #ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
@@ -122,74 +116,6 @@ static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
-#else /* #ifdef DEBUG_FULL_MB */
-#ifdef HAS_INCOHERENT_CACHES
-static void force_mb_single_thread(struct reader_registry *index)
-{
-	assert(registry);
-	/*
-	 * pthread_kill has a smp_mb(). But beware, we assume it performs
-	 * a cache flush on architectures with non-coherent cache. Let's play
-	 * safe and don't assume anything : we use smp_mc() to make sure the
-	 * cache flush is enforced.
-	 */
-	*index->need_mb = 1;
-	smp_mc();	/* write ->need_mb before sending the signals */
-	pthread_kill(index->tid, SIGURCU);
-	smp_mb();
-	/*
-	 * Wait for sighandler (and thus mb()) to execute on every thread.
-	 * BUSY-LOOP.
-	 */
-	while (*index->need_mb) {
-		poll(NULL, 0, 1);
-	}
-	smp_mb();	/* read ->need_mb before ending the barrier */
-}
-#endif /* #ifdef HAS_INCOHERENT_CACHES */
-
-static void force_mb_all_threads(void)
-{
-	struct reader_registry *index;
-	/*
-	 * Ask for each threads to execute a smp_mb() so we can consider the
-	 * compiler barriers around rcu read lock as real memory barriers.
-	 */
-	if (!registry)
-		return;
-	/*
-	 * pthread_kill has a smp_mb(). But beware, we assume it performs
-	 * a cache flush on architectures with non-coherent cache. Let's play
-	 * safe and don't assume anything : we use smp_mc() to make sure the
-	 * cache flush is enforced.
-	 */
-	for (index = registry; index < registry + num_readers; index++) {
-		*index->need_mb = 1;
-		smp_mc();	/* write need_mb before sending the signal */
-		pthread_kill(index->tid, SIGURCU);
-	}
-	/*
-	 * Wait for sighandler (and thus mb()) to execute on every thread.
-	 *
-	 * Note that the pthread_kill() will never be executed on systems
-	 * that correctly deliver signals in a timely manner.  However, it
-	 * is not uncommon for kernels to have bugs that can result in
-	 * lost or unduly delayed signals.
-	 *
-	 * If you are seeing the below pthread_kill() executing much at
-	 * all, we suggest testing the underlying kernel and filing the
-	 * relevant bug report.  For Linux kernels, we recommend getting
-	 * the Linux Test Project (LTP).
-	 */
-	for (index = registry; index < registry + num_readers; index++) {
-		while (*index->need_mb) {
-			pthread_kill(index->tid, SIGURCU);
-			poll(NULL, 0, 1);
-		}
-	}
-	smp_mb();	/* read ->need_mb before ending the barrier */
-}
-#endif /* #else #ifdef DEBUG_FULL_MB */
 
 void wait_for_quiescent_state(void)
 {
@@ -324,7 +250,6 @@ static void rcu_remove_reader(pthread_t id)
 void rcu_register_thread(void)
 {
 	internal_urcu_lock();
-	urcu_init();	/* In case gcc does not support constructor attribute */
 	rcu_add_reader(pthread_self());
 	internal_urcu_unlock();
 }
@@ -335,56 +260,3 @@ void rcu_unregister_thread(void)
 	rcu_remove_reader(pthread_self());
 	internal_urcu_unlock();
 }
-
-#ifndef DEBUG_FULL_MB
-static void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
-{
-	/*
-	 * Executing this smp_mb() is the only purpose of this signal handler.
-	 * It punctually promotes barrier() into smp_mb() on every thread it is
-	 * executed on.
-	 */
-	smp_mb();
-	need_mb = 0;
-	smp_mb();
-}
-
-/*
- * urcu_init constructor. Called when the library is linked, but also when
- * reader threads are calling rcu_register_thread().
- * Should only be called by a single thread at a given time. This is ensured by
- * holing the internal_urcu_lock() from rcu_register_thread() or by running at
- * library load time, which should not be executed by multiple threads nor
- * concurrently with rcu_register_thread() anyway.
- */
-void urcu_init(void)
-{
-	struct sigaction act;
-	int ret;
-
-	if (init_done)
-		return;
-	init_done = 1;
-
-	act.sa_sigaction = sigurcu_handler;
-	ret = sigaction(SIGURCU, &act, NULL);
-	if (ret) {
-		perror("Error in sigaction");
-		exit(-1);
-	}
-}
-
-void urcu_exit(void)
-{
-	struct sigaction act;
-	int ret;
-
-	ret = sigaction(SIGURCU, NULL, &act);
-	if (ret) {
-		perror("Error in sigaction");
-		exit(-1);
-	}
-	assert(act.sa_sigaction == sigurcu_handler);
-	free(registry);
-}
-#endif /* #ifndef DEBUG_FULL_MB */

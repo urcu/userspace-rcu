@@ -117,13 +117,8 @@
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)
 
-/* Updates without DEBUG_FULL_MB are much slower. Account this in the delay */
-#ifdef DEBUG_FULL_MB
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
-#else
-#define MAX_SLEEP 30000
-#endif
 
 extern unsigned int yield_active;
 extern unsigned int __thread rand_yield;
@@ -161,17 +156,10 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-#ifdef DEBUG_FULL_MB
 static inline void reader_barrier()
 {
 	smp_mb();
 }
-#else
-static inline void reader_barrier()
-{
-	barrier();
-}
-#endif
 
 /*
  * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
