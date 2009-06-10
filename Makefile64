@@ -3,6 +3,18 @@
 CFLAGS=-m64 -O2 -g -I.
 LDFLAGS=-lpthread
 
+HOSTTYPE=$(shell uname -m)
+
+ifeq ("${HOSTTYPE}","x86_64")
+ARCHTYPE=x86
+endif
+ifeq ("${HOSTTYPE}","i486")
+ARCHTYPE=x86
+endif
+ifeq ("${HOSTTYPE}","powerpc")
+ARCHTYPE=ppc
+endif
+
 #debug
 #CFLAGS=-m64 -Wall -g
 #CFLAGS+=-DDEBUG_FULL_MB
@@ -12,26 +24,30 @@ LDFLAGS=-lpthread
 
 SRC_DEP=`echo $^ | sed 's/[^ ]*\.h//g'`
 
-all: arch-api test_urcu test_urcu_dynamic_link test_urcu_timing \
+all: checkarch test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield liburcu.so
 
-arch-api: api.h arch.h
-	# Run either make pthreads-x86 or make pthreads-ppc prior to build
-	# the RCU library. Architecture auto-detectection not implemented
-	# in the build system yet.
+checkarch:
+ifeq (${ARCHTYPE},)
+	@echo "Architecture ${HOSTTYPE} is currently unsupported by liburcu"
+	@exit 1
+endif
 
-pthreads-x86: clean
-	cp api_x86.h api.h
-	cp arch_x86.h arch.h
-	cp arch_atomic_x86.h arch_atomic.h
+arch.h: arch_${ARCHTYPE}.h
+	cp -f arch_${ARCHTYPE}.h arch.h
 
-pthreads-ppc: clean
-	cp api_ppc.h api.h
-	cp arch_ppc.h arch.h
-	cp arch_atomic_ppc.h arch_atomic.h
+api.h: api_${ARCHTYPE}.h
+	cp -f api_${ARCHTYPE}.h api.h
+
+arch_atomic.h: arch_atomic_${ARCHTYPE}.h
+	cp -f arch_atomic_${ARCHTYPE}.h arch_atomic.h
+
+urcu.h: arch.h api.h arch_atomic.h
+
+urcu-qsbr.h: arch.h api.h arch_atomic.h
 
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -93,7 +109,7 @@ urcutorture: urcutorture.c urcu.o urcu.h rcutorture.h
 urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-.PHONY: clean install arch-api
+.PHONY: clean install checkarch
 
 install: liburcu.so
 	cp -f liburcu.so /usr/lib/
@@ -104,5 +120,5 @@ clean:
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcutorture \
-	urcutorture-yield liburcu.so
+	urcutorture-yield liburcu.so api.h arch.h arch_atomic.h
 
