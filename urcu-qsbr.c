@@ -258,6 +258,11 @@ void rcu_register_thread(void)
 
 void rcu_unregister_thread(void)
 {
+	/*
+	 * We have to make the thread offline otherwise we end up dealocking
+	 * with a waiting writer.
+	 */
+	_rcu_thread_offline();
 	internal_urcu_lock();
 	rcu_remove_reader(pthread_self());
 	internal_urcu_unlock();
