@@ -61,39 +61,25 @@ struct test_array {
 
 pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
-static volatile int test_go;
+static volatile int test_go, test_stop;
 
 static int wdelay;
 
 static struct test_array test_array = { 8 };
 
 static unsigned long duration;
-static time_t start_time;
-static unsigned long __thread duration_interval;
-#define DURATION_TEST_DELAY_WRITE 4
-#define DURATION_TEST_DELAY_READ 100
 
 /*
  * returns 0 if test should end.
  */
 static int test_duration_write(void)
 {
-	if (duration_interval++ >= DURATION_TEST_DELAY_WRITE) {
-		duration_interval = 0;
-		if (time(NULL) - start_time >= duration)
-			return 0;
-	}
-	return 1;
+	return !test_stop;
 }
 
 static int test_duration_read(void)
 {
-	if (duration_interval++ >= DURATION_TEST_DELAY_READ) {
-		duration_interval = 0;
-		if (time(NULL) - start_time >= duration)
-			return 0;
-	}
-	return 1;
+	return !test_stop;
 }
 
 static unsigned long long __thread nr_writes;
@@ -270,9 +256,13 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	start_time = time(NULL);
-	test_go = 1;
 	smp_mb();
+
+	test_go = 1;
+
+	sleep(duration);
+
+	test_stop = 1;
 
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_join(tid_reader[i], &tret);
