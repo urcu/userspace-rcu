@@ -7,7 +7,10 @@ HOSTTYPE=$(shell uname -m)
 ifeq ("${HOSTTYPE}","x86_64")
 ARCHTYPE=x86
 endif
-ifeq ("${HOSTTYPE}","i486")
+ifeq ("${HOSTTYPE}","i586")
+ARCHTYPE=x86
+endif
+ifeq ("${HOSTTYPE}","i686")
 ARCHTYPE=x86
 endif
 ifeq ("${HOSTTYPE}","powerpc")
