@@ -1,9 +1,5 @@
 build instructions for userspace-rcu library :
 
-make pthreads-x86
-or
-make pthreads-ppc
-
 make
 make install
 
