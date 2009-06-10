@@ -20,6 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -30,6 +31,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/syscall.h>
+#include <sched.h>
 
 #include "arch.h"
 
@@ -175,8 +177,11 @@ void show_usage(int argc, char **argv)
 	printf(" [-r] [-w] (yield reader and/or writer)");
 #endif
 	printf(" [-d delay] (writer period (us))");
+	printf(" [-a cpu#] [-a cpu#]... (affinity)");
 	printf("\n");
 }
+
+cpu_set_t affinity;
 
 int main(int argc, char **argv)
 {
@@ -185,7 +190,8 @@ int main(int argc, char **argv)
 	void *tret;
 	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
-	int i;
+	int i, a;
+	int use_affinity = 0;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -211,6 +217,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	CPU_ZERO(&affinity);
+
 	for (i = 4; i < argc; i++) {
 		if (argv[i][0] != '-')
 			continue;
@@ -223,6 +231,16 @@ int main(int argc, char **argv)
 			yield_active |= YIELD_WRITE;
 			break;
 #endif
+		case 'a':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			a = atoi(argv[++i]);
+			CPU_SET(a, &affinity);
+			use_affinity = 1;
+			printf("Adding CPU %d affinity\n", a);
+			break;
 		case 'd':
 			if (argc < i + 2) {
 				show_usage(argc, argv);
@@ -238,6 +256,11 @@ int main(int argc, char **argv)
 	printf("Writer delay : %u us.\n", wdelay);
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
+	if (use_affinity
+	    && sched_setaffinity(0, sizeof(affinity), &affinity) < 0) {
+		perror("sched_setaffinity");
+		exit(-1);
+	}
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
