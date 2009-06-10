@@ -99,6 +99,9 @@ install: liburcu.so
 	cp -f arch.h arch_atomic.h compiler.h urcu.h urcu-static.h /usr/include/
 
 clean:
-	rm -f *.o test_urcu test_urcu_timing test_rwlock_timing urcu-asm.S \
-		test_urcu_yield urcutorture urcutorture-yield liburcu.so \
-		test_urcu_dynamic_link api.h arch.h arch_atomic.h
+	rm -f *.o test_urcu test_urcu_dynamic_link test_urcu_timing \
+	test_rwlock_timing test_rwlock test_perthreadlock_timing \
+	test_perthreadlock test_urcu_yield test_urcu_mb \
+	urcu-asm.S test_qsbr_timing test_qsbr urcutorture \
+	urcutorture-yield liburcu.so
+
