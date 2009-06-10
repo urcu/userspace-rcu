@@ -40,7 +40,7 @@
 void __attribute__((constructor)) urcu_init(void);
 void __attribute__((destructor)) urcu_exit(void);
 #else
-static inline urcu_init(void)
+static inline void urcu_init(void)
 {
 }
 #endif
