@@ -65,7 +65,7 @@ static volatile int test_go, test_stop;
 
 static int wdelay;
 
-static struct test_array test_array = { 8 };
+static volatile struct test_array test_array = { 8 };
 
 static unsigned long duration;
 
@@ -152,6 +152,7 @@ void *thr_writer(void *_count)
 
 	for (;;) {
 		pthread_rwlock_wrlock(&lock);
+		test_array.a = 0;
 		test_array.a = 8;
 		pthread_rwlock_unlock(&lock);
 		nr_writes++;

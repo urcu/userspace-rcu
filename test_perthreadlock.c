@@ -69,7 +69,7 @@ static volatile int test_go, test_stop;
 
 static int wdelay;
 
-static struct test_array test_array = { 8 };
+static volatile struct test_array test_array = { 8 };
 
 static unsigned long duration;
 
@@ -162,6 +162,7 @@ void *thr_writer(void *data)
 		for (tidx = 0; tidx < nr_readers; tidx++) {
 			pthread_mutex_lock(&per_thread_lock[tidx].lock);
 		}
+		test_array.a = 0;
 		test_array.a = 8;
 		for (tidx = nr_readers - 1; tidx >= 0; tidx--) {
 			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
