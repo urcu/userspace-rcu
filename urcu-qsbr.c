@@ -32,9 +32,9 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "urcu-static.h"
+#include "urcu-qsbr.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
-#include "urcu.h"
+//#include "urcu.h"
 
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -47,14 +47,14 @@ long urcu_gp_ctr = 0;
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-long __thread urcu_active_readers;
+long __thread rcu_reader_qs_gp;
 
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4
 
 struct reader_registry {
 	pthread_t tid;
-	long *urcu_active_readers;
+	long *rcu_reader_qs_gp;
 	char *need_mb;
 };
 
@@ -124,19 +124,21 @@ void wait_for_quiescent_state(void)
 	if (!registry)
 		return;
 	/*
-	 * Wait for each thread urcu_active_readers count to become 0.
+	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
 	for (index = registry; index < registry + num_readers; index++) {
 #ifndef HAS_INCOHERENT_CACHES
-		while (rcu_old_gp_ongoing(index->urcu_active_readers))
+		while (rcu_gp_ongoing(index->rcu_reader_qs_gp) &&
+		       (*index->rcu_reader_qs_gp - urcu_gp_ctr < 0))
 			cpu_relax();
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		int wait_loops = 0;
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
-		 * urcu_active_readers update to memory if we wait for too long.
+		 * rcu_reader_qs_gp update to memory if we wait for too long.
 		 */
-		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
+		while (rcu_gp_ongoing(index->rcu_reader_qs_gp) &&
+		       (*index->rcu_reader_qs_gp - urcu_gp_ctr < 0)) {
 			if (wait_loops++ == KICK_READER_LOOPS) {
 				force_mb_single_thread(index);
 				wait_loops = 0;
@@ -219,7 +221,7 @@ static void rcu_add_reader(pthread_t id)
 	}
 	registry[num_readers].tid = id;
 	/* reference to the TLS of _this_ reader thread. */
-	registry[num_readers].urcu_active_readers = &urcu_active_readers;
+	registry[num_readers].rcu_reader_qs_gp = &rcu_reader_qs_gp;
 	registry[num_readers].need_mb = &need_mb;
 	num_readers++;
 }
@@ -238,7 +240,7 @@ static void rcu_remove_reader(pthread_t id)
 			memcpy(index, &registry[num_readers - 1],
 				sizeof(struct reader_registry));
 			registry[num_readers - 1].tid = 0;
-			registry[num_readers - 1].urcu_active_readers = NULL;
+			registry[num_readers - 1].rcu_reader_qs_gp = NULL;
 			num_readers--;
 			return;
 		}

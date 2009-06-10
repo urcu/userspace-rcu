@@ -103,7 +103,7 @@
 
 /*
  * If a reader is really non-cooperative and refuses to commit its
- * urcu_active_readers count to memory (there is no barrier in the reader
+ * rcu_reader_qs_gp count to memory (there is no barrier in the reader
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
@@ -162,24 +162,15 @@ static inline void reader_barrier()
 }
 
 /*
- * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
- * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
- */
-#define RCU_GP_COUNT		(1UL << 0)
-/* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
-#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
-
-/*
  * Global quiescent period counter with low-order bits unused.
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
 extern long urcu_gp_ctr;
 
-extern long __thread urcu_active_readers;
+extern long __thread rcu_reader_qs_gp;
 
-static inline int rcu_old_gp_ongoing(long *value)
+static inline int rcu_gp_ongoing(long *value)
 {
 	if (value == NULL)
 		return 0;
@@ -198,19 +189,19 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	smp_mb();	
-	urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr) + 1;
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr) + 1;
 	smp_mb();
 }
 
 static inline void _rcu_thread_offline(void)
 {
 	smp_mb();
-	urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr);
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr);
 }
 
 static inline void _rcu_thread_online(void)
 {
-	urcu_active_readers = ACCESS_ONCE(urcu_gp_ctr) + 1;
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr) + 1;
 	smp_mb();
 }
 
