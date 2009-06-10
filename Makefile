@@ -30,7 +30,7 @@ all: checkarch test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
-	urcutorture-yield liburcu.so
+	urcutorture-yield liburcu.so test_mutex
 
 checkarch:
 ifeq (${ARCHTYPE},)
@@ -64,6 +64,9 @@ test_rwlock: urcu.o test_rwlock.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_perthreadlock: urcu.o test_perthreadlock.c urcu.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_mutex: urcu.o test_mutex.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_dynamic_link: urcu.o test_urcu.c urcu.h
@@ -122,5 +125,6 @@ clean:
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcutorture \
-	urcutorture-yield liburcu.so api.h arch.h arch_atomic.h
+	urcutorture-yield liburcu.so api.h arch.h arch_atomic.h \
+	test_mutex
 
