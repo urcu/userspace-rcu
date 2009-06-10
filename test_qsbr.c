@@ -165,9 +165,9 @@ void *thr_reader(void *_count)
 		_rcu_read_unlock();
 		nr_reads++;
 		/* QS each 1024 reads */
-		if ((nr_reads & ((1 << 10) - 1)) == 0)
+		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
 			_rcu_quiescent_state();
-		if (!test_duration_read())
+		if (unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -207,9 +207,9 @@ void *thr_writer(void *_count)
 			old->a = 0;
 		test_array_free(old);
 		nr_writes++;
-		if (!test_duration_write())
+		if (unlikely(!test_duration_write()))
 			break;
-		if (wdelay)
+		if (unlikely(wdelay))
 			usleep(wdelay);
 	}
 

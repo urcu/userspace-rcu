@@ -127,7 +127,7 @@ void *thr_reader(void *_count)
 		assert(test_array.a == 8);
 		pthread_rwlock_unlock(&lock);
 		nr_reads++;
-		if (!test_duration_read())
+		if (unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -156,9 +156,9 @@ void *thr_writer(void *_count)
 		test_array.a = 8;
 		pthread_rwlock_unlock(&lock);
 		nr_writes++;
-		if (!test_duration_write())
+		if (unlikely(!test_duration_write()))
 			break;
-		if (wdelay)
+		if (unlikely(wdelay))
 			usleep(wdelay);
 	}
 

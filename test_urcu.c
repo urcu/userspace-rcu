@@ -168,7 +168,7 @@ void *thr_reader(void *_count)
 			assert(local_ptr->a == 8);
 		rcu_read_unlock();
 		nr_reads++;
-		if (!test_duration_read())
+		if (unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -208,9 +208,9 @@ void *thr_writer(void *_count)
 			old->a = 0;
 		test_array_free(old);
 		nr_writes++;
-		if (!test_duration_write())
+		if (unlikely(!test_duration_write()))
 			break;
-		if (wdelay)
+		if (unlikely(wdelay))
 			usleep(wdelay);
 	}
 
