@@ -63,7 +63,7 @@ struct test_array {
 
 static volatile int test_go, test_stop;
 
-static int wdelay;
+static unsigned long wdelay;
 
 static struct test_array *test_rcu_pointer;
 
@@ -232,7 +232,7 @@ void *thr_writer(void *_count)
 		if (unlikely(!test_duration_write()))
 			break;
 		if (unlikely(wdelay))
-			usleep(wdelay);
+			loop_sleep(wdelay);
 	}
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
@@ -318,14 +318,14 @@ int main(int argc, char **argv)
 				show_usage(argc, argv);
 				return -1;
 			}
-			rduration = atoi(argv[++i]);
+			rduration = atol(argv[++i]);
 			break;
 		case 'd':
 			if (argc < i + 2) {
 				show_usage(argc, argv);
 				return -1;
 			}
-			wdelay = atoi(argv[++i]);
+			wdelay = atol(argv[++i]);
 			break;
 		case 'v':
 			verbose_mode = 1;
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 
 	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
-	printf_verbose("Writer delay : %u us.\n", wdelay);
+	printf_verbose("Writer delay : %lu loops.\n", wdelay);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
-		"wdelay %4u nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
+		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes);
