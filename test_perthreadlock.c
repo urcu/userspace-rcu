@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
-	printf("SUMMARY %-15s testdur %4lu nr_readers %3u rdur %6lu "
+	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
 		"wdelay %4u nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
 		argv[0], duration, nr_readers, rduration,
