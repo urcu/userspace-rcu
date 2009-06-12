@@ -276,6 +276,7 @@ int main(int argc, char **argv)
 	printf("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
 	printf("Writer delay : %u us.\n", wdelay);
+	printf("Reader duration : %lu loops.\n", rduration);
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
