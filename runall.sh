@@ -20,13 +20,16 @@ NR_READERS=$((${NUM_CPUS} - 1))
 NR_WRITERS=1
 DURATION=10
 WDELAY_ARRAY="0 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
-              65536 131072 262144 524288 1048576 2097152"
+              65536 131072 262144 524288 1048576 2097152 4194304 8388608
+              16777216 33554432 67108864 134217728"
 
 rm -f update-fraction.log
 
 for WDELAY in ${WDELAY_ARRAY}; do
 	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log
 done
+# Also run with no active writer for 0% update fraction
+./runtests.sh ${NR_READERS} 0 ${DURATION} ${EXTRA_OPTS} | tee -a update-fraction.log
 
 
 #Test scalability :
