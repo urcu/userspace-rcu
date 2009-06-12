@@ -23,7 +23,7 @@ WDELAY_ARRAY="0 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
 
 rm -f update-fraction.log
 
-for NR_WRITERS in 1 2 3 4; do
+for NR_WRITERS in $(seq 1 ${NUM_CPUS}); do
 	NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
 	for WDELAY in ${WDELAY_ARRAY}; do
 		./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log
