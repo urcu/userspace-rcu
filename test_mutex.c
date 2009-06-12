@@ -71,8 +71,14 @@ static volatile struct test_array test_array = { 8 };
 
 static unsigned long duration;
 
-/* read-side C.S. duration, in us */
+/* read-side C.S. duration, in loops */
 static unsigned long rduration;
+
+static inline void loop_sleep(unsigned long l)
+{
+	while(l-- != 0)
+		cpu_relax();
+}
 
 /*
  * returns 0 if test should end.
@@ -134,7 +140,7 @@ void *thr_reader(void *data)
 		pthread_mutex_lock(&lock);
 		assert(test_array.a == 8);
 		if (unlikely(rduration))
-			usleep(rduration);
+			loop_sleep(rduration);
 		pthread_mutex_unlock(&lock);
 		nr_reads++;
 		if (unlikely(!test_duration_read()))
@@ -185,7 +191,7 @@ void show_usage(int argc, char **argv)
 	printf(" [-r] [-w] (yield reader and/or writer)");
 #endif
 	printf(" [-d delay] (writer period (us))");
-	printf(" [-c duration] (reader C.S. duration (us))");
+	printf(" [-c duration] (reader C.S. duration (in loops))");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
 	printf("\n");
 }
