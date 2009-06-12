@@ -16,8 +16,6 @@ NUM_CPUS=8
 
 echo Executing update fraction test
 
-NR_READERS=$((${NUM_CPUS} - 1))
-NR_WRITERS=1
 DURATION=10
 WDELAY_ARRAY="0 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
               65536 131072 262144 524288 1048576 2097152 4194304 8388608
@@ -25,12 +23,17 @@ WDELAY_ARRAY="0 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
 
 rm -f update-fraction.log
 
-for WDELAY in ${WDELAY_ARRAY}; do
-	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log
+for NR_WRITERS in 1 2 3 4; do
+	NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
+	for WDELAY in ${WDELAY_ARRAY}; do
+		./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log
+	done
 done
-# Also run with no active writer for 0% update fraction
-./runtests.sh ${NR_READERS} 0 ${DURATION} ${EXTRA_OPTS} | tee -a update-fraction.log
 
+# Also run with no active writer for 0% update fraction
+NR_WRITERS=0
+NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
+./runtests.sh ${NR_READERS} 0 ${DURATION} ${EXTRA_OPTS} | tee -a update-fraction.log
 
 #Test scalability :
 # x: vary number of readers from 0 to num cpus
