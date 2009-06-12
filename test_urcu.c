@@ -78,6 +78,14 @@ static inline void loop_sleep(unsigned long l)
 		cpu_relax();
 }
 
+static int verbose_mode;
+
+#define printf_verbose(fmt, args...)		\
+	do {					\
+		if (verbose_mode)		\
+			printf(fmt, args);	\
+	} while (0)
+
 /*
  * returns 0 if test should end.
  */
@@ -161,7 +169,7 @@ void *thr_reader(void *_count)
 	unsigned long long *count = _count;
 	struct test_array *local_ptr;
 
-	printf("thread_begin %s, thread id : %lx, tid %lu\n",
+	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 
 	rcu_register_thread();
@@ -188,7 +196,7 @@ void *thr_reader(void *_count)
 	rcu_unregister_thread();
 
 	*count = nr_reads;
-	printf("thread_end %s, thread id : %lx, tid %lu\n",
+	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	return ((void*)1);
 
@@ -199,7 +207,7 @@ void *thr_writer(void *_count)
 	unsigned long long *count = _count;
 	struct test_array *new, *old;
 
-	printf("thread_begin %s, thread id : %lx, tid %lu\n",
+	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 
 	while (!test_go)
@@ -227,7 +235,7 @@ void *thr_writer(void *_count)
 			usleep(wdelay);
 	}
 
-	printf("thread_end %s, thread id : %lx, tid %lu\n",
+	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 	*count = nr_writes;
 	return ((void*)2);
@@ -241,6 +249,7 @@ void show_usage(int argc, char **argv)
 #endif
 	printf(" [-d delay] (writer period (us))");
 	printf(" [-c duration] (reader C.S. duration (in loops))");
+	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
 	printf("\n");
 }
@@ -302,7 +311,7 @@ int main(int argc, char **argv)
 			a = atoi(argv[++i]);
 			CPU_SET(a, &affinity);
 			use_affinity = 1;
-			printf("Adding CPU %d affinity\n", a);
+			printf_verbose("Adding CPU %d affinity\n", a);
 			break;
 		case 'c':
 			if (argc < i + 2) {
@@ -318,14 +327,17 @@ int main(int argc, char **argv)
 			}
 			wdelay = atoi(argv[++i]);
 			break;
+		case 'v':
+			verbose_mode = 1;
+			break;
 		}
 	}
 
-	printf("running test for %lu seconds, %u readers, %u writers.\n",
+	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
-	printf("Writer delay : %u us.\n", wdelay);
-	printf("Reader duration : %lu loops.\n", rduration);
-	printf("thread %-6s, thread id : %lx, tid %lu\n",
+	printf_verbose("Writer delay : %u us.\n", wdelay);
+	printf_verbose("Reader duration : %lu loops.\n", rduration);
+	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
 	if (use_affinity
@@ -374,8 +386,13 @@ int main(int argc, char **argv)
 		tot_writes += count_writer[i];
 	}
 	
-	printf("total number of reads : %llu, writes %llu\n", tot_reads,
+	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
+	printf("SUMMARY %s testdur %lu nr_readers %u rdur %lu nr_writers %u "
+		"wdelay %u nr_reads %llu nr_writes %llu nr_ops %llu\n",
+		argv[0], duration, nr_readers, rduration,
+		nr_writers, wdelay, tot_reads, tot_writes,
+		tot_reads + tot_writes);
 	test_array_free(test_rcu_pointer);
 	free(test_array);
 	free(tid_reader);
