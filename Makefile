@@ -16,6 +16,9 @@ endif
 ifeq ("${HOSTTYPE}","powerpc")
 ARCHTYPE=ppc
 endif
+ifeq ("${HOSTTYPE}","ppc64")
+ARCHTYPE=ppc
+endif
 
 #debug
 #CFLAGS=-Wall -g
