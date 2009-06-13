@@ -185,7 +185,7 @@ void *thr_writer(void *data)
 		}
 		test_array.a = 0;
 		test_array.a = 8;
-		for (tidx = nr_readers - 1; tidx >= 0; tidx--) {
+		for (tidx = (long)nr_readers - 1; tidx >= 0; tidx--) {
 			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
 		nr_writes++;
