@@ -35,6 +35,9 @@
 
 #include "arch.h"
 
+/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
+#define CACHE_LINE_SIZE 4096
+
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
 #elif defined(__NR_gettid)
@@ -63,7 +66,7 @@ struct test_array {
 
 struct per_thread_lock {
 	pthread_mutex_t lock;
-} __attribute__((aligned(128)));	/* cache-line aligned */
+} __attribute__((aligned(CACHE_LINE_SIZE)));	/* cache-line aligned */
 
 static struct per_thread_lock *per_thread_lock;
 
@@ -108,8 +111,10 @@ static int test_duration_read(void)
 static unsigned long long __thread nr_writes;
 static unsigned long long __thread nr_reads;
 
-static unsigned long long __attribute__((aligned(128))) *tot_nr_writes;
-static unsigned long long __attribute__((aligned(128))) *tot_nr_reads;
+static
+unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_writes;
+static
+unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_reads;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;
