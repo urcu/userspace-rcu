@@ -71,6 +71,7 @@ int main(int argc, char **argv)
 	unsigned long i;
 	cycles_t time1, time2;
 	cycles_t time_tot = 0;
+	double cpl;
 
 	for (i = 0; i < TESTS; i++) {
 		time1 = get_cycles();
@@ -78,10 +79,11 @@ int main(int argc, char **argv)
 		time2 = get_cycles();
 		time_tot += time2 - time1;
 	}
-	time_tot /= TESTS;
-	time_tot /= LOOPS;
+	cpl = ((double)time_tot) / (double)TESTS / (double)LOOPS;
 
-	printf("CALIBRATION : %llu cycles per loop\n", time_tot);
+	printf("CALIBRATION : %g cycles per loop\n", cpl);
+	printf("time_tot = %llu, LOOPS = %d, TESTS = %d\n",
+	       time_tot, LOOPS, TESTS);
 
 	return 0;
 }
