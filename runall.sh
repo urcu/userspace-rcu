@@ -6,7 +6,7 @@
 NUM_CPUS=8
 
 #extra options, e.g. for setting affinity on even CPUs :
-#EXTRA_OPTS=$(for a in $(seq 0 2 63); do echo -n "-a ${a} "; done)
+#EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
 
 
 #Vary update fraction
