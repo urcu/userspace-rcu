@@ -59,7 +59,7 @@ done
 
 echo Executing reader C.S. length test
 
-NR_READERS=8
+NR_READERS=${NUM_CPUS}
 NR_WRITERS=0
 DURATION=10
 #in loops.
