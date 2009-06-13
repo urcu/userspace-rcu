@@ -32,6 +32,9 @@
 #include <sys/syscall.h>
 #include <arch.h>
 
+/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
+#define CACHE_LINE_SIZE 4096
+
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
 #elif defined(__NR_gettid)
@@ -93,8 +96,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(128))) *reader_time;
-static cycles_t __attribute__((aligned(128))) *writer_time;
+static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
