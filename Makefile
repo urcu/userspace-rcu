@@ -33,7 +33,7 @@ all: checkarch test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
-	urcutorture-yield liburcu.so test_mutex
+	urcutorture-yield liburcu.so test_mutex test_looplen
 
 checkarch:
 ifeq (${ARCHTYPE},)
@@ -55,6 +55,9 @@ urcu.h: arch.h api.h arch_atomic.h
 urcu-qsbr.h: arch.h api.h arch_atomic.h
 
 test_urcu: urcu.o test_urcu.c urcu.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_looplen: test_looplen.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_mb: urcu-mb.o test_urcu.c urcu.h

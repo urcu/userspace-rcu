@@ -1,0 +1,87 @@
+/*
+ * test_looplen.c
+ *
+ * Userspace RCU library - test program
+ *
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <assert.h>
+#include <sys/syscall.h>
+#include <sched.h>
+
+#include "arch.h"
+
+#if defined(_syscall0)
+_syscall0(pid_t, gettid)
+#elif defined(__NR_gettid)
+static inline pid_t gettid(void)
+{
+	return syscall(__NR_gettid);
+}
+#else
+#warning "use pid as tid"
+static inline pid_t gettid(void)
+{
+	return getpid();
+}
+#endif
+
+#ifndef DYNAMIC_LINK_TEST
+#define _LGPL_SOURCE
+#else
+#define debug_yield_read()
+#endif
+#include "urcu.h"
+
+static inline void loop_sleep(unsigned long l)
+{
+	while(l-- != 0)
+		cpu_relax();
+}
+
+#define LOOPS 1048576
+#define TESTS 10
+
+int main(int argc, char **argv)
+{
+	unsigned long i;
+	cycles_t time1, time2;
+	cycles_t time_tot = 0;
+
+	for (i = 0; i < TESTS; i++) {
+		time1 = get_cycles();
+		loop_sleep(LOOPS);
+		time2 = get_cycles();
+		time_tot += time2 - time1;
+	}
+	time_tot /= TESTS;
+	time_tot /= LOOPS;
+
+	printf("CALIBRATION : %llu cycles per loop\n", time_tot);
+
+	return 0;
+}
