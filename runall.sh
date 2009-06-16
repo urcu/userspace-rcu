@@ -25,6 +25,7 @@ NUM_CPUS=8
 #y: ops/s
 
 rm -f runall.log
+rm -fr runall.detail.log
 
 echo Executing update fraction test
 
