@@ -52,9 +52,9 @@ api.h: api_${ARCHTYPE}.h
 arch_atomic.h: arch_atomic_${ARCHTYPE}.h
 	cp -f arch_atomic_${ARCHTYPE}.h arch_atomic.h
 
-urcu.h: arch.h api.h arch_atomic.h
+urcu.h: arch.h arch_atomic.h
 
-urcu-qsbr.h: arch.h api.h arch_atomic.h
+urcu-qsbr.h: arch.h arch_atomic.h
 
 test_urcu: urcu.o test_urcu.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -134,10 +134,10 @@ urcu-asm.S: urcu-asm.c urcu.h
 urcu-asm.o: urcu-asm.c urcu.h
 	$(CC) ${CFLAGS} -c -o $@ $(SRC_DEP)
 
-urcutorture: urcutorture.c urcu.o urcu.h rcutorture.h
+urcutorture: urcutorture.c urcu.o urcu.h rcutorture.h api.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h
+urcutorture-yield: urcutorture.c urcu-yield.o urcu.h rcutorture.h api.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 .PHONY: clean install checkarch
