@@ -413,4 +413,5 @@ int main(int argc, char *argv[])
 		usage(argc, argv);
 	}
 	perftest(nreaders, cpustride);
+	return 0;
 }

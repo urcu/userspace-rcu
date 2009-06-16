@@ -71,8 +71,6 @@
  * Machine parameters.
  */
 
-#define CONFIG_SMP
-
 #define CACHE_LINE_SIZE 64
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 6)))
@@ -312,23 +310,6 @@ __asm__ __volatile__(LOCK_PREFIX "orl %0,%1" \
 #define smp_mb__before_atomic_inc()	barrier()
 #define smp_mb__after_atomic_inc()	barrier()
 
-#define smp_mb() \
-__asm__ __volatile__("mfence" : : : "memory")
-/* __asm__ __volatile__("lock; addl $0,0(%%esp)" : : : "memory") */
-
-
-/*
- * Generate 64-bit timestamp.
- */
-
-static unsigned long long get_timestamp(void)
-{
-	unsigned int __a,__d;
-
-	__asm__ __volatile__("rdtsc" : "=a" (__a), "=d" (__d));
-	return ((long long)__a) | (((long long)__d)<<32);
-}
-
 /*
  * api_pthreads.h: API mapping to pthreads environment.
  *
@@ -369,7 +350,6 @@ static unsigned long long get_timestamp(void)
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
-#define barrier() __asm__ __volatile__("": : :"memory")
 
 /*
  * Default machine parameters.
@@ -404,18 +384,6 @@ static void spin_lock(spinlock_t *sp)
 	}
 }
 
-static int spin_trylock(spinlock_t *sp)
-{
-	int retval;
-
-	if ((retval = pthread_mutex_trylock(sp)) == 0)
-		return 1;
-	if (retval == EBUSY)
-		return 0;
-	perror("spin_trylock:pthread_mutex_trylock");
-	exit(-1);
-}
-
 static void spin_unlock(spinlock_t *sp)
 {
 	if (pthread_mutex_unlock(sp) != 0) {
@@ -426,11 +394,6 @@ static void spin_unlock(spinlock_t *sp)
 
 #define spin_lock_irqsave(l, f) do { f = 1; spin_lock(l); } while (0)
 #define spin_unlock_irqrestore(l, f) do { f = 0; spin_unlock(l); } while (0)
-
-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-#define unlikely(x) x
-#define likely(x) x
-#define prefetch(x) x
 
 /*
  * Thread creation/destruction primitives.
@@ -478,7 +441,8 @@ static int __smp_thread_id(void)
 			return i;
 	}
 	spin_unlock(&__thread_id_map_mutex);
-	fprintf(stderr, "smp_thread_id: Rogue thread, id: %d(%#x)\n", tid, tid);
+	fprintf(stderr, "smp_thread_id: Rogue thread, id: %d(%#x)\n",
+			(int)tid, (int)tid);
 	exit(-1);
 }
 
@@ -527,7 +491,8 @@ static void *wait_thread(thread_id_t tid)
 			break;
 	}
 	if (i >= NR_THREADS){
-		fprintf(stderr, "wait_thread: bad tid = %d(%#x)\n", tid, tid);
+		fprintf(stderr, "wait_thread: bad tid = %d(%#x)\n",
+				(int)tid, (int)tid);
 		exit(-1);
 	}
 	if (pthread_join(tid, &vp) != 0) {
@@ -619,16 +584,6 @@ long long get_microseconds(void)
 #define DECLARE_PER_CPU(type, name) extern DEFINE_PER_CPU(type, name)
 
 DEFINE_PER_THREAD(int, smp_processor_id);
-
-static int smp_processor_id(void)
-{
-	return __get_thread_var(smp_processor_id);
-}
-
-static void set_smp_processor_id(int cpu)
-{
-	__get_thread_var(smp_processor_id) = cpu;
-}
 
 #define per_cpu(name, thread) __per_cpu_##name[thread].v
 #define __get_cpu_var(name) per_cpu(name, smp_processor_id())
