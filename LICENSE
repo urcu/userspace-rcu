@@ -28,7 +28,7 @@ See lgpl-relicensing.txt for details.
 
 * MIT-style license :
 
-xchg() privimitive has been rewritten from scratch starting from atomic_ops 1.2
+xchg() primitive has been rewritten from scratch starting from atomic_ops 1.2
 which has a MIT-style license that is intended to allow use in both free and
 proprietary software:
 	http://www.hpl.hp.com/research/linux/atomic_ops/LICENSING.txt
