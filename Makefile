@@ -19,6 +19,18 @@ endif
 ifeq ("${HOSTTYPE}","ppc64")
 ARCHTYPE=ppc
 endif
+ifeq ("${HOSTTYPE}","s390")
+ARCHTYPE=s390
+endif
+ifeq ("${HOSTTYPE}","s390x")
+ARCHTYPE=s390
+endif
+
+ifeq ($(findstring ${ARCHTYPE},"x86 ppc"),)
+APIHEADER=api_gcc.h
+else
+APIHEADER=api_${ARCHTYPE}.h
+endif
 
 #debug
 #CFLAGS=-Wall -g
@@ -46,8 +58,8 @@ endif
 arch.h: arch_${ARCHTYPE}.h
 	cp -f arch_${ARCHTYPE}.h arch.h
 
-api.h: api_${ARCHTYPE}.h
-	cp -f api_${ARCHTYPE}.h api.h
+api.h: ${APIHEADER}
+	cp -f ${APIHEADER} api.h
 
 arch_atomic.h: arch_atomic_${ARCHTYPE}.h
 	cp -f arch_atomic_${ARCHTYPE}.h arch_atomic.h
