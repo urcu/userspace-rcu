@@ -70,7 +70,7 @@ static unsigned long duration;
 
 /* read-side C.S. duration, in loops */
 static unsigned long rduration;
-static int reclaim_batch = 1;
+static unsigned int reclaim_batch = 1;
 
 struct reclaim_queue {
 	void **queue;	/* Beginning of queue */
@@ -426,10 +426,11 @@ int main(int argc, char **argv)
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
-		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
+		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
+		"batch %u\n",
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
-		tot_reads + tot_writes);
+		tot_reads + tot_writes, reclaim_batch);
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
