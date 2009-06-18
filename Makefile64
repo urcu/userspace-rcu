@@ -59,7 +59,7 @@ test_looplen: test_looplen.c urcu.h
 test_urcu_mb: urcu-mb.o test_urcu.c urcu.h
 	$(CC) -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-test_urcu_gc: urcu-mb.o test_urcu_gc.c urcu.h
+test_urcu_gc: urcu.o test_urcu_gc.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_gc_mb: urcu-mb.o test_urcu_gc.c urcu.h
