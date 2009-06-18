@@ -42,8 +42,8 @@ for BATCH_SIZE in ${BATCH_ARRAY}; do
 	./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log
 done
 
-#setting gc each 1024
-EXTRA_OPTS+="-b 1024"
+#setting gc each 4096. ** UPDATE FOR YOUR ARCHITECTURE BASED ON TEST ABOVE **
+EXTRA_OPTS+="-b 4094"
 
 echo Executing update fraction test
 
