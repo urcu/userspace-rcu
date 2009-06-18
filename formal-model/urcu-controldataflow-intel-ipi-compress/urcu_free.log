@@ -1,0 +1,55 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu-controldataflow-intel-ipi-compress'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define >> pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -DCOLLAPSE -o pan pan.c
+./pan -a -v -c1 -X -m10000000 -w20
+warning: for p.o. reduction to be valid the never claim must be stutter-invariant
+(never claims generated from LTL formulae are stutter-invariant)
+depth 0: Claim reached state 5 (line 1294)
+Depth=    9223 States=    1e+06 Transitions= 6.87e+06 Memory=   516.350	t=   19.4 R=   5e+04
+Depth=    9223 States=    2e+06 Transitions= 1.47e+07 Memory=   563.713	t=   43.1 R=   5e+04
+Depth=    9223 States=    3e+06 Transitions= 2.46e+07 Memory=   613.127	t=   73.9 R=   4e+04
+pan: resizing hashtable to -w22..  done
+Depth=    9223 States=    4e+06 Transitions= 3.19e+07 Memory=   690.440	t=   95.5 R=   4e+04
+Depth=    9223 States=    5e+06 Transitions= 3.95e+07 Memory=   736.533	t=    118 R=   4e+04
+Depth=    9223 States=    6e+06 Transitions= 5.71e+07 Memory=   785.068	t=    174 R=   3e+04
+Depth=    9223 States=    7e+06 Transitions= 6.81e+07 Memory=   834.580	t=    209 R=   3e+04
+Depth=    9223 States=    8e+06 Transitions= 8.22e+07 Memory=   883.311	t=    254 R=   3e+04
+Depth=    9223 States=    9e+06 Transitions= 9.54e+07 Memory=   932.139	t=    296 R=   3e+04
+pan: resizing hashtable to -w24..  done
+Depth=    9223 States=    1e+07 Transitions= 1.08e+08 Memory=  1104.670	t=    338 R=   3e+04
+Depth=    9223 States=  1.1e+07 Transitions= 1.21e+08 Memory=  1155.451	t=    375 R=   3e+04
+Depth=    9223 States=  1.2e+07 Transitions=  1.3e+08 Memory=  1205.744	t=    403 R=   3e+04
+Depth=    9223 States=  1.3e+07 Transitions= 1.42e+08 Memory=  1254.572	t=    442 R=   3e+04
+Depth=    9223 States=  1.4e+07 Transitions= 1.72e+08 Memory=  1302.717	t=    539 R=   3e+04
+Depth=    9223 States=  1.5e+07 Transitions= 1.91e+08 Memory=  1354.768	t=    600 R=   3e+04
+Depth=    9223 States=  1.6e+07 Transitions= 2.08e+08 Memory=  1405.842	t=    653 R=   2e+04
+Depth=    9223 States=  1.7e+07 Transitions=  2.2e+08 Memory=  1456.818	t=    691 R=   2e+04
+Depth=    9223 States=  1.8e+07 Transitions= 2.39e+08 Memory=  1506.135	t=    751 R=   2e+04
+Depth=    9223 States=  1.9e+07 Transitions= 2.55e+08 Memory=  1556.330	t=    801 R=   2e+04
+Depth=    9223 States=    2e+07 Transitions= 2.72e+08 Memory=  1604.084	t=    856 R=   2e+04
+Depth=    9285 States=  2.1e+07 Transitions= 2.85e+08 Memory=  1650.080	t=    898 R=   2e+04
+Depth=    9324 States=  2.2e+07 Transitions= 2.99e+08 Memory=  1696.760	t=    941 R=   2e+04
+Depth=    9324 States=  2.3e+07 Transitions=  3.1e+08 Memory=  1746.369	t=    976 R=   2e+04
+Depth=    9324 States=  2.4e+07 Transitions= 3.21e+08 Memory=  1792.561	t= 1.01e+03 R=   2e+04
+Depth=    9324 States=  2.5e+07 Transitions= 3.34e+08 Memory=  1841.096	t= 1.05e+03 R=   2e+04
+Depth=    9324 States=  2.6e+07 Transitions= 3.45e+08 Memory=  1890.998	t= 1.09e+03 R=   2e+04
+Depth=    9324 States=  2.7e+07 Transitions= 3.59e+08 Memory=  1940.412	t= 1.13e+03 R=   2e+04
+Depth=    9324 States=  2.8e+07 Transitions= 3.71e+08 Memory=  1987.776	t= 1.17e+03 R=   2e+04
+Depth=    9324 States=  2.9e+07 Transitions= 3.84e+08 Memory=  2034.846	t= 1.21e+03 R=   2e+04
+Depth=    9324 States=    3e+07 Transitions= 3.96e+08 Memory=  2081.233	t= 1.25e+03 R=   2e+04
+Depth=    9324 States=  3.1e+07 Transitions= 4.09e+08 Memory=  2129.865	t= 1.29e+03 R=   2e+04
+Depth=    9324 States=  3.2e+07 Transitions= 4.19e+08 Memory=  2179.670	t= 1.32e+03 R=   2e+04
+Depth=    9324 States=  3.3e+07 Transitions=  4.3e+08 Memory=  2227.717	t= 1.36e+03 R=   2e+04
+Depth=    9324 States=  3.4e+07 Transitions= 4.44e+08 Memory=  2277.033	t= 1.4e+03 R=   2e+04
+pan: resizing hashtable to -w26..  done
+Depth=    9324 States=  3.5e+07 Transitions=  4.6e+08 Memory=  2824.190	t= 1.46e+03 R=   2e+04

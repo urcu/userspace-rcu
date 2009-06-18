@@ -1,0 +1,305 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu-controldataflow-min-progress'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define > pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+cp urcu_progress_reader.define .input.define
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -DCOLLAPSE -o pan pan.c
+./pan -a -f -v -c1 -X -m10000000 -w20
+warning: for p.o. reduction to be valid the never claim must be stutter-invariant
+(never claims generated from LTL formulae are stutter-invariant)
+depth 0: Claim reached state 5 (line 1179)
+depth 7: Claim reached state 9 (line 1184)
+depth 136: Claim reached state 9 (line 1183)
+Depth=   12986 States=    1e+06 Transitions= 1.85e+08 Memory=   494.963	t=    294 R=   3e+03
+Depth=   12986 States=    2e+06 Transitions= 6.44e+08 Memory=   520.744	t= 1.06e+03 R=   2e+03
+Depth=   12986 States=    3e+06 Transitions= 1.24e+09 Memory=   545.842	t= 2.08e+03 R=   1e+03
+pan: resizing hashtable to -w22..  done
+Depth=   12986 States=    4e+06 Transitions= 1.65e+09 Memory=   602.940	t= 2.76e+03 R=   1e+03
+Depth=   12986 States=    5e+06 Transitions=    2e+09 Memory=   629.111	t= 3.34e+03 R=   1e+03
+Depth=   12986 States=    6e+06 Transitions= 2.47e+09 Memory=   655.283	t= 4.12e+03 R=   1e+03
+Depth=   12986 States=    7e+06 Transitions= 2.94e+09 Memory=   681.260	t= 4.93e+03 R=   1e+03
+Depth=   12986 States=    8e+06 Transitions= 3.45e+09 Memory=   705.967	t= 5.79e+03 R=   1e+03
+Depth=   12986 States=    9e+06 Transitions= 3.84e+09 Memory=   732.529	t= 6.46e+03 R=   1e+03
+pan: resizing hashtable to -w24..  done
+Depth=   12986 States=    1e+07 Transitions= 4.23e+09 Memory=   882.404	t= 7.1e+03 R=   1e+03
+
+(Spin Version 5.1.7 -- 23 December 2008)
+	+ Partial Order Reduction
+	+ Compression
+
+Full statespace search for:
+	never claim         	+
+	assertion violations	+ (if within scope of claim)
+	acceptance   cycles 	+ (fairness enabled)
+	invalid end states	- (disabled by never claim)
+
+State-vector 80 byte, depth reached 12986, errors: 0
+  5822478 states, stored (1.02932e+07 visited)
+4.3658924e+09 states, matched
+4.3761856e+09 transitions (= visited+matched)
+2.5547511e+10 atomic steps
+hash conflicts: 1.1937107e+09 (resolved)
+
+Stats on memory usage (in Megabytes):
+  644.119	equivalent memory usage for states (stored*(State-vector + overhead))
+  303.976	actual memory usage for states (compression: 47.19%)
+         	state-vector as stored = 19 byte + 36 byte overhead
+  128.000	memory used for hash table (-w24)
+  457.764	memory used for DFS stack (-m10000000)
+  889.631	total actual memory usage
+
+nr of templates: [ globals chans procs ]
+collapse counts: [ 28603 2179 2102 2 2 ]
+unreached in proctype urcu_reader
+	line 268, "pan.___", state 55, "cache_dirty_urcu_gp_ctr = 0"
+	line 276, "pan.___", state 77, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 86, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 102, "(1)"
+	line 249, "pan.___", state 110, "(1)"
+	line 253, "pan.___", state 122, "(1)"
+	line 257, "pan.___", state 130, "(1)"
+	line 404, "pan.___", state 156, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 188, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 202, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 221, "(1)"
+	line 431, "pan.___", state 251, "(1)"
+	line 435, "pan.___", state 264, "(1)"
+	line 614, "pan.___", state 285, "_proc_urcu_reader = (_proc_urcu_reader|((1<<2)<<1))"
+	line 404, "pan.___", state 292, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 324, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 338, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 357, "(1)"
+	line 431, "pan.___", state 387, "(1)"
+	line 435, "pan.___", state 400, "(1)"
+	line 404, "pan.___", state 421, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 453, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 467, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 486, "(1)"
+	line 431, "pan.___", state 516, "(1)"
+	line 435, "pan.___", state 529, "(1)"
+	line 404, "pan.___", state 552, "cache_dirty_urcu_gp_ctr = 0"
+	line 404, "pan.___", state 554, "(1)"
+	line 404, "pan.___", state 555, "(cache_dirty_urcu_gp_ctr)"
+	line 404, "pan.___", state 555, "else"
+	line 404, "pan.___", state 558, "(1)"
+	line 408, "pan.___", state 566, "cache_dirty_urcu_active_readers = 0"
+	line 408, "pan.___", state 568, "(1)"
+	line 408, "pan.___", state 569, "(cache_dirty_urcu_active_readers)"
+	line 408, "pan.___", state 569, "else"
+	line 408, "pan.___", state 572, "(1)"
+	line 408, "pan.___", state 573, "(1)"
+	line 408, "pan.___", state 573, "(1)"
+	line 406, "pan.___", state 578, "((i<1))"
+	line 406, "pan.___", state 578, "((i>=1))"
+	line 413, "pan.___", state 584, "cache_dirty_rcu_ptr = 0"
+	line 413, "pan.___", state 586, "(1)"
+	line 413, "pan.___", state 587, "(cache_dirty_rcu_ptr)"
+	line 413, "pan.___", state 587, "else"
+	line 413, "pan.___", state 590, "(1)"
+	line 413, "pan.___", state 591, "(1)"
+	line 413, "pan.___", state 591, "(1)"
+	line 417, "pan.___", state 598, "cache_dirty_rcu_data[i] = 0"
+	line 417, "pan.___", state 600, "(1)"
+	line 417, "pan.___", state 601, "(cache_dirty_rcu_data[i])"
+	line 417, "pan.___", state 601, "else"
+	line 417, "pan.___", state 604, "(1)"
+	line 417, "pan.___", state 605, "(1)"
+	line 417, "pan.___", state 605, "(1)"
+	line 415, "pan.___", state 610, "((i<2))"
+	line 415, "pan.___", state 610, "((i>=2))"
+	line 422, "pan.___", state 617, "(1)"
+	line 422, "pan.___", state 618, "(!(cache_dirty_urcu_gp_ctr))"
+	line 422, "pan.___", state 618, "else"
+	line 422, "pan.___", state 621, "(1)"
+	line 422, "pan.___", state 622, "(1)"
+	line 422, "pan.___", state 622, "(1)"
+	line 426, "pan.___", state 630, "(1)"
+	line 426, "pan.___", state 631, "(!(cache_dirty_urcu_active_readers))"
+	line 426, "pan.___", state 631, "else"
+	line 426, "pan.___", state 634, "(1)"
+	line 426, "pan.___", state 635, "(1)"
+	line 426, "pan.___", state 635, "(1)"
+	line 424, "pan.___", state 640, "((i<1))"
+	line 424, "pan.___", state 640, "((i>=1))"
+	line 431, "pan.___", state 647, "(1)"
+	line 431, "pan.___", state 648, "(!(cache_dirty_rcu_ptr))"
+	line 431, "pan.___", state 648, "else"
+	line 431, "pan.___", state 651, "(1)"
+	line 431, "pan.___", state 652, "(1)"
+	line 431, "pan.___", state 652, "(1)"
+	line 435, "pan.___", state 660, "(1)"
+	line 435, "pan.___", state 661, "(!(cache_dirty_rcu_data[i]))"
+	line 435, "pan.___", state 661, "else"
+	line 435, "pan.___", state 664, "(1)"
+	line 435, "pan.___", state 665, "(1)"
+	line 435, "pan.___", state 665, "(1)"
+	line 433, "pan.___", state 670, "((i<2))"
+	line 433, "pan.___", state 670, "((i>=2))"
+	line 443, "pan.___", state 674, "(1)"
+	line 443, "pan.___", state 674, "(1)"
+	line 614, "pan.___", state 677, "cached_urcu_active_readers = (tmp+1)"
+	line 614, "pan.___", state 678, "_proc_urcu_reader = (_proc_urcu_reader|(1<<5))"
+	line 614, "pan.___", state 679, "(1)"
+	line 404, "pan.___", state 686, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 718, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 732, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 751, "(1)"
+	line 431, "pan.___", state 781, "(1)"
+	line 435, "pan.___", state 794, "(1)"
+	line 404, "pan.___", state 821, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 853, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 867, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 886, "(1)"
+	line 431, "pan.___", state 916, "(1)"
+	line 435, "pan.___", state 929, "(1)"
+	line 404, "pan.___", state 950, "cache_dirty_urcu_gp_ctr = 0"
+	line 413, "pan.___", state 982, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 996, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 1015, "(1)"
+	line 431, "pan.___", state 1045, "(1)"
+	line 435, "pan.___", state 1058, "(1)"
+	line 245, "pan.___", state 1091, "(1)"
+	line 253, "pan.___", state 1111, "(1)"
+	line 257, "pan.___", state 1119, "(1)"
+	line 748, "pan.___", state 1136, "-end-"
+	(91 of 1136 states)
+unreached in proctype urcu_writer
+	line 404, "pan.___", state 45, "cache_dirty_urcu_gp_ctr = 0"
+	line 408, "pan.___", state 59, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 77, "cache_dirty_rcu_ptr = 0"
+	line 422, "pan.___", state 110, "(1)"
+	line 426, "pan.___", state 123, "(1)"
+	line 431, "pan.___", state 140, "(1)"
+	line 268, "pan.___", state 176, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 185, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 198, "cache_dirty_rcu_ptr = 0"
+	line 404, "pan.___", state 238, "cache_dirty_urcu_gp_ctr = 0"
+	line 408, "pan.___", state 252, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 270, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 284, "cache_dirty_rcu_data[i] = 0"
+	line 422, "pan.___", state 303, "(1)"
+	line 426, "pan.___", state 316, "(1)"
+	line 431, "pan.___", state 333, "(1)"
+	line 435, "pan.___", state 346, "(1)"
+	line 408, "pan.___", state 383, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 401, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 415, "cache_dirty_rcu_data[i] = 0"
+	line 426, "pan.___", state 447, "(1)"
+	line 431, "pan.___", state 464, "(1)"
+	line 435, "pan.___", state 477, "(1)"
+	line 408, "pan.___", state 522, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 540, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 554, "cache_dirty_rcu_data[i] = 0"
+	line 426, "pan.___", state 586, "(1)"
+	line 431, "pan.___", state 603, "(1)"
+	line 435, "pan.___", state 616, "(1)"
+	line 408, "pan.___", state 651, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 669, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 683, "cache_dirty_rcu_data[i] = 0"
+	line 426, "pan.___", state 715, "(1)"
+	line 431, "pan.___", state 732, "(1)"
+	line 435, "pan.___", state 745, "(1)"
+	line 408, "pan.___", state 782, "cache_dirty_urcu_active_readers = 0"
+	line 413, "pan.___", state 800, "cache_dirty_rcu_ptr = 0"
+	line 417, "pan.___", state 814, "cache_dirty_rcu_data[i] = 0"
+	line 426, "pan.___", state 846, "(1)"
+	line 431, "pan.___", state 863, "(1)"
+	line 435, "pan.___", state 876, "(1)"
+	line 268, "pan.___", state 926, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 935, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 948, "cache_dirty_rcu_ptr = 0"
+	line 245, "pan.___", state 973, "(1)"
+	line 249, "pan.___", state 981, "(1)"
+	line 253, "pan.___", state 993, "(1)"
+	line 257, "pan.___", state 1001, "(1)"
+	line 268, "pan.___", state 1032, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1041, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1054, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1063, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1079, "(1)"
+	line 249, "pan.___", state 1087, "(1)"
+	line 253, "pan.___", state 1099, "(1)"
+	line 257, "pan.___", state 1107, "(1)"
+	line 268, "pan.___", state 1128, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1137, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1152, "(1)"
+	line 280, "pan.___", state 1159, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1175, "(1)"
+	line 249, "pan.___", state 1183, "(1)"
+	line 253, "pan.___", state 1195, "(1)"
+	line 257, "pan.___", state 1203, "(1)"
+	line 268, "pan.___", state 1234, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1243, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1256, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1265, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1281, "(1)"
+	line 249, "pan.___", state 1289, "(1)"
+	line 253, "pan.___", state 1301, "(1)"
+	line 257, "pan.___", state 1309, "(1)"
+	line 272, "pan.___", state 1335, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1348, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1357, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1373, "(1)"
+	line 249, "pan.___", state 1381, "(1)"
+	line 253, "pan.___", state 1393, "(1)"
+	line 257, "pan.___", state 1401, "(1)"
+	line 268, "pan.___", state 1432, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1441, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1454, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1463, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1479, "(1)"
+	line 249, "pan.___", state 1487, "(1)"
+	line 253, "pan.___", state 1499, "(1)"
+	line 257, "pan.___", state 1507, "(1)"
+	line 272, "pan.___", state 1533, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1546, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1555, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1571, "(1)"
+	line 249, "pan.___", state 1579, "(1)"
+	line 253, "pan.___", state 1591, "(1)"
+	line 257, "pan.___", state 1599, "(1)"
+	line 268, "pan.___", state 1630, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1639, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1652, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1661, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1677, "(1)"
+	line 249, "pan.___", state 1685, "(1)"
+	line 253, "pan.___", state 1697, "(1)"
+	line 257, "pan.___", state 1705, "(1)"
+	line 272, "pan.___", state 1731, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1744, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1753, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1769, "(1)"
+	line 249, "pan.___", state 1777, "(1)"
+	line 253, "pan.___", state 1789, "(1)"
+	line 257, "pan.___", state 1797, "(1)"
+	line 268, "pan.___", state 1828, "cache_dirty_urcu_gp_ctr = 0"
+	line 272, "pan.___", state 1837, "cache_dirty_urcu_active_readers = 0"
+	line 276, "pan.___", state 1850, "cache_dirty_rcu_ptr = 0"
+	line 280, "pan.___", state 1859, "cache_dirty_rcu_data[i] = 0"
+	line 245, "pan.___", state 1875, "(1)"
+	line 249, "pan.___", state 1883, "(1)"
+	line 253, "pan.___", state 1895, "(1)"
+	line 257, "pan.___", state 1903, "(1)"
+	line 1123, "pan.___", state 1919, "-end-"
+	(118 of 1919 states)
+unreached in proctype :init:
+	(0 of 26 states)
+unreached in proctype :never:
+	line 1186, "pan.___", state 11, "-end-"
+	(1 of 11 states)
+
+pan: elapsed time 7.33e+03 seconds
+pan: rate 1403.7352 states/second
+pan: avg transition delay 1.6756e-06 usec
+cp .input.spin urcu_progress_reader.spin.input
+cp .input.spin.trail urcu_progress_reader.spin.input.trail
+make[1]: Leaving directory `/home/compudj/doc/userspace-rcu/formal-model/urcu-controldataflow-min-progress'
