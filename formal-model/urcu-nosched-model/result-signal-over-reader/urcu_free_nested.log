@@ -1,0 +1,20 @@
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define >> pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_free.ltl | grep -v ^//`)" >> pan.ltl
+cp urcu_free_nested.define .input.define
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -o pan pan.c
+./pan -a -v -c1 -X -m10000000 -w20
+warning: for p.o. reduction to be valid the never claim must be stutter-invariant
+(never claims generated from LTL formulae are stutter-invariant)
+depth 0: Claim reached state 5 (line 742)
+Depth=    3880 States=    1e+06 Transitions= 1.18e+07 Memory=   527.190	t=   9.48 R=   1e+05
+Depth=    3880 States=    2e+06 Transitions= 2.39e+07 Memory=   588.225	t=   19.6 R=   1e+05
+Depth=    3880 States=    3e+06 Transitions= 3.61e+07 Memory=   649.260	t=   30.3 R=   1e+05

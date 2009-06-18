@@ -1,0 +1,524 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define > pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+cp urcu_progress_writer.define .input.define
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -O2 -w -DHASH64 -o pan pan.c
+./pan -a -f -v -c1 -X -m10000000 -w20
+warning: for p.o. reduction to be valid the never claim must be stutter-invariant
+(never claims generated from LTL formulae are stutter-invariant)
+depth 0: Claim reached state 5 (line 744)
+depth 15: Claim reached state 9 (line 749)
+depth 1194: Claim reached state 9 (line 748)
+Depth=    3253 States=    1e+06 Transitions= 1.06e+07 Memory=   484.416	t=   9.64 R=   1e+05
+Depth=    3253 States=    2e+06 Transitions= 2.04e+07 Memory=   501.311	t=   18.6 R=   1e+05
+Depth=    3253 States=    3e+06 Transitions= 3.44e+07 Memory=   516.252	t=   31.6 R=   9e+04
+pan: resizing hashtable to -w22..  done
+Depth=    7995 States=    4e+06 Transitions= 4.66e+07 Memory=   563.486	t=   42.8 R=   9e+04
+Depth=    7995 States=    5e+06 Transitions= 6.05e+07 Memory=   580.674	t=   55.6 R=   9e+04
+Depth=    7995 States=    6e+06 Transitions= 7.12e+07 Memory=   599.229	t=   65.5 R=   9e+04
+Depth=    7995 States=    7e+06 Transitions= 8.58e+07 Memory=   613.975	t=   78.9 R=   9e+04
+Depth=    7995 States=    8e+06 Transitions= 9.62e+07 Memory=   631.846	t=   88.7 R=   9e+04
+Depth=    7995 States=    9e+06 Transitions=  1.1e+08 Memory=   646.592	t=    101 R=   9e+04
+pan: resizing hashtable to -w24..  done
+Depth=    7995 States=    1e+07 Transitions= 1.32e+08 Memory=   783.869	t=    122 R=   8e+04
+Depth=    7995 States=  1.1e+07 Transitions= 1.52e+08 Memory=   799.104	t=    140 R=   8e+04
+Depth=    7995 States=  1.2e+07 Transitions= 1.71e+08 Memory=   814.533	t=    157 R=   8e+04
+Depth=    7995 States=  1.3e+07 Transitions=  1.9e+08 Memory=   829.670	t=    174 R=   7e+04
+Depth=    7995 States=  1.4e+07 Transitions= 2.01e+08 Memory=   848.029	t=    185 R=   8e+04
+Depth=    7995 States=  1.5e+07 Transitions= 2.21e+08 Memory=   862.287	t=    203 R=   7e+04
+Depth=    7995 States=  1.6e+07 Transitions= 2.35e+08 Memory=   877.815	t=    215 R=   7e+04
+Depth=    7995 States=  1.7e+07 Transitions= 2.44e+08 Memory=   897.736	t=    223 R=   8e+04
+Depth=    7995 States=  1.8e+07 Transitions= 2.57e+08 Memory=   911.115	t=    235 R=   8e+04
+Depth=    7995 States=  1.9e+07 Transitions= 2.69e+08 Memory=   927.033	t=    246 R=   8e+04
+Depth=    8341 States=    2e+07 Transitions= 2.83e+08 Memory=   943.440	t=    259 R=   8e+04
+Depth=    8341 States=  2.1e+07 Transitions= 2.96e+08 Memory=   961.604	t=    271 R=   8e+04
+Depth=    8341 States=  2.2e+07 Transitions= 3.07e+08 Memory=   978.791	t=    281 R=   8e+04
+Depth=    8341 States=  2.3e+07 Transitions=  3.2e+08 Memory=   996.369	t=    293 R=   8e+04
+Depth=    8341 States=  2.4e+07 Transitions= 3.32e+08 Memory=  1013.264	t=    304 R=   8e+04
+Depth=    8341 States=  2.5e+07 Transitions= 3.48e+08 Memory=  1024.885	t=    319 R=   8e+04
+Depth=    8341 States=  2.6e+07 Transitions= 3.72e+08 Memory=  1038.947	t=    341 R=   8e+04
+Depth=    8341 States=  2.7e+07 Transitions= 3.91e+08 Memory=  1055.158	t=    358 R=   8e+04
+Depth=    8341 States=  2.8e+07 Transitions= 4.09e+08 Memory=  1069.904	t=    374 R=   7e+04
+Depth=    8341 States=  2.9e+07 Transitions= 4.25e+08 Memory=  1086.701	t=    389 R=   7e+04
+Depth=    8341 States=    3e+07 Transitions= 4.43e+08 Memory=  1102.131	t=    405 R=   7e+04
+Depth=    8341 States=  3.1e+07 Transitions= 4.58e+08 Memory=  1117.268	t=    419 R=   7e+04
+Depth=    8341 States=  3.2e+07 Transitions= 4.68e+08 Memory=  1136.213	t=    429 R=   7e+04
+Depth=    8341 States=  3.3e+07 Transitions=  4.8e+08 Memory=  1151.154	t=    440 R=   8e+04
+Depth=    8341 States=  3.4e+07 Transitions= 4.92e+08 Memory=  1166.779	t=    451 R=   8e+04
+pan: resizing hashtable to -w26..  done
+Depth=    8687 States=  3.5e+07 Transitions= 5.05e+08 Memory=  1679.658	t=    464 R=   8e+04
+Depth=    8687 States=  3.6e+07 Transitions= 5.18e+08 Memory=  1697.432	t=    477 R=   8e+04
+Depth=    8687 States=  3.7e+07 Transitions= 5.29e+08 Memory=  1714.326	t=    487 R=   8e+04
+Depth=    8687 States=  3.8e+07 Transitions= 5.44e+08 Memory=  1730.244	t=    500 R=   8e+04
+Depth=    8687 States=  3.9e+07 Transitions= 5.55e+08 Memory=  1747.920	t=    511 R=   8e+04
+Depth=    8687 States=    4e+07 Transitions= 5.69e+08 Memory=  1761.885	t=    523 R=   8e+04
+Depth=    8687 States=  4.1e+07 Transitions= 5.92e+08 Memory=  1775.850	t=    544 R=   8e+04
+Depth=    8687 States=  4.2e+07 Transitions= 6.12e+08 Memory=  1790.498	t=    562 R=   7e+04
+Depth=    8687 States=  4.3e+07 Transitions= 6.29e+08 Memory=  1807.783	t=    578 R=   7e+04
+Depth=    8687 States=  4.4e+07 Transitions= 6.48e+08 Memory=  1822.432	t=    595 R=   7e+04
+Depth=    8687 States=  4.5e+07 Transitions= 6.61e+08 Memory=  1838.838	t=    606 R=   7e+04
+Depth=    8687 States=  4.6e+07 Transitions= 6.81e+08 Memory=  1853.291	t=    625 R=   7e+04
+Depth=    8687 States=  4.7e+07 Transitions= 6.93e+08 Memory=  1870.772	t=    635 R=   7e+04
+Depth=    8687 States=  4.8e+07 Transitions= 7.02e+08 Memory=  1889.912	t=    644 R=   7e+04
+Depth=    8687 States=  4.9e+07 Transitions= 7.15e+08 Memory=  1902.998	t=    656 R=   7e+04
+Depth=    8687 States=    5e+07 Transitions= 7.27e+08 Memory=  1919.600	t=    667 R=   7e+04
+Depth=    9033 States=  5.1e+07 Transitions= 7.42e+08 Memory=  1935.518	t=    681 R=   7e+04
+Depth=    9033 States=  5.2e+07 Transitions= 7.53e+08 Memory=  1954.170	t=    691 R=   8e+04
+Depth=    9033 States=  5.3e+07 Transitions= 7.66e+08 Memory=  1969.990	t=    703 R=   8e+04
+Depth=    9033 States=  5.4e+07 Transitions= 7.77e+08 Memory=  1988.545	t=    713 R=   8e+04
+Depth=    9033 States=  5.5e+07 Transitions=  7.9e+08 Memory=  2004.756	t=    725 R=   8e+04
+Depth=    9033 States=  5.6e+07 Transitions=  8.1e+08 Memory=  2016.084	t=    743 R=   8e+04
+Depth=    9033 States=  5.7e+07 Transitions= 8.32e+08 Memory=  2030.440	t=    763 R=   7e+04
+Depth=    9033 States=  5.8e+07 Transitions= 8.51e+08 Memory=  2046.260	t=    781 R=   7e+04
+Depth=    9033 States=  5.9e+07 Transitions=  8.7e+08 Memory=  2061.592	t=    797 R=   7e+04
+Depth=    9033 States=    6e+07 Transitions= 8.83e+08 Memory=  2078.779	t=    809 R=   7e+04
+Depth=    9033 States=  6.1e+07 Transitions= 9.01e+08 Memory=  2094.014	t=    826 R=   7e+04
+Depth=    9033 States=  6.2e+07 Transitions= 9.16e+08 Memory=  2108.467	t=    840 R=   7e+04
+Depth=    9033 States=  6.3e+07 Transitions= 9.26e+08 Memory=  2126.924	t=    849 R=   7e+04
+Depth=    9033 States=  6.4e+07 Transitions= 9.38e+08 Memory=  2142.158	t=    860 R=   7e+04
+Depth=    9033 States=  6.5e+07 Transitions= 9.51e+08 Memory=  2157.295	t=    871 R=   7e+04
+Depth=    9379 States=  6.6e+07 Transitions= 9.63e+08 Memory=  2173.115	t=    883 R=   7e+04
+Depth=    9379 States=  6.7e+07 Transitions= 9.77e+08 Memory=  2190.401	t=    895 R=   7e+04
+Depth=    9379 States=  6.8e+07 Transitions= 9.88e+08 Memory=  2208.955	t=    905 R=   8e+04
+Depth=    9379 States=  6.9e+07 Transitions=    1e+09 Memory=  2223.311	t=    919 R=   8e+04
+Depth=    9379 States=    7e+07 Transitions= 1.01e+09 Memory=  2242.256	t=    928 R=   8e+04
+Depth=    9379 States=  7.1e+07 Transitions= 1.03e+09 Memory=  2257.295	t=    940 R=   8e+04
+Depth=    9379 States=  7.2e+07 Transitions= 1.05e+09 Memory=  2269.307	t=    960 R=   8e+04
+Depth=    9379 States=  7.3e+07 Transitions= 1.07e+09 Memory=  2283.760	t=    979 R=   7e+04
+Depth=    9379 States=  7.4e+07 Transitions= 1.09e+09 Memory=  2299.385	t=    996 R=   7e+04
+Depth=    9379 States=  7.5e+07 Transitions= 1.11e+09 Memory=  2314.619	t= 1.01e+03 R=   7e+04
+Depth=    9379 States=  7.6e+07 Transitions= 1.12e+09 Memory=  2333.369	t= 1.02e+03 R=   7e+04
+Depth=    9379 States=  7.7e+07 Transitions= 1.14e+09 Memory=  2347.139	t= 1.04e+03 R=   7e+04
+Depth=    9379 States=  7.8e+07 Transitions= 1.15e+09 Memory=  2385.029	t= 1.06e+03 R=   7e+04
+Depth=    9379 States=  7.9e+07 Transitions= 1.17e+09 Memory=  2453.682	t= 1.07e+03 R=   7e+04
+Depth=    9379 States=    8e+07 Transitions= 1.18e+09 Memory=  2522.236	t= 1.08e+03 R=   7e+04
+Depth=    9379 States=  8.1e+07 Transitions=  1.2e+09 Memory=  2590.889	t= 1.1e+03 R=   7e+04
+Depth=    9379 States=  8.2e+07 Transitions= 1.22e+09 Memory=  2624.287	t= 1.12e+03 R=   7e+04
+Depth=    9379 States=  8.3e+07 Transitions= 1.23e+09 Memory=  2640.303	t= 1.13e+03 R=   7e+04
+Depth=    9379 States=  8.4e+07 Transitions= 1.25e+09 Memory=  2654.170	t= 1.15e+03 R=   7e+04
+Depth=    9379 States=  8.5e+07 Transitions= 1.27e+09 Memory=  2669.111	t= 1.16e+03 R=   7e+04
+Depth=    9379 States=  8.6e+07 Transitions= 1.29e+09 Memory=  2684.053	t= 1.18e+03 R=   7e+04
+Depth=    9379 States=  8.7e+07 Transitions= 1.31e+09 Memory=  2698.604	t= 1.2e+03 R=   7e+04
+Depth=    9379 States=  8.8e+07 Transitions= 1.33e+09 Memory=  2719.697	t= 1.22e+03 R=   7e+04
+Depth=    9379 States=  8.9e+07 Transitions= 1.35e+09 Memory=  2788.350	t= 1.24e+03 R=   7e+04
+Depth=    9379 States=    9e+07 Transitions= 1.37e+09 Memory=  2819.990	t= 1.26e+03 R=   7e+04
+Depth=    9379 States=  9.1e+07 Transitions= 1.39e+09 Memory=  2846.553	t= 1.27e+03 R=   7e+04
+Depth=    9379 States=  9.2e+07 Transitions=  1.4e+09 Memory=  2864.912	t= 1.28e+03 R=   7e+04
+Depth=    9379 States=  9.3e+07 Transitions= 1.41e+09 Memory=  2877.901	t= 1.3e+03 R=   7e+04
+Depth=    9379 States=  9.4e+07 Transitions= 1.44e+09 Memory=  2892.842	t= 1.31e+03 R=   7e+04
+Depth=    9379 States=  9.5e+07 Transitions= 1.45e+09 Memory=  2908.076	t= 1.33e+03 R=   7e+04
+Depth=    9379 States=  9.6e+07 Transitions= 1.47e+09 Memory=  2922.627	t= 1.35e+03 R=   7e+04
+Depth=    9379 States=  9.7e+07 Transitions= 1.49e+09 Memory=  2940.693	t= 1.36e+03 R=   7e+04
+Depth=    9379 States=  9.8e+07 Transitions= 1.51e+09 Memory=  2953.291	t= 1.38e+03 R=   7e+04
+Depth=    9379 States=  9.9e+07 Transitions= 1.53e+09 Memory=  2968.526	t= 1.4e+03 R=   7e+04
+Depth=    9379 States=    1e+08 Transitions= 1.56e+09 Memory=  2981.709	t= 1.42e+03 R=   7e+04
+Depth=    9379 States= 1.01e+08 Transitions= 1.57e+09 Memory=  2997.236	t= 1.44e+03 R=   7e+04
+Depth=    9379 States= 1.02e+08 Transitions= 1.59e+09 Memory=  3011.592	t= 1.46e+03 R=   7e+04
+Depth=    9379 States= 1.03e+08 Transitions= 1.61e+09 Memory=  3037.861	t= 1.47e+03 R=   7e+04
+Depth=    9379 States= 1.04e+08 Transitions= 1.63e+09 Memory=  3106.514	t= 1.49e+03 R=   7e+04
+Depth=    9379 States= 1.05e+08 Transitions= 1.65e+09 Memory=  3175.166	t= 1.51e+03 R=   7e+04
+Depth=    9379 States= 1.06e+08 Transitions= 1.67e+09 Memory=  3223.897	t= 1.52e+03 R=   7e+04
+Depth=    9379 States= 1.07e+08 Transitions= 1.68e+09 Memory=  3246.846	t= 1.54e+03 R=   7e+04
+Depth=    9379 States= 1.08e+08 Transitions=  1.7e+09 Memory=  3283.467	t= 1.56e+03 R=   7e+04
+Depth=    9379 States= 1.09e+08 Transitions= 1.72e+09 Memory=  3316.670	t= 1.57e+03 R=   7e+04
+Depth=    9379 States=  1.1e+08 Transitions= 1.73e+09 Memory=  3344.209	t= 1.59e+03 R=   7e+04
+Depth=    9379 States= 1.11e+08 Transitions= 1.75e+09 Memory=  3376.338	t= 1.6e+03 R=   7e+04
+Depth=    9379 States= 1.12e+08 Transitions= 1.76e+09 Memory=  3396.943	t= 1.62e+03 R=   7e+04
+Depth=    9379 States= 1.13e+08 Transitions= 1.78e+09 Memory=  3426.143	t= 1.63e+03 R=   7e+04
+Depth=    9379 States= 1.14e+08 Transitions=  1.8e+09 Memory=  3452.705	t= 1.65e+03 R=   7e+04
+Depth=    9379 States= 1.15e+08 Transitions= 1.81e+09 Memory=  3493.818	t= 1.66e+03 R=   7e+04
+Depth=    9379 States= 1.16e+08 Transitions= 1.83e+09 Memory=  3533.369	t= 1.67e+03 R=   7e+04
+Depth=    9379 States= 1.17e+08 Transitions= 1.84e+09 Memory=  3566.182	t= 1.69e+03 R=   7e+04
+Depth=    9379 States= 1.18e+08 Transitions= 1.86e+09 Memory=  3582.881	t= 1.7e+03 R=   7e+04
+Depth=    9379 States= 1.19e+08 Transitions= 1.88e+09 Memory=  3630.830	t= 1.72e+03 R=   7e+04
+Depth=    9379 States=  1.2e+08 Transitions= 1.89e+09 Memory=  3692.744	t= 1.74e+03 R=   7e+04
+Depth=    9379 States= 1.21e+08 Transitions= 1.91e+09 Memory=  3750.361	t= 1.75e+03 R=   7e+04
+Depth=    9379 States= 1.22e+08 Transitions= 1.92e+09 Memory=  3767.354	t= 1.76e+03 R=   7e+04
+Depth=    9379 States= 1.23e+08 Transitions= 1.94e+09 Memory=  3781.904	t= 1.78e+03 R=   7e+04
+Depth=    9379 States= 1.24e+08 Transitions= 1.96e+09 Memory=  3797.529	t= 1.8e+03 R=   7e+04
+Depth=    9379 States= 1.25e+08 Transitions= 1.98e+09 Memory=  3810.908	t= 1.82e+03 R=   7e+04
+Depth=    9379 States= 1.26e+08 Transitions=    2e+09 Memory=  3826.143	t= 1.83e+03 R=   7e+04
+Depth=    9379 States= 1.27e+08 Transitions= 2.02e+09 Memory=  3839.717	t= 1.86e+03 R=   7e+04
+Depth=    9379 States= 1.28e+08 Transitions= 2.04e+09 Memory=  3881.709	t= 1.87e+03 R=   7e+04
+Depth=    9379 States= 1.29e+08 Transitions= 2.06e+09 Memory=  3946.553	t= 1.89e+03 R=   7e+04
+Depth=    9379 States=  1.3e+08 Transitions= 2.08e+09 Memory=  3970.479	t= 1.91e+03 R=   7e+04
+Depth=    9379 States= 1.31e+08 Transitions= 2.09e+09 Memory=  3991.768	t= 1.92e+03 R=   7e+04
+Depth=    9379 States= 1.32e+08 Transitions=  2.1e+09 Memory=  4007.490	t= 1.93e+03 R=   7e+04
+Depth=    9379 States= 1.33e+08 Transitions= 2.13e+09 Memory=  4020.772	t= 1.95e+03 R=   7e+04
+Depth=    9379 States= 1.34e+08 Transitions= 2.14e+09 Memory=  4036.201	t= 1.97e+03 R=   7e+04
+Depth=    9379 States= 1.35e+08 Transitions= 2.16e+09 Memory=  4051.924	t= 1.98e+03 R=   7e+04
+pan: resizing hashtable to -w28..  done
+Depth=    9379 States= 1.36e+08 Transitions= 2.18e+09 Memory=  6099.924	t= 2.02e+03 R=   7e+04
+Depth=    9379 States= 1.37e+08 Transitions=  2.2e+09 Memory=  6099.924	t= 2.03e+03 R=   7e+04
+Depth=    9379 States= 1.38e+08 Transitions= 2.22e+09 Memory=  6099.924	t= 2.05e+03 R=   7e+04
+Depth=    9379 States= 1.39e+08 Transitions= 2.24e+09 Memory=  6099.924	t= 2.07e+03 R=   7e+04
+Depth=    9379 States=  1.4e+08 Transitions= 2.26e+09 Memory=  6108.518	t= 2.09e+03 R=   7e+04
+Depth=    9379 States= 1.41e+08 Transitions= 2.28e+09 Memory=  6124.729	t= 2.1e+03 R=   7e+04
+Depth=    9379 States= 1.42e+08 Transitions=  2.3e+09 Memory=  6138.889	t= 2.12e+03 R=   7e+04
+Depth=    9379 States= 1.43e+08 Transitions= 2.31e+09 Memory=  6178.928	t= 2.13e+03 R=   7e+04
+Depth=    9379 States= 1.44e+08 Transitions= 2.33e+09 Memory=  6247.483	t= 2.15e+03 R=   7e+04
+Depth=    9379 States= 1.45e+08 Transitions= 2.35e+09 Memory=  6316.135	t= 2.17e+03 R=   7e+04
+Depth=    9379 States= 1.46e+08 Transitions= 2.37e+09 Memory=  6353.440	t= 2.19e+03 R=   7e+04
+Depth=    9379 States= 1.47e+08 Transitions= 2.39e+09 Memory=  6381.662	t= 2.21e+03 R=   7e+04
+Depth=    9379 States= 1.48e+08 Transitions= 2.41e+09 Memory=  6422.190	t= 2.22e+03 R=   7e+04
+Depth=    9379 States= 1.49e+08 Transitions= 2.42e+09 Memory=  6449.143	t= 2.23e+03 R=   7e+04
+Depth=    9379 States=  1.5e+08 Transitions= 2.44e+09 Memory=  6472.580	t= 2.25e+03 R=   7e+04
+Depth=    9379 States= 1.51e+08 Transitions= 2.45e+09 Memory=  6503.733	t= 2.26e+03 R=   7e+04
+Depth=    9379 States= 1.52e+08 Transitions= 2.47e+09 Memory=  6531.369	t= 2.28e+03 R=   7e+04
+Depth=    9379 States= 1.53e+08 Transitions= 2.49e+09 Memory=  6554.123	t= 2.29e+03 R=   7e+04
+Depth=    9379 States= 1.54e+08 Transitions=  2.5e+09 Memory=  6585.373	t= 2.31e+03 R=   7e+04
+Depth=    9379 States= 1.55e+08 Transitions= 2.52e+09 Memory=  6622.776	t= 2.32e+03 R=   7e+04
+Depth=    9379 States= 1.56e+08 Transitions= 2.54e+09 Memory=  6671.213	t= 2.34e+03 R=   7e+04
+Depth=    9379 States= 1.57e+08 Transitions= 2.55e+09 Memory=  6696.115	t= 2.35e+03 R=   7e+04
+Depth=    9379 States= 1.58e+08 Transitions= 2.57e+09 Memory=  6722.776	t= 2.37e+03 R=   7e+04
+Depth=    9379 States= 1.59e+08 Transitions= 2.58e+09 Memory=  6764.572	t= 2.38e+03 R=   7e+04
+Depth=    9379 States=  1.6e+08 Transitions=  2.6e+09 Memory=  6830.490	t= 2.4e+03 R=   7e+04
+Depth=    9379 States= 1.61e+08 Transitions= 2.62e+09 Memory=  6879.026	t= 2.41e+03 R=   7e+04
+Depth=    9379 States= 1.62e+08 Transitions= 2.63e+09 Memory=  6895.432	t= 2.42e+03 R=   7e+04
+Depth=    9379 States= 1.63e+08 Transitions= 2.65e+09 Memory=  6909.787	t= 2.44e+03 R=   7e+04
+Depth=    9379 States= 1.64e+08 Transitions= 2.67e+09 Memory=  6925.217	t= 2.46e+03 R=   7e+04
+Depth=    9379 States= 1.65e+08 Transitions= 2.69e+09 Memory=  6938.986	t= 2.48e+03 R=   7e+04
+Depth=    9379 States= 1.66e+08 Transitions= 2.71e+09 Memory=  6953.537	t= 2.5e+03 R=   7e+04
+Depth=    9379 States= 1.67e+08 Transitions= 2.73e+09 Memory=  6967.893	t= 2.52e+03 R=   7e+04
+Depth=    9379 States= 1.68e+08 Transitions= 2.75e+09 Memory=  7022.190	t= 2.53e+03 R=   7e+04
+Depth=    9379 States= 1.69e+08 Transitions= 2.77e+09 Memory=  7076.779	t= 2.55e+03 R=   7e+04
+Depth=    9379 States=  1.7e+08 Transitions= 2.79e+09 Memory=  7102.365	t= 2.57e+03 R=   7e+04
+Depth=    9379 States= 1.71e+08 Transitions=  2.8e+09 Memory=  7119.162	t= 2.58e+03 R=   7e+04
+Depth=    9379 States= 1.72e+08 Transitions= 2.81e+09 Memory=  7135.178	t= 2.59e+03 R=   7e+04
+Depth=    9379 States= 1.73e+08 Transitions= 2.84e+09 Memory=  7150.022	t= 2.61e+03 R=   7e+04
+Depth=    9379 States= 1.74e+08 Transitions= 2.85e+09 Memory=  7164.475	t= 2.63e+03 R=   7e+04
+Depth=    9379 States= 1.75e+08 Transitions= 2.87e+09 Memory=  7180.295	t= 2.64e+03 R=   7e+04
+Depth=    9379 States= 1.76e+08 Transitions= 2.89e+09 Memory=  7198.264	t= 2.66e+03 R=   7e+04
+Depth=    9379 States= 1.77e+08 Transitions=  2.9e+09 Memory=  7211.447	t= 2.67e+03 R=   7e+04
+Depth=    9379 States= 1.78e+08 Transitions= 2.93e+09 Memory=  7224.338	t= 2.7e+03 R=   7e+04
+Depth=    9379 States= 1.79e+08 Transitions= 2.95e+09 Memory=  7239.084	t= 2.72e+03 R=   7e+04
+Depth=    9379 States=  1.8e+08 Transitions= 2.97e+09 Memory=  7253.342	t= 2.74e+03 R=   7e+04
+Depth=    9379 States= 1.81e+08 Transitions= 2.99e+09 Memory=  7268.283	t= 2.75e+03 R=   7e+04
+Depth=    9379 States= 1.82e+08 Transitions= 3.01e+09 Memory=  7283.615	t= 2.77e+03 R=   7e+04
+Depth=    9379 States= 1.83e+08 Transitions= 3.02e+09 Memory=  7335.276	t= 2.78e+03 R=   7e+04
+Depth=    9379 States= 1.84e+08 Transitions= 3.04e+09 Memory=  7403.928	t= 2.8e+03 R=   7e+04
+Depth=    9379 States= 1.85e+08 Transitions= 3.06e+09 Memory=  7472.580	t= 2.82e+03 R=   7e+04
+Depth=    9379 States= 1.86e+08 Transitions= 3.08e+09 Memory=  7501.877	t= 2.84e+03 R=   7e+04
+Depth=    9379 States= 1.87e+08 Transitions=  3.1e+09 Memory=  7528.147	t= 2.85e+03 R=   7e+04
+Depth=    9379 States= 1.88e+08 Transitions= 3.11e+09 Memory=  7566.135	t= 2.87e+03 R=   7e+04
+Depth=    9379 States= 1.89e+08 Transitions= 3.13e+09 Memory=  7593.479	t= 2.88e+03 R=   7e+04
+Depth=    9379 States=  1.9e+08 Transitions= 3.15e+09 Memory=  7625.119	t= 2.9e+03 R=   7e+04
+Depth=    9379 States= 1.91e+08 Transitions= 3.16e+09 Memory=  7647.483	t= 2.91e+03 R=   7e+04
+Depth=    9379 States= 1.92e+08 Transitions= 3.18e+09 Memory=  7677.951	t= 2.93e+03 R=   7e+04
+Depth=    9379 States= 1.93e+08 Transitions=  3.2e+09 Memory=  7698.947	t= 2.94e+03 R=   7e+04
+Depth=    9379 States= 1.94e+08 Transitions= 3.21e+09 Memory=  7732.443	t= 2.96e+03 R=   7e+04
+Depth=    9379 States= 1.95e+08 Transitions= 3.23e+09 Memory=  7772.092	t= 2.97e+03 R=   7e+04
+Depth=    9379 States= 1.96e+08 Transitions= 3.24e+09 Memory=  7815.451	t= 2.98e+03 R=   7e+04
+Depth=    9379 States= 1.97e+08 Transitions= 3.26e+09 Memory=  7839.865	t=  3e+03 R=   7e+04
+Depth=    9379 States= 1.98e+08 Transitions= 3.28e+09 Memory=  7869.651	t= 3.01e+03 R=   7e+04
+Depth=    9379 States= 1.99e+08 Transitions= 3.29e+09 Memory=  7921.018	t= 3.03e+03 R=   7e+04
+Depth=    9379 States=    2e+08 Transitions= 3.31e+09 Memory=  7986.740	t= 3.05e+03 R=   7e+04
+Depth=    9379 States= 2.01e+08 Transitions= 3.33e+09 Memory=  8023.752	t= 3.06e+03 R=   7e+04
+Depth=    9379 States= 2.02e+08 Transitions= 3.34e+09 Memory=  8039.768	t= 3.07e+03 R=   7e+04
+Depth=    9379 States= 2.03e+08 Transitions= 3.36e+09 Memory=  8053.830	t= 3.09e+03 R=   7e+04
+Depth=    9379 States= 2.04e+08 Transitions= 3.38e+09 Memory=  8068.772	t= 3.11e+03 R=   7e+04
+Depth=    9379 States= 2.05e+08 Transitions=  3.4e+09 Memory=  8083.127	t= 3.13e+03 R=   7e+04
+Depth=    9379 States= 2.06e+08 Transitions= 3.42e+09 Memory=  8098.068	t= 3.15e+03 R=   7e+04
+Depth=    9379 States= 2.07e+08 Transitions= 3.44e+09 Memory=  8115.744	t= 3.16e+03 R=   7e+04
+Depth=    9379 States= 2.08e+08 Transitions= 3.46e+09 Memory=  8178.537	t= 3.18e+03 R=   7e+04
+Depth=    9379 States= 2.09e+08 Transitions= 3.48e+09 Memory=  8220.627	t= 3.2e+03 R=   7e+04
+Depth=    9379 States=  2.1e+08 Transitions= 3.49e+09 Memory=  8246.799	t= 3.21e+03 R=   7e+04
+Depth=    9379 States= 2.11e+08 Transitions=  3.5e+09 Memory=  8263.791	t= 3.22e+03 R=   7e+04
+Depth=    9379 States= 2.12e+08 Transitions= 3.52e+09 Memory=  8279.514	t= 3.24e+03 R=   7e+04
+Depth=    9379 States= 2.13e+08 Transitions= 3.54e+09 Memory=  8293.772	t= 3.26e+03 R=   7e+04
+Depth=    9379 States= 2.14e+08 Transitions= 3.56e+09 Memory=  8309.201	t= 3.28e+03 R=   7e+04
+Depth=    9379 States= 2.15e+08 Transitions= 3.58e+09 Memory=  8323.752	t= 3.29e+03 R=   7e+04
+Depth=    9379 States= 2.16e+08 Transitions=  3.6e+09 Memory=  8342.990	t= 3.31e+03 R=   7e+04
+Depth=    9379 States= 2.17e+08 Transitions= 3.61e+09 Memory=  8355.197	t= 3.32e+03 R=   7e+04
+Depth=    9379 States= 2.18e+08 Transitions= 3.64e+09 Memory=  8368.674	t= 3.35e+03 R=   7e+04
+Depth=    9379 States= 2.19e+08 Transitions= 3.66e+09 Memory=  8382.932	t= 3.37e+03 R=   7e+04
+Depth=    9379 States=  2.2e+08 Transitions= 3.68e+09 Memory=  8398.459	t= 3.38e+03 R=   7e+04
+Depth=    9379 States= 2.21e+08 Transitions=  3.7e+09 Memory=  8412.912	t= 3.4e+03 R=   6e+04
+Depth=    9379 States= 2.22e+08 Transitions= 3.71e+09 Memory=  8428.244	t= 3.42e+03 R=   6e+04
+Depth=    9379 States= 2.23e+08 Transitions= 3.73e+09 Memory=  8491.721	t= 3.43e+03 R=   6e+04
+Depth=    9379 States= 2.24e+08 Transitions= 3.75e+09 Memory=  8560.373	t= 3.45e+03 R=   6e+04
+Depth=    9379 States= 2.25e+08 Transitions= 3.77e+09 Memory=  8621.604	t= 3.47e+03 R=   6e+04
+Depth=    9379 States= 2.26e+08 Transitions= 3.79e+09 Memory=  8648.850	t= 3.48e+03 R=   6e+04
+Depth=    9379 States= 2.27e+08 Transitions= 3.81e+09 Memory=  8671.994	t= 3.5e+03 R=   6e+04
+Depth=    9379 States= 2.28e+08 Transitions= 3.82e+09 Memory=  8710.861	t= 3.51e+03 R=   6e+04
+Depth=    9379 States= 2.29e+08 Transitions= 3.84e+09 Memory=  8742.893	t= 3.53e+03 R=   6e+04
+Depth=    9379 States=  2.3e+08 Transitions= 3.85e+09 Memory=  8771.799	t= 3.54e+03 R=   6e+04
+Depth=    9379 States= 2.31e+08 Transitions= 3.87e+09 Memory=  8792.600	t= 3.56e+03 R=   6e+04
+Depth=    9379 States= 2.32e+08 Transitions= 3.89e+09 Memory=  8828.733	t= 3.57e+03 R=   6e+04
+Depth=    9379 States= 2.33e+08 Transitions=  3.9e+09 Memory=  8843.869	t= 3.59e+03 R=   6e+04
+Depth=    9379 States= 2.34e+08 Transitions= 3.92e+09 Memory=  8884.787	t= 3.6e+03 R=   6e+04
+Depth=    9379 States= 2.35e+08 Transitions= 3.93e+09 Memory=  8924.240	t= 3.62e+03 R=   6e+04
+Depth=    9379 States= 2.36e+08 Transitions= 3.95e+09 Memory=  8960.276	t= 3.63e+03 R=   6e+04
+Depth=    9379 States= 2.37e+08 Transitions= 3.97e+09 Memory=  8984.494	t= 3.65e+03 R=   6e+04
+Depth=    9379 States= 2.38e+08 Transitions= 3.98e+09 Memory=  9016.428	t= 3.66e+03 R=   6e+04
+Depth=    9379 States= 2.39e+08 Transitions=    4e+09 Memory=  9077.365	t= 3.68e+03 R=   6e+04
+Depth=    9379 States=  2.4e+08 Transitions= 4.02e+09 Memory=  9143.088	t= 3.7e+03 R=   6e+04
+
+(Spin Version 5.1.7 -- 23 December 2008)
+	+ Partial Order Reduction
+
+Full statespace search for:
+	never claim         	+
+	assertion violations	+ (if within scope of claim)
+	acceptance   cycles 	+ (fairness enabled)
+	invalid end states	- (disabled by never claim)
+
+State-vector 64 byte, depth reached 9379, errors: 0
+ 88114592 states, stored (2.40192e+08 visited)
+3.782223e+09 states, matched
+4.0224152e+09 transitions (= visited+matched)
+1.4282782e+10 atomic steps
+hash conflicts: 5.384059e+08 (resolved)
+
+Stats on memory usage (in Megabytes):
+ 7731.001	equivalent memory usage for states (stored*(State-vector + overhead))
+ 6648.180	actual memory usage for states (compression: 85.99%)
+         	state-vector as stored = 51 byte + 28 byte overhead
+ 2048.000	memory used for hash table (-w28)
+  457.764	memory used for DFS stack (-m10000000)
+    1.188	memory lost to fragmentation
+ 9152.756	total actual memory usage
+
+unreached in proctype urcu_reader
+	line 399, "pan.___", state 16, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 48, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 61, "(1)"
+	line 418, "pan.___", state 91, "(1)"
+	line 399, "pan.___", state 113, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 145, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 158, "(1)"
+	line 418, "pan.___", state 188, "(1)"
+	line 399, "pan.___", state 211, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 243, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 256, "(1)"
+	line 418, "pan.___", state 286, "(1)"
+	line 399, "pan.___", state 350, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 382, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 395, "(1)"
+	line 418, "pan.___", state 425, "(1)"
+	line 540, "pan.___", state 456, "-end-"
+	(17 of 456 states)
+unreached in proctype urcu_reader_sig
+	line 399, "pan.___", state 25, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 57, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 70, "(1)"
+	line 418, "pan.___", state 100, "(1)"
+	line 399, "pan.___", state 113, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 145, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 158, "(1)"
+	line 418, "pan.___", state 188, "(1)"
+	line 399, "pan.___", state 202, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 234, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 247, "(1)"
+	line 418, "pan.___", state 277, "(1)"
+	line 399, "pan.___", state 314, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 346, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 359, "(1)"
+	line 418, "pan.___", state 389, "(1)"
+	line 614, "pan.___", state 411, "-end-"
+	(17 of 411 states)
+unreached in proctype urcu_writer
+	line 399, "pan.___", state 14, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 28, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 46, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 59, "(1)"
+	line 413, "pan.___", state 72, "(1)"
+	line 418, "pan.___", state 89, "(1)"
+	line 399, "pan.___", state 108, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 122, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 153, "(1)"
+	line 413, "pan.___", state 166, "(1)"
+	line 652, "pan.___", state 199, "(1)"
+	line 175, "pan.___", state 208, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 179, "pan.___", state 217, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 240, "(1)"
+	line 164, "pan.___", state 248, "(1)"
+	line 168, "pan.___", state 260, "(1)"
+	line 175, "pan.___", state 271, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<i)))"
+	line 183, "pan.___", state 293, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<i)))"
+	line 160, "pan.___", state 303, "(1)"
+	line 164, "pan.___", state 311, "(1)"
+	line 168, "pan.___", state 323, "(1)"
+	line 175, "pan.___", state 338, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 179, "pan.___", state 347, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 360, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 370, "(1)"
+	line 164, "pan.___", state 378, "(1)"
+	line 168, "pan.___", state 390, "(1)"
+	line 399, "pan.___", state 404, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 418, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 436, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 449, "(1)"
+	line 413, "pan.___", state 462, "(1)"
+	line 418, "pan.___", state 479, "(1)"
+	line 399, "pan.___", state 498, "(1)"
+	line 403, "pan.___", state 510, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 528, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 554, "(1)"
+	line 418, "pan.___", state 571, "(1)"
+	line 403, "pan.___", state 603, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 621, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 647, "(1)"
+	line 418, "pan.___", state 664, "(1)"
+	line 179, "pan.___", state 687, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 700, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 710, "(1)"
+	line 164, "pan.___", state 718, "(1)"
+	line 168, "pan.___", state 730, "(1)"
+	line 175, "pan.___", state 741, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<i)))"
+	line 183, "pan.___", state 763, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<i)))"
+	line 160, "pan.___", state 773, "(1)"
+	line 164, "pan.___", state 781, "(1)"
+	line 168, "pan.___", state 793, "(1)"
+	line 175, "pan.___", state 808, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 179, "pan.___", state 817, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 830, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 840, "(1)"
+	line 164, "pan.___", state 848, "(1)"
+	line 168, "pan.___", state 860, "(1)"
+	line 399, "pan.___", state 882, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 399, "pan.___", state 884, "(1)"
+	line 399, "pan.___", state 885, "((cache_dirty_urcu_gp_ctr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 399, "pan.___", state 885, "else"
+	line 399, "pan.___", state 888, "(1)"
+	line 403, "pan.___", state 896, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 898, "(1)"
+	line 403, "pan.___", state 899, "((cache_dirty_urcu_active_readers.bitfield&(1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 899, "else"
+	line 403, "pan.___", state 902, "(1)"
+	line 403, "pan.___", state 903, "(1)"
+	line 403, "pan.___", state 903, "(1)"
+	line 401, "pan.___", state 908, "((i<1))"
+	line 401, "pan.___", state 908, "((i>=1))"
+	line 408, "pan.___", state 914, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 927, "(1)"
+	line 409, "pan.___", state 928, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 409, "pan.___", state 928, "else"
+	line 409, "pan.___", state 931, "(1)"
+	line 409, "pan.___", state 932, "(1)"
+	line 409, "pan.___", state 932, "(1)"
+	line 413, "pan.___", state 940, "(1)"
+	line 413, "pan.___", state 941, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 413, "pan.___", state 941, "else"
+	line 413, "pan.___", state 944, "(1)"
+	line 413, "pan.___", state 945, "(1)"
+	line 413, "pan.___", state 945, "(1)"
+	line 411, "pan.___", state 950, "((i<1))"
+	line 411, "pan.___", state 950, "((i>=1))"
+	line 418, "pan.___", state 957, "(1)"
+	line 418, "pan.___", state 958, "(!((cache_dirty_generation_ptr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 418, "pan.___", state 958, "else"
+	line 418, "pan.___", state 961, "(1)"
+	line 418, "pan.___", state 962, "(1)"
+	line 418, "pan.___", state 962, "(1)"
+	line 420, "pan.___", state 965, "(1)"
+	line 420, "pan.___", state 965, "(1)"
+	line 403, "pan.___", state 996, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 1014, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 1040, "(1)"
+	line 418, "pan.___", state 1057, "(1)"
+	line 403, "pan.___", state 1086, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 1104, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 1130, "(1)"
+	line 418, "pan.___", state 1147, "(1)"
+	line 399, "pan.___", state 1166, "(1)"
+	line 403, "pan.___", state 1178, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 1196, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 1222, "(1)"
+	line 418, "pan.___", state 1239, "(1)"
+	line 403, "pan.___", state 1271, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 408, "pan.___", state 1289, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 413, "pan.___", state 1315, "(1)"
+	line 418, "pan.___", state 1332, "(1)"
+	line 179, "pan.___", state 1355, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 1368, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 1378, "(1)"
+	line 164, "pan.___", state 1386, "(1)"
+	line 168, "pan.___", state 1398, "(1)"
+	line 175, "pan.___", state 1409, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<i)))"
+	line 183, "pan.___", state 1431, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<i)))"
+	line 160, "pan.___", state 1441, "(1)"
+	line 164, "pan.___", state 1449, "(1)"
+	line 168, "pan.___", state 1461, "(1)"
+	line 175, "pan.___", state 1476, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 179, "pan.___", state 1485, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 1498, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 1508, "(1)"
+	line 164, "pan.___", state 1516, "(1)"
+	line 168, "pan.___", state 1528, "(1)"
+	line 399, "pan.___", state 1550, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 399, "pan.___", state 1552, "(1)"
+	line 399, "pan.___", state 1553, "((cache_dirty_urcu_gp_ctr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 399, "pan.___", state 1553, "else"
+	line 399, "pan.___", state 1556, "(1)"
+	line 403, "pan.___", state 1564, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 1566, "(1)"
+	line 403, "pan.___", state 1567, "((cache_dirty_urcu_active_readers.bitfield&(1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 403, "pan.___", state 1567, "else"
+	line 403, "pan.___", state 1570, "(1)"
+	line 403, "pan.___", state 1571, "(1)"
+	line 403, "pan.___", state 1571, "(1)"
+	line 401, "pan.___", state 1576, "((i<1))"
+	line 401, "pan.___", state 1576, "((i>=1))"
+	line 408, "pan.___", state 1582, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 409, "pan.___", state 1595, "(1)"
+	line 409, "pan.___", state 1596, "(!((cache_dirty_urcu_gp_ctr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 409, "pan.___", state 1596, "else"
+	line 409, "pan.___", state 1599, "(1)"
+	line 409, "pan.___", state 1600, "(1)"
+	line 409, "pan.___", state 1600, "(1)"
+	line 413, "pan.___", state 1608, "(1)"
+	line 413, "pan.___", state 1609, "(!((cache_dirty_urcu_active_readers.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 413, "pan.___", state 1609, "else"
+	line 413, "pan.___", state 1612, "(1)"
+	line 413, "pan.___", state 1613, "(1)"
+	line 413, "pan.___", state 1613, "(1)"
+	line 411, "pan.___", state 1618, "((i<1))"
+	line 411, "pan.___", state 1618, "((i>=1))"
+	line 418, "pan.___", state 1625, "(1)"
+	line 418, "pan.___", state 1626, "(!((cache_dirty_generation_ptr.bitfield&(1<<( ((_pid<2)) -> (0) : (1) )))))"
+	line 418, "pan.___", state 1626, "else"
+	line 418, "pan.___", state 1629, "(1)"
+	line 418, "pan.___", state 1630, "(1)"
+	line 418, "pan.___", state 1630, "(1)"
+	line 420, "pan.___", state 1633, "(1)"
+	line 420, "pan.___", state 1633, "(1)"
+	line 179, "pan.___", state 1658, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 1671, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 1681, "(1)"
+	line 164, "pan.___", state 1689, "(1)"
+	line 168, "pan.___", state 1701, "(1)"
+	line 175, "pan.___", state 1712, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<i)))"
+	line 183, "pan.___", state 1734, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<i)))"
+	line 160, "pan.___", state 1744, "(1)"
+	line 164, "pan.___", state 1752, "(1)"
+	line 168, "pan.___", state 1764, "(1)"
+	line 175, "pan.___", state 1779, "cache_dirty_urcu_gp_ctr.bitfield = (cache_dirty_urcu_gp_ctr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 179, "pan.___", state 1788, "cache_dirty_urcu_active_readers.bitfield = (cache_dirty_urcu_active_readers.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 183, "pan.___", state 1801, "cache_dirty_generation_ptr.bitfield = (cache_dirty_generation_ptr.bitfield&~((1<<( ((_pid<2)) -> (0) : (1) ))))"
+	line 160, "pan.___", state 1811, "(1)"
+	line 164, "pan.___", state 1819, "(1)"
+	line 168, "pan.___", state 1831, "(1)"
+	line 702, "pan.___", state 1856, "-end-"
+	(158 of 1856 states)
+unreached in proctype :init:
+	(0 of 46 states)
+unreached in proctype :never:
+	line 751, "pan.___", state 11, "-end-"
+	(1 of 11 states)
+
+pan: elapsed time 3.7e+03 seconds
+pan: rate 64918.749 states/second
+pan: avg transition delay 9.1982e-07 usec
+cp .input.spin urcu_progress_writer.spin.input
+cp .input.spin.trail urcu_progress_writer.spin.input.trail
+make[1]: Leaving directory `/home/compudj/doc/userspace-rcu/formal-model/urcu'

@@ -1,0 +1,14 @@
+make[1]: Entering directory `/home/compudj/doc/userspace-rcu/formal-model/urcu/testmerge'
+rm -f pan* trail.out .input.spin* *.spin.trail .input.define
+touch .input.define
+cat .input.define > pan.ltl
+cat DEFINES >> pan.ltl
+spin -f "!(`cat urcu_progress.ltl | grep -v ^//`)" >> pan.ltl
+cp urcu_progress_writer.define .input.define
+cat .input.define > .input.spin
+cat DEFINES >> .input.spin
+cat urcu.spin >> .input.spin
+rm -f .input.spin.trail
+spin -a -X -N pan.ltl .input.spin
+Exit-Status 0
+gcc -w -DHASH64 -o pan pan.c
