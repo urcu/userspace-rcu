@@ -181,33 +181,7 @@ void *thr_reader(void *_count)
 
 }
 
-/* Using per-thread queue */
-static void rcu_gc_reclaim(unsigned long wtidx, void *old)
-{
-	void **p;
-
-	/* Queue pointer */
-	*pending_reclaims[wtidx].head = old;
-	pending_reclaims[wtidx].head++;
-
-	if (likely(pending_reclaims[wtidx].head - pending_reclaims[wtidx].queue
-			< reclaim_batch))
-		return;
-
-	/* If queue is full, wait for Q.S and empty queue */
-	synchronize_rcu();
-
-	for (p = pending_reclaims[wtidx].queue;
-			p < pending_reclaims[wtidx].head; p++) {
-		/* poison */
-		if (*p)
-			((struct test_array *)*p)->a = 0;
-		free(*p);
-	}
-	pending_reclaims[wtidx].head = pending_reclaims[wtidx].queue;
-}
-
-static void rcu_gc_cleanup(unsigned long wtidx)
+static void rcu_gc_clear_queue(unsigned long wtidx)
 {
 	void **p;
 
@@ -222,6 +196,20 @@ static void rcu_gc_cleanup(unsigned long wtidx)
 		free(*p);
 	}
 	pending_reclaims[wtidx].head = pending_reclaims[wtidx].queue;
+}
+
+/* Using per-thread queue */
+static void rcu_gc_reclaim(unsigned long wtidx, void *old)
+{
+	/* Queue pointer */
+	*pending_reclaims[wtidx].head = old;
+	pending_reclaims[wtidx].head++;
+
+	if (likely(pending_reclaims[wtidx].head - pending_reclaims[wtidx].queue
+			< reclaim_batch))
+		return;
+
+	rcu_gc_clear_queue(wtidx);
 }
 
 void *thr_writer(void *data)
@@ -420,7 +408,7 @@ int main(int argc, char **argv)
 		if (err != 0)
 			exit(1);
 		tot_writes += tot_nr_writes[i];
-		rcu_gc_cleanup(i);
+		rcu_gc_clear_queue(i);
 	}
 	
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
