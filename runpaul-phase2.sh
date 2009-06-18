@@ -3,10 +3,10 @@
 #run all tests
 
 #set to number of active CPUS
-NUM_CPUS=8
+NUM_CPUS=64
 
 #extra options, e.g. for setting affinity on even CPUs :
-#EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
+EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
 
 #ppc64 striding, use with NUM_CPUS=8
 
@@ -27,23 +27,7 @@ NUM_CPUS=8
 rm -f runall.log
 rm -fr runall.detail.log
 
-
-echo Executing batch RCU test
-
-DURATION=10
-BATCH_ARRAY="1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536
-	     131072 262144"
-NR_WRITERS=$((${NUM_CPUS} / 2))
-
-rm -f batch-rcu.log
-
-NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
-for BATCH_SIZE in ${BATCH_ARRAY}; do
-	echo "./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log" >> runall.log
-	./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log
-done
-
-#setting gc each 4096. ** UPDATE FOR YOUR ARCHITECTURE BASED ON TEST ABOVE **
+#setting gc each 4096. ** UPDATE FOR YOUR ARCHITECTURE BASED ON PHASE 1 RESULT **
 EXTRA_OPTS+="-b 4096"
 
 echo Executing update fraction test
