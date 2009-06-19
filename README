@@ -1,14 +1,43 @@
-build instructions for userspace-rcu library :
+Userspace RCU Implementatation
+by Mathieu Desnoyers and Paul E. McKenney
 
-make
-make install
+BUILDING
+--------
 
-Usage :
+	make
+	make install
+	
 
-Registration of _each thread_ calling read-side critical sections must be done
-with rcu_register_thread() before using rcu_read_lock()/rcu_read_unlock().
+QUICK START GUIDE
+-----------------
 
-Unregistration should be performed with rcu_unregister_thread() before exiting
-the thread.
+Initialization
 
-     Mathieu Desnoyers
+	Each thread that has reader critical sections (that uses
+	rcu_read_lock()/rcu_read_unlock() must first register to the URCU
+	library. This is done by calling rcu_register_thread().
+
+Reading
+
+	Reader critical sections must be protected by locating them between
+	calls to rcu_read_lock() and rcu_read_unlock(). Inside that lock,
+	rcu_dereference() may be called to read an RCU protected pointer.
+
+Writing
+
+	rcu_assign_pointer() and rcu_xchg_pointer() may be called anywhere.
+	After, synchronize_rcu() must be called. When it returns, the old values
+	are not in usage anymore.
+
+
+Usage of DEBUG_FULL_MB
+
+	DEBUG_FULL_MB uses full SMP barriers for readers. This eliminates the
+	need for signals but results in slower reads.
+
+
+Usage of DEBUG_YIELD
+
+	DEBUG_YIELD is used to add random delays in the code for testing
+	purposes.
+
