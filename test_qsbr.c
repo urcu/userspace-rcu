@@ -342,14 +342,26 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
-	for (i = 0; i < CPU_SETSIZE; i++)
-		if (CPU_ISSET(i, &affinity))
-			printf_verbose("Affinity to CPU : %d\n", i);
+	if (use_affinity) {
+		for (i = 0; i < CPU_SETSIZE; i++)
+			if (CPU_ISSET(i, &affinity))
+				printf_verbose("About to set affinity "
+					       "to CPU : %d\n", i);
 
-	if (use_affinity
-	    && sched_setaffinity(0, sizeof(affinity), &affinity) < 0) {
-		perror("sched_setaffinity");
-		exit(-1);
+		if (sched_setaffinity(0, sizeof(affinity), &affinity) < 0) {
+			perror("sched_setaffinity");
+			exit(-1);
+		}
+
+		if (sched_getaffinity(0, sizeof(affinity), &affinity) < 0) {
+			perror("sched_getaffinity");
+			exit(-1);
+		}
+
+		for (i = 0; i < CPU_SETSIZE; i++)
+			if (CPU_ISSET(i, &affinity))
+				printf_verbose("Effectively set affinity "
+					       "to CPU : %d\n", i);
 	}
 
 	test_array = malloc(sizeof(*test_array) * ARRAY_SIZE);
