@@ -258,14 +258,8 @@ void *thr_writer(void *_count)
 
 	for (;;) {
 		new = test_array_alloc();
-		rcu_copy_mutex_lock();
-		old = test_rcu_pointer;
-		if (old)
-			assert(old->a == 8);
 		new->a = 8;
 		old = rcu_publish_content(&test_rcu_pointer, new);
-		rcu_copy_mutex_unlock();
-		/* can be done after unlock */
 		if (old)
 			old->a = 0;
 		test_array_free(old);

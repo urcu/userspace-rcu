@@ -265,13 +265,8 @@ void *thr_writer(void *data)
 
 	for (;;) {
 		new = malloc(sizeof(*new));
-		rcu_copy_mutex_lock();
-		old = test_rcu_pointer;
-		if (old)
-			assert(old->a == 8);
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
-		rcu_copy_mutex_unlock();
 		rcu_gc_reclaim(wtidx, old);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
