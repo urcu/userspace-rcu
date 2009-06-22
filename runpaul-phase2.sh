@@ -27,8 +27,8 @@ EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
 rm -f runall.log
 rm -fr runall.detail.log
 
-#setting gc each 4096. ** UPDATE FOR YOUR ARCHITECTURE BASED ON PHASE 1 RESULT **
-EXTRA_OPTS+="-b 4096"
+#setting gc each 32768. ** UPDATE FOR YOUR ARCHITECTURE BASED ON PHASE 1 RESULT **
+EXTRA_OPTS+="-b 32768"
 
 echo Executing update fraction test
 
