@@ -38,6 +38,9 @@
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
 
+/* hardcoded number of CPUs */
+#define NR_CPUS 16384
+
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
 #elif defined(__NR_gettid)
@@ -91,6 +94,26 @@ static int verbose_mode;
 			printf(fmt, args);	\
 	} while (0)
 
+static unsigned int cpu_affinities[NR_CPUS];
+static unsigned int next_aff = 0;
+static int use_affinity = 0;
+
+static void set_affinity(void)
+{
+	cpu_set_t mask;
+	int cpu;
+
+	if (!use_affinity)
+		return;
+
+	cpu = cpu_affinities[next_aff++];
+	CPU_ZERO(&mask);
+	CPU_SET(cpu, &mask);
+	sched_setaffinity(0, sizeof(mask), &mask);
+}
+
+
+
 /*
  * returns 0 if test should end.
  */
@@ -140,6 +163,8 @@ void *thr_reader(void *_count)
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 
+	set_affinity();
+
 	while (!test_go)
 	{
 	}
@@ -168,6 +193,8 @@ void *thr_writer(void *_count)
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
+
+	set_affinity();
 
 	while (!test_go)
 	{
@@ -205,8 +232,6 @@ void show_usage(int argc, char **argv)
 	printf("\n");
 }
 
-cpu_set_t affinity;
-
 int main(int argc, char **argv)
 {
 	int err;
@@ -215,7 +240,6 @@ int main(int argc, char **argv)
 	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
-	int use_affinity = 0;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -241,8 +265,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	CPU_ZERO(&affinity);
-
 	for (i = 4; i < argc; i++) {
 		if (argv[i][0] != '-')
 			continue;
@@ -261,7 +283,7 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			a = atoi(argv[++i]);
-			CPU_SET(a, &affinity);
+			cpu_affinities[next_aff++] = a;
 			use_affinity = 1;
 			printf_verbose("Adding CPU %d affinity\n", a);
 			break;
@@ -291,16 +313,13 @@ int main(int argc, char **argv)
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
-	if (use_affinity
-	    && sched_setaffinity(0, sizeof(affinity), &affinity) < 0) {
-		perror("sched_setaffinity");
-		exit(-1);
-	}
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+
+	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,
