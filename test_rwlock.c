@@ -98,21 +98,32 @@ static unsigned int cpu_affinities[NR_CPUS];
 static unsigned int next_aff = 0;
 static int use_affinity = 0;
 
+pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void set_affinity(void)
 {
 	cpu_set_t mask;
 	int cpu;
+	int ret;
 
 	if (!use_affinity)
 		return;
 
+	ret = pthread_mutex_lock(&affinity_mutex);
+	if (ret) {
+		perror("Error in pthread mutex lock");
+		exit(-1);
+	}
 	cpu = cpu_affinities[next_aff++];
+	ret = pthread_mutex_unlock(&affinity_mutex);
+	if (ret) {
+		perror("Error in pthread mutex unlock");
+		exit(-1);
+	}
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
 	sched_setaffinity(0, sizeof(mask), &mask);
 }
-
-
 
 /*
  * returns 0 if test should end.
