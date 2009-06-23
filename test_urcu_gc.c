@@ -251,7 +251,11 @@ static void rcu_gc_reclaim(unsigned long wtidx, void *old)
 void *thr_writer(void *data)
 {
 	unsigned long wtidx = (unsigned long)data;
+#ifdef TEST_LOCAL_GC
+	struct test_array *old = NULL;
+#else
 	struct test_array *new, *old;
+#endif
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
@@ -264,9 +268,11 @@ void *thr_writer(void *data)
 	smp_mb();
 
 	for (;;) {
+#ifndef TEST_LOCAL_GC
 		new = malloc(sizeof(*new));
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
+#endif
 		rcu_gc_reclaim(wtidx, old);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))

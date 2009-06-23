@@ -34,7 +34,8 @@ all: checkarch test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_perthreadlock test_urcu_yield test_urcu_mb \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield liburcu.so test_mutex test_looplen test_urcu_gc \
-	test_urcu_gc_mb test_qsbr_gc
+	test_urcu_gc_mb test_qsbr_gc test_qsbr_lgc test_urcu_lgc \
+	test_urcu_lgc_mb
 
 checkarch:
 ifeq (${ARCHTYPE},)
@@ -70,11 +71,20 @@ test_urcu_gc: urcu.o test_urcu_gc.c urcu.h
 test_urcu_gc_mb: urcu-mb.o test_urcu_gc.c urcu.h
 	$(CC) -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
+test_urcu_lgc: urcu.o test_urcu_gc.c urcu.h
+	$(CC) -DTEST_LOCAL_GC ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_urcu_lgc_mb: urcu-mb.o test_urcu_gc.c urcu.h
+	$(CC) -DTEST_LOCAL_GC -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
 test_qsbr: urcu-qsbr.o test_qsbr.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_qsbr_gc: urcu-qsbr.o test_qsbr_gc.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_qsbr_lgc: urcu-qsbr.o test_qsbr_gc.c urcu-qsbr.h
+	$(CC) -DTEST_LOCAL_GC ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_rwlock: urcu.o test_rwlock.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
