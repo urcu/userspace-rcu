@@ -26,8 +26,8 @@ Reading
 Writing
 
 	rcu_assign_pointer() and rcu_xchg_pointer() may be called anywhere.
-	After, synchronize_rcu() must be called. When it returns, the old values
-	are not in usage anymore.
+	After, synchronize_rcu() must be called. When it returns, the old
+	values are not in usage anymore.
 
 
 Usage of DEBUG_FULL_MB
