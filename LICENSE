@@ -52,6 +52,7 @@ urcutorture.h
 urcutorture.c
 api_x86.h
 api_ppc.h
+api_gcc.h
 test_urcu.c
 test_urcu_yield.c
 test_rwlock_timing.c
