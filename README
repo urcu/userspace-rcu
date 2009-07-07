@@ -29,6 +29,14 @@ Writing
 	After, synchronize_rcu() must be called. When it returns, the old
 	values are not in usage anymore.
 
+Being careful with signals
+
+	The library uses signals internally. The signal handler is
+	registered with the SA_RESTART flag. However, these signals may cause
+	some non-restartable system calls to fail with errno = EINTR. Care
+	should be taken to restart system calls manually if they fail with this
+	error. A list of non-restartable system calls may be found in
+	signal(7).
 
 Usage of DEBUG_FULL_MB
 

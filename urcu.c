@@ -451,7 +451,7 @@ void urcu_init(void)
 	init_done = 1;
 
 	act.sa_sigaction = sigurcu_handler;
-	act.sa_flags = SA_SIGINFO;
+	act.sa_flags = SA_SIGINFO | SA_RESTART;
 	sigemptyset(&act.sa_mask);
 	ret = sigaction(SIGURCU, &act, NULL);
 	if (ret) {
