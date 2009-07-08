@@ -117,8 +117,11 @@
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)
 
-/* Updates without DEBUG_FULL_MB are much slower. Account this in the delay */
-#ifdef DEBUG_FULL_MB
+/*
+ * Updates without CONFIG_URCU_AVOID_SIGNALS are much slower. Account this in
+ * the delay.
+ */
+#ifdef CONFIG_URCU_AVOID_SIGNALS
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
 #else
@@ -161,7 +164,7 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-#ifdef DEBUG_FULL_MB
+#ifdef CONFIG_URCU_AVOID_SIGNALS
 static inline void reader_barrier()
 {
 	smp_mb();

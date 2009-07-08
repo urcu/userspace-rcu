@@ -36,16 +36,16 @@ Being careful with signals
 	some non-restartable system calls to fail with errno = EINTR. Care
 	should be taken to restart system calls manually if they fail with this
 	error. A list of non-restartable system calls may be found in
-	signal(7).
+	signal(7). To ensure the Userspace RCU library does not use signals,
+	define CONFIG_URCU_AVOID_SIGNALS at compile-time.
 
-Usage of DEBUG_FULL_MB
+Usage of CONFIG_URCU_AVOID_SIGNALS
 
-	DEBUG_FULL_MB uses full SMP barriers for readers. This eliminates the
-	need for signals but results in slower reads.
+	CONFIG_URCU_AVOID_SIGNALS uses full SMP barriers for readers. This
+	eliminates the need for signals but results in slower reads.
 
 
 Usage of DEBUG_YIELD
 
 	DEBUG_YIELD is used to add random delays in the code for testing
 	purposes.
-

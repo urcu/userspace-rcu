@@ -17,7 +17,9 @@ endif
 
 #debug
 #CFLAGS=-m64 -Wall -g
-#CFLAGS+=-DDEBUG_FULL_MB
+
+#Build the library without using signals. Slower read-side.
+#CFLAGS+=-DCONFIG_URCU_AVOID_SIGNALS
 
 #Changing the signal number used by the library. SIGUSR1 by default.
 #CFLAGS+=-DSIGURCU=SIGUSR2
@@ -58,19 +60,19 @@ test_looplen: test_looplen.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_mb: urcu-mb.o test_urcu.c urcu.h
-	$(CC) -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_gc: urcu.o test_urcu_gc.c urcu.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_gc_mb: urcu-mb.o test_urcu_gc.c urcu.h
-	$(CC) -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_lgc: urcu.o test_urcu_gc.c urcu.h
 	$(CC) -DTEST_LOCAL_GC ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_lgc_mb: urcu-mb.o test_urcu_gc.c urcu.h
-	$(CC) -DTEST_LOCAL_GC -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DTEST_LOCAL_GC -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_qsbr: urcu-qsbr.o test_qsbr.c urcu-qsbr.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
@@ -112,7 +114,7 @@ urcu.o: urcu.c urcu.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 urcu-mb.o: urcu.c urcu.h
-	$(CC) -fPIC -DDEBUG_FULL_MB ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
