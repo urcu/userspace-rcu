@@ -33,7 +33,7 @@
 #include <sys/syscall.h>
 #include <sched.h>
 
-#include "arch.h"
+#include "../arch.h"
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -56,24 +56,18 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#else
-#define debug_yield_read()
-#endif
-#include "urcu.h"
+#include "../urcu-qsbr.h"
 
 struct test_array {
 	int a;
 };
 
-pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
-
 static volatile int test_go, test_stop;
 
 static unsigned long wdelay;
 
-static volatile struct test_array test_array = { 8 };
+static struct test_array *test_rcu_pointer;
 
 static unsigned long duration;
 
@@ -167,29 +161,77 @@ void rcu_copy_mutex_unlock(void)
 	}
 }
 
+/*
+ * malloc/free are reusing memory areas too quickly, which does not let us
+ * test races appropriately. Use a large circular array for allocations.
+ * ARRAY_SIZE is larger than nr_writers, which insures we never run over our tail.
+ */
+#define ARRAY_SIZE (1048576 * nr_writers)
+#define ARRAY_POISON 0xDEADBEEF
+static int array_index;
+static struct test_array *test_array;
+
+static struct test_array *test_array_alloc(void)
+{
+	struct test_array *ret;
+	int index;
+
+	rcu_copy_mutex_lock();
+	index = array_index % ARRAY_SIZE;
+	assert(test_array[index].a == ARRAY_POISON ||
+		test_array[index].a == 0);
+	ret = &test_array[index];
+	array_index++;
+	if (array_index == ARRAY_SIZE)
+		array_index = 0;
+	rcu_copy_mutex_unlock();
+	return ret;
+}
+
+static void test_array_free(struct test_array *ptr)
+{
+	if (!ptr)
+		return;
+	rcu_copy_mutex_lock();
+	ptr->a = ARRAY_POISON;
+	rcu_copy_mutex_unlock();
+}
+
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
+	struct test_array *local_ptr;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 
 	set_affinity();
 
+	rcu_register_thread();
+
 	while (!test_go)
 	{
 	}
+	smp_mb();
 
 	for (;;) {
-		pthread_rwlock_rdlock(&lock);
-		assert(test_array.a == 8);
+		_rcu_read_lock();
+		local_ptr = _rcu_dereference(test_rcu_pointer);
+		debug_yield_read();
+		if (local_ptr)
+			assert(local_ptr->a == 8);
 		if (unlikely(rduration))
 			loop_sleep(rduration);
-		pthread_rwlock_unlock(&lock);
+		_rcu_read_unlock();
 		nr_reads++;
+		/* QS each 1024 reads */
+		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
+			_rcu_quiescent_state();
 		if (unlikely(!test_duration_read()))
 			break;
 	}
+
+	rcu_unregister_thread();
 
 	*count = nr_reads;
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
@@ -201,6 +243,7 @@ void *thr_reader(void *_count)
 void *thr_writer(void *_count)
 {
 	unsigned long long *count = _count;
+	struct test_array *new, *old;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
@@ -213,10 +256,13 @@ void *thr_writer(void *_count)
 	smp_mb();
 
 	for (;;) {
-		pthread_rwlock_wrlock(&lock);
-		test_array.a = 0;
-		test_array.a = 8;
-		pthread_rwlock_unlock(&lock);
+		new = test_array_alloc();
+		new->a = 8;
+		old = _rcu_publish_content(&test_rcu_pointer, new);
+		/* can be done after unlock */
+		if (old)
+			old->a = 0;
+		test_array_free(old);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;
@@ -256,7 +302,6 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
-	smp_mb();
 
 	err = sscanf(argv[1], "%u", &nr_readers);
 	if (err != 1) {
@@ -325,6 +370,7 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
+	test_array = malloc(sizeof(*test_array) * ARRAY_SIZE);
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
@@ -365,7 +411,7 @@ int main(int argc, char **argv)
 			exit(1);
 		tot_writes += count_writer[i];
 	}
-
+	
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
@@ -374,7 +420,8 @@ int main(int argc, char **argv)
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes);
-
+	test_array_free(test_rcu_pointer);
+	free(test_array);
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);

@@ -20,7 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "urcu.h"
+#include "../urcu.h"
 
 void show_read_lock(void)
 {

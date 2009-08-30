@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/syscall.h>
-#include <arch.h>
+#include "../arch.h"
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -51,7 +51,7 @@ static inline pid_t gettid(void)
 #endif
 
 #define _LGPL_SOURCE
-#include "urcu.h"
+#include "../urcu.h"
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 

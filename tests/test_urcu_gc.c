@@ -33,7 +33,7 @@
 #include <sys/syscall.h>
 #include <sched.h>
 
-#include "arch.h"
+#include "../arch.h"
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -56,8 +56,12 @@ static inline pid_t gettid(void)
 }
 #endif
 
+#ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#include "urcu-qsbr.h"
+#else
+#define debug_yield_read()
+#endif
+#include "../urcu.h"
 
 struct test_array {
 	int a;
@@ -69,10 +73,6 @@ static unsigned long wdelay;
 
 static struct test_array *test_rcu_pointer;
 
-static unsigned long duration;
-
-/* read-side C.S. duration, in loops */
-static unsigned long rduration;
 static unsigned int reclaim_batch = 1;
 
 struct reclaim_queue {
@@ -82,6 +82,10 @@ struct reclaim_queue {
 
 static struct reclaim_queue *pending_reclaims;
 
+static unsigned long duration;
+
+/* read-side C.S. duration, in loops */
+static unsigned long rduration;
 
 static inline void loop_sleep(unsigned long l)
 {
@@ -144,13 +148,13 @@ static int test_duration_read(void)
 static unsigned long long __thread nr_writes;
 static unsigned long long __thread nr_reads;
 
+static
+unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_writes;
+
 static unsigned int nr_readers;
 static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
-static
-unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_writes;
-
 
 void rcu_copy_mutex_lock(void)
 {
@@ -191,18 +195,15 @@ void *thr_reader(void *_count)
 	smp_mb();
 
 	for (;;) {
-		_rcu_read_lock();
-		local_ptr = _rcu_dereference(test_rcu_pointer);
+		rcu_read_lock();
+		local_ptr = rcu_dereference(test_rcu_pointer);
 		debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		if (unlikely(rduration))
 			loop_sleep(rduration);
-		_rcu_read_unlock();
+		rcu_read_unlock();
 		nr_reads++;
-		/* QS each 1024 reads */
-		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
-			_rcu_quiescent_state();
 		if (unlikely(!test_duration_read()))
 			break;
 	}
@@ -270,7 +271,7 @@ void *thr_writer(void *data)
 #ifndef TEST_LOCAL_GC
 		new = malloc(sizeof(*new));
 		new->a = 8;
-		old = _rcu_xchg_pointer(&test_rcu_pointer, new);
+		old = rcu_xchg_pointer(&test_rcu_pointer, new);
 #endif
 		rcu_gc_reclaim(wtidx, old);
 		nr_writes++;

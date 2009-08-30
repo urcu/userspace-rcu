@@ -1,7 +1,7 @@
 /*
- * test_qsbr_timing.c
+ * test_perthreadloc_timing.c
  *
- * Userspace QSBR - test program
+ * Per thread locks - test program
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/syscall.h>
-#include <arch.h>
+#include <pthread.h>
+
+#include "../arch.h"
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -50,39 +52,21 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#define _LGPL_SOURCE
-#include "urcu-qsbr.h"
-
-pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void rcu_copy_mutex_lock(void)
-{
-	int ret;
-	ret = pthread_mutex_lock(&rcu_copy_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
-}
-
-void rcu_copy_mutex_unlock(void)
-{
-	int ret;
-
-	ret = pthread_mutex_unlock(&rcu_copy_mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
-}
+#include "../urcu.h"
 
 struct test_array {
 	int a;
 };
 
-static struct test_array *test_rcu_pointer;
+static struct test_array test_array = { 8 };
 
-#define OUTER_READ_LOOP	2000U
+struct per_thread_lock {
+	pthread_mutex_t lock;
+} __attribute__((aligned(CACHE_LINE_SIZE)));	/* cache-line aligned */
+
+static struct per_thread_lock *per_thread_lock;
+
+#define OUTER_READ_LOOP	200U
 #define INNER_READ_LOOP	100000U
 #define READ_LOOP ((unsigned long long)OUTER_READ_LOOP * INNER_READ_LOOP)
 
@@ -102,32 +86,24 @@ static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
 void *thr_reader(void *arg)
 {
 	int i, j;
-	struct test_array *local_ptr;
 	cycles_t time1, time2;
+	long tidx = (long)arg;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	rcu_register_thread();
-
 	time1 = get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			_rcu_read_lock();
-			local_ptr = _rcu_dereference(test_rcu_pointer);
-			if (local_ptr) {
-				assert(local_ptr->a == 8);
-			}
-			_rcu_read_unlock();
+			pthread_mutex_lock(&per_thread_lock[tidx].lock);
+			assert(test_array.a == 8);
+			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
-		_rcu_quiescent_state();
 	}
 	time2 = get_cycles();
 
-	rcu_unregister_thread();
-
-	reader_time[(unsigned long)arg] = time2 - time1;
+	reader_time[tidx] = time2 - time1;
 
 	sleep(2);
 	printf("thread_end %s, thread id : %lx, tid %lu\n",
@@ -139,7 +115,7 @@ void *thr_reader(void *arg)
 void *thr_writer(void *arg)
 {
 	int i, j;
-	struct test_array *new, *old;
+	long tidx;
 	cycles_t time1, time2;
 
 	printf("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -149,20 +125,13 @@ void *thr_writer(void *arg)
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
 			time1 = get_cycles();
-			new = malloc(sizeof(struct test_array));
-			rcu_copy_mutex_lock();
-			old = test_rcu_pointer;
-			if (old) {
-				assert(old->a == 8);
+			for (tidx = 0; tidx < NR_READ; tidx++) {
+				pthread_mutex_lock(&per_thread_lock[tidx].lock);
 			}
-			new->a = 8;
-			old = _rcu_publish_content(&test_rcu_pointer, new);
-			rcu_copy_mutex_unlock();
-			/* can be done after unlock */
-			if (old) {
-				old->a = 0;
+			test_array.a = 8;
+			for (tidx = NR_READ - 1; tidx >= 0; tidx--) {
+				pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 			}
-			free(old);
 			time2 = get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
@@ -198,6 +167,11 @@ int main(int argc, char **argv)
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
+	per_thread_lock = malloc(sizeof(struct per_thread_lock) * NR_READ);
+
+	for (i = 0; i < NR_READ; i++) {
+		pthread_mutex_init(&per_thread_lock[i].lock, NULL);
+	}
 	for (i = 0; i < NR_READ; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,
 				     (void *)(long)i);
@@ -225,11 +199,11 @@ int main(int argc, char **argv)
 			exit(1);
 		tot_wtime += writer_time[i];
 	}
-	free(test_rcu_pointer);
 	printf("Time per read : %g cycles\n",
 	       (double)tot_rtime / ((double)NR_READ * (double)READ_LOOP));
 	printf("Time per write : %g cycles\n",
 	       (double)tot_wtime / ((double)NR_WRITE * (double)WRITE_LOOP));
+	free(per_thread_lock);
 
 	free(reader_time);
 	free(writer_time);
