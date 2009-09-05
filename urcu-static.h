@@ -81,7 +81,9 @@
  * data read before the pointer read by speculating the value of the pointer.
  * Correct ordering is ensured because the pointer is read as a volatile access.
  * This acts as a global side-effect operation, which forbids reordering of
- * dependent memory operations.
+ * dependent memory operations. Note that such concern about dependency-breaking
+ * optimizations will eventually be taken care of by the "memory_order_consume"
+ * addition to forthcoming C++ standard.
  *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
  */
