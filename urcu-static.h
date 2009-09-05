@@ -76,6 +76,13 @@
  * Inserts memory barriers on architectures that require them (currently only
  * Alpha) and documents which pointers are protected by RCU.
  *
+ * The compiler memory barrier in LOAD_SHARED() ensures that value-speculative
+ * optimizations (e.g. VSS: Value Speculation Scheduling) does not perform the
+ * data read before the pointer read by speculating the value of the pointer.
+ * Correct ordering is ensured because the pointer is read as a volatile access.
+ * This acts as a global side-effect operation, which forbids reordering of
+ * dependent memory operations.
+ *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
  */
 
