@@ -55,7 +55,6 @@ long __thread rcu_reader_qs_gp;
 struct reader_registry {
 	pthread_t tid;
 	long *rcu_reader_qs_gp;
-	char *need_mb;
 };
 
 #ifdef DEBUG_YIELD
@@ -64,10 +63,9 @@ unsigned int __thread rand_yield;
 #endif
 
 static struct reader_registry *registry;
-static char __thread need_mb;
 static int num_readers, alloc_readers;
 
-void internal_urcu_lock(void)
+static void internal_urcu_lock(void)
 {
 	int ret;
 
@@ -84,17 +82,12 @@ void internal_urcu_lock(void)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (need_mb) {
-			smp_mb();
-			need_mb = 0;
-			smp_mb();
-		}
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-void internal_urcu_unlock(void)
+static void internal_urcu_unlock(void)
 {
 	int ret;
 
@@ -117,7 +110,7 @@ static void force_mb_all_threads(void)
 	smp_mb();
 }
 
-void wait_for_quiescent_state(void)
+static void wait_for_quiescent_state(void)
 {
 	struct reader_registry *index;
 
@@ -237,7 +230,6 @@ static void rcu_add_reader(pthread_t id)
 	registry[num_readers].tid = id;
 	/* reference to the TLS of _this_ reader thread. */
 	registry[num_readers].rcu_reader_qs_gp = &rcu_reader_qs_gp;
-	registry[num_readers].need_mb = &need_mb;
 	num_readers++;
 }
 
