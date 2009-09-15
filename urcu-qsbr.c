@@ -251,10 +251,10 @@ static void rcu_remove_reader(pthread_t id)
 
 void rcu_register_thread(void)
 {
-	_rcu_thread_online();
 	internal_urcu_lock();
 	rcu_add_reader(pthread_self());
 	internal_urcu_unlock();
+	_rcu_thread_online();
 }
 
 void rcu_unregister_thread(void)
