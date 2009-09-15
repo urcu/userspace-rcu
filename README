@@ -39,11 +39,20 @@ Being careful with signals
 	signal(7). To ensure the Userspace RCU library does not use signals,
 	define CONFIG_URCU_AVOID_SIGNALS at compile-time.
 
+	Read-side critical sections can sit in a signal handler. Be careful,
+	however, to disable these signals between thread creation and calls to
+	rcu_register_thread(), because a signal handler nesting on an
+	unregistered thread would not be allowed to call rcu_read_lock().
+
 Usage of CONFIG_URCU_AVOID_SIGNALS
 
 	CONFIG_URCU_AVOID_SIGNALS uses full SMP barriers for readers. This
 	eliminates the need for signals but results in slower reads.
 
+Usage of DEBUG_RCU
+
+	DEBUG_RCU is used to add internal debugging self-checks to the
+	RCU library. This define adds a performance penality when enabled.
 
 Usage of DEBUG_YIELD
 
