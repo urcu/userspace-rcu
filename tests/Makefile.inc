@@ -42,13 +42,13 @@ test_urcu_lgc: test_urcu_gc.c ${URCU_SIGNAL}
 
 
 test_urcu_mb: test_urcu.c ${URCU_MB}
-	$(CC) -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DURCU_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_gc_mb: test_urcu_gc.c ${URCU_MB}
-	$(CC) -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DURCU_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_urcu_lgc_mb: test_urcu_gc.c ${URCU_MB}
-	$(CC) -DTEST_LOCAL_GC -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+	$(CC) -DTEST_LOCAL_GC -DURCU_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 
 test_qsbr: test_qsbr.c ${URCU_QSBR}

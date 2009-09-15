@@ -36,7 +36,7 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
-#ifndef CONFIG_URCU_AVOID_SIGNALS
+#ifndef URCU_MB
 void __attribute__((constructor)) urcu_init(void);
 void __attribute__((destructor)) urcu_exit(void);
 #else
@@ -127,7 +127,7 @@ static void switch_next_urcu_qparity(void)
 	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr ^ RCU_GP_CTR_BIT);
 }
 
-#ifdef CONFIG_URCU_AVOID_SIGNALS
+#ifdef URCU_MB
 #ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
@@ -139,7 +139,7 @@ static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
-#else /* #ifdef CONFIG_URCU_AVOID_SIGNALS */
+#else /* #ifdef URCU_MB */
 #ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
@@ -206,7 +206,7 @@ static void force_mb_all_threads(void)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
-#endif /* #else #ifdef CONFIG_URCU_AVOID_SIGNALS */
+#endif /* #else #ifdef URCU_MB */
 
 void wait_for_quiescent_state(void)
 {
@@ -420,7 +420,7 @@ void rcu_unregister_thread(void)
 	internal_urcu_unlock();
 }
 
-#ifndef CONFIG_URCU_AVOID_SIGNALS
+#ifndef URCU_MB
 static void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	/*
@@ -473,4 +473,4 @@ void urcu_exit(void)
 	assert(act.sa_sigaction == sigurcu_handler);
 	free(registry);
 }
-#endif /* #ifndef CONFIG_URCU_AVOID_SIGNALS */
+#endif /* #ifndef URCU_MB */

@@ -133,10 +133,10 @@
 #define YIELD_WRITE	(1 << 1)
 
 /*
- * Updates without CONFIG_URCU_AVOID_SIGNALS are much slower. Account this in
+ * Updates without URCU_MB are much slower. Account this in
  * the delay.
  */
-#ifdef CONFIG_URCU_AVOID_SIGNALS
+#ifdef URCU_MB
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
 #else
@@ -179,7 +179,7 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-#ifdef CONFIG_URCU_AVOID_SIGNALS
+#ifdef URCU_MB
 static inline void reader_barrier()
 {
 	smp_mb();

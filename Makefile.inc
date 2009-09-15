@@ -29,7 +29,7 @@ urcu.o: urcu.c urcu.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 urcu-mb.o: urcu.c urcu.h
-	$(CC) -fPIC -DCONFIG_URCU_AVOID_SIGNALS ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC -DURCU_MB ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
