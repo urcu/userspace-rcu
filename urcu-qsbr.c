@@ -148,12 +148,27 @@ static void wait_for_quiescent_state(void)
 
 void synchronize_rcu(void)
 {
+	int was_online;
+
+	was_online = rcu_reader_qs_gp & 1;
+
+	/*
+	 * Mark the writer thread offline to make sure we don't wait for
+	 * our own quiescent state. This allows using synchronize_rcu() in
+	 * threads registered as readers.
+	 */
+	if (was_online)
+		_rcu_thread_offline();
+
 	internal_urcu_lock();
 	force_mb_all_threads();
 	urcu_gp_ctr += 2;
 	wait_for_quiescent_state();
 	force_mb_all_threads();
 	internal_urcu_unlock();
+
+	if (was_online)
+		_rcu_thread_online();
 }
 
 /*
