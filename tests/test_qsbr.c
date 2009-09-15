@@ -56,7 +56,11 @@ static inline pid_t gettid(void)
 }
 #endif
 
+#ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
+#else
+#define debug_yield_read()
+#endif
 #include "../urcu-qsbr.h"
 
 struct test_array {
@@ -215,18 +219,18 @@ void *thr_reader(void *_count)
 	smp_mb();
 
 	for (;;) {
-		_rcu_read_lock();
-		local_ptr = _rcu_dereference(test_rcu_pointer);
+		rcu_read_lock();
+		local_ptr = rcu_dereference(test_rcu_pointer);
 		debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		if (unlikely(rduration))
 			loop_sleep(rduration);
-		_rcu_read_unlock();
+		rcu_read_unlock();
 		nr_reads++;
 		/* QS each 1024 reads */
 		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
-			_rcu_quiescent_state();
+			rcu_quiescent_state();
 		if (unlikely(!test_duration_read()))
 			break;
 	}
@@ -258,7 +262,7 @@ void *thr_writer(void *_count)
 	for (;;) {
 		new = test_array_alloc();
 		new->a = 8;
-		old = _rcu_publish_content(&test_rcu_pointer, new);
+		old = rcu_publish_content(&test_rcu_pointer, new);
 		/* can be done after unlock */
 		if (old)
 			old->a = 0;

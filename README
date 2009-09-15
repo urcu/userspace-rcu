@@ -1,4 +1,4 @@
-Userspace RCU Implementatation
+Userspace RCU Implementation
 by Mathieu Desnoyers and Paul E. McKenney
 
 BUILDING
@@ -31,23 +31,41 @@ Writing
 
 Being careful with signals
 
-	The library uses signals internally. The signal handler is
+	The urcu library uses signals internally. The signal handler is
 	registered with the SA_RESTART flag. However, these signals may cause
 	some non-restartable system calls to fail with errno = EINTR. Care
 	should be taken to restart system calls manually if they fail with this
 	error. A list of non-restartable system calls may be found in
 	signal(7). To ensure the Userspace RCU library does not use signals,
-	define CONFIG_URCU_AVOID_SIGNALS at compile-time.
+	see "Usage of liburcu-mb" below.
 
-	Read-side critical sections can sit in a signal handler. Be careful,
-	however, to disable these signals between thread creation and calls to
-	rcu_register_thread(), because a signal handler nesting on an
-	unregistered thread would not be allowed to call rcu_read_lock().
+	Read-side critical sections can are allowed in a signal handler with
+	liburcu and liburcu-mb. Be careful, however, to disable these signals
+	between thread creation and calls to rcu_register_thread(), because a
+	signal handler nesting on an unregistered thread would not be allowed to
+	call rcu_read_lock().
 
-Usage of CONFIG_URCU_AVOID_SIGNALS
+Usage of liburcu
 
-	CONFIG_URCU_AVOID_SIGNALS uses full SMP barriers for readers. This
-	eliminates the need for signals but results in slower reads.
+	This is the preferred version of the library, both in terms of speed and
+	flexibility. Define _LGPL_SOURCE if your code is LGPL or GPL (otherwise
+	function calls will be generated instead of inlines). Use the urcu.h
+	header.  Link the application with "-lurcu".
+
+Usage of liburcu-mb
+
+	Compile code with "-DCONFIG_URCU_AVOID_SIGNALS" and link with
+	"-lurcu-mb" to use a version of the urcu library which does not need to
+	reserve a signal number. CONFIG_URCU_AVOID_SIGNALS uses full SMP
+	barriers for readers. This eliminates the need for signals but results
+	in slower reads.
+
+Usage of liburcu-qsbr
+
+	The QSBR flavor of RCU needs to have each reader thread executing
+	rcu_quiescent_state() periodically to progress. rcu_thread_online() and
+	rcu_thread_offline() can be used to mark long periods for which the
+	threads are not active. Link with "-lurcu-qsbr" and use urcu-qsbr.h.
 
 Usage of DEBUG_RCU
 
@@ -60,3 +78,5 @@ Usage of DEBUG_YIELD
 
 	DEBUG_YIELD is used to add random delays in the code for testing
 	purposes.
+
+

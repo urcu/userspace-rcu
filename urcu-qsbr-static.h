@@ -1,13 +1,13 @@
-#ifndef _URCU_STATIC_H
-#define _URCU_STATIC_H
+#ifndef _URCU_QSBR_STATIC_H
+#define _URCU_QSBR_STATIC_H
 
 /*
- * urcu-static.h
+ * urcu-qsbr-static.h
  *
- * Userspace RCU header.
+ * Userspace RCU QSBR header.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-qsbr.h for linking
+ * dynamically with the userspace rcu QSBR library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -31,6 +31,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include <compiler.h>
 #include <arch.h>
@@ -76,15 +77,6 @@
  * Inserts memory barriers on architectures that require them (currently only
  * Alpha) and documents which pointers are protected by RCU.
  *
- * The compiler memory barrier in LOAD_SHARED() ensures that value-speculative
- * optimizations (e.g. VSS: Value Speculation Scheduling) does not perform the
- * data read before the pointer read by speculating the value of the pointer.
- * Correct ordering is ensured because the pointer is read as a volatile access.
- * This acts as a global side-effect operation, which forbids reordering of
- * dependent memory operations. Note that such concern about dependency-breaking
- * optimizations will eventually be taken care of by the "memory_order_consume"
- * addition to forthcoming C++ standard.
- *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
  */
 
@@ -103,16 +95,8 @@
  */
 
 /*
- * The signal number used by the RCU library can be overridden with
- * -DSIGURCU= when compiling the library.
- */
-#ifndef SIGURCU
-#define SIGURCU SIGUSR1
-#endif
-
-/*
  * If a reader is really non-cooperative and refuses to commit its
- * urcu_active_readers count to memory (there is no barrier in the reader
+ * rcu_reader_qs_gp count to memory (there is no barrier in the reader
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
@@ -132,16 +116,8 @@
 #define YIELD_READ 	(1 << 0)
 #define YIELD_WRITE	(1 << 1)
 
-/*
- * Updates without CONFIG_URCU_AVOID_SIGNALS are much slower. Account this in
- * the delay.
- */
-#ifdef CONFIG_URCU_AVOID_SIGNALS
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
-#else
-#define MAX_SLEEP 30000
-#endif
 
 extern unsigned int yield_active;
 extern unsigned int __thread rand_yield;
@@ -179,26 +155,10 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-#ifdef CONFIG_URCU_AVOID_SIGNALS
 static inline void reader_barrier()
 {
 	smp_mb();
 }
-#else
-static inline void reader_barrier()
-{
-	barrier();
-}
-#endif
-
-/*
- * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
- * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
- */
-#define RCU_GP_COUNT		(1UL << 0)
-/* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
-#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
 
 /*
  * Global quiescent period counter with low-order bits unused.
@@ -207,52 +167,42 @@ static inline void reader_barrier()
  */
 extern long urcu_gp_ctr;
 
-extern long __thread urcu_active_readers;
+extern long __thread rcu_reader_qs_gp;
 
-static inline int rcu_old_gp_ongoing(long *value)
+static inline int rcu_gp_ongoing(long *value)
 {
-	long v;
-
 	if (value == NULL)
 		return 0;
-	/*
-	 * Make sure both tests below are done on the same version of *value
-	 * to insure consistency.
-	 */
-	v = LOAD_SHARED(*value);
-	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
+
+	return LOAD_SHARED(*value) & 1;
 }
 
 static inline void _rcu_read_lock(void)
 {
-	long tmp;
-
-	tmp = urcu_active_readers;
-	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
-	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_STORE_SHARED(urcu_active_readers, _LOAD_SHARED(urcu_gp_ctr));
-		/*
-		 * Set active readers count for outermost nesting level before
-		 * accessing the pointer. See force_mb_all_threads().
-		 */
-		reader_barrier();
-	} else {
-		_STORE_SHARED(urcu_active_readers, tmp + RCU_GP_COUNT);
-	}
+	rcu_assert(rcu_reader_qs_gp & 1);
 }
 
 static inline void _rcu_read_unlock(void)
 {
-	reader_barrier();
-	/*
-	 * Finish using rcu before decrementing the pointer.
-	 * See force_mb_all_threads().
-	 * Formally only needed for outermost nesting level, but leave barrier
-	 * in place for nested unlocks to remove a branch from the common case
-	 * (no nesting).
-	 */
-	_STORE_SHARED(urcu_active_readers, urcu_active_readers - RCU_GP_COUNT);
+}
+
+static inline void _rcu_quiescent_state(void)
+{
+	smp_mb();	
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr) + 1;
+	smp_mb();
+}
+
+static inline void _rcu_thread_offline(void)
+{
+	smp_mb();
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr);
+}
+
+static inline void _rcu_thread_online(void)
+{
+	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr) + 1;
+	smp_mb();
 }
 
 /**
@@ -302,4 +252,4 @@ static inline void _rcu_read_unlock(void)
 		oldptr;					\
 	})
 
-#endif /* _URCU_STATIC_H */
+#endif /* _URCU_QSBR_STATIC_H */

@@ -1,7 +1,7 @@
 /*
- * urcu.c
+ * urcu-qsbr.c
  *
- * Userspace RCU library
+ * Userspace RCU QSBR library
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -32,9 +32,9 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "urcu-qsbr.h"
+#include "urcu-qsbr-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
-//#include "urcu.h"
+#include "urcu-qsbr.h"
 
 pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -198,6 +198,21 @@ void *rcu_publish_content_sym(void **p, void *v)
 	oldptr = _rcu_xchg_pointer(p, v);
 	synchronize_rcu();
 	return oldptr;
+}
+
+void rcu_quiescent_state(void)
+{
+	_rcu_quiescent_state();
+}
+
+void rcu_thread_offline(void)
+{
+	_rcu_thread_offline();
+}
+
+void rcu_thread_online(void)
+{
+	_rcu_thread_online();
 }
 
 static void rcu_add_reader(pthread_t id)

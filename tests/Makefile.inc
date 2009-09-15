@@ -22,7 +22,7 @@ all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield test_mutex test_looplen test_urcu_gc \
 	test_urcu_gc_mb test_qsbr_gc test_qsbr_lgc test_urcu_lgc \
-	test_urcu_lgc_mb
+	test_urcu_lgc_mb test_qsbr_dynamic_link
 
 api.h: ${APIHEADER}
 	cp -f ${APIHEADER} api.h
@@ -59,6 +59,9 @@ test_qsbr_gc: test_qsbr_gc.c ${URCU_QSBR}
 
 test_qsbr_lgc: test_qsbr_gc.c ${URCU_QSBR}
 	$(CC) -DTEST_LOCAL_GC ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_qsbr_dynamic_link: test_qsbr.c ${URCU_QSBR}
+	$(CC) ${CFLAGS} -DDYNAMIC_LINK_TEST $(LDFLAGS) -o $@ $(SRC_DEP)
 
 
 test_rwlock: test_rwlock.c ${URCU_SIGNAL}

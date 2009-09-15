@@ -3,7 +3,11 @@ include Makefile.build.inc
 
 DIRS=tests
 
-all: checkarch liburcu.so urcu.o urcu-yield.o urcu-qsbr.o urcu-mb.o subdirs
+all: checkarch liburcu.so urcu.o \
+	liburcu-qsbr.so urcu-qsbr.o \
+	liburcu-mb.so urcu-mb.o \
+	urcu-yield.o \
+	subdirs
 
 checkarch:
 ifeq (${ARCHTYPE},)
@@ -33,6 +37,12 @@ urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 liburcu.so: urcu.o
 	$(CC) -fPIC -shared -o $@ $<
 
+liburcu-qsbr.so: urcu-qsbr.o
+	$(CC) -fPIC -shared -o $@ $<
+
+liburcu-mb.so: urcu-mb.o
+	$(CC) -fPIC -shared -o $@ $<
+
 urcu-yield.o: urcu.c urcu.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
@@ -42,8 +52,11 @@ subdirs:
 	-for d in ${DIRS}; do cd $${d}; ${MAKE} ${MFLAGS}; done
 
 install: liburcu.so
-	cp -f liburcu.so /usr/lib/
-	cp -f arch.h arch_atomic.h compiler.h urcu.h urcu-static.h /usr/include/
+	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so /usr/lib/
+	cp -f arch.h arch_atomic.h compiler.h	\
+		urcu.h urcu-static.h		\
+		urcu-qsbr.h urcu-qsbr-static.h	\
+			/usr/include/
 
 clean:
 	rm -f *.o *.so arch.h arch_atomic.h
