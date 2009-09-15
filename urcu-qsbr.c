@@ -114,9 +114,6 @@ static void wait_for_quiescent_state(void)
 {
 	struct reader_registry *index;
 
-        if (rcu_reader_qs_gp & 1)
-            rcu_reader_qs_gp = urcu_gp_ctr + 1;
-
 	if (!registry)
 		return;
 	/*
