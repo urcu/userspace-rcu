@@ -31,6 +31,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include <compiler.h>
 #include <arch.h>
@@ -108,6 +109,12 @@
  */
 #define KICK_READER_LOOPS 10000
 
+#ifdef DEBUG_RCU
+#define rcu_assert(args...)	assert(args)
+#else
+#define rcu_assert(args...)
+#endif
+
 #ifdef DEBUG_YIELD
 #include <sched.h>
 #include <time.h>
@@ -180,6 +187,7 @@ static inline int rcu_gp_ongoing(long *value)
 
 static inline void _rcu_read_lock(void)
 {
+	rcu_assert(rcu_reader_qs_gp & 1);
 }
 
 static inline void _rcu_read_unlock(void)

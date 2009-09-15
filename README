@@ -53,6 +53,8 @@ Usage of DEBUG_RCU
 
 	DEBUG_RCU is used to add internal debugging self-checks to the
 	RCU library. This define adds a performance penality when enabled.
+	Can be enabled by uncommenting the corresponding line in
+	Makefile.build.inc.
 
 Usage of DEBUG_YIELD
 

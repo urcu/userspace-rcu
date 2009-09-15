@@ -1,7 +1,14 @@
 
-CFLAGS=-Wall -O2 -g -I.
-#debug
-#CFLAGS=-Wall -g
+CFLAGS=-Wall -I.
+
+#optimized
+CFLAGS+=-O2
+
+#debug information
+CFLAGS+=-g
+
+#RCU debug (slower, with error-checks)
+#CFLAGS+=-DDEBUG_RCU
 
 LDFLAGS=-lpthread
 
