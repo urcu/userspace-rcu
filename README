@@ -31,7 +31,7 @@ Usage of liburcu
 Usage of liburcu-mb
 
 	* #include <urcu.h>
-	* Compile code with "-DURCU_MB"
+	* Compile any _LGPL_SOURCE code using this library with "-DURCU_MB".
 	* Link with "-lurcu-mb".
 	* This version of the urcu library does not need to
 	  reserve a signal number. URCU_MB uses full memory barriers for
