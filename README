@@ -52,7 +52,9 @@ Initialization
 
 	Each thread that has reader critical sections (that uses
 	rcu_read_lock()/rcu_read_unlock() must first register to the URCU
-	library. This is done by calling rcu_register_thread().
+	library. This is done by calling rcu_register_thread(). Unregistration
+	must be performed before exiting the thread by using
+	rcu_unregister_thread().
 
 Reading
 
