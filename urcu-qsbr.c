@@ -122,8 +122,7 @@ static void wait_for_quiescent_state(void)
 	 */
 	for (index = registry; index < registry + num_readers; index++) {
 #ifndef HAS_INCOHERENT_CACHES
-		while (rcu_gp_ongoing(index->rcu_reader_qs_gp) &&
-		       (*index->rcu_reader_qs_gp - urcu_gp_ctr < 0))
+		while (rcu_gp_ongoing(index->rcu_reader_qs_gp))
 			cpu_relax();
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		int wait_loops = 0;
@@ -131,8 +130,7 @@ static void wait_for_quiescent_state(void)
 		 * BUSY-LOOP. Force the reader thread to commit its
 		 * rcu_reader_qs_gp update to memory if we wait for too long.
 		 */
-		while (rcu_gp_ongoing(index->rcu_reader_qs_gp) &&
-		       (*index->rcu_reader_qs_gp - urcu_gp_ctr < 0)) {
+		while (rcu_gp_ongoing(index->rcu_reader_qs_gp)) {
 			if (wait_loops++ == KICK_READER_LOOPS) {
 				force_mb_single_thread(index);
 				wait_loops = 0;
@@ -160,7 +158,7 @@ void synchronize_rcu(void)
 
 	internal_urcu_lock();
 	force_mb_all_threads();
-	urcu_gp_ctr += 2;
+	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + 2);
 	wait_for_quiescent_state();
 	force_mb_all_threads();
 	internal_urcu_unlock();
