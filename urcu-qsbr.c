@@ -106,11 +106,6 @@ static void force_mb_single_thread(struct reader_registry *index)
 }
 #endif /* #ifdef HAS_INCOHERENT_CACHES */
 
-static void force_mb_all_threads(void)
-{
-	smp_mb();
-}
-
 static void wait_for_quiescent_state(void)
 {
 	struct reader_registry *index;
@@ -156,12 +151,12 @@ void synchronize_rcu(void)
 	if (was_online)
 		_rcu_thread_offline();
 
-	force_mb_all_threads();
+	smp_mb();
 	internal_urcu_lock();
 	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + 2);
 	wait_for_quiescent_state();
 	internal_urcu_unlock();
-	force_mb_all_threads();
+	smp_mb();
 
 	if (was_online)
 		_rcu_thread_online();
