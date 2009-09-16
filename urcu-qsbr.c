@@ -156,12 +156,12 @@ void synchronize_rcu(void)
 	if (was_online)
 		_rcu_thread_offline();
 
-	internal_urcu_lock();
 	force_mb_all_threads();
+	internal_urcu_lock();
 	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + 2);
 	wait_for_quiescent_state();
-	force_mb_all_threads();
 	internal_urcu_unlock();
+	force_mb_all_threads();
 
 	if (was_online)
 		_rcu_thread_online();
