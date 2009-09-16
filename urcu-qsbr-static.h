@@ -196,7 +196,7 @@ static inline void _rcu_quiescent_state(void)
 static inline void _rcu_thread_offline(void)
 {
 	smp_mb();
-	rcu_reader_qs_gp = ACCESS_ONCE(urcu_gp_ctr);
+	rcu_reader_qs_gp = 0;
 }
 
 static inline void _rcu_thread_online(void)
