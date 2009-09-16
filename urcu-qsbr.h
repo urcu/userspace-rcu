@@ -66,8 +66,31 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
+/*
+ * QSBR read lock/unlock are guaranteed to be no-ops. Therefore, we expose them
+ * in the LGPL header for any code to use. However, the debug version is not
+ * nops and may contain sanity checks. To activate it, applications must be
+ * recompiled with -DURCU_DEBUG (even non-LGPL/GPL applications). This is the
+ * best trade-off between license/performance/code triviality and
+ * library debugging & tracing features we could come up with.
+ */
+
+#if (!defined(BUILD_QSBR_LIB) && defined(URCU_DEBUG))
+
+static inline void rcu_read_lock(void)
+{
+}
+
+static inline void rcu_read_lock(void)
+{
+}
+
+#else /* !URCU_DEBUG */
+
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
+
+#endif /* !URCU_DEBUG */
 
 extern void *rcu_dereference(void *p);
 

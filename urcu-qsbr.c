@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <poll.h>
 
+#define BUILD_QSBR_LIB
 #include "urcu-qsbr-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-qsbr.h"
