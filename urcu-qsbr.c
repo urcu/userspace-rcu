@@ -148,18 +148,18 @@ void synchronize_rcu(void)
 	 * our own quiescent state. This allows using synchronize_rcu() in
 	 * threads registered as readers.
 	 */
-	if (was_online)
-		_rcu_thread_offline();
-
 	smp_mb();
+	if (was_online)
+		STORE_SHARED(rcu_reader_qs_gp, 0);
+
 	internal_urcu_lock();
 	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + 2);
 	wait_for_quiescent_state();
 	internal_urcu_unlock();
-	smp_mb();
 
 	if (was_online)
-		_rcu_thread_online();
+		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr) + 1);
+	smp_mb();
 }
 
 /*
