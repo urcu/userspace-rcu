@@ -42,7 +42,7 @@ pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Global grace period counter.
  */
-long urcu_gp_ctr = 0;
+long urcu_gp_ctr = 1;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
@@ -139,9 +139,9 @@ static void wait_for_quiescent_state(void)
 
 void synchronize_rcu(void)
 {
-	int was_online;
+	long was_online;
 
-	was_online = rcu_reader_qs_gp & 1;
+	was_online = rcu_reader_qs_gp;
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
@@ -158,7 +158,7 @@ void synchronize_rcu(void)
 	internal_urcu_unlock();
 
 	if (was_online)
-		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr) + 1);
+		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
 

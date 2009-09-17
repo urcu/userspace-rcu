@@ -176,7 +176,7 @@ static inline int rcu_gp_ongoing(long *value)
 	if (value == NULL)
 		return 0;
 	reader_gp = LOAD_SHARED(*value);
-	return (reader_gp & 1) && (reader_gp - urcu_gp_ctr < 0);
+	return reader_gp && (reader_gp - urcu_gp_ctr < 0);
 }
 
 static inline void _rcu_read_lock(void)
@@ -191,7 +191,7 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	smp_mb();	
-	_STORE_SHARED(rcu_reader_qs_gp, _LOAD_SHARED(urcu_gp_ctr) + 1);
+	_STORE_SHARED(rcu_reader_qs_gp, _LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
 
@@ -203,7 +203,7 @@ static inline void _rcu_thread_offline(void)
 
 static inline void _rcu_thread_online(void)
 {
-	_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr) + 1);
+	_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
 
