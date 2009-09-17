@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <compiler.h>
 #include <arch.h>
@@ -165,18 +166,18 @@ static inline void reader_barrier()
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern long urcu_gp_ctr;
+extern unsigned long urcu_gp_ctr;
 
-extern long __thread rcu_reader_qs_gp;
+extern unsigned long __thread rcu_reader_qs_gp;
 
-static inline int rcu_gp_ongoing(long *value)
+static inline int rcu_gp_ongoing(unsigned long *value)
 {
-	long reader_gp;
+	unsigned long reader_gp;
 
 	if (value == NULL)
 		return 0;
 	reader_gp = LOAD_SHARED(*value);
-	return reader_gp && (reader_gp - urcu_gp_ctr < 0);
+	return reader_gp && (reader_gp - urcu_gp_ctr > ULONG_MAX / 2);
 }
 
 static inline void _rcu_read_lock(void)

@@ -42,20 +42,20 @@ pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Global grace period counter.
  */
-long urcu_gp_ctr = 1;
+unsigned long urcu_gp_ctr = 1;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-long __thread rcu_reader_qs_gp;
+unsigned long __thread rcu_reader_qs_gp;
 
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4
 
 struct reader_registry {
 	pthread_t tid;
-	long *rcu_reader_qs_gp;
+	unsigned long *rcu_reader_qs_gp;
 };
 
 #ifdef DEBUG_YIELD
@@ -139,7 +139,7 @@ static void wait_for_quiescent_state(void)
 
 void synchronize_rcu(void)
 {
-	long was_online;
+	unsigned long was_online;
 
 	was_online = rcu_reader_qs_gp;
 
