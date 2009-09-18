@@ -173,6 +173,17 @@ extern unsigned long urcu_gp_ctr;
 
 extern unsigned long __thread rcu_reader_qs_gp;
 
+#if (BITS_PER_LONG < 64)
+static inline int rcu_gp_ongoing(unsigned long *value)
+{
+	unsigned long reader_gp;
+
+	if (value == NULL)
+		return 0;
+	reader_gp = LOAD_SHARED(*value);
+	return reader_gp && ((reader_gp ^ urcu_gp_ctr) & RCU_GP_CTR);
+}
+#else /* !(BITS_PER_LONG < 64) */
 static inline int rcu_gp_ongoing(unsigned long *value)
 {
 	unsigned long reader_gp;
@@ -182,6 +193,7 @@ static inline int rcu_gp_ongoing(unsigned long *value)
 	reader_gp = LOAD_SHARED(*value);
 	return reader_gp && (reader_gp - urcu_gp_ctr > ULONG_MAX / 2);
 }
+#endif  /* !(BITS_PER_LONG < 64) */
 
 static inline void _rcu_read_lock(void)
 {

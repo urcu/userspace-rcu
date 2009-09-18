@@ -99,13 +99,6 @@ static void internal_urcu_unlock(void)
 	}
 }
 
-#ifdef HAS_INCOHERENT_CACHES
-static void force_mb_single_thread(struct reader_registry *index)
-{
-	smp_mb();
-}
-#endif /* #ifdef HAS_INCOHERENT_CACHES */
-
 static void wait_for_quiescent_state(void)
 {
 	struct reader_registry *index;
@@ -120,23 +113,82 @@ static void wait_for_quiescent_state(void)
 		while (rcu_gp_ongoing(index->rcu_reader_qs_gp))
 			cpu_relax();
 #else /* #ifndef HAS_INCOHERENT_CACHES */
-		int wait_loops = 0;
-		/*
-		 * BUSY-LOOP. Force the reader thread to commit its
-		 * rcu_reader_qs_gp update to memory if we wait for too long.
-		 */
-		while (rcu_gp_ongoing(index->rcu_reader_qs_gp)) {
-			if (wait_loops++ == KICK_READER_LOOPS) {
-				force_mb_single_thread(index);
-				wait_loops = 0;
-			} else {
-				cpu_relax();
-			}
-		}
+		while (rcu_gp_ongoing(index->rcu_reader_qs_gp))
+			smp_mb();
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
 }
 
+/*
+ * Using a two-subphases algorithm for architectures with smaller than 64-bit
+ * long-size to ensure we do not encounter an overflow bug.
+ */
+
+#if (BITS_PER_LONG < 64)
+/*
+ * called with urcu_mutex held.
+ */
+static void switch_next_urcu_qparity(void)
+{
+	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr ^ RCU_GP_CTR);
+}
+
+void synchronize_rcu(void)
+{
+	/* All threads should read qparity before accessing data structure
+	 * where new ptr points to.
+	 */
+	/* Write new ptr before changing the qparity */
+	smp_mb();
+
+	internal_urcu_lock();
+
+	switch_next_urcu_qparity();	/* 0 -> 1 */
+
+	/*
+	 * Must commit qparity update to memory before waiting for parity
+	 * 0 quiescent state. Failure to do so could result in the writer
+	 * waiting forever while new readers are always accessing data (no
+	 * progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 */
+
+	/*
+	 * Wait for previous parity to be empty of readers.
+	 */
+	wait_for_quiescent_state();	/* Wait readers in parity 0 */
+
+	/*
+	 * Must finish waiting for quiescent state for parity 0 before
+	 * committing qparity update to memory. Failure to do so could result in
+	 * the writer waiting forever while new readers are always accessing
+	 * data (no progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 */
+
+	switch_next_urcu_qparity();	/* 1 -> 0 */
+
+	/*
+	 * Must commit qparity update to memory before waiting for parity
+	 * 1 quiescent state. Failure to do so could result in the writer
+	 * waiting forever while new readers are always accessing data (no
+	 * progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 */
+
+	/*
+	 * Wait for previous parity to be empty of readers.
+	 */
+	wait_for_quiescent_state();	/* Wait readers in parity 1 */
+
+	internal_urcu_unlock();
+
+	/* Finish waiting for reader threads before letting the old ptr being
+	 * freed.
+	 */
+	smp_mb();
+}
+#else /* !(BITS_PER_LONG < 64) */
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
@@ -161,6 +213,7 @@ void synchronize_rcu(void)
 		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
+#endif  /* !(BITS_PER_LONG < 64) */
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
