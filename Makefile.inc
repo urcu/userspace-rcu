@@ -35,13 +35,13 @@ urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 liburcu.so: urcu.o
-	$(CC) -fPIC -shared -o $@ $<
+	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 liburcu-qsbr.so: urcu-qsbr.o
-	$(CC) -fPIC -shared -o $@ $<
+	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 liburcu-mb.so: urcu-mb.o
-	$(CC) -fPIC -shared -o $@ $<
+	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 urcu-yield.o: urcu.c urcu.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
@@ -49,7 +49,7 @@ urcu-yield.o: urcu.c urcu.h
 .PHONY: clean install checkarch tests
 
 subdirs:
-	-for d in ${DIRS}; do cd $${d}; ${MAKE} ${MFLAGS}; done
+	-for d in ${DIRS}; do cd $${d}; ${MAKE} ${MFLAGS} ${EXTRAMFLAGS}; done
 
 install: liburcu.so
 	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so /usr/lib/

@@ -1,4 +1,5 @@
 include Makefile.inc
 
+EXTRAMFLAGS=-f Makefile64
 CFLAGS+=-m64
 LDFLAGS+=-m64

@@ -5,6 +5,8 @@ BUILDING
 --------
 
 	make
+	#force 32-bit build with: make -f Makefile32
+	#force 64-bit build with: make -f Makefile64
 	make install
 	
 
