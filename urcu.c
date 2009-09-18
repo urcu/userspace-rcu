@@ -52,7 +52,7 @@ pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Global grace period counter.
  * Contains the current RCU_GP_CTR_BIT.
- * Also has a RCU_GP_CTR_BIT of 1, to accelerate the reader fast path.
+ * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
  * Written to only by writer with mutex taken. Read by both writer and readers.
  */
 long urcu_gp_ctr = RCU_GP_COUNT;
