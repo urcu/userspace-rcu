@@ -1,3 +1,4 @@
 include Makefile.inc
 
 CFLAGS+=-m64
+LDFLAGS+=-m64
