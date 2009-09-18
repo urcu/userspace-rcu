@@ -153,7 +153,7 @@ void synchronize_rcu(void)
 		STORE_SHARED(rcu_reader_qs_gp, 0);
 
 	internal_urcu_lock();
-	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + RCU_GP_COUNT);
+	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + RCU_GP_CTR);
 	wait_for_quiescent_state();
 	internal_urcu_unlock();
 

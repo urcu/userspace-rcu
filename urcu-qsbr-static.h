@@ -162,7 +162,7 @@ static inline void reader_barrier()
 }
 
 #define RCU_GP_ONLINE		(1UL << 0)
-#define RCU_GP_COUNT		(1UL << 1)
+#define RCU_GP_CTR		(1UL << 1)
 
 /*
  * Global quiescent period counter with low-order bits unused.
