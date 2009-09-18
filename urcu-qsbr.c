@@ -135,11 +135,23 @@ static void switch_next_urcu_qparity(void)
 
 void synchronize_rcu(void)
 {
+	unsigned long was_online;
+
+	was_online = rcu_reader_qs_gp;
+
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to.
 	 */
 	/* Write new ptr before changing the qparity */
 	smp_mb();
+
+	/*
+	 * Mark the writer thread offline to make sure we don't wait for
+	 * our own quiescent state. This allows using synchronize_rcu() in
+	 * threads registered as readers.
+	 */
+	if (was_online)
+		STORE_SHARED(rcu_reader_qs_gp, 0);
 
 	internal_urcu_lock();
 
@@ -183,9 +195,12 @@ void synchronize_rcu(void)
 
 	internal_urcu_unlock();
 
-	/* Finish waiting for reader threads before letting the old ptr being
+	/*
+	 * Finish waiting for reader threads before letting the old ptr being
 	 * freed.
 	 */
+	if (was_online)
+		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
 #else /* !(BITS_PER_LONG < 64) */
