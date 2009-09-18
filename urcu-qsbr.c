@@ -42,7 +42,7 @@ pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Global grace period counter.
  */
-unsigned long urcu_gp_ctr = 1;
+unsigned long urcu_gp_ctr = RCU_GP_ONLINE;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
@@ -153,7 +153,7 @@ void synchronize_rcu(void)
 		STORE_SHARED(rcu_reader_qs_gp, 0);
 
 	internal_urcu_lock();
-	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + 2);
+	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + RCU_GP_COUNT);
 	wait_for_quiescent_state();
 	internal_urcu_unlock();
 

@@ -161,6 +161,9 @@ static inline void reader_barrier()
 	smp_mb();
 }
 
+#define RCU_GP_ONLINE		(1UL << 0)
+#define RCU_GP_COUNT		(1UL << 1)
+
 /*
  * Global quiescent period counter with low-order bits unused.
  * Using a int rather than a char to eliminate false register dependencies
@@ -182,7 +185,7 @@ static inline int rcu_gp_ongoing(unsigned long *value)
 
 static inline void _rcu_read_lock(void)
 {
-	rcu_assert(rcu_reader_qs_gp & 1);
+	rcu_assert(rcu_reader_qs_gp);
 }
 
 static inline void _rcu_read_unlock(void)
