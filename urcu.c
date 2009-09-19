@@ -45,9 +45,9 @@ void urcu_init(void)
 }
 #endif
 
-int init_done;
+static int init_done;
 
-pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Global grace period counter.
@@ -81,7 +81,7 @@ static struct reader_registry *registry;
 static char __thread need_mb;
 static int num_readers, alloc_readers;
 
-void internal_urcu_lock(void)
+static void internal_urcu_lock(void)
 {
 	int ret;
 
@@ -108,7 +108,7 @@ void internal_urcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-void internal_urcu_unlock(void)
+static void internal_urcu_unlock(void)
 {
 	int ret;
 

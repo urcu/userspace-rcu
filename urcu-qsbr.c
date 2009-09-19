@@ -37,7 +37,7 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-qsbr.h"
 
-pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Global grace period counter.
