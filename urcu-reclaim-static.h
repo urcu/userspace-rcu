@@ -2,12 +2,12 @@
 #define _URCU_RECLAIM_STATIC_H
 
 /*
- * urcu-static.h
+ * urcu-reclaim-static.h
  *
- * Userspace RCU header.
+ * Userspace RCU header - memory reclamation.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-reclaim.h for linking
+ * dynamically with the userspace rcu reclamation library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
