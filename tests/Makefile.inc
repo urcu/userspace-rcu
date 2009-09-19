@@ -15,6 +15,7 @@ URCU_SIGNAL=${LIBDIR}/urcu.o ${LIBDIR}/urcu.h
 URCU_SIGNAL_YIELD=${LIBDIR}/urcu-yield.o ${LIBDIR}/urcu.h
 URCU_MB=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu.h
 URCU_QSBR=${LIBDIR}/urcu-qsbr.o ${LIBDIR}/urcu-qsbr.h
+URCU_MB_RECLAIM=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-reclaim.o ${LIBDIR}/urcu.h
 
 all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
@@ -22,7 +23,7 @@ all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	urcu-asm.S test_qsbr_timing test_qsbr urcu-asm.o urcutorture \
 	urcutorture-yield test_mutex test_looplen test_urcu_gc \
 	test_urcu_gc_mb test_qsbr_gc test_qsbr_lgc test_urcu_lgc \
-	test_urcu_lgc_mb test_qsbr_dynamic_link
+	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_reclaim
 
 api.h: ${APIHEADER}
 	cp -f ${APIHEADER} api.h
@@ -49,6 +50,9 @@ test_urcu_gc_mb: test_urcu_gc.c ${URCU_MB}
 
 test_urcu_lgc_mb: test_urcu_gc.c ${URCU_MB}
 	$(CC) -DTEST_LOCAL_GC -DURCU_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_urcu_mb_reclaim: test_urcu_reclaim.c ${URCU_MB_RECLAIM}
+	$(CC) -DURCU_MB ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 
 test_qsbr: test_qsbr.c ${URCU_QSBR}
