@@ -33,12 +33,9 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-reclaim.h"
 
-void __attribute__((constructor)) urcu_reclaim_init(void);
 void __attribute__((destructor)) urcu_reclaim_exit(void);
 
 extern void synchronize_rcu(void);
-
-static int init_done;
 
 /*
  * urcu_reclaim_mutex nests inside reclaim_thread_mutex.
@@ -47,22 +44,22 @@ static pthread_mutex_t urcu_reclaim_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t reclaim_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Written to only by each individual reader. Read by both the reader and the
- * writers.
+ * Written to only by each individual reclaimer. Read by both the reclaimer and
+ * the reclamation tread.
  */
 struct reclaim_queue __thread reclaim_queue;
 
-/* Thread IDs of registered readers */
+/* Thread IDs of registered reclaimers */
 #define INIT_NUM_THREADS 4
 
-struct reader_registry {
+struct reclaimer_registry {
 	pthread_t tid;
 	struct reclaim_queue *reclaim_queue;
 	unsigned long last_head;
 };
 
-static struct reader_registry *registry;
-static int num_readers, alloc_readers;
+static struct reclaimer_registry *registry;
+static int num_reclaimers, alloc_reclaimers;
 
 static pthread_t tid_reclaim;
 static int exit_reclaim;
@@ -140,16 +137,16 @@ void rcu_reclaim_barrier_thread(void)
 
 void rcu_reclaim_barrier(void)
 {
-	struct reader_registry *index;
+	struct reclaimer_registry *index;
 
 	if (!registry)
 		return;
 
 	internal_urcu_lock(&urcu_reclaim_mutex);
-	for (index = registry; index < registry + num_readers; index++)
+	for (index = registry; index < registry + num_reclaimers; index++)
 		index->last_head = LOAD_SHARED(index->reclaim_queue->head);
 	synchronize_rcu();
-	for (index = registry; index < registry + num_readers; index++)
+	for (index = registry; index < registry + num_reclaimers; index++)
 		rcu_reclaim_barrier_queue(index->reclaim_queue,
 					  index->last_head);
 	internal_urcu_unlock(&urcu_reclaim_mutex);
@@ -176,47 +173,47 @@ void rcu_reclaim_queue(void *p)
 	_rcu_reclaim_queue(p);
 }
 
-static void rcu_add_reader(pthread_t id)
+static void rcu_add_reclaimer(pthread_t id)
 {
-	struct reader_registry *oldarray;
+	struct reclaimer_registry *oldarray;
 
 	if (!registry) {
-		alloc_readers = INIT_NUM_THREADS;
-		num_readers = 0;
+		alloc_reclaimers = INIT_NUM_THREADS;
+		num_reclaimers = 0;
 		registry =
-			malloc(sizeof(struct reader_registry) * alloc_readers);
+			malloc(sizeof(struct reclaimer_registry) * alloc_reclaimers);
 	}
-	if (alloc_readers < num_readers + 1) {
+	if (alloc_reclaimers < num_reclaimers + 1) {
 		oldarray = registry;
-		registry = malloc(sizeof(struct reader_registry)
-				* (alloc_readers << 1));
+		registry = malloc(sizeof(struct reclaimer_registry)
+				* (alloc_reclaimers << 1));
 		memcpy(registry, oldarray,
-			sizeof(struct reader_registry) * alloc_readers);
-		alloc_readers <<= 1;
+			sizeof(struct reclaimer_registry) * alloc_reclaimers);
+		alloc_reclaimers <<= 1;
 		free(oldarray);
 	}
-	registry[num_readers].tid = id;
-	/* reference to the TLS of _this_ reader thread. */
-	registry[num_readers].reclaim_queue = &reclaim_queue;
-	num_readers++;
+	registry[num_reclaimers].tid = id;
+	/* reference to the TLS of _this_ reclaimer thread. */
+	registry[num_reclaimers].reclaim_queue = &reclaim_queue;
+	num_reclaimers++;
 }
 
 /*
  * Never shrink (implementation limitation).
  * This is O(nb threads). Eventually use a hash table.
  */
-static void rcu_remove_reader(pthread_t id)
+static void rcu_remove_reclaimer(pthread_t id)
 {
-	struct reader_registry *index;
+	struct reclaimer_registry *index;
 
 	assert(registry != NULL);
-	for (index = registry; index < registry + num_readers; index++) {
+	for (index = registry; index < registry + num_reclaimers; index++) {
 		if (pthread_equal(index->tid, id)) {
-			memcpy(index, &registry[num_readers - 1],
-				sizeof(struct reader_registry));
-			registry[num_readers - 1].tid = 0;
-			registry[num_readers - 1].reclaim_queue = NULL;
-			num_readers--;
+			memcpy(index, &registry[num_reclaimers - 1],
+				sizeof(struct reclaimer_registry));
+			registry[num_reclaimers - 1].tid = 0;
+			registry[num_reclaimers - 1].reclaim_queue = NULL;
+			num_reclaimers--;
 			return;
 		}
 	}
@@ -245,53 +242,36 @@ static void stop_reclaim_thread(void)
 
 void rcu_reclaim_register_thread(void)
 {
-	int readers;
+	int reclaimers;
 
 	internal_urcu_lock(&reclaim_thread_mutex);
 	internal_urcu_lock(&urcu_reclaim_mutex);
-	/* In case gcc does not support constructor attribute */
-	urcu_reclaim_init();
 	reclaim_queue.q = malloc(sizeof(void *) * RECLAIM_QUEUE_SIZE);
-	rcu_add_reader(pthread_self());
-	readers = num_readers;
+	rcu_add_reclaimer(pthread_self());
+	reclaimers = num_reclaimers;
 	internal_urcu_unlock(&urcu_reclaim_mutex);
 
-	if (readers == 1)
+	if (reclaimers == 1)
 		start_reclaim_thread();
 	internal_urcu_unlock(&reclaim_thread_mutex);
 }
 
 void rcu_reclaim_unregister_thread(void)
 {
-	int readers;
+	int reclaimers;
 
 	internal_urcu_lock(&reclaim_thread_mutex);
 	internal_urcu_lock(&urcu_reclaim_mutex);
-	rcu_remove_reader(pthread_self());
+	rcu_remove_reclaimer(pthread_self());
 	_rcu_reclaim_barrier_thread();
 	free(reclaim_queue.q);
 	reclaim_queue.q = NULL;
-	readers = num_readers;
+	reclaimers = num_reclaimers;
 	internal_urcu_unlock(&urcu_reclaim_mutex);
 
-	if (readers == 0)
+	if (reclaimers == 0)
 		stop_reclaim_thread();
 	internal_urcu_unlock(&reclaim_thread_mutex);
-}
-
-/*
- * urcu_init constructor. Called when the library is linked, but also when
- * reader threads are calling rcu_register_thread().  Should only be called by a
- * single thread at a given time. This is ensured by holing the
- * internal_urcu_lock(&urcu_reclaim_mutex) from rcu_register_thread() or by
- * running at library load time, which should not be executed by multiple
- * threads nor concurrently with rcu_register_thread() anyway.
- */
-void urcu_reclaim_init(void)
-{
-	if (init_done)
-		return;
-	init_done = 1;
 }
 
 void urcu_reclaim_exit(void)
