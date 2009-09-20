@@ -57,9 +57,12 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-extern void rcu_defer_queue(void *p);
+extern void rcu_defer_queue(void (*fct)(void *p), void *p);
 
 #endif /* !_LGPL_SOURCE */
+
+#define call_rcu		rcu_defer_queue
+#define rcu_reclaim_queue(p)	rcu_defer_queue(free, p)
 
 /*
  * Thread registration for reclamation.

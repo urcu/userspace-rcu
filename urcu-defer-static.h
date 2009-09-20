@@ -43,6 +43,23 @@
 #define DEFER_QUEUE_MASK	(DEFER_QUEUE_SIZE - 1)
 
 /*
+ * Typically, data is aligned at least on the architecture size.
+ * Use lowest bit to indicate that the current callback is changing.
+ * Assumes that (void *)-2L is not used often. Used to encode non-aligned
+ * functions and non-aligned data using extra space.
+ * We encode the (void *)-2L fct as: -2L, fct, data.
+ * We encode the (void *)-2L data as: -2L, fct, data.
+ * Here, DQ_FCT_MARK == ~DQ_FCT_BIT. Required for the test order.
+ */
+#define DQ_FCT_BIT		(1 << 0)
+#define DQ_IS_FCT_BIT(x)	((unsigned long)(x) & DQ_FCT_BIT)
+#define DQ_SET_FCT_BIT(x)	\
+	(x = (void *)((unsigned long)(x) | DQ_FCT_BIT))
+#define DQ_CLEAR_FCT_BIT(x)	\
+	(x = (void *)((unsigned long)(x) & ~DQ_FCT_BIT))
+#define DQ_FCT_MARK		((void *)(~DQ_FCT_BIT))
+
+/*
  * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
  */
 #define _LOAD_SHARED(p)	       ACCESS_ONCE(p)
@@ -86,9 +103,22 @@
 #define rcu_assert(args...)
 #endif
 
+/*
+ * defer queue.
+ * Contains pointers. Encoded to save space when same callback is often used.
+ * When looking up the next item:
+ * - if DQ_FCT_BIT is set, set the current callback to DQ_CLEAR_FCT_BIT(ptr)
+ *   - next element contains pointer to data.
+ * - else if item == DQ_FCT_MARK
+ *   - set the current callback to next element ptr
+ *   - following next element contains pointer to data.
+ * - else current element contains data
+ */
 struct defer_queue {
 	unsigned long head;	/* add element at head */
+	void *last_fct_in;	/* last fct pointer encoded */
 	unsigned long tail;	/* next element to remove at tail */
+	void *last_fct_out;	/* last fct pointer encoded */
 	void **q;
 };
 
@@ -99,7 +129,7 @@ extern void rcu_defer_barrier_thread(void);
 /*
  * not signal-safe.
  */
-static inline void _rcu_defer_queue(void *p)
+static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 {
 	unsigned long head, tail;
 
@@ -112,17 +142,49 @@ static inline void _rcu_defer_queue(void *p)
 
 	/*
 	 * If queue is full, empty it ourself.
+	 * Worse-case: must allow 2 supplementary entries for fct pointer.
 	 */
-	if (unlikely(head - tail >= DEFER_QUEUE_SIZE)) {
-		assert(head - tail == DEFER_QUEUE_SIZE);
+	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
+		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
 		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
 	}
 
 	smp_wmb();	/* Publish new pointer before write q[] */
-	_STORE_SHARED(defer_queue.q[head & DEFER_QUEUE_MASK], p);
+	if (unlikely(defer_queue.last_fct_in != fct)) {
+		//printf("fct diff %p %p\n", defer_queue.last_fct, fct);
+		defer_queue.last_fct_in = fct;
+		if (unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
+			/*
+			 * If the function to encode is not aligned or the
+			 * marker, write DQ_FCT_MARK followed by the function
+			 * pointer.
+			 */
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      DQ_FCT_MARK);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		} else {
+			DQ_SET_FCT_BIT(fct);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		}
+	} else {
+		//printf("fct same %p\n", fct);
+		if (unlikely(DQ_IS_FCT_BIT(p) || p == DQ_FCT_MARK)) {
+			/*
+			 * If the data to encode is not aligned or the marker,
+			 * write DQ_FCT_MARK followed by the function pointer.
+			 */
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      DQ_FCT_MARK);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		}
+	}
+	_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
 	smp_wmb();	/* Write q[] before head. */
-	STORE_SHARED(defer_queue.head, head + 1);
+	STORE_SHARED(defer_queue.head, head);
 }
 
 #endif /* _URCU_DEFER_STATIC_H */

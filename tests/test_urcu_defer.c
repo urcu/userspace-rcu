@@ -209,6 +209,14 @@ void *thr_reader(void *_count)
 
 }
 
+static void test_cb2(void *data)
+{
+}
+
+static void test_cb1(void *data)
+{
+}
+
 void *thr_writer(void *data)
 {
 	unsigned long wtidx = (unsigned long)data;
@@ -230,7 +238,16 @@ void *thr_writer(void *data)
 		new = malloc(sizeof(*new));
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
-		rcu_defer_queue(old);
+		call_rcu(free, old);
+#if 0
+		call_rcu(test_cb1, old);
+		call_rcu(test_cb1, (void *)-2L);
+		call_rcu(test_cb1, (void *)-2L);
+		call_rcu(test_cb1, old);
+		call_rcu(test_cb2, (void *)-2L);
+#endif //0
+		call_rcu(test_cb2, (void *)-4L);
+		//call_rcu(test_cb2, (void *)-2L);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;

@@ -101,18 +101,35 @@ static void internal_urcu_unlock(pthread_mutex_t *mutex)
  * Must be called after Q.S. is reached.
  */
 static void rcu_defer_barrier_queue(struct defer_queue *queue,
-				      unsigned long head)
+				    unsigned long head)
 {
 	unsigned long i;
+	void (*fct)(void *p);
+	void *p;
 
 	/*
 	 * Tail is only modified when lock is held.
 	 * Head is only modified by owner thread.
 	 */
 
-	for (i = queue->tail; i != head; i++) {
+	for (i = queue->tail; i != head;) {
 		smp_rmb();       /* read head before q[]. */
-		free(LOAD_SHARED(queue->q[i & DEFER_QUEUE_MASK]));
+		p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+		if (unlikely(DQ_IS_FCT_BIT(p))) {
+			//printf("%lu fct bit %p\n", i-1, p);
+			DQ_CLEAR_FCT_BIT(p);
+			queue->last_fct_out = p;
+			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+		} else if (unlikely(p == DQ_FCT_MARK)) {
+			//printf("%lu fct mark %p\n", i-1, p);
+			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			queue->last_fct_out = p;
+			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+		}// else
+			//printf("%lu data %p\n", i-1, p);
+		fct = queue->last_fct_out;
+		//printf("tid %lu %lu last_fct %p data %p\n", pthread_self(), i-1, fct, p);
+		fct(p);
 	}
 	smp_mb();	/* push tail after having used q[] */
 	STORE_SHARED(queue->tail, i);
@@ -168,9 +185,9 @@ void *thr_defer(void *args)
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void rcu_defer_queue(void *p)
+void rcu_defer_queue(void (*fct)(void *p), void *p)
 {
-	_rcu_defer_queue(p);
+	_rcu_defer_queue(fct, p);
 }
 
 static void rcu_add_deferer(pthread_t id)
@@ -195,6 +212,7 @@ static void rcu_add_deferer(pthread_t id)
 	registry[num_deferers].tid = id;
 	/* reference to the TLS of _this_ deferer thread. */
 	registry[num_deferers].defer_queue = &defer_queue;
+	registry[num_deferers].last_head = 0;
 	num_deferers++;
 }
 
@@ -213,6 +231,7 @@ static void rcu_remove_deferer(pthread_t id)
 				sizeof(struct deferer_registry));
 			registry[num_deferers - 1].tid = 0;
 			registry[num_deferers - 1].defer_queue = NULL;
+			registry[num_deferers - 1].last_head = 0;
 			num_deferers--;
 			return;
 		}
