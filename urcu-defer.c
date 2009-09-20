@@ -116,19 +116,15 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 		smp_rmb();       /* read head before q[]. */
 		p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		if (unlikely(DQ_IS_FCT_BIT(p))) {
-			//printf("%lu fct bit %p\n", i-1, p);
 			DQ_CLEAR_FCT_BIT(p);
 			queue->last_fct_out = p;
 			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		} else if (unlikely(p == DQ_FCT_MARK)) {
-			//printf("%lu fct mark %p\n", i-1, p);
 			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 			queue->last_fct_out = p;
 			p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
-		}// else
-			//printf("%lu data %p\n", i-1, p);
+		}
 		fct = queue->last_fct_out;
-		//printf("tid %lu %lu last_fct %p data %p\n", pthread_self(), i-1, fct, p);
 		fct(p);
 	}
 	smp_mb();	/* push tail after having used q[] */

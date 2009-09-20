@@ -152,7 +152,6 @@ static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 
 	smp_wmb();	/* Publish new pointer before write q[] */
 	if (unlikely(defer_queue.last_fct_in != fct)) {
-		//printf("fct diff %p %p\n", defer_queue.last_fct, fct);
 		defer_queue.last_fct_in = fct;
 		if (unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
 			/*
@@ -170,7 +169,6 @@ static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 				      fct);
 		}
 	} else {
-		//printf("fct same %p\n", fct);
 		if (unlikely(DQ_IS_FCT_BIT(p) || p == DQ_FCT_MARK)) {
 			/*
 			 * If the data to encode is not aligned or the marker,
