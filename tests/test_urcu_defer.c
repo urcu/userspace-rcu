@@ -1,5 +1,5 @@
 /*
- * test_urcu_reclaim.c
+ * test_urcu_defer.c
  *
  * Userspace RCU library - test program (with automatic reclamation)
  *
@@ -62,7 +62,7 @@ static inline pid_t gettid(void)
 #define debug_yield_read()
 #endif
 #include "../urcu.h"
-#include "../urcu-reclaim.h"
+#include "../urcu-defer.h"
 
 struct test_array {
 	int a;
@@ -219,7 +219,7 @@ void *thr_writer(void *data)
 
 	set_affinity();
 
-	rcu_reclaim_register_thread();
+	rcu_defer_register_thread();
 
 	while (!test_go)
 	{
@@ -230,7 +230,7 @@ void *thr_writer(void *data)
 		new = malloc(sizeof(*new));
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
-		rcu_reclaim_queue(old);
+		rcu_defer_queue(old);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;
@@ -238,7 +238,7 @@ void *thr_writer(void *data)
 			loop_sleep(wdelay);
 	}
 
-	rcu_reclaim_unregister_thread();
+	rcu_defer_unregister_thread();
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());

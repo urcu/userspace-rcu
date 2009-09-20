@@ -1,10 +1,10 @@
-#ifndef _URCU_RECLAIM_H
-#define _URCU_RECLAIM_H
+#ifndef _URCU_BATCH_H
+#define _URCU_BATCH_H
 
 /*
- * urcu-reclaim.h
+ * urcu-defer.h
  *
- * Userspace RCU header - memory reclamation
+ * Userspace RCU header - deferred execution
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -12,7 +12,7 @@
  * LGPL-compatible code should include this header with :
  *
  * #define _LGPL_SOURCE
- * #include <urcu-reclaim.h>
+ * #include <urcu-defer.h>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,20 +36,20 @@
  * Important !
  *
  * Each thread queuing memory reclamation must be registered with
- * rcu_reclaim_register_thread(). rcu_reclaim_unregister_thread() should be
+ * rcu_defer_register_thread(). rcu_defer_unregister_thread() should be
  * called before the thread exits.
  */
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu-reclaim-static.h>
+#include <urcu-defer-static.h>
 
 /*
  * Mappings for static use of the userspace RCU library.
  * Should only be used in LGPL-compatible code.
  */
 
-#define rcu_reclaim_queue	_rcu_reclaim_queue
+#define rcu_defer_queue	_rcu_defer_queue
 
 #else /* !_LGPL_SOURCE */
 
@@ -57,16 +57,16 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-extern void rcu_reclaim_queue(void *p);
+extern void rcu_defer_queue(void *p);
 
 #endif /* !_LGPL_SOURCE */
 
 /*
  * Thread registration for reclamation.
  */
-extern void rcu_reclaim_register_thread(void);
-extern void rcu_reclaim_unregister_thread(void);
-extern void rcu_reclaim_barrier(void);
-extern void rcu_reclaim_barrier_thread(void);
+extern void rcu_defer_register_thread(void);
+extern void rcu_defer_unregister_thread(void);
+extern void rcu_defer_barrier(void);
+extern void rcu_defer_barrier_thread(void);
 
-#endif /* _URCU_RECLAIM_H */
+#endif /* _URCU_BATCH_H */

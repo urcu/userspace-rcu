@@ -1,12 +1,12 @@
-#ifndef _URCU_RECLAIM_STATIC_H
-#define _URCU_RECLAIM_STATIC_H
+#ifndef _URCU_DEFER_STATIC_H
+#define _URCU_DEFER_STATIC_H
 
 /*
- * urcu-reclaim-static.h
+ * urcu-defer-static.h
  *
  * Userspace RCU header - memory reclamation.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-reclaim.h for linking
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-defer.h for linking
  * dynamically with the userspace rcu reclamation library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
@@ -37,10 +37,10 @@
 
 
 /*
- * Number of entries in the per-thread reclaim queue. Must be power of 2.
+ * Number of entries in the per-thread defer queue. Must be power of 2.
  */
-#define RECLAIM_QUEUE_SIZE	(1 << 12)
-#define RECLAIM_QUEUE_MASK	(RECLAIM_QUEUE_SIZE - 1)
+#define DEFER_QUEUE_SIZE	(1 << 12)
+#define DEFER_QUEUE_MASK	(DEFER_QUEUE_SIZE - 1)
 
 /*
  * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
@@ -86,20 +86,20 @@
 #define rcu_assert(args...)
 #endif
 
-struct reclaim_queue {
+struct defer_queue {
 	unsigned long head;	/* add element at head */
 	unsigned long tail;	/* next element to remove at tail */
 	void **q;
 };
 
-extern struct reclaim_queue __thread reclaim_queue;
+extern struct defer_queue __thread defer_queue;
 
-extern void rcu_reclaim_barrier_thread(void);
+extern void rcu_defer_barrier_thread(void);
 
 /*
  * not signal-safe.
  */
-static inline void _rcu_reclaim_queue(void *p)
+static inline void _rcu_defer_queue(void *p)
 {
 	unsigned long head, tail;
 
@@ -107,22 +107,22 @@ static inline void _rcu_reclaim_queue(void *p)
 	 * Head is only modified by ourself. Tail can be modified by reclamation
 	 * thread.
 	 */
-	head = reclaim_queue.head;
-	tail = LOAD_SHARED(reclaim_queue.tail);
+	head = defer_queue.head;
+	tail = LOAD_SHARED(defer_queue.tail);
 
 	/*
 	 * If queue is full, empty it ourself.
 	 */
-	if (unlikely(head - tail >= RECLAIM_QUEUE_SIZE)) {
-		assert(head - tail == RECLAIM_QUEUE_SIZE);
-		rcu_reclaim_barrier_thread();
-		assert(head - LOAD_SHARED(reclaim_queue.tail) == 0);
+	if (unlikely(head - tail >= DEFER_QUEUE_SIZE)) {
+		assert(head - tail == DEFER_QUEUE_SIZE);
+		rcu_defer_barrier_thread();
+		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
 	}
 
 	smp_wmb();	/* Publish new pointer before write q[] */
-	_STORE_SHARED(reclaim_queue.q[head & RECLAIM_QUEUE_MASK], p);
+	_STORE_SHARED(defer_queue.q[head & DEFER_QUEUE_MASK], p);
 	smp_wmb();	/* Write q[] before head. */
-	STORE_SHARED(reclaim_queue.head, head + 1);
+	STORE_SHARED(defer_queue.head, head + 1);
 }
 
-#endif /* _URCU_RECLAIM_STATIC_H */
+#endif /* _URCU_DEFER_STATIC_H */

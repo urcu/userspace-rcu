@@ -6,7 +6,7 @@ DIRS=tests
 all: checkarch liburcu.so urcu.o \
 	liburcu-qsbr.so urcu-qsbr.o \
 	liburcu-mb.so urcu-mb.o \
-	liburcu-reclaim.so urcu-reclaim.o \
+	liburcu-defer.so urcu-defer.o \
 	urcu-yield.o \
 	subdirs
 
@@ -35,7 +35,7 @@ urcu-mb.o: urcu.c urcu.h
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
-urcu-reclaim.o: urcu-reclaim.c urcu-reclaim.h
+urcu-defer.o: urcu-defer.c urcu-defer.h
 	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
 
 liburcu.so: urcu.o
@@ -47,7 +47,7 @@ liburcu-qsbr.so: urcu-qsbr.o
 liburcu-mb.so: urcu-mb.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
-liburcu-reclaim.so: urcu-reclaim.o
+liburcu-defer.so: urcu-defer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 urcu-yield.o: urcu.c urcu.h
