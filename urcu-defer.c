@@ -133,9 +133,12 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 
 static void _rcu_defer_barrier_thread(void)
 {
-	unsigned long head;
+	unsigned long head, num_items;
 
 	head = defer_queue.head;
+	num_items = head - defer_queue.tail;
+	if (unlikely(!num_items))
+		return;
 	synchronize_rcu();
 	rcu_defer_barrier_queue(&defer_queue, head);
 }
@@ -148,20 +151,44 @@ void rcu_defer_barrier_thread(void)
 	internal_urcu_unlock(&urcu_defer_mutex);
 }
 
+/*
+ * rcu_defer_barrier - Execute all queued rcu callbacks.
+ *
+ * Execute all RCU callbacks queued before rcu_defer_barrier() execution.
+ * All callbacks queued on the local thread prior to a rcu_defer_barrier() call
+ * are guaranteed to be executed.
+ * Callbacks queued by other threads concurrently with rcu_defer_barrier()
+ * execution are not guaranteed to be executed in the current batch (could
+ * be left for the next batch). These callbacks queued by other threads are only
+ * guaranteed to be executed if there is explicit synchronization between
+ * the thread adding to the queue and the thread issuing the defer_barrier call.
+ */
+
 void rcu_defer_barrier(void)
 {
 	struct deferer_registry *index;
+	unsigned long num_items = 0;
 
 	if (!registry)
 		return;
 
 	internal_urcu_lock(&urcu_defer_mutex);
-	for (index = registry; index < registry + num_deferers; index++)
+	for (index = registry; index < registry + num_deferers; index++) {
 		index->last_head = LOAD_SHARED(index->defer_queue->head);
+		num_items += index->last_head - index->defer_queue->tail;
+	}
+	if (likely(!num_items)) {
+		/*
+		 * We skip the grace period because there are no queued
+		 * callbacks to execute.
+		 */
+		goto end;
+	}
 	synchronize_rcu();
 	for (index = registry; index < registry + num_deferers; index++)
 		rcu_defer_barrier_queue(index->defer_queue,
 					  index->last_head);
+end:
 	internal_urcu_unlock(&urcu_defer_mutex);
 }
 
