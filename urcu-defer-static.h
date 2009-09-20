@@ -150,7 +150,6 @@ static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
 	}
 
-	smp_wmb();	/* Publish new pointer before write q[] */
 	if (unlikely(defer_queue.last_fct_in != fct)) {
 		defer_queue.last_fct_in = fct;
 		if (unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
@@ -181,7 +180,8 @@ static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 		}
 	}
 	_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
-	smp_wmb();	/* Write q[] before head. */
+	smp_wmb();	/* Publish new pointer before head */
+			/* Write q[] before head. */
 	STORE_SHARED(defer_queue.head, head);
 }
 
