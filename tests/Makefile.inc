@@ -118,4 +118,4 @@ clean:
 	urcutorture-yield liburcu.so api.h \
 	test_mutex test_urcu_gc test_urcu_gc_mb urcu-asm-1.S \
 	test_qsbr_lgc test_qsbr_gc test_looplen test_urcu_lgc \
-	test_urcu_lgc_mb
+	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_defer
