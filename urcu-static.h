@@ -277,6 +277,22 @@ static inline void _rcu_read_unlock(void)
 	})
 
 /**
+ * _rcu_cmpxchg_pointer - same as rcu_assign_pointer, but tests if the pointer
+ * is as expected by "old". If succeeds, returns the previous pointer to the
+ * data structure, which can be safely freed after waiting for a quiescent state
+ * using synchronize_rcu(). If fails (unexpected value), returns old (which
+ * should not be freed !).
+ */
+
+#define _rcu_cmpxchg_pointer(p, old, _new)		\
+	({						\
+		if (!__builtin_constant_p(_new) ||	\
+		    ((_new) != NULL))			\
+			wmb();				\
+		cmpxchg(p, old, _new);			\
+	})
+
+/**
  * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
  * pointer to the data structure, which can be safely freed after waiting for a
  * quiescent state using synchronize_rcu().

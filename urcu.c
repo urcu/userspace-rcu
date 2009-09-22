@@ -347,6 +347,12 @@ void *rcu_xchg_pointer_sym(void **p, void *v)
 	return xchg(p, v);
 }
 
+void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
+{
+	wmb();
+	return cmpxchg(p, old, _new);
+}
+
 void *rcu_publish_content_sym(void **p, void *v)
 {
 	void *oldptr;

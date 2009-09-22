@@ -103,6 +103,10 @@ extern void *rcu_assign_pointer_sym(void **p, void *v);
 #define rcu_assign_pointer(p, v)			\
 	rcu_assign_pointer_sym((void **)(p), (v))
 
+extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
+#define rcu_cmpxchg_pointer(p, old, _new)		\
+	rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new))
+
 extern void *rcu_xchg_pointer_sym(void **p, void *v);
 #define rcu_xchg_pointer(p, v)				\
 	rcu_xchg_pointer_sym((void **)(p), (v))
