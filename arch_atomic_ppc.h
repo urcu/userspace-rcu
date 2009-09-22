@@ -43,54 +43,45 @@
  * Derived from AO_compare_and_swap(), but removed the comparison.
  */
 
-static __attribute__((always_inline))
-unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
-{
-	unsigned int result;
-
-	__asm__ __volatile__(
-		"lwsync\n"
-	"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
-		"stwcx. %2,0,%1\n"	/* else store conditional */
-		"bne- 1b\n"	 	/* retry if lost reservation */
-		"isync\n"
-			: "=&r"(result)
-			: "r"(addr), "r"(val)
-			: "memory", "cc");
-
-	return result;
-}
-
-#if (BITS_PER_LONG == 64)
-
-static __attribute__((always_inline))
-unsigned long atomic_exchange_64(volatile unsigned long *addr,
-				 unsigned long val)
-{
-	unsigned long result;
-
-	__asm__ __volatile__(
-		"lwsync\n"
-	"1:\t"	"ldarx %0,0,%1\n"	/* load and reserve */
-		"stdcx. %2,0,%1\n"	/* else store conditional */
-		"bne- 1b\n"	 	/* retry if lost reservation */
-		"isync\n"
-			: "=&r"(result)
-			: "r"(addr), "r"(val)
-			: "memory", "cc");
-
-	return result;
-}
-
-#endif
+/* xchg */
 
 static __attribute__((always_inline))
 unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
-	case 4:	return atomic_exchange_32(addr, val);
+	case 4:
+	{
+		unsigned int result;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
+			"stwcx. %2,0,%1\n"	/* else store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+				: "=&r"(result)
+				: "r"(addr), "r"(val)
+				: "memory", "cc");
+
+		return result;
+	}
 #if (BITS_PER_LONG == 64)
-	case 8:	return atomic_exchange_64(addr, val);
+	case 8:
+	{
+		unsigned long result;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"ldarx %0,0,%1\n"	/* load and reserve */
+			"stdcx. %2,0,%1\n"	/* else store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+				: "=&r"(result)
+				: "r"(addr), "r"(val)
+				: "memory", "cc");
+
+		return result;
+	}
 #endif
 	}
 	/* generate an illegal instruction. Cannot catch this with linker tricks
@@ -101,6 +92,129 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 
 #define xchg(addr, v)	(__typeof__(*(addr))) _atomic_exchange((addr), (v), \
 							    sizeof(*(addr)))
+
+/* cmpxchg */
+
+static __attribute__((always_inline))
+unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
+			      unsigned long _new, int len)
+{
+	switch (len) {
+	case 4:
+	{
+		unsigned int old_val;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
+			"cmpd %0,%3\n"		/* if load is not equal to */
+			"bne 2f\n"		/* old, fail */
+			"stwcx. %2,0,%1\n"	/* else store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+		"2:\n"
+				: "=&r"(old_val),
+				: "r"(addr), "r"((unsigned int)_new),
+				  "r"((unsigned int)old)
+				: "memory", "cc");
+
+		return old_val;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		unsigned long old_val;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"ldarx %0,0,%1\n"	/* load and reserve */
+			"cmpd %0,%3\n"		/* if load is not equal to */
+			"bne 2f\n"		/* old, fail */
+			"stdcx. %2,0,%1\n"	/* else store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+		"2:\n"
+				: "=&r"(old_val),
+				: "r"(addr), "r"((unsigned long)_new),
+				  "r"((unsigned long)old)
+				: "memory", "cc");
+
+		return old_val;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__(ILLEGAL_INSTR);
+	return 0;
+}
+
+#define cmpxchg(addr, old, _new)					\
+	(__typeof__(*(addr))) _atomic_cmpxchg((addr), (old), (_new),	\
+					      sizeof(*(addr)))
+
+/* atomic_add_return */
+
+static __attribute__((always_inline))
+unsigned long _atomic_add_return(volatile void *addr, unsigned long val,
+				 int len)
+{
+	switch (len) {
+	case 4:
+	{
+		unsigned int result;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
+			"add %0,%2,%0\n"	/* add val to value loaded */
+			"stwcx. %0,0,%1\n"	/* store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+				: "=&r"(result)
+				: "r"(addr), "r"(val)
+				: "memory", "cc");
+
+		return result;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		unsigned long result;
+
+		__asm__ __volatile__(
+			"lwsync\n"
+		"1:\t"	"ldarx %0,0,%1\n"	/* load and reserve */
+			"add %0,%2,%0\n"	/* add val to value loaded */
+			"stdcx. %0,0,%1\n"	/* store conditional */
+			"bne- 1b\n"	 	/* retry if lost reservation */
+			"isync\n"
+				: "=&r"(result)
+				: "r"(addr), "r"(val)
+				: "memory", "cc");
+
+		return result;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__(ILLEGAL_INSTR);
+	return 0;
+}
+
+#define atomic_add_return(addr, v)	\
+	(__typeof__(*(addr))) _atomic_add((addr), (v), sizeof(*(addr)))
+
+/* atomic_sub_return, atomic_add, atomic_sub, atomic_inc, atomic_dec */
+
+#define atomic_sub_return(addr, v)	atomic_add_return((addr), -(v))
+
+#define atomic_add(addr, v)		(void)atomic_add_return((addr), (v))
+#define atomic_sub(addr, v)		(void)atomic_sub_return((addr), (v))
+
+#define atomic_inc(addr, v)		atomic_add((addr), 1)
+#define atomic_dec(addr, v)		atomic_add((addr), -1)
 
 #endif /* #ifndef _INCLUDE_API_H */
 
