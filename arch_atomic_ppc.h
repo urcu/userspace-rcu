@@ -36,6 +36,13 @@
 
 #ifndef _INCLUDE_API_H
 
+#define atomic_set(addr, v)				\
+do {							\
+	ACCESS_ONCE(*(addr)) = (v);			\
+} while (0)
+
+#define atomic_read(addr)	ACCESS_ONCE(*(addr))
+
 /*
  * Using a isync as second barrier for exchange to provide acquire semantic.
  * According to atomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
