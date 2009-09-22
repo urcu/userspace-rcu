@@ -53,7 +53,7 @@ do {							\
 /* xchg */
 
 static __attribute__((always_inline))
-unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
+unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 4:
@@ -103,7 +103,7 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 /* cmpxchg */
 
 static __attribute__((always_inline))
-unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
+unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
@@ -163,7 +163,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 /* atomic_add_return */
 
 static __attribute__((always_inline))
-unsigned long _atomic_add_return(volatile void *addr, unsigned long val,
+unsigned long _atomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {

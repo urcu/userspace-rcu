@@ -47,7 +47,7 @@ do {							\
 /* cmpxchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
+unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
@@ -112,7 +112,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 /* xchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
+unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 {
 	/* Note: the "xchg" instruction does not need a "lock" prefix. */
 	switch (len) {
@@ -172,7 +172,7 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 /* atomic_add_return, atomic_sub_return */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_add_return(volatile void *addr, unsigned long val,
+unsigned long _atomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {
@@ -239,7 +239,7 @@ unsigned long _atomic_add_return(volatile void *addr, unsigned long val,
 /* atomic_add, atomic_sub */
 
 static inline __attribute__((always_inline))
-void _atomic_add(volatile void *addr, unsigned long val, int len)
+void _atomic_add(void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 1:
@@ -296,7 +296,7 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 /* atomic_inc */
 
 static inline __attribute__((always_inline))
-void _atomic_inc(volatile void *addr, int len)
+void _atomic_inc(void *addr, int len)
 {
 	switch (len) {
 	case 1:
@@ -349,7 +349,7 @@ void _atomic_inc(volatile void *addr, int len)
 /* atomic_dec */
 
 static inline __attribute__((always_inline))
-void _atomic_dec(volatile void *addr, int len)
+void _atomic_dec(void *addr, int len)
 {
 	switch (len) {
 	case 1:
