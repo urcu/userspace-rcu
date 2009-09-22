@@ -167,7 +167,8 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 		"lock; addb %1, %0"
 			: "=m"(*__hp(addr))
-			: "q" ((unsigned char)val));
+			: "iq" ((unsigned char)val)
+			: "memory");
 		return;
 	}
 	case 2:
@@ -175,7 +176,8 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 		"lock; addw %1, %0"
 			: "=m"(*__hp(addr))
-			: "r" ((unsigned short)val));
+			: "ir" ((unsigned short)val)
+			: "memory");
 		return;
 	}
 	case 4:
@@ -183,7 +185,8 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 		"lock; addl %1, %0"
 			: "=m"(*__hp(addr))
-			: "r" ((unsigned int)val));
+			: "ir" ((unsigned int)val)
+			: "memory");
 		return;
 	}
 #if (BITS_PER_LONG == 64)
@@ -192,7 +195,8 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 		"lock; addq %1, %0"
 			: "=m"(*__hp(addr))
-			: "r" ((unsigned long)val));
+			: "er" ((unsigned long)val)
+			: "memory");
 		return;
 	}
 #endif
