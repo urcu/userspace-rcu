@@ -108,6 +108,9 @@ urcutorture: urcutorture.c rcutorture.h api.h ${URCU_SIGNAL}
 urcutorture-yield: urcutorture.c ${URCU_SIGNAL_YIELD} rcutorture.h api.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
+test_atomic: test_atomic.c ../arch_atomic.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
 ,PHONY: clean
 
 clean:

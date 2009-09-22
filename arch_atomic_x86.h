@@ -159,7 +159,7 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 /* atomic_add */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_add(volatile void *addr, unsigned long val, int len)
+void _atomic_add(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 1:
@@ -200,7 +200,7 @@ unsigned long _atomic_add(volatile void *addr, unsigned long val, int len)
 	/* generate an illegal instruction. Cannot catch this with linker tricks
 	 * when optimizations are disabled. */
 	__asm__ __volatile__("ud2");
-	return 0;
+	return;
 }
 
 #define atomic_add(addr, v)						   \
