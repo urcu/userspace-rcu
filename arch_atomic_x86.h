@@ -20,6 +20,8 @@
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
+#include <compiler.h>
+
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
@@ -35,16 +37,24 @@ struct __atomic_dummy {
 };
 #define __hp(x)	((struct __atomic_dummy *)(x))
 
+#define atomic_set(addr, v)				\
+do {							\
+	ACCESS_ONCE(*(addr)) = (v);			\
+} while (0)
+
+#define atomic_read(addr)	ACCESS_ONCE(*(addr))
+
 /* cmpxchg */
 
 static inline __attribute__((always_inline))
 unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
-		unsigned long _new, int len)
+			      unsigned long _new, int len)
 {
 	switch (len) {
 	case 1:
 	{
 		unsigned char result = old;
+
 		__asm__ __volatile__(
 		"lock; cmpxchgb %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
@@ -55,6 +65,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 	case 2:
 	{
 		unsigned short result = old;
+
 		__asm__ __volatile__(
 		"lock; cmpxchgw %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
@@ -65,6 +76,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 	case 4:
 	{
 		unsigned int result = old;
+
 		__asm__ __volatile__(
 		"lock; cmpxchgl %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
@@ -76,6 +88,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 	case 8:
 	{
 		unsigned long result = old;
+
 		__asm__ __volatile__(
 		"lock; cmpxchgq %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
@@ -155,6 +168,73 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 #define xchg(addr, v)							    \
 	((__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
 						sizeof(*(addr))))
+
+/* atomic_add_return, atomic_sub_return */
+
+static inline __attribute__((always_inline))
+unsigned long _atomic_add_return(volatile void *addr, unsigned long val,
+				 int len)
+{
+	switch (len) {
+	case 1:
+	{
+		unsigned char result = val;
+
+		__asm__ __volatile__(
+		"lock; xaddb %1, %0"
+			: "+m"(*__hp(addr)), "+q" (result)
+			:
+			: "memory");
+		return result + (unsigned char)val;
+	}
+	case 2:
+	{
+		unsigned short result = val;
+
+		__asm__ __volatile__(
+		"lock; xaddw %1, %0"
+			: "+m"(*__hp(addr)), "+r" (result)
+			:
+			: "memory");
+		return result + (unsigned short)val;
+	}
+	case 4:
+	{
+		unsigned int result = val;
+
+		__asm__ __volatile__(
+		"lock; xaddl %1, %0"
+			: "+m"(*__hp(addr)), "+r" (result)
+			:
+			: "memory");
+		return result + (unsigned int)val;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		unsigned long result = val;
+
+		__asm__ __volatile__(
+		"lock; xaddq %1, %0"
+			: "+m"(*__hp(addr)), "+r" (result)
+			:
+			: "memory");
+		return result + (unsigned long)val;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__("ud2");
+	return 0;
+}
+
+#define atomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) _atomic_add_return((addr),		\
+						  (unsigned long)(v),	\
+						  sizeof(*(addr))))
+
+#define atomic_sub_return(addr, v)	atomic_add_return((addr), -(v))
 
 /* atomic_add, atomic_sub */
 
