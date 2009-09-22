@@ -75,7 +75,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 #if (BITS_PER_LONG == 64)
 	case 8:
 	{
-		unsigned int result = old;
+		unsigned long result = old;
 		__asm__ __volatile__(
 		"lock; cmpxchgq %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
