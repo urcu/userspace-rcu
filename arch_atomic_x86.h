@@ -77,7 +77,7 @@ unsigned long _atomic_cmpxchg(volatile void *addr, unsigned long old,
 	{
 		unsigned int result = old;
 		__asm__ __volatile__(
-		"lock; cmpxchgl %2, %1"
+		"lock; cmpxchgq %2, %1"
 			: "+a"(result), "+m"(*__hp(addr))
 			: "r"((unsigned long)_new)
 			: "memory");
@@ -156,7 +156,7 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 	((__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
 						sizeof(*(addr))))
 
-/* atomic_add */
+/* atomic_add, atomic_sub */
 
 static inline __attribute__((always_inline))
 void _atomic_add(volatile void *addr, unsigned long val, int len)
@@ -209,6 +209,115 @@ void _atomic_add(volatile void *addr, unsigned long val, int len)
 
 #define atomic_add(addr, v)						   \
 	(_atomic_add((addr), (unsigned long)(v), sizeof(*(addr))))
+
+#define atomic_sub(addr, v)	atomic_add((addr), -(v))
+
+
+/* atomic_inc */
+
+static inline __attribute__((always_inline))
+void _atomic_inc(volatile void *addr, int len)
+{
+	switch (len) {
+	case 1:
+	{
+		__asm__ __volatile__(
+		"lock; incb %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+	case 2:
+	{
+		__asm__ __volatile__(
+		"lock; incw %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+	case 4:
+	{
+		__asm__ __volatile__(
+		"lock; incl %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		__asm__ __volatile__(
+		"lock; incq %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__("ud2");
+	return;
+}
+
+#define atomic_inc(addr)	(_atomic_inc((addr), sizeof(*(addr))))
+
+/* atomic_dec */
+
+static inline __attribute__((always_inline))
+void _atomic_dec(volatile void *addr, int len)
+{
+	switch (len) {
+	case 1:
+	{
+		__asm__ __volatile__(
+		"lock; decb %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+	case 2:
+	{
+		__asm__ __volatile__(
+		"lock; decw %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+	case 4:
+	{
+		__asm__ __volatile__(
+		"lock; decl %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		__asm__ __volatile__(
+		"lock; decq %0"
+			: "=m"(*__hp(addr))
+			:
+			: "memory");
+		return;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__("ud2");
+	return;
+}
+
+#define atomic_dec(addr)	(_atomic_dec((addr), sizeof(*(addr))))
 
 #endif /* #ifndef _INCLUDE_API_H */
 
