@@ -225,8 +225,8 @@ unsigned long _atomic_add_return(void *addr, unsigned long val,
 #define atomic_add(addr, v)		(void)atomic_add_return((addr), (v))
 #define atomic_sub(addr, v)		(void)atomic_sub_return((addr), (v))
 
-#define atomic_inc(addr, v)		atomic_add((addr), 1)
-#define atomic_dec(addr, v)		atomic_add((addr), -1)
+#define atomic_inc(addr)		atomic_add((addr), 1)
+#define atomic_dec(addr)		atomic_add((addr), -1)
 
 #endif /* #ifndef _INCLUDE_API_H */
 
