@@ -71,29 +71,6 @@ static int num_deferers, alloc_deferers;
 
 static pthread_t tid_defer;
 
-/*
- * Wake-up any waiting defer thread. Called from many concurrent threads.
- */
-static void wake_up_defer(void)
-{
-	if (unlikely(atomic_read(&defer_thread_futex) == -1)) {
-		atomic_set(&defer_thread_futex, 0);
-		futex(&defer_thread_futex, FUTEX_WAKE, 0,
-		      NULL, NULL, 0);
-	}
-}
-
-/*
- * Defer thread waiting. Single thread.
- */
-static void wait_defer(void)
-{
-	atomic_dec(&defer_thread_futex);
-	if (atomic_read(&defer_thread_futex) == -1)
-		futex(&defer_thread_futex, FUTEX_WAIT, -1,
-		      NULL, NULL, 0);
-}
-
 static void internal_urcu_lock(pthread_mutex_t *mutex)
 {
 	int ret;
@@ -125,6 +102,51 @@ static void internal_urcu_unlock(pthread_mutex_t *mutex)
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
+	}
+}
+
+/*
+ * Wake-up any waiting defer thread. Called from many concurrent threads.
+ */
+static void wake_up_defer(void)
+{
+	if (unlikely(atomic_read(&defer_thread_futex) == -1)) {
+		atomic_set(&defer_thread_futex, 0);
+		futex(&defer_thread_futex, FUTEX_WAKE, 0,
+		      NULL, NULL, 0);
+	}
+}
+
+static unsigned long rcu_defer_num_callbacks(void)
+{
+	unsigned long num_items = 0, head;
+	struct deferer_registry *index;
+
+	internal_urcu_lock(&urcu_defer_mutex);
+	for (index = registry; index < registry + num_deferers; index++) {
+		head = LOAD_SHARED(index->defer_queue->head);
+		num_items += head - index->defer_queue->tail;
+	}
+	internal_urcu_unlock(&urcu_defer_mutex);
+	return num_items;
+}
+
+/*
+ * Defer thread waiting. Single thread.
+ */
+static void wait_defer(void)
+{
+	atomic_dec(&defer_thread_futex);
+	smp_mb();	/* Write futex before read queue */
+	if (rcu_defer_num_callbacks()) {
+		smp_mb();	/* Read queue before write futex */
+		/* Callbacks are queued, don't wait. */
+		atomic_set(&defer_thread_futex, 0);
+	} else {
+		smp_rmb();	/* Read queue before read futex */
+		if (atomic_read(&defer_thread_futex) == -1)
+			futex(&defer_thread_futex, FUTEX_WAIT, -1,
+			      NULL, NULL, 0);
 	}
 }
 
@@ -280,6 +302,7 @@ void _rcu_defer_queue(void (*fct)(void *p), void *p)
 	smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
 	STORE_SHARED(defer_queue.head, head);
+	smp_mb();	/* Write queue head before read futex */
 	/*
 	 * Wake-up any waiting defer thread.
 	 */
