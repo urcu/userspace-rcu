@@ -28,7 +28,6 @@
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
-#include <linux/futex.h>
 #include <sys/time.h>
 #include <syscall.h>
 #include <unistd.h>
@@ -38,6 +37,8 @@
 #include "urcu-defer.h"
 
 #define futex(...)	syscall(__NR_futex, __VA_ARGS__)
+#define FUTEX_WAIT		0
+#define FUTEX_WAKE		1
 
 void __attribute__((destructor)) urcu_defer_exit(void);
 
