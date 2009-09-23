@@ -289,21 +289,15 @@ void *thr_defer(void *args)
 {
 	for (;;) {
 		pthread_testcancel();
-		printf("a\n");
 		/*
 		 * "Be green". Don't wake up the CPU if there is no RCU work
 		 * to perform whatsoever. Aims at saving laptop battery life by
 		 * leaving the processor in sleep state when idle.
 		 */
-		printf("b\n");
 		wait_defer();
-		printf("e\n");
 		/* Sleeping after wait_defer to let many callbacks enqueue */
-		//TEST poll(NULL,0,100);	/* wait for 100ms */
-		printf("f\n");
+		poll(NULL,0,100);	/* wait for 100ms */
 		rcu_defer_barrier();
-		printf("perform deferred call_rcu() from worker thread %lu.\n",
-			time(NULL));
 	}
 
 	return NULL;
