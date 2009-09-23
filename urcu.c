@@ -37,6 +37,8 @@
 #include "urcu.h"
 
 #ifndef URCU_MB
+static int init_done;
+
 void __attribute__((constructor)) urcu_init(void);
 void __attribute__((destructor)) urcu_exit(void);
 #else
@@ -44,8 +46,6 @@ void urcu_init(void)
 {
 }
 #endif
-
-static int init_done;
 
 static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
