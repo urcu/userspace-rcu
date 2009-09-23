@@ -74,7 +74,7 @@ static pthread_t tid_defer;
 /*
  * Wake-up any waiting defer thread. Called from many concurrent threads.
  */
-void wake_up_defer(void)
+static void wake_up_defer(void)
 {
 	if (unlikely(atomic_read(&defer_thread_futex) == -1))
 		atomic_set(&defer_thread_futex, 0);
@@ -220,6 +220,69 @@ void rcu_defer_barrier(void)
 					  index->last_head);
 end:
 	internal_urcu_unlock(&urcu_defer_mutex);
+}
+
+/*
+ * _rcu_defer_queue - Queue a RCU callback.
+ */
+void _rcu_defer_queue(void (*fct)(void *p), void *p)
+{
+	unsigned long head, tail;
+
+	/*
+	 * Head is only modified by ourself. Tail can be modified by reclamation
+	 * thread.
+	 */
+	head = defer_queue.head;
+	tail = LOAD_SHARED(defer_queue.tail);
+
+	/*
+	 * If queue is full, empty it ourself.
+	 * Worse-case: must allow 2 supplementary entries for fct pointer.
+	 */
+	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
+		assert(head - tail <= DEFER_QUEUE_SIZE);
+		rcu_defer_barrier_thread();
+		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
+	}
+
+	if (unlikely(defer_queue.last_fct_in != fct)) {
+		defer_queue.last_fct_in = fct;
+		if (unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
+			/*
+			 * If the function to encode is not aligned or the
+			 * marker, write DQ_FCT_MARK followed by the function
+			 * pointer.
+			 */
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      DQ_FCT_MARK);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		} else {
+			DQ_SET_FCT_BIT(fct);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		}
+	} else {
+		if (unlikely(DQ_IS_FCT_BIT(p) || p == DQ_FCT_MARK)) {
+			/*
+			 * If the data to encode is not aligned or the marker,
+			 * write DQ_FCT_MARK followed by the function pointer.
+			 */
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      DQ_FCT_MARK);
+			_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+				      fct);
+		}
+	}
+	_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
+	smp_wmb();	/* Publish new pointer before head */
+			/* Write q[] before head. */
+	STORE_SHARED(defer_queue.head, head);
+	/*
+	 * Wake-up any waiting defer thread.
+	 */
+	wake_up_defer();
 }
 
 void *thr_defer(void *args)

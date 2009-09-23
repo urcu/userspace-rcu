@@ -40,29 +40,10 @@
  * called before the thread exits.
  */
 
-#ifdef _LGPL_SOURCE
-
-#include <urcu-defer-static.h>
-
-/*
- * Mappings for static use of the userspace RCU library.
- * Should only be used in LGPL-compatible code.
- */
-
-#define rcu_defer_queue	_rcu_defer_queue
-
-#else /* !_LGPL_SOURCE */
-
-/*
- * library wrappers to be used by non-LGPL compatible source code.
- */
-
-extern void rcu_defer_queue(void (*fct)(void *p), void *p);
-
-#endif /* !_LGPL_SOURCE */
-
 #define call_rcu		rcu_defer_queue
 #define rcu_reclaim_queue(p)	rcu_defer_queue(free, p)
+
+extern void rcu_defer_queue(void (*fct)(void *p), void *p);
 
 /*
  * Thread registration for reclamation.
