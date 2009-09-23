@@ -49,13 +49,13 @@ extern void synchronize_rcu(void);
 static pthread_mutex_t urcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t defer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int defer_thread_futex;
+static int defer_thread_futex;
 
 /*
  * Written to only by each individual deferer. Read by both the deferer and
  * the reclamation tread.
  */
-struct defer_queue __thread defer_queue;
+static struct defer_queue __thread defer_queue;
 
 /* Thread IDs of registered deferers */
 #define INIT_NUM_THREADS 4
@@ -76,10 +76,11 @@ static pthread_t tid_defer;
  */
 static void wake_up_defer(void)
 {
-	if (unlikely(atomic_read(&defer_thread_futex) == -1))
+	if (unlikely(atomic_read(&defer_thread_futex) == -1)) {
 		atomic_set(&defer_thread_futex, 0);
-		futex(&defer_thread_futex, FUTEX_WAKE,
-		      0, NULL, NULL, 0);
+		futex(&defer_thread_futex, FUTEX_WAKE, 0,
+		      NULL, NULL, 0);
+	}
 }
 
 /*
