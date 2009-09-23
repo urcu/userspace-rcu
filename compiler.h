@@ -37,4 +37,14 @@
  */
 #define ACCESS_ONCE(x)	(*(volatile typeof(x) *)&x)
 
+#if (__GNUC__ == 4)
+#define __compiler_offsetof(a, b) __builtin_offsetof(a, b)
+#endif
+
+#ifdef __compiler_offsetof
+#define offsetof(TYPE, MEMBER) __compiler_offsetof(TYPE, MEMBER)
+#else
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+
 #endif /* _COMPILER_H */

@@ -282,12 +282,12 @@ cmpxchg(volatile long *ptr, long oldval, long newval)
 #include <pthread.h>
 #include <sched.h>
 #include <sys/param.h>
+#include <arch.h>
 /* #include "atomic.h" */
 
 /*
  * Compiler magic.
  */
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
@@ -634,7 +634,6 @@ static void smp_init(void)
 #define LIST_POISON1  ((void *) 0x00100100)
 #define LIST_POISON2  ((void *) 0x00200200)
 
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
