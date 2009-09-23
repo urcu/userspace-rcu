@@ -28,10 +28,16 @@
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
+#include <linux/futex.h>
+#include <sys/time.h>
+#include <syscall.h>
+#include <unistd.h>
 
 #include "urcu-defer-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-defer.h"
+
+#define futex(...)	syscall(__NR_futex, __VA_ARGS__)
 
 void __attribute__((destructor)) urcu_defer_exit(void);
 
@@ -42,6 +48,8 @@ extern void synchronize_rcu(void);
  */
 static pthread_mutex_t urcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t defer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int defer_thread_futex;
 
 /*
  * Written to only by each individual deferer. Read by both the deferer and
@@ -62,7 +70,28 @@ static struct deferer_registry *registry;
 static int num_deferers, alloc_deferers;
 
 static pthread_t tid_defer;
-static int exit_defer;
+
+/*
+ * Wake-up any waiting defer thread. Called from many concurrent threads.
+ */
+void wake_up_defer(void)
+{
+	if (unlikely(atomic_read(&defer_thread_futex) == -1))
+		atomic_set(&defer_thread_futex, 0);
+		futex(&defer_thread_futex, FUTEX_WAKE,
+		      0, NULL, NULL, 0);
+}
+
+/*
+ * Defer thread waiting. Single thread.
+ */
+static void wait_defer(void)
+{
+	atomic_dec(&defer_thread_futex);
+	if (atomic_read(&defer_thread_futex) == -1)
+		futex(&defer_thread_futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
+}
 
 static void internal_urcu_lock(pthread_mutex_t *mutex)
 {
@@ -81,6 +110,7 @@ static void internal_urcu_lock(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
+		pthread_testcancel();
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
@@ -195,10 +225,22 @@ end:
 void *thr_defer(void *args)
 {
 	for (;;) {
-		if (LOAD_SHARED(exit_defer))
-			break;
-		poll(NULL,0,100);	/* wait for 100ms */
+		pthread_testcancel();
+		printf("a\n");
+		/*
+		 * "Be green". Don't wake up the CPU if there is no RCU work
+		 * to perform whatsoever. Aims at saving laptop battery life by
+		 * leaving the processor in sleep state when idle.
+		 */
+		printf("b\n");
+		wait_defer();
+		printf("e\n");
+		/* Sleeping after wait_defer to let many callbacks enqueue */
+		//TEST poll(NULL,0,100);	/* wait for 100ms */
+		printf("f\n");
 		rcu_defer_barrier();
+		printf("perform deferred call_rcu() from worker thread %lu.\n",
+			time(NULL));
 	}
 
 	return NULL;
@@ -277,7 +319,8 @@ static void stop_defer_thread(void)
 	int ret;
 	void *tret;
 
-	STORE_SHARED(exit_defer, 1);
+	pthread_cancel(tid_defer);
+	wake_up_defer();
 	ret = pthread_join(tid_defer, &tret);
 	assert(!ret);
 }

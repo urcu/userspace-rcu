@@ -125,6 +125,7 @@ struct defer_queue {
 extern struct defer_queue __thread defer_queue;
 
 extern void rcu_defer_barrier_thread(void);
+extern void wake_up_defer(void);
 
 /*
  * not signal-safe.
@@ -183,6 +184,10 @@ static inline void _rcu_defer_queue(void (*fct)(void *p), void *p)
 	smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
 	STORE_SHARED(defer_queue.head, head);
+	/*
+	 * Wake-up any waiting defer thread.
+	 */
+	wake_up_defer();
 }
 
 #endif /* _URCU_DEFER_STATIC_H */
