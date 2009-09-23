@@ -52,7 +52,7 @@ do {							\
 
 /* xchg */
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -97,12 +97,12 @@ unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define xchg(addr, v)	(__typeof__(*(addr))) _atomic_exchange((addr), (v), \
-							    sizeof(*(addr)))
-
+#define xchg(addr, v)							    \
+	((__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
+						sizeof(*(addr))))
 /* cmpxchg */
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
@@ -156,13 +156,15 @@ unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 	return 0;
 }
 
-#define cmpxchg(addr, old, _new)					\
-	(__typeof__(*(addr))) _atomic_cmpxchg((addr), (old), (_new),	\
-					      sizeof(*(addr)))
+
+#define cmpxchg(addr, old, _new)					    \
+	((__typeof__(*(addr))) _atomic_cmpxchg((addr), (unsigned long)(old),\
+						(unsigned long)(_new), 	    \
+						sizeof(*(addr))))
 
 /* atomic_add_return */
 
-static __attribute__((always_inline))
+static inline __attribute__((always_inline))
 unsigned long _atomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
@@ -210,8 +212,11 @@ unsigned long _atomic_add_return(void *addr, unsigned long val,
 	return 0;
 }
 
-#define atomic_add_return(addr, v)	\
-	(__typeof__(*(addr))) _atomic_add((addr), (v), sizeof(*(addr)))
+
+#define atomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) _atomic_add_return((addr),		\
+						  (unsigned long)(v),	\
+						  sizeof(*(addr))))
 
 /* atomic_sub_return, atomic_add, atomic_sub, atomic_inc, atomic_dec */
 
