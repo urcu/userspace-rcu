@@ -113,7 +113,7 @@ static void wake_up_defer(void)
 {
 	if (unlikely(atomic_read(&defer_thread_futex) == -1)) {
 		atomic_set(&defer_thread_futex, 0);
-		futex(&defer_thread_futex, FUTEX_WAKE, 0,
+		futex(&defer_thread_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }
