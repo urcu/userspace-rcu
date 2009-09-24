@@ -2,9 +2,18 @@
 #include <arch_atomic.h>
 #include <assert.h>
 
+#if (defined(__i386__) || defined(__x86_64__))
+#define HAS_ATOMIC_BYTE
+#define HAS_ATOMIC_SHORT
+#endif
+
 struct testvals {
+#ifdef HAS_ATOMIC_BYTE
 	unsigned char c;
+#endif
+#ifdef HAS_ATOMIC_SHORT
 	unsigned short s;
+#endif
 	unsigned int i;
 	unsigned long l;
 };
@@ -43,8 +52,12 @@ do {						\
 
 int main(int argc, char **argv)
 {
+#ifdef HAS_ATOMIC_BYTE
 	do_test(&vals.c);
+#endif
+#ifdef HAS_ATOMIC_SHORT
 	do_test(&vals.s);
+#endif
 	do_test(&vals.i);
 	do_test(&vals.l);
 	printf("Atomic ops test OK\n");
