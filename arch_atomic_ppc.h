@@ -20,6 +20,8 @@
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
+#include <compiler.h>
+
 #ifndef __SIZEOF_LONG__
 #ifdef __powerpc64__
 #define __SIZEOF_LONG__ 8
