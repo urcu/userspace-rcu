@@ -27,16 +27,16 @@ urcu.h: arch.h arch_atomic.h
 urcu-qsbr.h: arch.h arch_atomic.h
 
 urcu.o: urcu.c urcu.h
-	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 urcu-mb.o: urcu.c urcu.h
-	$(CC) -fPIC -DURCU_MB ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC -DURCU_MB ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
-	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 urcu-defer.o: urcu-defer.c urcu-defer.h
-	$(CC) -fPIC ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 liburcu.so: urcu.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
@@ -51,7 +51,7 @@ liburcu-defer.so: urcu-defer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 urcu-yield.o: urcu.c urcu.h
-	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -c -o $@ $(SRC_DEP)
+	$(CC) -DDEBUG_YIELD ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 .PHONY: clean install checkarch tests
 
