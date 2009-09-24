@@ -77,6 +77,8 @@
 
 #define LOCK_PREFIX "lock ; "
 
+#if 0 /* duplicate with arch_atomic.h */
+
 /*
  * Atomic data structure, initialization, and access.
  */
@@ -309,6 +311,8 @@ __asm__ __volatile__(LOCK_PREFIX "orl %0,%1" \
 #define smp_mb__after_atomic_dec()	barrier()
 #define smp_mb__before_atomic_inc()	barrier()
 #define smp_mb__after_atomic_inc()	barrier()
+
+#endif //0
 
 /*
  * api_pthreads.h: API mapping to pthreads environment.

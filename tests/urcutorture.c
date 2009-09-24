@@ -3,6 +3,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "../arch_atomic.h"
 #include "api.h"
 #define _LGPL_SOURCE
 #include "../urcu.h"

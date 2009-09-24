@@ -70,7 +70,7 @@ DEFINE_PER_THREAD(long long, n_updates_pt);
 
 long long n_reads = 0LL;
 long n_updates = 0L;
-atomic_t nthreadsrunning;
+int nthreadsrunning;
 char argsbuf[64];
 
 #define GOFLAG_INIT 0

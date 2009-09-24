@@ -75,6 +75,7 @@
 
 #define LOCK_PREFIX "lock ; "
 
+#if 0 /* duplicate with arch_atomic.h */
 /*
  * Atomic data structure, initialization, and access.
  */
@@ -250,6 +251,8 @@ cmpxchg(volatile long *ptr, long oldval, long newval)
 #define smp_mb__after_atomic_dec()	barrier()
 #define smp_mb__before_atomic_inc()	barrier()
 #define smp_mb__after_atomic_inc()	barrier()
+
+#endif //0 /* duplicate with arch_atomic.h */
 
 /*
  * api_pthreads.h: API mapping to pthreads environment.

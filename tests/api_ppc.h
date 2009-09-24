@@ -77,6 +77,8 @@
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 7)))
 
+#if 0 /* duplicate with arch_atomic.h */
+
 /*
  * Atomic data structure, initialization, and access.
  */
@@ -101,7 +103,6 @@ typedef struct { volatile int counter; } atomic_t;
 #  define LWSYNC_ON_SMP
 #  define ISYNC_ON_SMP
 #endif
-
 
 /*
  * Atomic exchange
@@ -616,6 +617,8 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
 #define smp_mb__after_atomic_dec()	smp_mb()
 #define smp_mb__before_atomic_inc()	smp_mb()
 #define smp_mb__after_atomic_inc()	smp_mb()
+
+#endif //0 /* duplicate with arch_atomic.h */
 
 /*
  * api_pthreads.h: API mapping to pthreads environment.
