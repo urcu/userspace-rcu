@@ -49,6 +49,8 @@ void urcu_init(void)
 
 static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int gp_futex;
+
 /*
  * Global grace period counter.
  * Contains the current RCU_GP_CTR_BIT.
@@ -128,19 +130,16 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef URCU_MB
-#ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
 	smp_mb();
 }
-#endif /* #ifdef HAS_INCOHERENT_CACHES */
 
 static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
 #else /* #ifdef URCU_MB */
-#ifdef HAS_INCOHERENT_CACHES
 static void force_mb_single_thread(struct reader_registry *index)
 {
 	assert(registry);
@@ -163,7 +162,6 @@ static void force_mb_single_thread(struct reader_registry *index)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
-#endif /* #ifdef HAS_INCOHERENT_CACHES */
 
 static void force_mb_all_threads(void)
 {
@@ -208,6 +206,27 @@ static void force_mb_all_threads(void)
 }
 #endif /* #else #ifdef URCU_MB */
 
+/*
+ * synchronize_rcu() waiting. Single thread.
+ */
+static void wait_gp(struct reader_registry *index)
+{
+	atomic_dec(&gp_futex);
+	force_mb_single_thread(index); /* Write futex before read reader_gp */
+	if (!rcu_old_gp_ongoing(index->urcu_active_readers)) {
+		/* Read reader_gp before write futex */
+		force_mb_single_thread(index);
+		/* Callbacks are queued, don't wait. */
+		atomic_set(&gp_futex, 0);
+	} else {
+		/* Read reader_gp before read futex */
+		force_mb_single_thread(index);
+		if (atomic_read(&gp_futex) == -1)
+			futex(&gp_futex, FUTEX_WAIT, -1,
+			      NULL, NULL, 0);
+	}
+}
+
 void wait_for_quiescent_state(void)
 {
 	struct reader_registry *index;
@@ -218,20 +237,30 @@ void wait_for_quiescent_state(void)
 	 * Wait for each thread urcu_active_readers count to become 0.
 	 */
 	for (index = registry; index < registry + num_readers; index++) {
-#ifndef HAS_INCOHERENT_CACHES
-		while (rcu_old_gp_ongoing(index->urcu_active_readers))
-			cpu_relax();
-#else /* #ifndef HAS_INCOHERENT_CACHES */
 		int wait_loops = 0;
+#ifndef HAS_INCOHERENT_CACHES
+		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
+			if (wait_loops++ == RCU_QS_ACTIVE_ATTEMPTS) {
+				wait_gp(index);
+			} else {
+				cpu_relax();
+			}
+		}
+#else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
 		 * urcu_active_readers update to memory if we wait for too long.
 		 */
 		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
-			if (wait_loops++ == KICK_READER_LOOPS) {
+			switch (wait_loops++) {
+			case RCU_QS_ACTIVE_ATTEMPTS:
+				wait_gp(index);
+				break;
+			case KICK_READER_LOOPS:
 				force_mb_single_thread(index);
 				wait_loops = 0;
-			} else {
+				break;
+			default:
 				cpu_relax();
 			}
 		}

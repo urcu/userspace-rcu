@@ -31,6 +31,8 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <syscall.h>
+#include <unistd.h>
 
 #include <compiler.h>
 #include <arch.h>
@@ -94,6 +96,10 @@
 				(_________p1);				\
 				})
 
+#define futex(...)		syscall(__NR_futex, __VA_ARGS__)
+#define FUTEX_WAIT		0
+#define FUTEX_WAKE		1
+
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
  * See below for the function call wrappers which can be used in code meant to
@@ -116,6 +122,11 @@
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
+
+/*
+ * Active attempts to check for reader Q.S. before calling futex().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
 
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)	assert(args)
@@ -209,6 +220,20 @@ extern long urcu_gp_ctr;
 
 extern long __thread urcu_active_readers;
 
+extern int gp_futex;
+
+/*
+ * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.
+ */
+static inline void wake_up_gp(void)
+{
+	if (unlikely(atomic_read(&gp_futex) == -1)) {
+		atomic_set(&gp_futex, 0);
+		futex(&gp_futex, FUTEX_WAKE, 1,
+		      NULL, NULL, 0);
+	}
+}
+
 static inline int rcu_old_gp_ongoing(long *value)
 {
 	long v;
@@ -244,15 +269,24 @@ static inline void _rcu_read_lock(void)
 
 static inline void _rcu_read_unlock(void)
 {
-	reader_barrier();
+	long tmp;
+
+	tmp = urcu_active_readers;
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
-	 * Formally only needed for outermost nesting level, but leave barrier
-	 * in place for nested unlocks to remove a branch from the common case
-	 * (no nesting).
 	 */
-	_STORE_SHARED(urcu_active_readers, urcu_active_readers - RCU_GP_COUNT);
+	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
+		reader_barrier();
+		_STORE_SHARED(urcu_active_readers,
+			      urcu_active_readers - RCU_GP_COUNT);
+		/* write urcu_active_readers before read futex */
+		reader_barrier();
+		wake_up_gp();
+	} else {
+		_STORE_SHARED(urcu_active_readers,
+			      urcu_active_readers - RCU_GP_COUNT);
+	}
 }
 
 /**
