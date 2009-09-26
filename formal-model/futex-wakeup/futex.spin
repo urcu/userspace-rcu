@@ -98,13 +98,6 @@ active proctype waiter()
 				:: 1 ->
 					if
 					:: (fut == -1) ->
-						if
-						:: (queue == 0) ->
-progress_A:
-							skip;
-						:: else
-							skip;
-						fi;
 						skip;
 					:: else ->
 						break;
@@ -114,7 +107,7 @@ progress_A:
 				skip;
 			fi;
 		fi;
-progress_B:
+progress:
 		queue = 0;
 	od;
 }
