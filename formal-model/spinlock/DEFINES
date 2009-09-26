@@ -1,0 +1,1 @@
+#define refcount_gt_one (refcount > 1)
