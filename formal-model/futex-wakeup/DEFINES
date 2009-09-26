@@ -1,1 +1,1 @@
-#define queue_has_entry	(queue == 1)
+#define queue_has_entry	(queue[0] == 1 || queue[1] == 1)

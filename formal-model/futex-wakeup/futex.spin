@@ -46,12 +46,16 @@
  * Copyright (c) 2009 Mathieu Desnoyers
  */
 
-int queue = 0;
+#define get_pid()       (_pid)
+
+int queue[2] = 0;
 int fut = 0;
 
-active proctype waker()
+active [2] proctype waker()
 {
-	queue = 1;
+	assert(get_pid() < 2);
+
+	queue[get_pid()] = 1;
 
 	if
 	:: (fut == -1) ->
@@ -60,7 +64,7 @@ active proctype waker()
 		skip;
 	fi;
 
-	queue = 1;
+	queue[get_pid()] = 1;
 
 	if
 	:: (fut == -1) ->
@@ -70,7 +74,7 @@ active proctype waker()
 	fi;
 
 #ifdef INJ_QUEUE_NO_WAKE
-	queue = 1;
+	queue[get_pid()] = 1;
 #endif
 }
 
@@ -83,7 +87,7 @@ active proctype waiter()
 		fut = fut - 1;
 #endif
 		if
-		:: (queue == 1) ->
+		:: (queue[0] == 1 || queue[1] == 1) ->
 #ifndef INJ_LATE_DEC
 			fut = 0;
 #endif
@@ -108,6 +112,13 @@ active proctype waiter()
 			fi;
 		fi;
 progress:
-		queue = 0;
+		if
+		:: queue[0] == 1 ->
+			queue[0] = 0;
+		fi;
+		if
+		:: queue[1] == 1 ->
+			queue[1] = 0;
+		fi;
 	od;
 }
