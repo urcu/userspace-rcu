@@ -1,0 +1,1 @@
+#define queue_has_entry	(queue == 1)
