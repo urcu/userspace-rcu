@@ -8,6 +8,7 @@ all: checkarch liburcu.so urcu.o \
 	liburcu-mb.so urcu-mb.o \
 	liburcu-defer.so urcu-defer.o \
 	urcu-yield.o \
+	urcu-hash.o \
 	subdirs
 
 checkarch:
@@ -36,6 +37,9 @@ urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 urcu-defer.o: urcu-defer.c urcu-defer.h
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
+
+urcu-hash.o: urcu-hash.c
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
 liburcu.so: urcu.o
