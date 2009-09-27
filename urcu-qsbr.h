@@ -57,6 +57,7 @@
 #define rcu_thread_online	_rcu_thread_online
 
 #define rcu_assign_pointer	_rcu_assign_pointer
+#define rcu_cmpxchg_pointer	_rcu_cmpxchg_pointer
 #define rcu_xchg_pointer	_rcu_xchg_pointer
 #define rcu_publish_content	_rcu_publish_content
 
