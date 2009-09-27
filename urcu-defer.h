@@ -38,6 +38,10 @@
  * Each thread queuing memory reclamation must be registered with
  * rcu_defer_register_thread(). rcu_defer_unregister_thread() should be
  * called before the thread exits.
+ *
+ * *NEVER* use call_rcu()/rcu_defer_queue() within a RCU read-side critical
+ * section, because this primitive need to call synchronize_rcu() if the thread
+ * queue is full.
  */
 
 #define call_rcu		rcu_defer_queue
