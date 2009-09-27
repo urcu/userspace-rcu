@@ -55,6 +55,11 @@ void ht_delete_all(struct rcu_ht *ht)
 				break;
 			}
 			prev = &node->next;
+			/*
+			 * FIXME: calling call_rcu within a read-side C.S. is a
+			 * bug, because it may call synchronize_rcu() if the
+			 * callback queue is full.
+			 */
 			if (node->data)
 				call_rcu(ht->free_fct, node->data);
 			call_rcu(free, node);
