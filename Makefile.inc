@@ -8,7 +8,7 @@ all: checkarch liburcu.so urcu.o \
 	liburcu-mb.so urcu-mb.o \
 	liburcu-defer.so urcu-defer.o \
 	urcu-yield.o \
-	urcu-hash.o \
+	urcu-ht.o \
 	subdirs
 
 checkarch:

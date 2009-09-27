@@ -16,6 +16,7 @@ URCU_SIGNAL_YIELD=${LIBDIR}/urcu-yield.o ${LIBDIR}/urcu.h
 URCU_MB=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu.h
 URCU_QSBR=${LIBDIR}/urcu-qsbr.o ${LIBDIR}/urcu-qsbr.h
 URCU_MB_DEFER=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-defer.o ${LIBDIR}/urcu.h
+URCU_HT=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-defer.o ${LIBDIR}/urcu-ht.o ${LIBDIR}/urcu.h
 
 all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \
@@ -24,7 +25,7 @@ all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	urcutorture-yield test_mutex test_looplen test_urcu_gc \
 	test_urcu_gc_mb test_qsbr_gc test_qsbr_lgc test_urcu_lgc \
 	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_defer \
-	test_atomic
+	test_atomic test_ht
 
 api.h: ${APIHEADER}
 	cp -f ${APIHEADER} api.h
@@ -110,6 +111,9 @@ urcutorture-yield: urcutorture.c ${URCU_SIGNAL_YIELD} rcutorture.h api.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 test_atomic: test_atomic.c ../arch_atomic.h
+	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
+
+test_ht: test_ht.c ${URCU_HT}
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 ,PHONY: clean

@@ -8,10 +8,7 @@
 #include <compiler.h>
 #include <urcu-defer.h>
 #include <errno.h>
-
-#define HASH_SIZE	4096
-
-typedef unsigned long (*ht_hash_fct)(void *key);
+#include <urcu-ht.h>
 
 struct rcu_ht_node;
 
@@ -27,28 +24,6 @@ struct rcu_ht {
 	void (*free_fct)(void *data);	/* fct to free data */
 };
 
-struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data));
-
-void ht_delete_all(struct rcu_ht *ht);
-
-int ht_destroy(struct rcu_ht *ht);
-
-void *ht_lookup(struct rcu_ht *ht, void *key);
-
-int ht_add(struct rcu_ht *ht, void *key, void *data);
-
-int ht_delete(struct rcu_ht *ht, void *key);
-
-void *ht_steal(struct rcu_ht *ht, void *key);
-
-
-/* Implementation */
-
-static unsigned long stupid_hash(void *key)
-{
-	return (unsigned long)key % HASH_SIZE;
-}
-
 struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data))
 {
 	struct rcu_ht *ht;
@@ -56,6 +31,7 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data))
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
 	ht->free_fct = free_fct;
+	return ht;
 }
 
 /* delete all elements */
@@ -92,7 +68,7 @@ void ht_delete_all(struct rcu_ht *ht)
  * Should only be called when no more concurrent readers nor writers can
  * possibly access the table.
  */
-int ht_destroy(struct rcu_ht *ht)
+void ht_destroy(struct rcu_ht *ht)
 {
 	ht_delete_all(ht);
 	free(ht);
@@ -120,6 +96,8 @@ void *ht_lookup(struct rcu_ht *ht, void *key)
 		node = rcu_dereference(node->next);
 	}
 	rcu_read_unlock();
+
+	return ret;
 }
 
 /*
@@ -177,10 +155,11 @@ restart:
  * Restart until we successfully remove the entry, or no entry is left
  * ((void *)(unsigned long)-ENOENT).
  */
-struct rcu_ht_node *ht_steal(struct rcu_ht *ht, void *key);
+void *ht_steal(struct rcu_ht *ht, void *key)
 {
 	struct rcu_ht_node **prev, *node;
 	unsigned long hash;
+	void *data;
 
 	hash = ht->hash_fct(key);
 
@@ -191,7 +170,7 @@ retry:
 	node = rcu_dereference(*prev);
 	for (;;) {
 		if (likely(!node)) {
-			node = (void *)(unsigned long)-ENOENT;
+			data = (void *)(unsigned long)-ENOENT;
 			goto end;
 		}
 		if (node->key == key) {
@@ -206,7 +185,10 @@ retry:
 end:
 	rcu_read_unlock();
 
-	return node;
+	data = node->data;
+	call_rcu(free, node);
+
+	return data;
 
 	/* restart loop, release and re-take the read lock to be kind to GP */
 restart:
@@ -216,15 +198,19 @@ restart:
 
 int ht_delete(struct rcu_ht *ht, void *key)
 {
-	struct rcu_ht_node *node;
+	void *data;
 
-	node = ht_steal(ht, key);
-	if (node) {
-		if (free_fct && node->data)
-			call_rcu(ht->free_fct, node->data);
-		call_rcu(free, node);
+	data = ht_steal(ht, key);
+	if (data) {
+		if (ht->free_fct && data)
+			call_rcu(ht->free_fct, data);
 		return 0;
 	} else {
 		return -ENOENT;
 	}
+}
+
+unsigned long stupid_hash(void *key)
+{
+	return (unsigned long)key % HASH_SIZE;
 }
