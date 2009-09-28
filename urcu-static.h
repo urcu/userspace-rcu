@@ -36,6 +36,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/list.h>
 
 /*
  * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
@@ -218,7 +219,14 @@ static inline void reader_barrier()
  */
 extern long urcu_gp_ctr;
 
-extern long __thread urcu_active_readers;
+struct urcu_reader {
+	long ctr;
+	struct list_head head;
+	pthread_t tid;
+	char need_mb;
+};
+
+extern struct urcu_reader __thread urcu_reader;
 
 extern int gp_futex;
 
@@ -253,17 +261,17 @@ static inline void _rcu_read_lock(void)
 {
 	long tmp;
 
-	tmp = urcu_active_readers;
+	tmp = urcu_reader.ctr;
 	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_STORE_SHARED(urcu_active_readers, _LOAD_SHARED(urcu_gp_ctr));
+		_STORE_SHARED(urcu_reader.ctr, _LOAD_SHARED(urcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer. See force_mb_all_threads().
 		 */
 		reader_barrier();
 	} else {
-		_STORE_SHARED(urcu_active_readers, tmp + RCU_GP_COUNT);
+		_STORE_SHARED(urcu_reader.ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -271,21 +279,19 @@ static inline void _rcu_read_unlock(void)
 {
 	long tmp;
 
-	tmp = urcu_active_readers;
+	tmp = urcu_reader.ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		reader_barrier();
-		_STORE_SHARED(urcu_active_readers,
-			      urcu_active_readers - RCU_GP_COUNT);
-		/* write urcu_active_readers before read futex */
+		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
+		/* write urcu_reader.ctr before read futex */
 		reader_barrier();
 		wake_up_gp();
 	} else {
-		_STORE_SHARED(urcu_active_readers,
-			      urcu_active_readers - RCU_GP_COUNT);
+		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
 	}
 }
 

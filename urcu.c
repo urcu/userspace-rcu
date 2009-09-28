@@ -63,25 +63,17 @@ long urcu_gp_ctr = RCU_GP_COUNT;
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-long __thread urcu_active_readers;
+struct urcu_reader __thread urcu_reader;
 
 /* Thread IDs of registered readers */
 #define INIT_NUM_THREADS 4
-
-struct reader_registry {
-	pthread_t tid;
-	long *urcu_active_readers;
-	char *need_mb;
-};
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
 unsigned int __thread rand_yield;
 #endif
 
-static struct reader_registry *registry;
-static char __thread need_mb;
-static int num_readers, alloc_readers;
+static LIST_HEAD(registry);
 
 static void internal_urcu_lock(void)
 {
@@ -100,9 +92,9 @@ static void internal_urcu_lock(void)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (need_mb) {
+		if (urcu_reader.need_mb) {
 			smp_mb();
-			need_mb = 0;
+			urcu_reader.need_mb = 0;
 			smp_mb();
 		}
 		poll(NULL,0,10);
@@ -130,7 +122,7 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef URCU_MB
-static void force_mb_single_thread(struct reader_registry *index)
+static void force_mb_single_thread(struct urcu_reader *index)
 {
 	smp_mb();
 }
@@ -140,16 +132,16 @@ static void force_mb_all_threads(void)
 	smp_mb();
 }
 #else /* #ifdef URCU_MB */
-static void force_mb_single_thread(struct reader_registry *index)
+static void force_mb_single_thread(struct urcu_reader *index)
 {
-	assert(registry);
+	assert(!list_empty(&registry));
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
 	 * a cache flush on architectures with non-coherent cache. Let's play
 	 * safe and don't assume anything : we use smp_mc() to make sure the
 	 * cache flush is enforced.
 	 */
-	*index->need_mb = 1;
+	index->need_mb = 1;
 	smp_mc();	/* write ->need_mb before sending the signals */
 	pthread_kill(index->tid, SIGURCU);
 	smp_mb();
@@ -157,7 +149,7 @@ static void force_mb_single_thread(struct reader_registry *index)
 	 * Wait for sighandler (and thus mb()) to execute on every thread.
 	 * BUSY-LOOP.
 	 */
-	while (*index->need_mb) {
+	while (index->need_mb) {
 		poll(NULL, 0, 1);
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
@@ -165,12 +157,13 @@ static void force_mb_single_thread(struct reader_registry *index)
 
 static void force_mb_all_threads(void)
 {
-	struct reader_registry *index;
+	struct urcu_reader *index;
+
 	/*
 	 * Ask for each threads to execute a smp_mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
-	if (!registry)
+	if (list_empty(&registry))
 		return;
 	/*
 	 * pthread_kill has a smp_mb(). But beware, we assume it performs
@@ -178,8 +171,8 @@ static void force_mb_all_threads(void)
 	 * safe and don't assume anything : we use smp_mc() to make sure the
 	 * cache flush is enforced.
 	 */
-	for (index = registry; index < registry + num_readers; index++) {
-		*index->need_mb = 1;
+	list_for_each_entry(index, &registry, head) {
+		index->need_mb = 1;
 		smp_mc();	/* write need_mb before sending the signal */
 		pthread_kill(index->tid, SIGURCU);
 	}
@@ -196,8 +189,8 @@ static void force_mb_all_threads(void)
 	 * relevant bug report.  For Linux kernels, we recommend getting
 	 * the Linux Test Project (LTP).
 	 */
-	for (index = registry; index < registry + num_readers; index++) {
-		while (*index->need_mb) {
+	list_for_each_entry(index, &registry, head) {
+		while (index->need_mb) {
 			pthread_kill(index->tid, SIGURCU);
 			poll(NULL, 0, 1);
 		}
@@ -209,11 +202,11 @@ static void force_mb_all_threads(void)
 /*
  * synchronize_rcu() waiting. Single thread.
  */
-static void wait_gp(struct reader_registry *index)
+static void wait_gp(struct urcu_reader *index)
 {
 	uatomic_dec(&gp_futex);
 	force_mb_single_thread(index); /* Write futex before read reader_gp */
-	if (!rcu_old_gp_ongoing(index->urcu_active_readers)) {
+	if (!rcu_old_gp_ongoing(&index->ctr)) {
 		/* Read reader_gp before write futex */
 		force_mb_single_thread(index);
 		/* Callbacks are queued, don't wait. */
@@ -229,17 +222,17 @@ static void wait_gp(struct reader_registry *index)
 
 void wait_for_quiescent_state(void)
 {
-	struct reader_registry *index;
+	struct urcu_reader *index;
 
-	if (!registry)
+	if (list_empty(&registry))
 		return;
 	/*
-	 * Wait for each thread urcu_active_readers count to become 0.
+	 * Wait for each thread urcu_reader.ctr count to become 0.
 	 */
-	for (index = registry; index < registry + num_readers; index++) {
+	list_for_each_entry(index, &registry, head) {
 		int wait_loops = 0;
 #ifndef HAS_INCOHERENT_CACHES
-		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
+		while (rcu_old_gp_ongoing(&index->ctr)) {
 			if (wait_loops++ == RCU_QS_ACTIVE_ATTEMPTS) {
 				wait_gp(index);
 			} else {
@@ -249,9 +242,9 @@ void wait_for_quiescent_state(void)
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
-		 * urcu_active_readers update to memory if we wait for too long.
+		 * urcu_reader.ctr update to memory if we wait for too long.
 		 */
-		while (rcu_old_gp_ongoing(index->urcu_active_readers)) {
+		while (rcu_old_gp_ongoing(&index->ctr)) {
 			switch (wait_loops++) {
 			case RCU_QS_ACTIVE_ATTEMPTS:
 				wait_gp(index);
@@ -391,67 +384,21 @@ void *rcu_publish_content_sym(void **p, void *v)
 	return oldptr;
 }
 
-static void rcu_add_reader(pthread_t id)
-{
-	struct reader_registry *oldarray;
-
-	if (!registry) {
-		alloc_readers = INIT_NUM_THREADS;
-		num_readers = 0;
-		registry =
-			malloc(sizeof(struct reader_registry) * alloc_readers);
-	}
-	if (alloc_readers < num_readers + 1) {
-		oldarray = registry;
-		registry = malloc(sizeof(struct reader_registry)
-				* (alloc_readers << 1));
-		memcpy(registry, oldarray,
-			sizeof(struct reader_registry) * alloc_readers);
-		alloc_readers <<= 1;
-		free(oldarray);
-	}
-	registry[num_readers].tid = id;
-	/* reference to the TLS of _this_ reader thread. */
-	registry[num_readers].urcu_active_readers = &urcu_active_readers;
-	registry[num_readers].need_mb = &need_mb;
-	num_readers++;
-}
-
-/*
- * Never shrink (implementation limitation).
- * This is O(nb threads). Eventually use a hash table.
- */
-static void rcu_remove_reader(pthread_t id)
-{
-	struct reader_registry *index;
-
-	assert(registry != NULL);
-	for (index = registry; index < registry + num_readers; index++) {
-		if (pthread_equal(index->tid, id)) {
-			memcpy(index, &registry[num_readers - 1],
-				sizeof(struct reader_registry));
-			registry[num_readers - 1].tid = 0;
-			registry[num_readers - 1].urcu_active_readers = NULL;
-			num_readers--;
-			return;
-		}
-	}
-	/* Hrm not found, forgot to register ? */
-	assert(0);
-}
-
 void rcu_register_thread(void)
 {
 	internal_urcu_lock();
 	urcu_init();	/* In case gcc does not support constructor attribute */
-	rcu_add_reader(pthread_self());
+	urcu_reader.tid = pthread_self();
+	assert(urcu_reader.need_mb == 0);
+	assert(urcu_reader.ctr == 0);
+	list_add(&urcu_reader.head, &registry);
 	internal_urcu_unlock();
 }
 
 void rcu_unregister_thread(void)
 {
 	internal_urcu_lock();
-	rcu_remove_reader(pthread_self());
+	list_del(&urcu_reader.head);
 	internal_urcu_unlock();
 }
 
@@ -464,7 +411,7 @@ static void sigurcu_handler(int signo, siginfo_t *siginfo, void *context)
 	 * executed on.
 	 */
 	smp_mb();
-	need_mb = 0;
+	urcu_reader.need_mb = 0;
 	smp_mb();
 }
 
@@ -506,6 +453,6 @@ void urcu_exit(void)
 		exit(-1);
 	}
 	assert(act.sa_sigaction == sigurcu_handler);
-	free(registry);
+	assert(list_empty(&registry));
 }
 #endif /* #ifndef URCU_MB */
