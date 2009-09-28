@@ -59,10 +59,12 @@ subdirs:
 	-for d in ${DIRS}; do cd $${d}; ${MAKE} ${MFLAGS} ${EXTRAMFLAGS}; done
 
 install: liburcu.so
-	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so /usr/lib/
-	cp -f arch.h arch_atomic.h compiler.h	\
-		urcu.h urcu-static.h		\
-		urcu-qsbr.h urcu-qsbr-static.h	\
+	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so liburcu-defer.so	\
+			/usr/lib/
+	cp -f arch.h arch_atomic.h compiler.h				\
+		urcu.h urcu-static.h					\
+		urcu-qsbr.h urcu-qsbr-static.h				\
+		urcu-defer.h urcu-defer-static.h			\
 			/usr/include/
 
 clean:
