@@ -34,8 +34,8 @@
 #include <syscall.h>
 #include <unistd.h>
 
-#include <compiler.h>
-#include <arch.h>
+#include <urcu/compiler.h>
+#include <urcu/arch.h>
 
 /*
  * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
@@ -227,8 +227,8 @@ extern int gp_futex;
  */
 static inline void wake_up_gp(void)
 {
-	if (unlikely(atomic_read(&gp_futex) == -1)) {
-		atomic_set(&gp_futex, 0);
+	if (unlikely(uatomic_read(&gp_futex) == -1)) {
+		uatomic_set(&gp_futex, 0);
 		futex(&gp_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
@@ -323,7 +323,7 @@ static inline void _rcu_read_unlock(void)
 		if (!__builtin_constant_p(_new) ||	\
 		    ((_new) != NULL))			\
 			wmb();				\
-		cmpxchg(p, old, _new);			\
+		uatomic_cmpxchg(p, old, _new);		\
 	})
 
 /**
@@ -337,7 +337,7 @@ static inline void _rcu_read_unlock(void)
 		if (!__builtin_constant_p(v) ||		\
 		    ((v) != NULL))			\
 			wmb();				\
-		xchg(p, v);				\
+		uatomic_xchg(p, v);			\
 	})
 
 /*

@@ -111,8 +111,8 @@ static void internal_urcu_unlock(pthread_mutex_t *mutex)
  */
 static void wake_up_defer(void)
 {
-	if (unlikely(atomic_read(&defer_thread_futex) == -1)) {
-		atomic_set(&defer_thread_futex, 0);
+	if (unlikely(uatomic_read(&defer_thread_futex) == -1)) {
+		uatomic_set(&defer_thread_futex, 0);
 		futex(&defer_thread_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
@@ -137,15 +137,15 @@ static unsigned long rcu_defer_num_callbacks(void)
  */
 static void wait_defer(void)
 {
-	atomic_dec(&defer_thread_futex);
+	uatomic_dec(&defer_thread_futex);
 	smp_mb();	/* Write futex before read queue */
 	if (rcu_defer_num_callbacks()) {
 		smp_mb();	/* Read queue before write futex */
 		/* Callbacks are queued, don't wait. */
-		atomic_set(&defer_thread_futex, 0);
+		uatomic_set(&defer_thread_futex, 0);
 	} else {
 		smp_rmb();	/* Read queue before read futex */
-		if (atomic_read(&defer_thread_futex) == -1)
+		if (uatomic_read(&defer_thread_futex) == -1)
 			futex(&defer_thread_futex, FUTEX_WAIT, -1,
 			      NULL, NULL, 0);
 	}

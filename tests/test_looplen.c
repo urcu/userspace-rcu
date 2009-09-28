@@ -33,7 +33,7 @@
 #include <sys/syscall.h>
 #include <sched.h>
 
-#include "../arch.h"
+#include <urcu/arch.h>
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -55,7 +55,7 @@ static inline pid_t gettid(void)
 #else
 #define debug_yield_read()
 #endif
-#include "../urcu.h"
+#include <urcu.h>
 
 static inline void loop_sleep(unsigned long l)
 {

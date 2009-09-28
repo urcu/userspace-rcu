@@ -29,7 +29,7 @@
  */
 
 #include <compiler.h>
-#include <arch_atomic.h>
+#include <arch_uatomic.h>
 
 #define CONFIG_HAVE_MEM_COHERENCY
 /* Assume SMP machine, given we don't have this information */

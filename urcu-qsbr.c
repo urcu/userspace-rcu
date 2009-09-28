@@ -106,17 +106,17 @@ static void internal_urcu_unlock(void)
  */
 static void wait_gp(struct reader_registry *index)
 {
-	atomic_dec(&gp_futex);
+	uatomic_dec(&gp_futex);
 	smp_mb(); /* Write futex before read reader_gp */
 	if (!rcu_gp_ongoing(index->rcu_reader_qs_gp)) {
 		/* Read reader_gp before write futex */
 		smp_mb();
 		/* Callbacks are queued, don't wait. */
-		atomic_set(&gp_futex, 0);
+		uatomic_set(&gp_futex, 0);
 	} else {
 		/* Read reader_gp before read futex */
 		smp_rmb();
-		if (atomic_read(&gp_futex) == -1)
+		if (uatomic_read(&gp_futex) == -1)
 			futex(&gp_futex, FUTEX_WAIT, -1,
 			      NULL, NULL, 0);
 	}
@@ -287,13 +287,13 @@ void *rcu_assign_pointer_sym(void **p, void *v)
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
 	wmb();
-	return cmpxchg(p, old, _new);
+	return uatomic_cmpxchg(p, old, _new);
 }
 
 void *rcu_xchg_pointer_sym(void **p, void *v)
 {
 	wmb();
-	return xchg(p, v);
+	return uatomic_xchg(p, v);
 }
 
 void *rcu_publish_content_sym(void **p, void *v)

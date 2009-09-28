@@ -16,15 +16,15 @@ ifeq (${ARCHTYPE},)
 	@exit 1
 endif
 
-arch.h: arch_${ARCHTYPE}.h
-	cp -f arch_${ARCHTYPE}.h arch.h
+urcu/arch.h: urcu/arch_${ARCHTYPE}.h
+	cp -f urcu/arch_${ARCHTYPE}.h urcu/arch.h
 
-arch_atomic.h: arch_atomic_${ARCHTYPE}.h
-	cp -f arch_atomic_${ARCHTYPE}.h arch_atomic.h
+urcu/arch_uatomic.h: urcu/arch_uatomic_${ARCHTYPE}.h
+	cp -f urcu/arch_uatomic_${ARCHTYPE}.h urcu/arch_uatomic.h
 
-urcu.h: arch.h arch_atomic.h
+urcu.h: urcu/arch.h urcu/arch_uatomic.h
 
-urcu-qsbr.h: arch.h arch_atomic.h
+urcu-qsbr.h: urcu/arch.h urcu/arch_uatomic.h
 
 urcu.o: urcu.c urcu.h
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
@@ -61,12 +61,14 @@ subdirs:
 install: liburcu.so
 	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so liburcu-defer.so	\
 			/usr/lib/
-	cp -f arch.h arch_atomic.h compiler.h				\
-		urcu.h urcu-static.h					\
+	mkdir -p /usr/include/urcu
+	cp -f urcu/arch.h urcu/arch_uatomic.h urcu/compiler.h		\
+			/usr/include/urcu/
+	cp -f urcu.h urcu-static.h					\
 		urcu-qsbr.h urcu-qsbr-static.h				\
 		urcu-defer.h urcu-defer-static.h			\
 			/usr/include/
 
 clean:
-	rm -f *.o *.so arch.h arch_atomic.h
+	rm -f *.o *.so urcu/arch.h urcu/arch_uatomic.h
 	-for d in ${DIRS}; do cd $${d}; ${MAKE} clean; done

@@ -9,7 +9,7 @@ endif
 
 LIBDIR=..
 
-CFLAGS+=-I ${LIBDIR}
+CFLAGS+=-I${LIBDIR}
 
 URCU_SIGNAL=${LIBDIR}/urcu.o ${LIBDIR}/urcu.h
 URCU_SIGNAL_YIELD=${LIBDIR}/urcu-yield.o ${LIBDIR}/urcu.h
@@ -24,7 +24,7 @@ all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	urcutorture-yield test_mutex test_looplen test_urcu_gc \
 	test_urcu_gc_mb test_qsbr_gc test_qsbr_lgc test_urcu_lgc \
 	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_defer \
-	test_atomic
+	test_uatomic
 
 api.h: ${APIHEADER}
 	cp -f ${APIHEADER} api.h
@@ -109,7 +109,7 @@ urcutorture: urcutorture.c rcutorture.h api.h ${URCU_SIGNAL}
 urcutorture-yield: urcutorture.c ${URCU_SIGNAL_YIELD} rcutorture.h api.h
 	$(CC) -DDEBUG_YIELD ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-test_atomic: test_atomic.c ../arch_atomic.h
+test_uatomic: test_uatomic.c ../urcu/arch_uatomic.h
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
 ,PHONY: clean
@@ -122,4 +122,5 @@ clean:
 	urcutorture-yield liburcu.so api.h \
 	test_mutex test_urcu_gc test_urcu_gc_mb urcu-asm-1.S \
 	test_qsbr_lgc test_qsbr_gc test_looplen test_urcu_lgc \
-	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_defer
+	test_urcu_lgc_mb test_qsbr_dynamic_link test_urcu_mb_defer \
+	test_uatomic

@@ -1,5 +1,5 @@
-#ifndef _COMPILER_H
-#define _COMPILER_H
+#ifndef _URCU_COMPILER_H
+#define _URCU_COMPILER_H
 
 /*
  * compiler.h
@@ -47,4 +47,4 @@
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif
 
-#endif /* _COMPILER_H */
+#endif /* _URCU_COMPILER_H */

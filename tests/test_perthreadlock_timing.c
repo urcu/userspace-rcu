@@ -32,7 +32,7 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 
-#include "../arch.h"
+#include <urcu/arch.h>
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -52,7 +52,7 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#include "../urcu.h"
+#include <urcu.h>
 
 struct test_array {
 	int a;

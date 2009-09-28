@@ -1,5 +1,5 @@
-#ifndef _ARCH_X86_H
-#define _ARCH_X86_H
+#ifndef _URCU_ARCH_X86_H
+#define _URCU_ARCH_X86_H
 
 /*
  * arch_x86.h: trivial definitions for the x86 architecture.
@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <compiler.h>
-#include <arch_atomic.h>
+#include <urcu/compiler.h>
+#include <urcu/arch_uatomic.h>
 
 /* Assume P4 or newer */
 #define CONFIG_HAVE_FENCE 1
@@ -132,4 +132,4 @@ static inline cycles_t get_cycles(void)
         return ret;
 }
 
-#endif /* _ARCH_X86_H */
+#endif /* _URCU_ARCH_X86_H */

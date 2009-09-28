@@ -1,5 +1,5 @@
-#ifndef _ARCH_ATOMIC_S390_H
-#define _ARCH_ATOMIC_S390_H
+#ifndef _URCU_ARCH_ATOMIC_S390_H
+#define _URCU_ARCH_ATOMIC_S390_H
 
 /*
  * Atomic exchange operations for the S390 architecture. Based on information
@@ -40,10 +40,8 @@
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
-#ifndef _INCLUDE_API_H
-
 static inline __attribute__((always_inline))
-unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
+unsigned int uatomic_exchange_32(volatile unsigned int *addr, unsigned int val)
 {
 	unsigned int result;
 
@@ -60,7 +58,7 @@ unsigned int atomic_exchange_32(volatile unsigned int *addr, unsigned int val)
 #if (BITS_PER_LONG == 64)
 
 static inline __attribute__((always_inline))
-unsigned long atomic_exchange_64(volatile unsigned long *addr,
+unsigned long uatomic_exchange_64(volatile unsigned long *addr,
 				 unsigned long val)
 {
 	unsigned long result;
@@ -78,14 +76,14 @@ unsigned long atomic_exchange_64(volatile unsigned long *addr,
 #endif
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
+unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 4:
-		return atomic_exchange_32(addr, val);
+		return uatomic_exchange_32(addr, val);
 #if (BITS_PER_LONG == 64)
 	case 8:
-		return atomic_exchange_64(addr, val);
+		return uatomic_exchange_64(addr, val);
 #endif
 	default:
 		__asm__ __volatile__(".long	0xd00d00");
@@ -94,10 +92,8 @@ unsigned long _atomic_exchange(volatile void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define xchg(addr, v)							\
-	(__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
+#define uatomic_xchg(addr, v)						\
+	(__typeof__(*(addr))) _uatomic_exchange((addr), (unsigned long)(v), \
 					       sizeof(*(addr)))
 
-#endif /* #ifndef _INCLUDE_API_H */
-
-#endif /* ARCH_ATOMIC_S390_H */
+#endif /* _URCU_ARCH_ATOMIC_S390_H */

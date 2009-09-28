@@ -116,7 +116,7 @@ void *rcu_read_perf_test(void *arg)
 
 	rcu_register_thread();
 	run_on(me);
-	atomic_inc(&nthreadsrunning);
+	uatomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	mark_rcu_quiescent_state();
@@ -141,7 +141,7 @@ void *rcu_update_perf_test(void *arg)
 {
 	long long n_updates_local = 0;
 
-	atomic_inc(&nthreadsrunning);
+	uatomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
@@ -156,7 +156,7 @@ void perftestinit(void)
 {
 	init_per_thread(n_reads_pt, 0LL);
 	init_per_thread(n_updates_pt, 0LL);
-	atomic_set(&nthreadsrunning, 0);
+	uatomic_set(&nthreadsrunning, 0);
 }
 
 void perftestrun(int nthreads, int nreaders, int nupdaters)
@@ -165,7 +165,7 @@ void perftestrun(int nthreads, int nreaders, int nupdaters)
 	int duration = 1;
 
 	smp_mb();
-	while (atomic_read(&nthreadsrunning) < nthreads)
+	while (uatomic_read(&nthreadsrunning) < nthreads)
 		poll(NULL, 0, 1);
 	goflag = GOFLAG_RUN;
 	smp_mb();

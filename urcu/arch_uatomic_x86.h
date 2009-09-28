@@ -1,5 +1,5 @@
-#ifndef _ARCH_ATOMIC_X86_H
-#define _ARCH_ATOMIC_X86_H
+#ifndef _URCU_ARCH_UATOMIC_X86_H
+#define _URCU_ARCH_UATOMIC_X86_H
 
 /* 
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
@@ -16,38 +16,36 @@
  * provided the above notices are retained, and a notice that the code was
  * modified is included with the above copyright notice.
  *
- * Code inspired from libatomic_ops-1.2, inherited in part from the
+ * Code inspired from libuatomic_ops-1.2, inherited in part from the
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
-#include <compiler.h>
+#include <urcu/compiler.h>
 
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
-#ifndef _INCLUDE_API_H
-
 /*
  * Derived from AO_compare_and_swap() and AO_test_and_set_full().
  */
 
-struct __atomic_dummy {
+struct __uatomic_dummy {
 	unsigned long v[10];
 };
-#define __hp(x)	((struct __atomic_dummy *)(x))
+#define __hp(x)	((struct __uatomic_dummy *)(x))
 
-#define atomic_set(addr, v)				\
+#define uatomic_set(addr, v)				\
 do {							\
 	ACCESS_ONCE(*(addr)) = (v);			\
 } while (0)
 
-#define atomic_read(addr)	ACCESS_ONCE(*(addr))
+#define uatomic_read(addr)	ACCESS_ONCE(*(addr))
 
 /* cmpxchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
+unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
@@ -104,15 +102,15 @@ unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 	return 0;
 }
 
-#define cmpxchg(addr, old, _new)					    \
-	((__typeof__(*(addr))) _atomic_cmpxchg((addr), (unsigned long)(old),\
+#define uatomic_cmpxchg(addr, old, _new)				    \
+	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
 						(unsigned long)(_new), 	    \
 						sizeof(*(addr))))
 
 /* xchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
+unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	/* Note: the "xchg" instruction does not need a "lock" prefix. */
 	switch (len) {
@@ -165,14 +163,14 @@ unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define xchg(addr, v)							    \
-	((__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
+#define uatomic_xchg(addr, v)						    \
+	((__typeof__(*(addr))) _uatomic_exchange((addr), (unsigned long)(v), \
 						sizeof(*(addr))))
 
-/* atomic_add_return, atomic_sub_return */
+/* uatomic_add_return, uatomic_sub_return */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_add_return(void *addr, unsigned long val,
+unsigned long _uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {
@@ -229,17 +227,17 @@ unsigned long _atomic_add_return(void *addr, unsigned long val,
 	return 0;
 }
 
-#define atomic_add_return(addr, v)					\
-	((__typeof__(*(addr))) _atomic_add_return((addr),		\
+#define uatomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) _uatomic_add_return((addr),		\
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
-#define atomic_sub_return(addr, v)	atomic_add_return((addr), -(v))
+#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
 
-/* atomic_add, atomic_sub */
+/* uatomic_add, uatomic_sub */
 
 static inline __attribute__((always_inline))
-void _atomic_add(void *addr, unsigned long val, int len)
+void _uatomic_add(void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 1:
@@ -287,16 +285,16 @@ void _atomic_add(void *addr, unsigned long val, int len)
 	return;
 }
 
-#define atomic_add(addr, v)						   \
-	(_atomic_add((addr), (unsigned long)(v), sizeof(*(addr))))
+#define uatomic_add(addr, v)						   \
+	(_uatomic_add((addr), (unsigned long)(v), sizeof(*(addr))))
 
-#define atomic_sub(addr, v)	atomic_add((addr), -(v))
+#define uatomic_sub(addr, v)	uatomic_add((addr), -(v))
 
 
-/* atomic_inc */
+/* uatomic_inc */
 
 static inline __attribute__((always_inline))
-void _atomic_inc(void *addr, int len)
+void _uatomic_inc(void *addr, int len)
 {
 	switch (len) {
 	case 1:
@@ -344,12 +342,12 @@ void _atomic_inc(void *addr, int len)
 	return;
 }
 
-#define atomic_inc(addr)	(_atomic_inc((addr), sizeof(*(addr))))
+#define uatomic_inc(addr)	(_uatomic_inc((addr), sizeof(*(addr))))
 
-/* atomic_dec */
+/* uatomic_dec */
 
 static inline __attribute__((always_inline))
-void _atomic_dec(void *addr, int len)
+void _uatomic_dec(void *addr, int len)
 {
 	switch (len) {
 	case 1:
@@ -397,8 +395,6 @@ void _atomic_dec(void *addr, int len)
 	return;
 }
 
-#define atomic_dec(addr)	(_atomic_dec((addr), sizeof(*(addr))))
+#define uatomic_dec(addr)	(_uatomic_dec((addr), sizeof(*(addr))))
 
-#endif /* #ifndef _INCLUDE_API_H */
-
-#endif /* ARCH_ATOMIC_X86_H */
+#endif /* _URCU_ARCH_UATOMIC_X86_H */

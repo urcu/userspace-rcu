@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <arch_atomic.h>
 #include <assert.h>
+#include <urcu/arch_uatomic.h>
 
 #if (defined(__i386__) || defined(__x86_64__))
 #define HAS_ATOMIC_BYTE
@@ -24,30 +24,30 @@ static struct testvals vals;
 do {						\
 	__typeof__(*(ptr)) v;			\
 						\
-	atomic_add(ptr, 10);			\
-	assert(atomic_read(ptr) == 10);		\
-	atomic_add(ptr, -11UL);			\
-	assert(atomic_read(ptr) == (__typeof__(*(ptr)))-1UL);	\
-	v = cmpxchg(ptr, -1UL, 22);		\
-	assert(atomic_read(ptr) == 22);		\
+	uatomic_add(ptr, 10);			\
+	assert(uatomic_read(ptr) == 10);		\
+	uatomic_add(ptr, -11UL);			\
+	assert(uatomic_read(ptr) == (__typeof__(*(ptr)))-1UL);	\
+	v = uatomic_cmpxchg(ptr, -1UL, 22);		\
+	assert(uatomic_read(ptr) == 22);		\
 	assert(v == (__typeof__(*(ptr)))-1UL);	\
-	v = cmpxchg(ptr, 33, 44);		\
-	assert(atomic_read(ptr) == 22);		\
+	v = uatomic_cmpxchg(ptr, 33, 44);		\
+	assert(uatomic_read(ptr) == 22);		\
 	assert(v == 22);			\
-	v = xchg(ptr, 55);			\
-	assert(atomic_read(ptr) == 55);		\
+	v = uatomic_xchg(ptr, 55);			\
+	assert(uatomic_read(ptr) == 55);		\
 	assert(v == 22);			\
-	atomic_set(ptr, 22);			\
-	atomic_inc(ptr);			\
-	assert(atomic_read(ptr) == 23);		\
-	atomic_dec(ptr);			\
-	assert(atomic_read(ptr) == 22);		\
-	v = atomic_add_return(ptr, 100);	\
+	uatomic_set(ptr, 22);			\
+	uatomic_inc(ptr);			\
+	assert(uatomic_read(ptr) == 23);		\
+	uatomic_dec(ptr);			\
+	assert(uatomic_read(ptr) == 22);		\
+	v = uatomic_add_return(ptr, 100);	\
 	assert(v == 122);			\
-	assert(atomic_read(ptr) == 122);	\
-	v = atomic_sub_return(ptr, 1);		\
+	assert(uatomic_read(ptr) == 122);	\
+	v = uatomic_sub_return(ptr, 1);		\
 	assert(v == 121);			\
-	assert(atomic_read(ptr) == 121);	\
+	assert(uatomic_read(ptr) == 121);	\
 } while (0)
 
 int main(int argc, char **argv)

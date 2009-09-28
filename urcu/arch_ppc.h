@@ -1,5 +1,5 @@
-#ifndef _ARCH_PPC_H
-#define _ARCH_PPC_H
+#ifndef _URCU_ARCH_PPC_H
+#define _URCU_ARCH_PPC_H
 
 /*
  * arch_ppc.h: trivial definitions for the powerpc architecture.
@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <compiler.h>
-#include <arch_atomic.h>
+#include <urcu/compiler.h>
+#include <urcu/arch_uatomic.h>
 
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
@@ -116,4 +116,4 @@ static inline cycles_t get_cycles (void)
 	}
 }
 
-#endif /* _ARCH_PPC_H */
+#endif /* _URCU_ARCH_PPC_H */

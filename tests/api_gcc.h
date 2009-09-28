@@ -285,7 +285,6 @@ cmpxchg(volatile long *ptr, long oldval, long newval)
 #include <pthread.h>
 #include <sched.h>
 #include <sys/param.h>
-#include <arch.h>
 /* #include "atomic.h" */
 
 /*

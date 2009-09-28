@@ -1,5 +1,5 @@
-#ifndef _ARCH_ATOMIC_PPC_H
-#define _ARCH_ATOMIC_PPC_H
+#ifndef _URCU_ARCH_UATOMIC_PPC_H
+#define _URCU_ARCH_UATOMIC_PPC_H
 
 /* 
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
@@ -16,11 +16,11 @@
  * provided the above notices are retained, and a notice that the code was
  * modified is included with the above copyright notice.
  *
- * Code inspired from libatomic_ops-1.2, inherited in part from the
+ * Code inspired from libuatomic_ops-1.2, inherited in part from the
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
-#include <compiler.h>
+#include <urcu/compiler.h>
 
 #ifndef __SIZEOF_LONG__
 #ifdef __powerpc64__
@@ -38,16 +38,16 @@
 
 #ifndef _INCLUDE_API_H
 
-#define atomic_set(addr, v)				\
+#define uatomic_set(addr, v)				\
 do {							\
 	ACCESS_ONCE(*(addr)) = (v);			\
 } while (0)
 
-#define atomic_read(addr)	ACCESS_ONCE(*(addr))
+#define uatomic_read(addr)	ACCESS_ONCE(*(addr))
 
 /*
  * Using a isync as second barrier for exchange to provide acquire semantic.
- * According to atomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
+ * According to uatomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
  * explicit that this also has acquire semantics."
  * Derived from AO_compare_and_swap(), but removed the comparison.
  */
@@ -55,7 +55,7 @@ do {							\
 /* xchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
+unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 4:
@@ -99,13 +99,13 @@ unsigned long _atomic_exchange(void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define xchg(addr, v)							    \
-	((__typeof__(*(addr))) _atomic_exchange((addr), (unsigned long)(v), \
+#define uatomic_xchg(addr, v)						    \
+	((__typeof__(*(addr))) _uatomic_exchange((addr), (unsigned long)(v), \
 						sizeof(*(addr))))
 /* cmpxchg */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
+unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
@@ -159,15 +159,15 @@ unsigned long _atomic_cmpxchg(void *addr, unsigned long old,
 }
 
 
-#define cmpxchg(addr, old, _new)					    \
-	((__typeof__(*(addr))) _atomic_cmpxchg((addr), (unsigned long)(old),\
+#define uatomic_cmpxchg(addr, old, _new)				    \
+	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
 						(unsigned long)(_new), 	    \
 						sizeof(*(addr))))
 
-/* atomic_add_return */
+/* uatomic_add_return */
 
 static inline __attribute__((always_inline))
-unsigned long _atomic_add_return(void *addr, unsigned long val,
+unsigned long _uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {
@@ -215,21 +215,21 @@ unsigned long _atomic_add_return(void *addr, unsigned long val,
 }
 
 
-#define atomic_add_return(addr, v)					\
-	((__typeof__(*(addr))) _atomic_add_return((addr),		\
+#define uatomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) _uatomic_add_return((addr),		\
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
-/* atomic_sub_return, atomic_add, atomic_sub, atomic_inc, atomic_dec */
+/* uatomic_sub_return, uatomic_add, uatomic_sub, uatomic_inc, uatomic_dec */
 
-#define atomic_sub_return(addr, v)	atomic_add_return((addr), -(v))
+#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
 
-#define atomic_add(addr, v)		(void)atomic_add_return((addr), (v))
-#define atomic_sub(addr, v)		(void)atomic_sub_return((addr), (v))
+#define uatomic_add(addr, v)		(void)uatomic_add_return((addr), (v))
+#define uatomic_sub(addr, v)		(void)uatomic_sub_return((addr), (v))
 
-#define atomic_inc(addr)		atomic_add((addr), 1)
-#define atomic_dec(addr)		atomic_add((addr), -1)
+#define uatomic_inc(addr)		uatomic_add((addr), 1)
+#define uatomic_dec(addr)		uatomic_add((addr), -1)
 
 #endif /* #ifndef _INCLUDE_API_H */
 
-#endif /* ARCH_ATOMIC_PPC_H */
+#endif /* _URCU_ARCH_UATOMIC_PPC_H */

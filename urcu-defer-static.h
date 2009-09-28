@@ -32,8 +32,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include <compiler.h>
-#include <arch.h>
+#include <urcu/compiler.h>
+#include <urcu/arch.h>
 
 
 /*
