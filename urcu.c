@@ -65,9 +65,6 @@ long urcu_gp_ctr = RCU_GP_COUNT;
  */
 struct urcu_reader __thread urcu_reader;
 
-/* Thread IDs of registered readers */
-#define INIT_NUM_THREADS 4
-
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
 unsigned int __thread rand_yield;
@@ -386,11 +383,12 @@ void *rcu_publish_content_sym(void **p, void *v)
 
 void rcu_register_thread(void)
 {
-	internal_urcu_lock();
-	urcu_init();	/* In case gcc does not support constructor attribute */
 	urcu_reader.tid = pthread_self();
 	assert(urcu_reader.need_mb == 0);
 	assert(urcu_reader.ctr == 0);
+
+	internal_urcu_lock();
+	urcu_init();	/* In case gcc does not support constructor attribute */
 	list_add(&urcu_reader.head, &registry);
 	internal_urcu_unlock();
 }
