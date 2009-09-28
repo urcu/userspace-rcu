@@ -67,10 +67,17 @@ list_add_tail (list_t *newp, list_t *head)
 
 /* Remove element from list.  */
 static inline void
+__list_del (list_t *prev, list_t *next)
+{
+  next->prev = prev;
+  prev->next = next;
+}
+
+/* Remove element from list.  */
+static inline void
 list_del (list_t *elem)
 {
-  elem->next->prev = elem->prev;
-  elem->prev->next = elem->next;
+  __list_del (elem->prev, elem->next);
 }
 
 

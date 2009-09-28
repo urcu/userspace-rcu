@@ -700,6 +700,8 @@ static void smp_init(void)
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 
+#if 0
+
 /*
  * Simple doubly linked list implementation.
  *
@@ -1223,6 +1225,8 @@ static inline void list_splice_tail_init(struct list_head *list,
 		n = list_entry(pos->member.prev, typeof(*pos), member);	\
 	     &pos->member != (head); 					\
 	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
+
+#endif //0
 
 /*
  * Double linked lists with a single pointer list head.
