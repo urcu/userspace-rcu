@@ -38,6 +38,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/list.h>
 
 /*
  * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
@@ -103,7 +104,7 @@
 
 /*
  * If a reader is really non-cooperative and refuses to commit its
- * rcu_reader_qs_gp count to memory (there is no barrier in the reader
+ * urcu_reader.ctr count to memory (there is no barrier in the reader
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
@@ -182,7 +183,13 @@ static inline void reader_barrier()
  */
 extern unsigned long urcu_gp_ctr;
 
-extern unsigned long __thread rcu_reader_qs_gp;
+struct urcu_reader {
+	unsigned long ctr;
+	struct list_head head;
+	pthread_t tid;
+};
+
+extern struct urcu_reader __thread urcu_reader;
 
 extern int gp_futex;
 
@@ -222,7 +229,7 @@ static inline int rcu_gp_ongoing(unsigned long *value)
 
 static inline void _rcu_read_lock(void)
 {
-	rcu_assert(rcu_reader_qs_gp);
+	rcu_assert(urcu_reader.ctr);
 }
 
 static inline void _rcu_read_unlock(void)
@@ -232,8 +239,8 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	smp_mb();	
-	_STORE_SHARED(rcu_reader_qs_gp, _LOAD_SHARED(urcu_gp_ctr));
-	smp_mb();	/* write rcu_reader_qs_gp before read futex */
+	_STORE_SHARED(urcu_reader.ctr, _LOAD_SHARED(urcu_gp_ctr));
+	smp_mb();	/* write urcu_reader.ctr before read futex */
 	wake_up_gp();
 	smp_mb();
 }
@@ -241,14 +248,14 @@ static inline void _rcu_quiescent_state(void)
 static inline void _rcu_thread_offline(void)
 {
 	smp_mb();
-	STORE_SHARED(rcu_reader_qs_gp, 0);
-	smp_mb();	/* write rcu_reader_qs_gp before read futex */
+	STORE_SHARED(urcu_reader.ctr, 0);
+	smp_mb();	/* write urcu_reader.ctr before read futex */
 	wake_up_gp();
 }
 
 static inline void _rcu_thread_online(void)
 {
-	_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
+	_STORE_SHARED(urcu_reader.ctr, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
 
