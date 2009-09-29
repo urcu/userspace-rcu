@@ -29,6 +29,8 @@
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
 
+#define CACHE_LINE_SIZE	128
+
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif

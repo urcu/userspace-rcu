@@ -71,7 +71,7 @@
  * Machine parameters.
  */
 
-#define CACHE_LINE_SIZE 64
+/* #define CACHE_LINE_SIZE 64 */
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 6)))
 

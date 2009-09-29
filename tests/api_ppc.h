@@ -73,7 +73,7 @@
 
 #define CONFIG_PPC64
 
-#define CACHE_LINE_SIZE 128
+/*#define CACHE_LINE_SIZE 128 */
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 7)))
 
@@ -665,7 +665,7 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
  */
 
 #ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE 128
+/* #define CACHE_LINE_SIZE 128 */
 #endif /* #ifndef CACHE_LINE_SIZE */
 
 /*
