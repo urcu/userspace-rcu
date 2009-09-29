@@ -36,8 +36,6 @@
 
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
-#ifndef _INCLUDE_API_H
-
 #define uatomic_set(addr, v)				\
 do {							\
 	ACCESS_ONCE(*(addr)) = (v);			\
@@ -229,7 +227,5 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 
 #define uatomic_inc(addr)		uatomic_add((addr), 1)
 #define uatomic_dec(addr)		uatomic_add((addr), -1)
-
-#endif /* #ifndef _INCLUDE_API_H */
 
 #endif /* _URCU_ARCH_UATOMIC_PPC_H */
