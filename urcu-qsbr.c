@@ -37,6 +37,8 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-qsbr.h"
 
+void __attribute__((destructor)) rcu_exit(void);
+
 static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int gp_futex;
@@ -332,4 +334,9 @@ void rcu_unregister_thread(void)
 	internal_urcu_lock();
 	list_del(&urcu_reader.head);
 	internal_urcu_unlock();
+}
+
+void rcu_exit(void)
+{
+	assert(list_empty(&registry));
 }
