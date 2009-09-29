@@ -23,7 +23,6 @@
  */
 
 #include <urcu/compiler.h>
-#include <urcu/arch_uatomic.h>
 
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY

@@ -23,7 +23,6 @@
  */
 
 #include <urcu/compiler.h>
-#include <urcu/arch_uatomic.h>
 
 /* Assume P4 or newer */
 #define CONFIG_HAVE_FENCE 1

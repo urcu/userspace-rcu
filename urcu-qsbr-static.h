@@ -38,6 +38,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/arch_uatomic.h>
 #include <urcu/list.h>
 
 /*
