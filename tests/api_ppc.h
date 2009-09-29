@@ -25,6 +25,8 @@
  * to redistribute under later versions of GPL might not be available.
  */
 
+#include <urcu/arch.h>
+
 #ifndef __always_inline
 #define __always_inline inline
 #endif

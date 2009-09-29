@@ -25,6 +25,8 @@
  * to redistribute under later versions of GPL might not be available.
  */
 
+#include <urcu/arch.h>
+
 #ifndef __always_inline
 #define __always_inline inline
 #endif
@@ -359,7 +361,7 @@ __asm__ __volatile__(LOCK_PREFIX "orl %0,%1" \
  */
 
 #ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE 128
+/* #define CACHE_LINE_SIZE 128 */
 #endif /* #ifndef CACHE_LINE_SIZE */
 
 /*
