@@ -34,6 +34,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/list.h>
 
 
 /*
@@ -120,6 +121,9 @@ struct defer_queue {
 	unsigned long tail;	/* next element to remove at tail */
 	void *last_fct_out;	/* last fct pointer encoded */
 	void **q;
+	/* registry information */
+	unsigned long last_head;
+	struct list_head list;	/* list of thread queues */
 };
 
 #endif /* _URCU_DEFER_STATIC_H */
