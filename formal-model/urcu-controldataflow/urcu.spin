@@ -164,38 +164,34 @@ typedef per_proc_bitfield {
 };
 
 #define DECLARE_CACHED_VAR(type, x)	\
-	type mem_##x;			\
-	per_proc_##type cached_##x;	\
-	per_proc_bitfield cache_dirty_##x;
+	type mem_##x;
 
-#define INIT_CACHED_VAR(x, v, j)	\
-	mem_##x = v;			\
-	cache_dirty_##x.bitfield = 0;	\
-	j = 0;				\
-	do				\
-	:: j < NR_PROCS ->		\
-		cached_##x.val[j] = v;	\
-		j++			\
-	:: j >= NR_PROCS -> break	\
-	od;
+#define DECLARE_PROC_CACHED_VAR(type, x)\
+	type cached_##x;		\
+	bit cache_dirty_##x;
 
-#define IS_CACHE_DIRTY(x, id)	(cache_dirty_##x.bitfield & (1 << id))
+#define INIT_CACHED_VAR(x, v)		\
+	mem_##x = v;
 
-#define READ_CACHED_VAR(x)	(cached_##x.val[get_pid()])
+#define INIT_PROC_CACHED_VAR(x, v)	\
+	cache_dirty_##x = 0;		\
+	cached_##x = v;
+
+#define IS_CACHE_DIRTY(x, id)	(cache_dirty_##x)
+
+#define READ_CACHED_VAR(x)	(cached_##x)
 
 #define WRITE_CACHED_VAR(x, v)				\
 	atomic {					\
-		cached_##x.val[get_pid()] = v;		\
-		cache_dirty_##x.bitfield =		\
-			cache_dirty_##x.bitfield | (1 << get_pid());	\
+		cached_##x = v;				\
+		cache_dirty_##x = 1;			\
 	}
 
 #define CACHE_WRITE_TO_MEM(x, id)			\
 	if						\
 	:: IS_CACHE_DIRTY(x, id) ->			\
-		mem_##x = cached_##x.val[id];		\
-		cache_dirty_##x.bitfield =		\
-			cache_dirty_##x.bitfield & (~(1 << id));	\
+		mem_##x = cached_##x;			\
+		cache_dirty_##x = 0;			\
 	:: else ->					\
 		skip					\
 	fi;
@@ -203,7 +199,7 @@ typedef per_proc_bitfield {
 #define CACHE_READ_FROM_MEM(x, id)	\
 	if				\
 	:: !IS_CACHE_DIRTY(x, id) ->	\
-		cached_##x.val[id] = mem_##x;\
+		cached_##x = mem_##x;	\
 	:: else ->			\
 		skip			\
 	fi;
@@ -857,6 +853,41 @@ active proctype urcu_reader()
 	byte i, j, nest_i;
 	byte tmp, tmp2;
 
+	/* Keep in sync manually with smp_rmb, smp_wmb, ooo_mem and init() */
+	DECLARE_PROC_CACHED_VAR(byte, urcu_gp_ctr);
+	/* Note ! currently only one reader */
+	DECLARE_PROC_CACHED_VAR(byte, urcu_active_readers[NR_READERS]);
+	/* RCU data */
+	DECLARE_PROC_CACHED_VAR(bit, rcu_data[SLAB_SIZE]);
+
+	/* RCU pointer */
+#if (SLAB_SIZE == 2)
+	DECLARE_PROC_CACHED_VAR(bit, rcu_ptr);
+#else
+	DECLARE_PROC_CACHED_VAR(byte, rcu_ptr);
+#endif
+
+	atomic {
+		INIT_PROC_CACHED_VAR(urcu_gp_ctr, 1);
+		INIT_PROC_CACHED_VAR(rcu_ptr, 0);
+
+		i = 0;
+		do
+		:: i < NR_READERS ->
+			INIT_PROC_CACHED_VAR(urcu_active_readers[i], 0);
+			i++;
+		:: i >= NR_READERS -> break
+		od;
+		INIT_PROC_CACHED_VAR(rcu_data[0], WINE);
+		i = 1;
+		do
+		:: i < SLAB_SIZE ->
+			INIT_PROC_CACHED_VAR(rcu_data[i], POISON);
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
+	}
+
 	wait_init_done();
 
 	assert(get_pid() < NR_PROCS);
@@ -945,6 +976,42 @@ active proctype urcu_writer()
 				 * we don't add non-existing dependencies on the global
 				 * GP update. Needed to test single flip case.
 				 */
+
+	/* Keep in sync manually with smp_rmb, smp_wmb, ooo_mem and init() */
+	DECLARE_PROC_CACHED_VAR(byte, urcu_gp_ctr);
+	/* Note ! currently only one reader */
+	DECLARE_PROC_CACHED_VAR(byte, urcu_active_readers[NR_READERS]);
+	/* RCU data */
+	DECLARE_PROC_CACHED_VAR(bit, rcu_data[SLAB_SIZE]);
+
+	/* RCU pointer */
+#if (SLAB_SIZE == 2)
+	DECLARE_PROC_CACHED_VAR(bit, rcu_ptr);
+#else
+	DECLARE_PROC_CACHED_VAR(byte, rcu_ptr);
+#endif
+
+	atomic {
+		INIT_PROC_CACHED_VAR(urcu_gp_ctr, 1);
+		INIT_PROC_CACHED_VAR(rcu_ptr, 0);
+
+		i = 0;
+		do
+		:: i < NR_READERS ->
+			INIT_PROC_CACHED_VAR(urcu_active_readers[i], 0);
+			i++;
+		:: i >= NR_READERS -> break
+		od;
+		INIT_PROC_CACHED_VAR(rcu_data[0], WINE);
+		i = 1;
+		do
+		:: i < SLAB_SIZE ->
+			INIT_PROC_CACHED_VAR(rcu_data[i], POISON);
+			i++
+		:: i >= SLAB_SIZE -> break
+		od;
+	}
+
 
 	wait_init_done();
 
@@ -1226,13 +1293,13 @@ init {
 	byte i, j;
 
 	atomic {
-		INIT_CACHED_VAR(urcu_gp_ctr, 1, j);
-		INIT_CACHED_VAR(rcu_ptr, 0, j);
+		INIT_CACHED_VAR(urcu_gp_ctr, 1);
+		INIT_CACHED_VAR(rcu_ptr, 0);
 
 		i = 0;
 		do
 		:: i < NR_READERS ->
-			INIT_CACHED_VAR(urcu_active_readers[i], 0, j);
+			INIT_CACHED_VAR(urcu_active_readers[i], 0);
 			ptr_read_first[i] = 1;
 			ptr_read_second[i] = 1;
 			data_read_first[i] = WINE;
@@ -1240,11 +1307,11 @@ init {
 			i++;
 		:: i >= NR_READERS -> break
 		od;
-		INIT_CACHED_VAR(rcu_data[0], WINE, j);
+		INIT_CACHED_VAR(rcu_data[0], WINE);
 		i = 1;
 		do
 		:: i < SLAB_SIZE ->
-			INIT_CACHED_VAR(rcu_data[i], POISON, j);
+			INIT_CACHED_VAR(rcu_data[i], POISON);
 			i++
 		:: i >= SLAB_SIZE -> break
 		od;
