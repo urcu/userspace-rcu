@@ -98,4 +98,9 @@ extern void synchronize_rcu(void);
 extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
 
+/*
+ * Explicit urcu initialization, for "early" use within library constructors.
+ */
+extern void urcu_init(void);
+
 #endif /* _URCU_H */
