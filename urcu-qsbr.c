@@ -97,39 +97,49 @@ static void internal_urcu_unlock(void)
 /*
  * synchronize_rcu() waiting. Single thread.
  */
-static void wait_gp(struct urcu_reader *index)
+static void wait_gp(void)
 {
-	uatomic_dec(&gp_futex);
-	smp_mb(); /* Write futex before read reader_gp */
-	if (!rcu_gp_ongoing(&index->ctr)) {
-		/* Read reader_gp before write futex */
-		smp_mb();
-		/* Callbacks are queued, don't wait. */
-		uatomic_set(&gp_futex, 0);
-	} else {
-		/* Read reader_gp before read futex */
-		smp_rmb();
-		if (uatomic_read(&gp_futex) == -1)
-			futex(&gp_futex, FUTEX_WAIT, -1,
-			      NULL, NULL, 0);
-	}
+	/* Read reader_gp before read futex */
+	smp_rmb();
+	if (uatomic_read(&gp_futex) == -1)
+		futex(&gp_futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
 }
 
 static void wait_for_quiescent_state(void)
 {
-	struct urcu_reader *index;
+	LIST_HEAD(qsreaders);
+	int wait_loops = 0;
+	struct urcu_reader *index, *tmp;
 
 	if (list_empty(&registry))
 		return;
 	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
-	list_for_each_entry(index, &registry, head) {
-		int wait_loops = 0;
+	for (;;) {
+		wait_loops++;
+		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			uatomic_dec(&gp_futex);
+			/* Write futex before read reader_gp */
+			smp_mb();
+		}
 
-		while (rcu_gp_ongoing(&index->ctr)) {
-			if (wait_loops++ == RCU_QS_ACTIVE_ATTEMPTS) {
-				wait_gp(index);
+		list_for_each_entry_safe(index, tmp, &registry, head) {
+			if (!rcu_gp_ongoing(&index->ctr))
+				list_move(&index->head, &qsreaders);
+		}
+
+		if (list_empty(&registry)) {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				/* Read reader_gp before write futex */
+				smp_mb();
+				uatomic_set(&gp_futex, 0);
+			}
+			break;
+		} else {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				wait_gp();
 			} else {
 #ifndef HAS_INCOHERENT_CACHES
 				cpu_relax();
@@ -139,6 +149,8 @@ static void wait_for_quiescent_state(void)
 			}
 		}
 	}
+	/* put back the reader list in the registry */
+	list_splice(&qsreaders, &registry);
 }
 
 /*
