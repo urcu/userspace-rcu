@@ -29,6 +29,9 @@ endif
 ifeq ("${HOSTTYPE}","ppc64")
 ARCHTYPE=ppc
 endif
+ifeq ("${HOSTTYPE}","ppc")
+ARCHTYPE=ppc
+endif
 ifeq ("${HOSTTYPE}","s390")
 ARCHTYPE=s390
 endif
