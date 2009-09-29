@@ -119,16 +119,19 @@ static void switch_next_urcu_qparity(void)
 }
 
 #ifdef URCU_MB
+#if 0 /* unused */
 static void force_mb_single_thread(struct urcu_reader *index)
 {
 	smp_mb();
 }
+#endif //0
 
 static void force_mb_all_threads(void)
 {
 	smp_mb();
 }
 #else /* #ifdef URCU_MB */
+#if 0 /* unused */
 static void force_mb_single_thread(struct urcu_reader *index)
 {
 	assert(!list_empty(&registry));
@@ -151,6 +154,7 @@ static void force_mb_single_thread(struct urcu_reader *index)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
+#endif //0
 
 static void force_mb_all_threads(void)
 {
@@ -199,26 +203,19 @@ static void force_mb_all_threads(void)
 /*
  * synchronize_rcu() waiting. Single thread.
  */
-static void wait_gp(struct urcu_reader *index)
+static void wait_gp(void)
 {
-	uatomic_dec(&gp_futex);
-	force_mb_single_thread(index); /* Write futex before read reader_gp */
-	if (!rcu_old_gp_ongoing(&index->ctr)) {
-		/* Read reader_gp before write futex */
-		force_mb_single_thread(index);
-		/* Callbacks are queued, don't wait. */
-		uatomic_set(&gp_futex, 0);
-	} else {
-		/* Read reader_gp before read futex */
-		force_mb_single_thread(index);
-		if (uatomic_read(&gp_futex) == -1)
-			futex(&gp_futex, FUTEX_WAIT, -1,
-			      NULL, NULL, 0);
-	}
+	/* Read reader_gp before read futex */
+	force_mb_all_threads();
+	if (uatomic_read(&gp_futex) == -1)
+		futex(&gp_futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
 }
 
 void wait_for_quiescent_state(void)
 {
+	LIST_HEAD(qsreaders);
+	int wait_loops = 0;
 	struct urcu_reader *index;
 
 	if (list_empty(&registry))
@@ -226,36 +223,62 @@ void wait_for_quiescent_state(void)
 	/*
 	 * Wait for each thread urcu_reader.ctr count to become 0.
 	 */
-	list_for_each_entry(index, &registry, head) {
-		int wait_loops = 0;
+	for (;;) {
+		wait_loops++;
+		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			uatomic_dec(&gp_futex);
+			/* Write futex before read reader_gp */
+			force_mb_all_threads();
+		}
+
+		list_for_each_entry(index, &registry, head) {
+			if (!rcu_old_gp_ongoing(&index->ctr))
+				list_move(&index->head, &qsreaders);
+		}
+
 #ifndef HAS_INCOHERENT_CACHES
-		while (rcu_old_gp_ongoing(&index->ctr)) {
-			if (wait_loops++ == RCU_QS_ACTIVE_ATTEMPTS) {
-				wait_gp(index);
-			} else {
-				cpu_relax();
+		if (list_empty(&registry)) {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				/* Read reader_gp before write futex */
+				force_mb_all_threads();
+				uatomic_set(&gp_futex, 0);
 			}
+			break;
+		} else {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
+				wait_gp();
+			else
+				cpu_relax();
 		}
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
 		 * urcu_reader.ctr update to memory if we wait for too long.
 		 */
-		while (rcu_old_gp_ongoing(&index->ctr)) {
-			switch (wait_loops++) {
+		if (list_empty(&registry)) {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				/* Read reader_gp before write futex */
+				force_mb_all_threads();
+				uatomic_set(&gp_futex, 0);
+			}
+			break;
+		} else {
+			switch (wait_loops) {
 			case RCU_QS_ACTIVE_ATTEMPTS:
-				wait_gp(index);
-				break;
+				wait_gp();
+				break; /* only escape switch */
 			case KICK_READER_LOOPS:
-				force_mb_single_thread(index);
+				force_mb_all_threads();
 				wait_loops = 0;
-				break;
+				break; /* only escape switch */
 			default:
 				cpu_relax();
 			}
 		}
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
+	/* put back the reader list in the registry */
+	list_move(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
