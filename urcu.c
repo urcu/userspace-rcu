@@ -216,7 +216,7 @@ void wait_for_quiescent_state(void)
 {
 	LIST_HEAD(qsreaders);
 	int wait_loops = 0;
-	struct urcu_reader *index;
+	struct urcu_reader *index, *tmp;
 
 	if (list_empty(&registry))
 		return;
@@ -231,7 +231,7 @@ void wait_for_quiescent_state(void)
 			force_mb_all_threads();
 		}
 
-		list_for_each_entry(index, &registry, head) {
+		list_for_each_entry_safe(index, tmp, &registry, head) {
 			if (!rcu_old_gp_ongoing(&index->ctr))
 				list_move(&index->head, &qsreaders);
 		}
@@ -278,7 +278,7 @@ void wait_for_quiescent_state(void)
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
 	/* put back the reader list in the registry */
-	list_move(&qsreaders, &registry);
+	list_splice(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
