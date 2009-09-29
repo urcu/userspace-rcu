@@ -220,10 +220,12 @@ static inline void reader_barrier()
 extern long urcu_gp_ctr;
 
 struct urcu_reader {
+	/* Data used by both reader and synchronize_rcu() */
 	long ctr;
-	struct list_head head;
-	pthread_t tid;
 	char need_mb;
+	/* Data used for registry */
+	struct list_head head __attribute__((aligned(CACHE_LINE_SIZE)));
+	pthread_t tid;
 };
 
 extern struct urcu_reader __thread urcu_reader;
