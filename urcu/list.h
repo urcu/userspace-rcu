@@ -80,6 +80,13 @@ list_del (list_t *elem)
   __list_del (elem->prev, elem->next);
 }
 
+/* delete from list, add to another list as head */
+static inline void
+list_move (list_t *elem, list_t *head)
+{
+  __list_del (elem->prev, elem->next);
+  list_add (elem, head);
+}
 
 /* Join two lists.  */
 static inline void
