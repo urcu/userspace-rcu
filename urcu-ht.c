@@ -134,10 +134,12 @@ restart:
 /*
  * Restart until we successfully remove the entry, or no entry is left
  * ((void *)(unsigned long)-ENOENT).
+ * Deal with concurrent stealers by verifying that there are no element
+ * in the list still pointing to the element stolen. (del_node)
  */
 void *ht_steal(struct rcu_ht *ht, void *key)
 {
-	struct rcu_ht_node **prev, *node;
+	struct rcu_ht_node **prev, *node, *del_node = NULL;
 	unsigned long hash;
 	void *data;
 
@@ -150,8 +152,12 @@ retry:
 	node = rcu_dereference(*prev);
 	for (;;) {
 		if (likely(!node)) {
-			data = (void *)(unsigned long)-ENOENT;
-			goto error;
+			if (del_node) {
+				goto end;
+			} else {
+				data = (void *)(unsigned long)-ENOENT;
+				goto error;
+			}
 		}
 		if (node->key == key) {
 			break;
@@ -161,9 +167,14 @@ retry:
 	}
 	/* Found it ! pointer to object is in "prev" */
 	if (rcu_cmpxchg_pointer(prev, node, node->next) != node)
-		goto restart;
+		del_node = node;
+	goto restart;
 
-	/* From that point, we own node. We can free it outside of read lock */
+end:
+	/*
+	 * From that point, we own node. Note that there can still be concurrent
+	 * RCU readers using it. We can free it outside of read lock after a GP.
+	 */
 	rcu_read_unlock();
 
 	data = node->data;
