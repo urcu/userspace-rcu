@@ -174,9 +174,14 @@ retry:
 		node = rcu_dereference(*prev);
 	}
 
-	/* Another concurrent thread stole it ? If so, let it deal with this. */
-	if (cmpxchg(&node->stolen, 0, 1) != 0)
-		goto error;
+	if (!del_node) {
+		/*
+		 * Another concurrent thread stole it ? If so, let it deal with
+		 * this.
+		 */
+		if (cmpxchg(&node->stolen, 0, 1) != 0)
+			goto error;
+	}
 
 	/* Found it ! pointer to object is in "prev" */
 	if (rcu_cmpxchg_pointer(prev, node, node->next) == node)
