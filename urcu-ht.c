@@ -372,6 +372,7 @@ static void ht_resize_grow(struct rcu_ht *ht)
 	new_size = old_size << 1;
 	new_t = calloc(1, sizeof(struct rcu_table)
 		       + (new_size * sizeof(struct rcu_ht_node *)));
+	new_t->size = new_size;
 
 	for (i = 0; i < old_size; i++) {
 		/*
@@ -387,14 +388,15 @@ static void ht_resize_grow(struct rcu_ht *ht)
 			new_node = malloc(sizeof(struct rcu_ht_node));
 			new_node->key = node->key;
 			new_node->data = node->data;
-			new_node->next = new_t->tbl[hash]; /* add to head */
-			new_t->tbl[hash] = new_node;
+			new_node->flags = node->flags;
+			new_node->next = new_t->tbl[hash]; /* link to first */
+			new_t->tbl[hash] = new_node;	   /* add to head */
 			node = node->next;
 		}
 	}
 
-	smp_wmb();	/* write links before changing table */
-	ht->t = new_t;	/* Changing table and size atomically wrt lookups */
+	/* Changing table and size atomically wrt lookups */
+	rcu_assign_pointer(ht->t, new_t);
 
 	/* Ensure all concurrent lookups use new size and table */
 	synchronize_rcu();
