@@ -269,7 +269,7 @@ uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval)
 	uint32_t ret;
 	void *vkey;
 
-	if (length <= sizeof(u32))
+	if (length <= sizeof(void *))
 		vkey = &key;
 	else
 		vkey = key;
