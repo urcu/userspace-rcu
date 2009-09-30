@@ -37,11 +37,15 @@ struct rcu_ht_node {
 	unsigned int flags;
 };
 
+struct rcu_table {
+	unsigned long size;
+	struct rcu_ht_node *tbl[0];
+};
+
 struct rcu_ht {
-	struct rcu_ht_node **tbl;
+	struct rcu_table *t;		/* shared */
 	ht_hash_fct hash_fct;
 	void (*free_fct)(void *data);	/* fct to free data */
-	unsigned long size;
 	uint32_t keylen;
 	uint32_t hashseed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
@@ -57,27 +61,30 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
 	ht->free_fct = free_fct;
-	ht->size = init_size;	/* shared */
 	ht->keylen = keylen;
 	ht->hashseed = hashseed;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->resize_ongoing = 0;	/* shared */
-	ht->tbl = calloc(init_size, sizeof(struct rcu_ht_node *));
+	ht->t = calloc(1, sizeof(struct rcu_table)
+		       + (init_size * sizeof(struct rcu_ht_node *)));
+	ht->t->size = init_size;
 	return ht;
 }
 
 void *ht_lookup(struct rcu_ht *ht, void *key)
 {
+	struct rcu_table *t;
 	unsigned long hash;
 	struct rcu_ht_node *node;
 	void *ret;
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size;
-	smp_read_barrier_depends();	/* read size before links */
-
 	rcu_read_lock();
-	node = rcu_dereference(ht->tbl[hash]);
+	t = rcu_dereference(ht->t);
+	smp_read_barrier_depends();	/* read t before size and table */
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
+	smp_read_barrier_depends();	/* read size before links */
+	node = rcu_dereference(t->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			ret = NULL;
@@ -102,6 +109,7 @@ void *ht_lookup(struct rcu_ht *ht, void *key)
 int ht_add(struct rcu_ht *ht, void *key, void *data)
 {
 	struct rcu_ht_node *node, *old_head, *new_head;
+	struct rcu_table *t;
 	unsigned long hash;
 	int ret = 0;
 
@@ -132,10 +140,11 @@ retry:
 		goto retry;
 	}
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed)
-		% LOAD_SHARED(ht->size);
+	t = rcu_dereference(ht->t);
+	/* no read barrier needed, because no concurrency with resize */
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
 
-	old_head = node = rcu_dereference(ht->tbl[hash]);
+	old_head = node = rcu_dereference(t->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			break;
@@ -147,7 +156,7 @@ retry:
 		node = rcu_dereference(node->next);
 	}
 	new_head->next = old_head;
-	if (rcu_cmpxchg_pointer(&ht->tbl[hash], old_head, new_head) != old_head)
+	if (rcu_cmpxchg_pointer(&t->tbl[hash], old_head, new_head) != old_head)
 		goto restart;
 end:
 	rcu_read_unlock();
@@ -174,6 +183,7 @@ restart:
 void *ht_steal(struct rcu_ht *ht, void *key)
 {
 	struct rcu_ht_node **prev, *node, *del_node = NULL;
+	struct rcu_table *t;
 	unsigned long hash;
 	void *data;
 	int ret;
@@ -193,10 +203,11 @@ retry:
 		goto retry;
 	}
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed)
-		% LOAD_SHARED(ht->size);
+	t = rcu_dereference(ht->t);
+	/* no read barrier needed, because no concurrency with resize */
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
 
-	prev = &ht->tbl[hash];
+	prev = &t->tbl[hash];
 	node = rcu_dereference(*prev);
 	for (;;) {
 		if (likely(!node)) {
@@ -269,6 +280,7 @@ int ht_delete_all(struct rcu_ht *ht)
 {
 	unsigned long i;
 	struct rcu_ht_node **prev, *node, *inext;
+	struct rcu_table *t;
 	int cnt = 0;
 	int ret;
 
@@ -279,9 +291,11 @@ int ht_delete_all(struct rcu_ht *ht)
 	ret = pthread_mutex_lock(&ht->resize_mutex);
 	assert(!ret);
 
-	for (i = 0; i < ht->size; i++) {
+	t = rcu_dereference(ht->t);
+	/* no read barrier needed, because no concurrency with resize */
+	for (i = 0; i < t->size; i++) {
 		rcu_read_lock();
-		prev = &ht->tbl[i];
+		prev = &t->tbl[i];
 		/*
 		 * Cut the head. After that, we own the first element.
 		 */
@@ -337,7 +351,7 @@ int ht_destroy(struct rcu_ht *ht)
 	int ret;
 
 	ret = ht_delete_all(ht);
-	free(ht->tbl);
+	free(ht->t);
 	free(ht);
 	return ret;
 }
@@ -345,18 +359,19 @@ int ht_destroy(struct rcu_ht *ht)
 static void ht_resize_grow(struct rcu_ht *ht)
 {
 	unsigned long i, new_size, old_size;
-	struct rcu_ht_node **new_tbl, **old_tbl;
+	struct rcu_table *new_t, *old_t;
 	struct rcu_ht_node *node, *new_node, *tmp;
 	unsigned long hash;
 
-	old_size = ht->size;
+	old_t = ht->t;
+	old_size = old_t->size;
 
 	if (old_size == MAX_HT_BUCKETS)
 		return;
 
-	old_tbl = ht->tbl;
 	new_size = old_size << 1;
-	new_tbl = calloc(new_size, sizeof(struct rcu_ht_node *));
+	new_t = calloc(1, sizeof(struct rcu_table)
+		       + (new_size * sizeof(struct rcu_ht_node *)));
 
 	for (i = 0; i < old_size; i++) {
 		/*
@@ -365,67 +380,68 @@ static void ht_resize_grow(struct rcu_ht *ht)
 		 * if it's in the table.
 		 * Copy each node. (just the node, not ->data)
 		 */
-		node = old_tbl[i];
+		node = old_t->tbl[i];
 		while (node) {
 			hash = ht->hash_fct(node->key, ht->keylen, ht->hashseed)
 					    % new_size;
 			new_node = malloc(sizeof(struct rcu_ht_node));
 			new_node->key = node->key;
 			new_node->data = node->data;
-			new_node->next = new_tbl[hash];	/* add to head */
-			new_tbl[hash] = new_node;
+			new_node->next = new_t->tbl[hash]; /* add to head */
+			new_t->tbl[hash] = new_node;
 			node = node->next;
 		}
 	}
 
-	ht->tbl = new_tbl;
-	smp_wmb();	/* write links and table before changing size */
-	STORE_SHARED(ht->size, new_size);
+	smp_wmb();	/* write links before changing table */
+	ht->t = new_t;	/* Changing table and size atomically wrt lookups */
 
 	/* Ensure all concurrent lookups use new size and table */
 	synchronize_rcu();
 
 	for (i = 0; i < old_size; i++) {
-		node = old_tbl[i];
+		node = old_t->tbl[i];
 		while (node) {
 			tmp = node->next;
 			free(node);
 			node = tmp;
 		}
 	}
-	free(old_tbl);
+	free(old_t);
 }
 
 static void ht_resize_shrink(struct rcu_ht *ht)
 {
 	unsigned long i, new_size;
-	struct rcu_ht_node **new_tbl;
+	struct rcu_table *new_t, *old_t;
 	struct rcu_ht_node **prev, *node;
 
-	if (ht->size == 1)
+	old_t = ht->t;
+	if (old_t->size == 1)
 		return;
 
-	new_size = ht->size >> 1;
+	new_size = old_t->size >> 1;
 
 	for (i = 0; i < new_size; i++) {
 		/* Link end with first entry of i + new_size */
-		prev = &ht->tbl[i];
+		prev = &old_t->tbl[i];
 		node = *prev;
 		while (node) {
 			prev = &node->next;
 			node = *prev;
 		}
-		*prev = ht->tbl[i + new_size];
+		*prev = old_t->tbl[i + new_size];
 	}
 	smp_wmb();	/* write links before changing size */
-	STORE_SHARED(ht->size, new_size);
+	STORE_SHARED(old_t->size, new_size);
 
 	/* Ensure all concurrent lookups use new size */
 	synchronize_rcu();
 
-	new_tbl = realloc(ht->tbl, new_size * sizeof(struct rcu_ht_node *));
+	new_t = realloc(old_t, sizeof(struct rcu_table)
+			  + (new_size * sizeof(struct rcu_ht_node *)));
 	/* shrinking, pointers should not move */
-	assert(new_tbl == ht->tbl);
+	assert(new_t == old_t);
 }
 
 /*
