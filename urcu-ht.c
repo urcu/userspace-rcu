@@ -1,4 +1,8 @@
 
+/*
+ * TODO: keys are currently assumed <= sizeof(void *). Key target never freed.
+ */
+
 #define _LGPL_SOURCE
 #include <stdlib.h>
 #include <urcu.h>
@@ -10,6 +14,7 @@
 #include <errno.h>
 #include <urcu-ht.h>
 #include <urcu/jhash.h>
+#include <stdio.h>
 
 struct rcu_ht_node;
 
@@ -23,6 +28,8 @@ struct rcu_ht {
 	struct rcu_ht_node **tbl;
 	ht_hash_fct hash_fct;
 	void (*free_fct)(void *data);	/* fct to free data */
+	uint32_t keylen;
+	uint32_t hashseed;
 	struct ht_size {
 		unsigned long add;
 		unsigned long lookup;
@@ -30,7 +37,8 @@ struct rcu_ht {
 };
 
 struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
-		      unsigned long init_size)
+		      unsigned long init_size, uint32_t keylen,
+		      uint32_t hashseed)
 {
 	struct rcu_ht *ht;
 
@@ -39,6 +47,8 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
 	ht->free_fct = free_fct;
 	ht->size.add = init_size;
 	ht->size.lookup = init_size;
+	ht->keylen = keylen;
+	ht->hashseed = hashseed;
 	ht->tbl = calloc(init_size, sizeof(struct rcu_ht_node *));
 	return ht;
 }
@@ -49,10 +59,10 @@ void *ht_lookup(struct rcu_ht *ht, void *key)
 	struct rcu_ht_node *node;
 	void *ret;
 
-	hash = ht->hash_fct(key) % ht->size.lookup;
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.lookup;
 
 	rcu_read_lock();
-	node = rcu_dereference(*ht->tbl[hash]);
+	node = rcu_dereference(ht->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			ret = NULL;
@@ -83,8 +93,6 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 	new_head = calloc(1, sizeof(struct rcu_ht_node));
 	new_head->key = key;
 	new_head->data = data;
-	hash = ht->hash_fct(key) % ht->size.add;
-
 	/* here comes the fun and tricky part.
 	 * Add at the beginning with a cmpxchg.
 	 * Hold a read lock between the moment the first element is read
@@ -96,7 +104,9 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 retry:
 	rcu_read_lock();
 
-	old_head = node = rcu_dereference(*ht->tbl[hash]);
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.add;
+
+	old_head = node = rcu_dereference(ht->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			break;
@@ -107,7 +117,8 @@ retry:
 		}
 		node = rcu_dereference(node->next);
 	}
-	if (rcu_cmpxchg_pointer(ht->tbl[hash], old_head, new_head) != old_head)
+	new_head->next = old_head;
+	if (rcu_cmpxchg_pointer(&ht->tbl[hash], old_head, new_head) != old_head)
 		goto restart;
 end:
 	rcu_read_unlock();
@@ -130,17 +141,17 @@ void *ht_steal(struct rcu_ht *ht, void *key)
 	unsigned long hash;
 	void *data;
 
-	hash = ht->hash_fct(key) % ht->size.lookup;
-
 retry:
 	rcu_read_lock();
 
-	prev = ht->tbl[hash];
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.lookup;
+
+	prev = &ht->tbl[hash];
 	node = rcu_dereference(*prev);
 	for (;;) {
 		if (likely(!node)) {
 			data = (void *)(unsigned long)-ENOENT;
-			goto end;
+			goto error;
 		}
 		if (node->key == key) {
 			break;
@@ -151,12 +162,16 @@ retry:
 	/* Found it ! pointer to object is in "prev" */
 	if (rcu_cmpxchg_pointer(prev, node, node->next) != node)
 		goto restart;
-end:
+
+	/* From that point, we own node. We can free it outside of read lock */
 	rcu_read_unlock();
 
 	data = node->data;
 	call_rcu(free, node);
+	return data;
 
+error:
+	rcu_read_unlock();
 	return data;
 
 	/* restart loop, release and re-take the read lock to be kind to GP */
@@ -170,8 +185,8 @@ int ht_delete(struct rcu_ht *ht, void *key)
 	void *data;
 
 	data = ht_steal(ht, key);
-	if (data) {
-		if (ht->free_fct && data)
+	if (data && data != (void *)(unsigned long)-ENOENT) {
+		if (ht->free_fct)
 			call_rcu(ht->free_fct, data);
 		return 0;
 	} else {
@@ -180,21 +195,20 @@ int ht_delete(struct rcu_ht *ht, void *key)
 }
 
 /* Delete all old elements. Allow concurrent writer accesses. */
-void ht_delete_all(struct rcu_ht *ht)
+int ht_delete_all(struct rcu_ht *ht)
 {
 	unsigned long i;
 	struct rcu_ht_node **prev, *node, *inext;
+	int cnt = 0;
 
 	for (i = 0; i < ht->size.lookup; i++) {
 		rcu_read_lock();
-cut_head:
-		prev = ht->tbl[i];
-		if (prev) {
-			/*
-			 * Cut the head. After that, we own the first element.
-			 */
-			node = rcu_xchg_pointer(prev, NULL);
-		} else {
+		prev = &ht->tbl[i];
+		/*
+		 * Cut the head. After that, we own the first element.
+		 */
+		node = rcu_xchg_pointer(prev, NULL);
+		if (!node) {
 			rcu_read_unlock();
 			continue;
 		}
@@ -206,8 +220,10 @@ cut_head:
 		 * iteratively.
 		 */
 		for (;;) {
+			inext = NULL;
 			prev = &node->next;
-			inext = rcu_xchg_pointer(prev, NULL);
+			if (prev)
+				inext = rcu_xchg_pointer(prev, NULL);
 			/*
 			 * "node" is the first element of the list we have cut.
 			 * We therefore own it, no concurrent writer may delete
@@ -221,26 +237,42 @@ cut_head:
 			if (node->data)
 				call_rcu(ht->free_fct, node->data);
 			call_rcu(free, node);
+			cnt++;
 			if (likely(!inext))
 				break;
 			rcu_read_lock();
 			node = inext;
 		}
 	}
+	return cnt;
 }
 
 /*
  * Should only be called when no more concurrent readers nor writers can
  * possibly access the table.
  */
-void ht_destroy(struct rcu_ht *ht)
+int ht_destroy(struct rcu_ht *ht)
 {
-	ht_delete_all(ht);
+	int ret;
+
+	ret = ht_delete_all(ht);
 	free(ht->tbl);
 	free(ht);
+	return ret;
 }
 
+/*
+ * Expects keys <= than pointer size to be encoded in the pointer itself.
+ */
 uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval)
 {
-	return jhash(key, length, initval);
+	uint32_t ret;
+	void *vkey;
+
+	if (length <= sizeof(u32))
+		vkey = &key;
+	else
+		vkey = key;
+	ret = jhash(vkey, length, initval);
+	return ret;
 }
