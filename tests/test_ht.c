@@ -249,6 +249,7 @@ void *thr_writer(void *_count)
 	for (;;) {
 		if (rand_r(&rand_lookup) & 1) {
 			data = malloc(sizeof(struct test_data));
+			//rcu_copy_mutex_lock();
 			ret = ht_add(test_ht,
 			    (void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
 			    data);
@@ -258,14 +259,25 @@ void *thr_writer(void *_count)
 			} else {
 				nr_add++;
 			}
+			//rcu_copy_mutex_unlock();
 		} else {
 			/* May delete */
+			//rcu_copy_mutex_lock();
 			ret = ht_delete(test_ht,
 			   (void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL));
 			if (ret == -ENOENT)
 				nr_delnoent++;
 			else
 				nr_del++;
+			//rcu_copy_mutex_unlock();
+		}
+		//if (nr_writes % 100000 == 0) {
+		if (nr_writes % 1000 == 0) {
+			if (rand_r(&rand_lookup) & 1) {
+				ht_resize(test_ht, 1);
+			} else {
+				ht_resize(test_ht, -1);
+			}
 		}
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
