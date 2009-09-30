@@ -177,8 +177,8 @@ end:
 	 */
 	rcu_read_unlock();
 
-	data = node->data;
-	call_rcu(free, node);
+	data = del_node->data;
+	call_rcu(free, del_node);
 	return data;
 
 error:
