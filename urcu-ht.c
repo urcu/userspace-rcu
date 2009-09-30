@@ -17,13 +17,16 @@
 #include <urcu/jhash.h>
 #include <urcu-ht.h>
 
+/* node flags */
+#define	NODE_STOLEN	(1 << 0)
+
 struct rcu_ht_node;
 
 struct rcu_ht_node {
 	struct rcu_ht_node *next;
 	void *key;
 	void *data;
-	int stolen;
+	unsigned int flags;
 };
 
 struct rcu_ht {
@@ -95,7 +98,7 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 	new_head = calloc(1, sizeof(struct rcu_ht_node));
 	new_head->key = key;
 	new_head->data = data;
-	new_head->stolen = 0;
+	new_head->flags = 0;
 	/* here comes the fun and tricky part.
 	 * Add at the beginning with a cmpxchg.
 	 * Hold a read lock between the moment the first element is read
@@ -177,9 +180,10 @@ retry:
 	if (!del_node) {
 		/*
 		 * Another concurrent thread stole it ? If so, let it deal with
-		 * this.
+		 * this. Assume NODE_STOLEN is the only flag. If this changes,
+		 * read flags before cmpxchg.
 		 */
-		if (cmpxchg(&node->stolen, 0, 1) != 0)
+		if (cmpxchg(&node->flags, 0, NODE_STOLEN) != 0)
 			goto error;
 	}
 
