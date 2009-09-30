@@ -5,17 +5,22 @@
 
 #define _LGPL_SOURCE
 #include <stdlib.h>
+#include <errno.h>
+#include <assert.h>
+#include <stdio.h>
+
 #include <urcu.h>
+#include <urcu-defer.h>
 #include <arch.h>
 #include <arch_atomic.h>
-#include <assert.h>
 #include <compiler.h>
-#include <urcu-defer.h>
-#include <errno.h>
-#include <urcu-ht.h>
 #include <urcu/jhash.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <urcu-ht.h>
+
+/* node flags */
+#define	NODE_STOLEN	(1 << 0)
 
 struct rcu_ht_node;
 
@@ -23,6 +28,7 @@ struct rcu_ht_node {
 	struct rcu_ht_node *next;
 	void *key;
 	void *data;
+	unsigned int flags;
 };
 
 struct rcu_ht {
@@ -96,6 +102,7 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 	new_head = calloc(1, sizeof(struct rcu_ht_node));
 	new_head->key = key;
 	new_head->data = data;
+	new_head->flags = 0;
 	/* here comes the fun and tricky part.
 	 * Add at the beginning with a cmpxchg.
 	 * Hold a read lock between the moment the first element is read
@@ -148,8 +155,14 @@ restart:
 /*
  * Restart until we successfully remove the entry, or no entry is left
  * ((void *)(unsigned long)-ENOENT).
- * Deal with concurrent stealers by verifying that there are no element
- * in the list still pointing to the element stolen. (del_node)
+ * Deal with concurrent stealers by doing an extra verification pass to check
+ * that no element in the list are still pointing to the element stolen.
+ * This could happen if two concurrent steal for consecutive objects are
+ * executed. A pointer to an object being stolen could be saved by the
+ * concurrent stealer for the previous object.
+ * Also, given that in this precise scenario, another stealer can also want to
+ * delete the doubly-referenced object; use a "stolen" flag to let only one
+ * stealer delete the object.
  */
 void *ht_steal(struct rcu_ht *ht, void *key)
 {
@@ -182,7 +195,6 @@ retry:
 			if (del_node) {
 				goto end;
 			} else {
-				data = (void *)(unsigned long)-ENOENT;
 				goto error;
 			}
 		}
@@ -192,8 +204,19 @@ retry:
 		prev = &node->next;
 		node = rcu_dereference(*prev);
 	}
+
+	if (!del_node) {
+		/*
+		 * Another concurrent thread stole it ? If so, let it deal with
+		 * this. Assume NODE_STOLEN is the only flag. If this changes,
+		 * read flags before cmpxchg.
+		 */
+		if (cmpxchg(&node->flags, 0, NODE_STOLEN) != 0)
+			goto error;
+	}
+
 	/* Found it ! pointer to object is in "prev" */
-	if (rcu_cmpxchg_pointer(prev, node, node->next) != node)
+	if (rcu_cmpxchg_pointer(prev, node, node->next) == node)
 		del_node = node;
 	goto restart;
 
@@ -204,11 +227,12 @@ end:
 	 */
 	rcu_read_unlock();
 
-	data = node->data;
-	call_rcu(free, node);
+	data = del_node->data;
+	call_rcu(free, del_node);
 	return data;
 
 error:
+	data = (void *)(unsigned long)-ENOENT;
 	rcu_read_unlock();
 	return data;
 
