@@ -9,6 +9,7 @@
 #include <urcu-defer.h>
 #include <errno.h>
 #include <urcu-ht.h>
+#include <urcu/jhash.h>
 
 struct rcu_ht_node;
 
@@ -19,64 +20,27 @@ struct rcu_ht_node {
 };
 
 struct rcu_ht {
-	struct rcu_ht_node *tbl[HASH_SIZE];
+	struct rcu_ht_node **tbl;
 	ht_hash_fct hash_fct;
 	void (*free_fct)(void *data);	/* fct to free data */
+	struct ht_size {
+		unsigned long add;
+		unsigned long lookup;
+	} size;
 };
 
-struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data))
+struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
+		      unsigned long init_size)
 {
 	struct rcu_ht *ht;
 
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
 	ht->free_fct = free_fct;
+	ht->size.add = init_size;
+	ht->size.lookup = init_size;
+	ht->tbl = calloc(init_size, sizeof(struct rcu_ht_node *));
 	return ht;
-}
-
-/* delete all elements */
-void ht_delete_all(struct rcu_ht *ht)
-{
-	unsigned long i;
-	struct rcu_ht_node **prev, *node;
-
-	for (i = 0; i < HASH_SIZE; i++) {
-		rcu_read_lock();
-
-		prev = &ht->tbl[i];
-		node = rcu_dereference(*prev);
-		/*
-		 * Cut the head, therefore whole bucket will be unused
-		 * after GP. (except for concurrent additions)
-		 */
-		rcu_assign_pointer(prev, NULL);
-		for (;;) {
-			if (likely(!node)) {
-				break;
-			}
-			prev = &node->next;
-			/*
-			 * FIXME: calling call_rcu within a read-side C.S. is a
-			 * bug, because it may call synchronize_rcu() if the
-			 * callback queue is full.
-			 */
-			if (node->data)
-				call_rcu(ht->free_fct, node->data);
-			call_rcu(free, node);
-			node = rcu_dereference(*prev);
-		}
-		rcu_read_unlock();
-	}
-}
-
-/*
- * Should only be called when no more concurrent readers nor writers can
- * possibly access the table.
- */
-void ht_destroy(struct rcu_ht *ht)
-{
-	ht_delete_all(ht);
-	free(ht);
 }
 
 void *ht_lookup(struct rcu_ht *ht, void *key)
@@ -85,10 +49,10 @@ void *ht_lookup(struct rcu_ht *ht, void *key)
 	struct rcu_ht_node *node;
 	void *ret;
 
-	hash = ht->hash_fct(key);
+	hash = ht->hash_fct(key) % ht->size.lookup;
 
 	rcu_read_lock();
-	node = rcu_dereference(ht->tbl[hash]);
+	node = rcu_dereference(*ht->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			ret = NULL;
@@ -119,7 +83,7 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 	new_head = calloc(1, sizeof(struct rcu_ht_node));
 	new_head->key = key;
 	new_head->data = data;
-	hash = ht->hash_fct(key);
+	hash = ht->hash_fct(key) % ht->size.add;
 
 	/* here comes the fun and tricky part.
 	 * Add at the beginning with a cmpxchg.
@@ -132,7 +96,7 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 retry:
 	rcu_read_lock();
 
-	old_head = node = rcu_dereference(ht->tbl[hash]);
+	old_head = node = rcu_dereference(*ht->tbl[hash]);
 	for (;;) {
 		if (likely(!node)) {
 			break;
@@ -143,7 +107,7 @@ retry:
 		}
 		node = rcu_dereference(node->next);
 	}
-	if (rcu_cmpxchg_pointer(&ht->tbl[hash], old_head, new_head) != old_head)
+	if (rcu_cmpxchg_pointer(ht->tbl[hash], old_head, new_head) != old_head)
 		goto restart;
 end:
 	rcu_read_unlock();
@@ -166,12 +130,12 @@ void *ht_steal(struct rcu_ht *ht, void *key)
 	unsigned long hash;
 	void *data;
 
-	hash = ht->hash_fct(key);
+	hash = ht->hash_fct(key) % ht->size.lookup;
 
 retry:
 	rcu_read_lock();
 
-	prev = &ht->tbl[hash];
+	prev = ht->tbl[hash];
 	node = rcu_dereference(*prev);
 	for (;;) {
 		if (likely(!node)) {
@@ -215,7 +179,68 @@ int ht_delete(struct rcu_ht *ht, void *key)
 	}
 }
 
-unsigned long stupid_hash(void *key)
+/* Delete all old elements. Allow concurrent writer accesses. */
+void ht_delete_all(struct rcu_ht *ht)
 {
-	return (unsigned long)key % HASH_SIZE;
+	unsigned long i;
+	struct rcu_ht_node **prev, *node, *inext;
+
+	for (i = 0; i < ht->size.lookup; i++) {
+		rcu_read_lock();
+cut_head:
+		prev = ht->tbl[i];
+		if (prev) {
+			/*
+			 * Cut the head. After that, we own the first element.
+			 */
+			node = rcu_xchg_pointer(prev, NULL);
+		} else {
+			rcu_read_unlock();
+			continue;
+		}
+		/*
+		 * We manage a list shared with concurrent writers and readers.
+		 * Note that a concurrent add may or may not be deleted by us,
+		 * depending if it arrives before or after the head is cut.
+		 * "node" points to our first node. Remove first elements
+		 * iteratively.
+		 */
+		for (;;) {
+			prev = &node->next;
+			inext = rcu_xchg_pointer(prev, NULL);
+			/*
+			 * "node" is the first element of the list we have cut.
+			 * We therefore own it, no concurrent writer may delete
+			 * it. There can only be concurrent lookups. Concurrent
+			 * add can only be done on a bucket head, but we've cut
+			 * it already. inext is also owned by us, because we
+			 * have exchanged it for "NULL". It will therefore be
+			 * safe to use it after a G.P.
+			 */
+			rcu_read_unlock();
+			if (node->data)
+				call_rcu(ht->free_fct, node->data);
+			call_rcu(free, node);
+			if (likely(!inext))
+				break;
+			rcu_read_lock();
+			node = inext;
+		}
+	}
+}
+
+/*
+ * Should only be called when no more concurrent readers nor writers can
+ * possibly access the table.
+ */
+void ht_destroy(struct rcu_ht *ht)
+{
+	ht_delete_all(ht);
+	free(ht->tbl);
+	free(ht);
+}
+
+uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval)
+{
+	return jhash(key, length, initval);
 }
