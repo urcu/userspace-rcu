@@ -15,6 +15,7 @@
 #include <urcu-ht.h>
 #include <urcu/jhash.h>
 #include <stdio.h>
+#include <pthread.h>
 
 struct rcu_ht_node;
 
@@ -28,12 +29,11 @@ struct rcu_ht {
 	struct rcu_ht_node **tbl;
 	ht_hash_fct hash_fct;
 	void (*free_fct)(void *data);	/* fct to free data */
+	unsigned long size;
 	uint32_t keylen;
 	uint32_t hashseed;
-	struct ht_size {
-		unsigned long add;
-		unsigned long lookup;
-	} size;
+	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
+	int resize_ongoing;		/* fast-path resize check */
 };
 
 struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
@@ -45,10 +45,12 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
 	ht->free_fct = free_fct;
-	ht->size.add = init_size;
-	ht->size.lookup = init_size;
+	ht->size = init_size;
 	ht->keylen = keylen;
 	ht->hashseed = hashseed;
+	/* this mutex should not nest in read-side C.S. */
+	pthread_mutex_init(&ht->resize_mutex, NULL);
+	ht->resize_ongoing = 0;
 	ht->tbl = calloc(init_size, sizeof(struct rcu_ht_node *));
 	return ht;
 }
@@ -59,7 +61,8 @@ void *ht_lookup(struct rcu_ht *ht, void *key)
 	struct rcu_ht_node *node;
 	void *ret;
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.lookup;
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size;
+	smp_read_barrier_depends();	/* read size before links */
 
 	rcu_read_lock();
 	node = rcu_dereference(ht->tbl[hash]);
@@ -104,7 +107,19 @@ int ht_add(struct rcu_ht *ht, void *key, void *data)
 retry:
 	rcu_read_lock();
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.add;
+	if (unlikely(ht->resize_ongoing)) {
+		rcu_read_unlock();
+		/*
+		 * Wait for resize to complete before continuing.
+		 */
+		ret = pthread_mutex_lock(&ht->resize_mutex);
+		assert(!ret);
+		ret = pthread_mutex_unlock(&ht->resize_mutex);
+		assert(!ret);
+		goto retry;
+	}
+
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size;
 
 	old_head = node = rcu_dereference(ht->tbl[hash]);
 	for (;;) {
@@ -122,7 +137,6 @@ retry:
 		goto restart;
 end:
 	rcu_read_unlock();
-
 	return ret;
 
 	/* restart loop, release and re-take the read lock to be kind to GP */
@@ -142,11 +156,24 @@ void *ht_steal(struct rcu_ht *ht, void *key)
 	struct rcu_ht_node **prev, *node, *del_node = NULL;
 	unsigned long hash;
 	void *data;
+	int ret;
 
 retry:
 	rcu_read_lock();
 
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size.lookup;
+	if (unlikely(ht->resize_ongoing)) {
+		rcu_read_unlock();
+		/*
+		 * Wait for resize to complete before continuing.
+		 */
+		ret = pthread_mutex_lock(&ht->resize_mutex);
+		assert(!ret);
+		ret = pthread_mutex_unlock(&ht->resize_mutex);
+		assert(!ret);
+		goto retry;
+	}
+
+	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % ht->size;
 
 	prev = &ht->tbl[hash];
 	node = rcu_dereference(*prev);
@@ -211,8 +238,16 @@ int ht_delete_all(struct rcu_ht *ht)
 	unsigned long i;
 	struct rcu_ht_node **prev, *node, *inext;
 	int cnt = 0;
+	int ret;
 
-	for (i = 0; i < ht->size.lookup; i++) {
+	/*
+	 * Mutual exclusion with resize operations, but leave add/steal execute
+	 * concurrently. This is OK because we operate only on the heads.
+	 */
+	ret = pthread_mutex_lock(&ht->resize_mutex);
+	assert(!ret);
+
+	for (i = 0; i < ht->size; i++) {
 		rcu_read_lock();
 		prev = &ht->tbl[i];
 		/*
@@ -255,6 +290,9 @@ int ht_delete_all(struct rcu_ht *ht)
 			node = inext;
 		}
 	}
+
+	ret = pthread_mutex_unlock(&ht->resize_mutex);
+	assert(!ret);
 	return cnt;
 }
 
@@ -270,6 +308,114 @@ int ht_destroy(struct rcu_ht *ht)
 	free(ht->tbl);
 	free(ht);
 	return ret;
+}
+
+static void ht_resize_grow(struct rcu_ht *ht)
+{
+	unsigned long i, new_size, old_size;
+	struct rcu_ht_node **new_tbl, **old_tbl;
+	struct rcu_ht_node *node, *new_node, *tmp;
+	unsigned long hash;
+
+	old_size = ht->size;
+
+	if (old_size == 1)
+		return;
+
+	new_size = old_size << 1;
+	new_tbl = calloc(new_size, sizeof(struct rcu_ht_node *));
+
+	for (i = 0; i < old_size; i++) {
+		/*
+		 * Re-hash each entry, insert in new table.
+		 * It's important that a reader looking for a key _will_ find it
+		 * if it's in the table.
+		 * Copy each node. (just the node, not ->data)
+		 */
+		node = ht->tbl[i];
+		while (node) {
+			hash = ht->hash_fct(node->key, ht->keylen, ht->hashseed)
+					    % new_size;
+			new_node = malloc(sizeof(struct rcu_ht_node));
+			new_node->key = node->key;
+			new_node->data = node->data;
+			new_node->next = new_tbl[i];	/* add to head */
+			new_tbl[i] = new_node;
+			node = node->next;
+		}
+	}
+
+	old_tbl = ht->tbl;
+	ht->tbl = new_tbl;
+	smp_wmb();	/* write links and table before changing size */
+	ht->size = new_size;
+
+	/* Ensure all concurrent lookups use new size and table */
+	synchronize_rcu();
+
+	for (i = 0; i < old_size; i++) {
+		node = old_tbl[i];
+		while (node) {
+			tmp = node->next;
+			free(node);
+			node = tmp;
+		}
+	}
+	free(old_tbl);
+}
+
+static void ht_resize_shrink(struct rcu_ht *ht)
+{
+	unsigned long i, new_size;
+	struct rcu_ht_node **new_tbl;
+	struct rcu_ht_node **prev, *node;
+
+	if (ht->size == 1)
+		return;
+
+	new_size = ht->size >> 1;
+
+	for (i = 0; i < new_size; i++) {
+		/* Link end with first entry of 2*i */
+		prev = &ht->tbl[i];
+		node = *prev;
+		while (node) {
+			prev = &node->next;
+			node = *prev;
+		}
+		*prev = ht->tbl[i << 1];
+	}
+	smp_wmb();	/* write links before changing size */
+	ht->size = new_size;
+
+	/* Ensure all concurrent lookups use new size */
+	synchronize_rcu();
+
+	new_tbl = realloc(ht->tbl, new_size * sizeof(struct rcu_ht_node *));
+	/* shrinking, pointers should not move */
+	assert(new_tbl == ht->tbl);
+}
+
+/*
+ * growth: >0: *2, <0: /2
+ */
+void ht_resize(struct rcu_ht *ht, int growth)
+{
+	int ret;
+
+	ret = pthread_mutex_lock(&ht->resize_mutex);
+	assert(!ret);
+	ht->resize_ongoing = 1;
+	synchronize_rcu();
+	/* All add/remove are waiting on the mutex. */
+	if (growth > 0)
+		ht_resize_grow(ht);
+	else if (growth < 0)
+		ht_resize_shrink(ht);
+	smp_mb();
+	ht->resize_ongoing = 0;
+	ret = pthread_mutex_unlock(&ht->resize_mutex);
+	assert(!ret);
 }
 
 /*

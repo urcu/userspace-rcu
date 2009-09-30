@@ -31,6 +31,8 @@ int ht_delete(struct rcu_ht *ht, void *key);
 
 void *ht_steal(struct rcu_ht *ht, void *key);
 
+void ht_resize(struct rcu_ht *ht, int growth);
+
 uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval);
 
 #endif /* _URCU_HT_H */
