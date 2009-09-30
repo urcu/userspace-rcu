@@ -166,7 +166,7 @@ retry:
 		node = rcu_dereference(*prev);
 	}
 	/* Found it ! pointer to object is in "prev" */
-	if (rcu_cmpxchg_pointer(prev, node, node->next) != node)
+	if (rcu_cmpxchg_pointer(prev, node, node->next) == node)
 		del_node = node;
 	goto restart;
 
