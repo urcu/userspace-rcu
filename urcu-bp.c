@@ -23,6 +23,7 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -265,10 +266,16 @@ static void resize_arena(struct registry_arena *arena, size_t len)
 {
 	void *new_arena;
 
-	new_arena = mmap(arena->p, len,
-			 PROT_READ | PROT_WRITE,
-			 MAP_ANONYMOUS | MAP_PRIVATE,
-			 -1, 0);
+	if (!arena->p)
+		new_arena = mmap(arena->p, len,
+				 PROT_READ | PROT_WRITE,
+				 MAP_ANONYMOUS | MAP_PRIVATE,
+				 -1, 0);
+	else
+		new_arena = mremap(arena->p, arena->len,
+				   len, MREMAP_MAYMOVE);
+	assert(new_arena != MAP_FAILED);
+
 	/*
 	 * re-used the same region ?
 	 */
