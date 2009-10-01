@@ -11,11 +11,11 @@ LIBDIR=..
 
 CFLAGS+=-I${LIBDIR}
 
-URCU_SIGNAL=${LIBDIR}/urcu.o ${LIBDIR}/urcu.h
-URCU_SIGNAL_YIELD=${LIBDIR}/urcu-yield.o ${LIBDIR}/urcu.h
-URCU_MB=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu.h
-URCU_QSBR=${LIBDIR}/urcu-qsbr.o ${LIBDIR}/urcu-qsbr.h
-URCU_MB_DEFER=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-defer.o ${LIBDIR}/urcu.h
+URCU_SIGNAL=${LIBDIR}/urcu.o ${LIBDIR}/urcu-pointer.o ${LIBDIR}/urcu.h
+URCU_SIGNAL_YIELD=${LIBDIR}/urcu-yield.o ${LIBDIR}/urcu-pointer.o ${LIBDIR}/urcu.h
+URCU_MB=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-pointer.o ${LIBDIR}/urcu.h
+URCU_QSBR=${LIBDIR}/urcu-qsbr.o ${LIBDIR}/urcu-pointer.o ${LIBDIR}/urcu-qsbr.h
+URCU_MB_DEFER=${LIBDIR}/urcu-mb.o ${LIBDIR}/urcu-defer.o ${LIBDIR}/urcu-pointer.o ${LIBDIR}/urcu.h
 
 all: test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_rwlock_timing test_rwlock test_perthreadlock_timing \

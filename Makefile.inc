@@ -26,6 +26,9 @@ urcu.h: urcu/arch.h urcu/arch_uatomic.h
 
 urcu-qsbr.h: urcu/arch.h urcu/arch_uatomic.h
 
+urcu-pointer.o: urcu-pointer.c urcu-pointer.h urcu-pointer-static.h
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
+
 urcu.o: urcu.c urcu.h
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
@@ -38,13 +41,13 @@ urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 urcu-defer.o: urcu-defer.c urcu-defer.h
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
-liburcu.so: urcu.o
+liburcu.so: urcu.o urcu-pointer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
-liburcu-qsbr.so: urcu-qsbr.o
+liburcu-qsbr.so: urcu-qsbr.o urcu-pointer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
-liburcu-mb.so: urcu-mb.o
+liburcu-mb.so: urcu-mb.o urcu-pointer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
 liburcu-defer.so: urcu-defer.o
@@ -68,6 +71,7 @@ install: liburcu.so
 	cp -f urcu.h urcu-static.h					\
 		urcu-qsbr.h urcu-qsbr-static.h				\
 		urcu-defer.h urcu-defer-static.h			\
+		urcu-pointer.h urcu-pointer-static.h			\
 			/usr/include/
 
 clean:

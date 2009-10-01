@@ -36,67 +36,9 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/system.h>
 #include <urcu/arch_uatomic.h>
 #include <urcu/list.h>
-
-/*
- * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
- */
-#define _LOAD_SHARED(p)	       ACCESS_ONCE(p)
-
-/*
- * Load a data from shared memory, doing a cache flush if required.
- */
-#define LOAD_SHARED(p)			\
-	({				\
-		smp_rmc();		\
-		_LOAD_SHARED(p);	\
-	})
-
-/*
- * Identify a shared store. A smp_wmc() or smp_mc() should follow the store.
- */
-#define _STORE_SHARED(x, v)	({ ACCESS_ONCE(x) = (v); })
-
-/*
- * Store v into x, where x is located in shared memory. Performs the required
- * cache flush after writing. Returns v.
- */
-#define STORE_SHARED(x, v)		\
-	({				\
-		_STORE_SHARED(x, v);	\
-		smp_wmc();		\
-		(v);			\
-	})
-
-/**
- * _rcu_dereference - reads (copy) a RCU-protected pointer to a local variable
- * into a RCU read-side critical section. The pointer can later be safely
- * dereferenced within the critical section.
- *
- * This ensures that the pointer copy is invariant thorough the whole critical
- * section.
- *
- * Inserts memory barriers on architectures that require them (currently only
- * Alpha) and documents which pointers are protected by RCU.
- *
- * The compiler memory barrier in LOAD_SHARED() ensures that value-speculative
- * optimizations (e.g. VSS: Value Speculation Scheduling) does not perform the
- * data read before the pointer read by speculating the value of the pointer.
- * Correct ordering is ensured because the pointer is read as a volatile access.
- * This acts as a global side-effect operation, which forbids reordering of
- * dependent memory operations. Note that such concern about dependency-breaking
- * optimizations will eventually be taken care of by the "memory_order_consume"
- * addition to forthcoming C++ standard.
- *
- * Should match rcu_assign_pointer() or rcu_xchg_pointer().
- */
-
-#define _rcu_dereference(p)     ({					\
-				typeof(p) _________p1 = LOAD_SHARED(p); \
-				smp_read_barrier_depends();		\
-				(_________p1);				\
-				})
 
 #define futex(...)		syscall(__NR_futex, __VA_ARGS__)
 #define FUTEX_WAIT		0
@@ -297,68 +239,5 @@ static inline void _rcu_read_unlock(void)
 		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
 	}
 }
-
-/**
- * _rcu_assign_pointer - assign (publicize) a pointer to a new data structure
- * meant to be read by RCU read-side critical sections. Returns the assigned
- * value.
- *
- * Documents which pointers will be dereferenced by RCU read-side critical
- * sections and adds the required memory barriers on architectures requiring
- * them. It also makes sure the compiler does not reorder code initializing the
- * data structure before its publication.
- *
- * Should match rcu_dereference_pointer().
- */
-
-#define _rcu_assign_pointer(p, v)			\
-	({						\
-		if (!__builtin_constant_p(v) || 	\
-		    ((v) != NULL))			\
-			wmb();				\
-		STORE_SHARED(p, v);			\
-	})
-
-/**
- * _rcu_cmpxchg_pointer - same as rcu_assign_pointer, but tests if the pointer
- * is as expected by "old". If succeeds, returns the previous pointer to the
- * data structure, which can be safely freed after waiting for a quiescent state
- * using synchronize_rcu(). If fails (unexpected value), returns old (which
- * should not be freed !).
- */
-
-#define _rcu_cmpxchg_pointer(p, old, _new)		\
-	({						\
-		if (!__builtin_constant_p(_new) ||	\
-		    ((_new) != NULL))			\
-			wmb();				\
-		uatomic_cmpxchg(p, old, _new);		\
-	})
-
-/**
- * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
- * pointer to the data structure, which can be safely freed after waiting for a
- * quiescent state using synchronize_rcu().
- */
-
-#define _rcu_xchg_pointer(p, v)				\
-	({						\
-		if (!__builtin_constant_p(v) ||		\
-		    ((v) != NULL))			\
-			wmb();				\
-		uatomic_xchg(p, v);			\
-	})
-
-/*
- * Exchanges the pointer and waits for quiescent state.
- * The pointer returned can be freed.
- */
-#define _rcu_publish_content(p, v)			\
-	({						\
-		void *oldptr;				\
-		oldptr = _rcu_xchg_pointer(p, v);	\
-		synchronize_rcu();			\
-		oldptr;					\
-	})
 
 #endif /* _URCU_STATIC_H */

@@ -278,38 +278,6 @@ void rcu_read_unlock(void)
 	_rcu_read_unlock();
 }
 
-void *rcu_dereference(void *p)
-{
-	return _rcu_dereference(p);
-}
-
-void *rcu_assign_pointer_sym(void **p, void *v)
-{
-	wmb();
-	return STORE_SHARED(*p, v);
-}
-
-void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
-{
-	wmb();
-	return uatomic_cmpxchg(p, old, _new);
-}
-
-void *rcu_xchg_pointer_sym(void **p, void *v)
-{
-	wmb();
-	return uatomic_xchg(p, v);
-}
-
-void *rcu_publish_content_sym(void **p, void *v)
-{
-	void *oldptr;
-
-	oldptr = _rcu_xchg_pointer(p, v);
-	synchronize_rcu();
-	return oldptr;
-}
-
 void rcu_quiescent_state(void)
 {
 	_rcu_quiescent_state();

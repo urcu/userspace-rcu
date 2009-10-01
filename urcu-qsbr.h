@@ -32,6 +32,11 @@
 #include <pthread.h>
 
 /*
+ * See urcu-pointer.h and urcu-pointer-static.h for pointer publication headers.
+ */
+#include <urcu-pointer.h>
+
+/*
  * Important !
  *
  * Each thread containing read-side critical sections must be registered
@@ -48,18 +53,20 @@
  * Should only be used in LGPL-compatible code.
  */
 
-#define rcu_dereference		_rcu_dereference
-#define rcu_read_lock		_rcu_read_lock
-#define rcu_read_unlock		_rcu_read_unlock
+/*
+ * rcu_read_lock()
+ * rcu_read_unlock()
+ *
+ * Mark the beginning and end of a read-side critical section.
+ * DON'T FORGET TO USE RCU_REGISTER/UNREGISTER_THREAD() FOR EACH THREAD WITH
+ * READ-SIDE CRITICAL SECTION.
+ */
+#define rcu_read_lock()		_rcu_read_lock()
+#define rcu_read_unlock()	_rcu_read_unlock()
 
-#define rcu_quiescent_state	_rcu_quiescent_state
-#define rcu_thread_offline	_rcu_thread_offline
-#define rcu_thread_online	_rcu_thread_online
-
-#define rcu_assign_pointer	_rcu_assign_pointer
-#define rcu_cmpxchg_pointer	_rcu_cmpxchg_pointer
-#define rcu_xchg_pointer	_rcu_xchg_pointer
-#define rcu_publish_content	_rcu_publish_content
+#define rcu_quiescent_state()	_rcu_quiescent_state()
+#define rcu_thread_offline()	_rcu_thread_offline()
+#define rcu_thread_online()	_rcu_thread_online()
 
 #else /* !_LGPL_SOURCE */
 
@@ -93,28 +100,9 @@ extern void rcu_read_unlock(void);
 
 #endif /* !URCU_DEBUG */
 
-extern void *rcu_dereference(void *p);
-
 extern void rcu_quiescent_state(void);
 extern void rcu_thread_offline(void);
 extern void rcu_thread_online(void);
-
-extern void *rcu_assign_pointer_sym(void **p, void *v);
-
-#define rcu_assign_pointer(p, v)			\
-	rcu_assign_pointer_sym((void **)(&(p)), (v))
-
-extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
-#define rcu_cmpxchg_pointer(p, old, _new)		\
-	rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new))
-
-extern void *rcu_xchg_pointer_sym(void **p, void *v);
-#define rcu_xchg_pointer(p, v)				\
-	rcu_xchg_pointer_sym((void **)(p), (v))
-
-extern void *rcu_publish_content_sym(void **p, void *v);
-#define rcu_publish_content(p, v)			\
-	rcu_publish_content_sym((void **)(p), (v))
 
 #endif /* !_LGPL_SOURCE */
 
