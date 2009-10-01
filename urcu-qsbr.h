@@ -102,7 +102,7 @@ extern void rcu_thread_online(void);
 extern void *rcu_assign_pointer_sym(void **p, void *v);
 
 #define rcu_assign_pointer(p, v)			\
-	rcu_assign_pointer_sym((void **)(p), (v))
+	rcu_assign_pointer_sym((void **)(&(p)), (v))
 
 extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer(p, old, _new)		\

@@ -380,7 +380,7 @@ void *rcu_dereference(void *p)
 void *rcu_assign_pointer_sym(void **p, void *v)
 {
 	wmb();
-	return STORE_SHARED(p, v);
+	return STORE_SHARED(*p, v);
 }
 
 void *rcu_xchg_pointer_sym(void **p, void *v)

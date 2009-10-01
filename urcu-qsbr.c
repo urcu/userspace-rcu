@@ -286,7 +286,7 @@ void *rcu_dereference(void *p)
 void *rcu_assign_pointer_sym(void **p, void *v)
 {
 	wmb();
-	return STORE_SHARED(p, v);
+	return STORE_SHARED(*p, v);
 }
 
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
