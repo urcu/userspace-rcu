@@ -6,6 +6,7 @@ DIRS=tests
 all: checkarch liburcu.so urcu.o \
 	liburcu-qsbr.so urcu-qsbr.o \
 	liburcu-mb.so urcu-mb.o \
+	liburcu-bp.so urcu-bp.o \
 	liburcu-defer.so urcu-defer.o \
 	urcu-yield.o \
 	subdirs
@@ -35,6 +36,9 @@ urcu.o: urcu.c urcu.h
 urcu-mb.o: urcu.c urcu.h
 	$(CC) -fPIC -DURCU_MB ${CFLAGS} -c -o $@ $(SRC_DEP)
 
+urcu-bp.o: urcu-bp.c urcu-bp.h
+	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
+
 urcu-qsbr.o: urcu-qsbr.c urcu-qsbr.h
 	$(CC) -fPIC ${CFLAGS} -c -o $@ $(SRC_DEP)
 
@@ -50,6 +54,9 @@ liburcu-qsbr.so: urcu-qsbr.o urcu-pointer.o
 liburcu-mb.so: urcu-mb.o urcu-pointer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
+liburcu-bp.so: urcu-bp.o urcu-pointer.o
+	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
+
 liburcu-defer.so: urcu-defer.o
 	$(CC) ${LDFLAGS} -fPIC -shared -o $@ $<
 
@@ -63,6 +70,7 @@ subdirs:
 
 install: liburcu.so
 	cp -f liburcu.so liburcu-mb.so liburcu-qsbr.so liburcu-defer.so	\
+		liburcu-bp.so 						\
 			/usr/lib/
 	mkdir -p /usr/include/urcu
 	cp -f urcu/arch.h urcu/arch_uatomic.h urcu/compiler.h		\
@@ -70,6 +78,7 @@ install: liburcu.so
 			/usr/include/urcu/
 	cp -f urcu.h urcu-static.h					\
 		urcu-qsbr.h urcu-qsbr-static.h				\
+		urcu-bp.h urcu-bp-static.h				\
 		urcu-defer.h urcu-defer-static.h			\
 		urcu-pointer.h urcu-pointer-static.h			\
 			/usr/include/

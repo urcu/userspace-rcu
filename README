@@ -50,6 +50,17 @@ Usage of liburcu-qsbr
 	  the threads are not active. It provides the fastest read-side at the
 	  expense of more intrusiveness in the application code.
 
+Usage of liburcu-bp
+
+	* #include <urcu-bp.h>
+	* Link with "-lurcu-bp".
+	* The BP library flavor stands for "bulletproof". It is specifically
+	  designed to help tracing library to hook on applications without
+	  requiring to modify these applications. urcu_init(),
+	  rcu_register_thread() and rcu_unregister_thread() all become nops.
+	  The state is dealt with by the library internally at the expense of
+	  read-side and write-side performance.
+
 Initialization
 
 	Each thread that has reader critical sections (that uses

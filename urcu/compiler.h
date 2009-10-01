@@ -39,4 +39,12 @@
  */
 #define ACCESS_ONCE(x)	(*(volatile typeof(x) *)&x)
 
+#ifndef max
+#define max(a,b) ((a)>(b)?(a):(b))
+#endif
+
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
+
 #endif /* _URCU_COMPILER_H */
