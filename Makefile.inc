@@ -66,7 +66,7 @@ install: liburcu.so
 			/usr/lib/
 	mkdir -p /usr/include/urcu
 	cp -f urcu/arch.h urcu/arch_uatomic.h urcu/compiler.h		\
-		urcu/list.h urcu/rculist.h urcu/hlist.h			\
+		urcu/system.h urcu/list.h urcu/rculist.h urcu/hlist.h	\
 			/usr/include/urcu/
 	cp -f urcu.h urcu-static.h					\
 		urcu-qsbr.h urcu-qsbr-static.h				\
