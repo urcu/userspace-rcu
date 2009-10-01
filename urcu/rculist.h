@@ -24,7 +24,8 @@
 #define _URCU_RCULIST_H
 
 #include <urcu/list.h>
-#include <urcu.h>
+#include <urcu/arch.h>
+#include <urcu-pointer.h>
 
 /* Add new element at the head of the list.
  */
