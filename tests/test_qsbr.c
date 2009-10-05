@@ -259,7 +259,8 @@ void *thr_writer(void *_count)
 	for (;;) {
 		new = test_array_alloc();
 		new->a = 8;
-		old = rcu_publish_content(&test_rcu_pointer, new);
+		old = rcu_xchg_pointer(&test_rcu_pointer, new);
+		synchronize_rcu();
 		/* can be done after unlock */
 		if (old)
 			old->a = 0;

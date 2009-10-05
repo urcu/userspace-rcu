@@ -153,8 +153,9 @@ void *thr_writer(void *arg)
 				assert(old->a == 8);
 			}
 			new->a = 8;
-			old = _rcu_publish_content(&test_rcu_pointer, new);
+			old = rcu_xchg_pointer(&test_rcu_pointer, new);
 			rcu_copy_mutex_unlock();
+			synchronize_rcu();
 			/* can be done after unlock */
 			if (old) {
 				old->a = 0;
