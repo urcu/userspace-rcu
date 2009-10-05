@@ -30,7 +30,7 @@
 
 extern void synchronize_rcu(void);
 
-void *rcu_dereference(void *p)
+void *rcu_dereference_sym(void *p)
 {
 	return _rcu_dereference(p);
 }

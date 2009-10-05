@@ -60,21 +60,36 @@
 
 #else /* !_LGPL_SOURCE */
 
-extern void *rcu_dereference(void *p);
+extern void *rcu_dereference_sym(void *p);
+#define rcu_dereference(p)						     \
+	({								     \
+		typeof(p) _________p1 =					     \
+			rcu_dereference_sym((void *)(p));		     \
+		(_________p1);						     \
+	})
 
 extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
-#define rcu_cmpxchg_pointer(p, old, _new)		\
-	rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new))
+#define rcu_cmpxchg_pointer(p, old, _new)				     \
+	({								     \
+		typeof(*p) _________p1 =				     \
+			rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new));\
+		(_________p1);						     \
+	})
 
 extern void *rcu_xchg_pointer_sym(void **p, void *v);
-#define rcu_xchg_pointer(p, v)				\
-	rcu_xchg_pointer_sym((void **)(p), (v))
+#define rcu_xchg_pointer(p, v)						     \
+	({								     \
+		typeof(*p) _________p1 =				     \
+			rcu_xchg_pointer_sym((void **)(p), (v));	     \
+		(_________p1);						     \
+	})
 
 extern void *rcu_set_pointer_sym(void **p, void *v);
-#define rcu_set_pointer(p, v)				\
-	rcu_set_pointer_sym((void **)(p), (v))
-
-extern void *rcu_assign_pointer_sym(void **p, void *v);
+#define rcu_set_pointer(p, v)						     \
+	({								     \
+		typeof(*p) _________p1 =				     \
+			rcu_set_pointer_sym((void **)(p), (v));		     \
+	})
 
 #endif /* !_LGPL_SOURCE */
 
