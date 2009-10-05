@@ -58,18 +58,6 @@
 #define rcu_xchg_pointer	_rcu_xchg_pointer
 #define rcu_set_pointer		_rcu_set_pointer
 
-/*
- * type *rcu_publish_content(type **ptr, type *new)
- *
- * Exchanges the pointer and waits for quiescent state. The pointer returned
- * can be freed. You are encouraged to use either
- * - rcu_cmpxchg_pointer
- * - rcu_xchg_pointer
- * - rcu_set_pointer
- * with call_rcu(free, ptr) instead to deal with reclamation more efficiently.
- */
-#define rcu_publish_content	_rcu_publish_content
-
 #else /* !_LGPL_SOURCE */
 
 extern void *rcu_dereference(void *p);
@@ -85,10 +73,6 @@ extern void *rcu_xchg_pointer_sym(void **p, void *v);
 extern void *rcu_set_pointer_sym(void **p, void *v);
 #define rcu_set_pointer(p, v)				\
 	rcu_set_pointer_sym((void **)(p), (v))
-
-extern void *rcu_publish_content_sym(void **p, void *v);
-#define rcu_publish_content(p, v)			\
-	rcu_publish_content_sym((void **)(p), (v))
 
 extern void *rcu_assign_pointer_sym(void **p, void *v);
 

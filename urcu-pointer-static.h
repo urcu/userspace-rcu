@@ -102,19 +102,6 @@
 		STORE_SHARED(*(p), v);			\
 	})
 
-/*
- * _rcu_publish_content - Exchanges the pointer and waits for quiescent state.
- *
- * The pointer returned can be freed.
- */
-#define _rcu_publish_content(p, v)			\
-	({						\
-		void *oldptr;				\
-		oldptr = _rcu_xchg_pointer(p, v);	\
-		synchronize_rcu();			\
-		oldptr;					\
-	})
-
 /**
  * _rcu_assign_pointer - assign (publicize) a pointer to a new data structure
  * meant to be read by RCU read-side critical sections. Returns the assigned
