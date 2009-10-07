@@ -43,7 +43,7 @@ if test "$ARCHTYPE" = "unknown"; then
 fi
 AC_SUBST(ARCHTYPE)
 
-AM_CONDITIONAL([GCC_API], [test "x@ARCHTYPE@" != xx86 -a "x@ARCHTYPE@" != xppc])
+AM_CONDITIONAL([GCC_API], [test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc])
 
 
 AC_CONFIG_FILES([
