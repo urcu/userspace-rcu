@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_PREREQ([2.63])
+#AC_PREREQ([2.63])
 AC_INIT([userspace-rcu], [0.2.2], [mathieu dot desnoyers at polymtl dot ca])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
