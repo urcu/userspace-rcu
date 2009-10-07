@@ -8,7 +8,12 @@ BUILDING
 	./configure
 	make
 	make install
-	
+
+	Note:	Forcing 32-bit build:
+		* CFLAGS=-m32 ./configure
+
+		Forcing 64-bit build:
+		* CFLAGS=-m64 ./configure
 
 QUICK START GUIDE
 -----------------
