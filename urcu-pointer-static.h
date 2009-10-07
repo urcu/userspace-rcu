@@ -32,7 +32,7 @@
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/system.h>
-#include <urcu/arch_uatomic.h>
+#include <urcu/uatomic_arch.h>
 
 /**
  * _rcu_dereference - reads (copy) a RCU-protected pointer to a local variable

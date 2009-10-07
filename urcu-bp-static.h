@@ -37,7 +37,7 @@
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/system.h>
-#include <urcu/arch_uatomic.h>
+#include <urcu/uatomic_arch.h>
 #include <urcu/list.h>
 
 /*

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
-#include <urcu/arch_uatomic.h>
+#include <urcu/uatomic_arch.h>
 
 #if (defined(__i386__) || defined(__x86_64__))
 #define HAS_ATOMIC_BYTE

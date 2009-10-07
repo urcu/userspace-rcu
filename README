@@ -4,9 +4,9 @@ by Mathieu Desnoyers and Paul E. McKenney
 BUILDING
 --------
 
+	./bootstrap (skip if using tarball)
+	./configure
 	make
-	#force 32-bit build with: make -f Makefile32
-	#force 64-bit build with: make -f Makefile64
 	make install
 	
 

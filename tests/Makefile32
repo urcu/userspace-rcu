@@ -1,5 +1,0 @@
-include Makefile.inc
-
-EXTRAMFLAGS=-f Makefile32
-CFLAGS+=-m32
-LDFLAGS+=-m32

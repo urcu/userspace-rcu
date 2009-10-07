@@ -28,7 +28,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
-#include <urcu/arch_uatomic.h>
+#include <urcu/uatomic_arch.h>
 
 #ifdef _LGPL_SOURCE
 
