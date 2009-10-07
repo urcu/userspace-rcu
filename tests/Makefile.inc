@@ -47,7 +47,7 @@ test_urcu_lgc: test_urcu_gc.c ${URCU_SIGNAL}
 test_urcu_assign: test_urcu_assign.c ${URCU_SIGNAL}
 	$(CC) ${CFLAGS} $(LDFLAGS) -o $@ $(SRC_DEP)
 
-test_urcu_assign_dynamic_link: test_urcu.c ${URCU_SIGNAL}
+test_urcu_assign_dynamic_link: test_urcu_assign.c ${URCU_SIGNAL}
 	$(CC) ${CFLAGS} -DDYNAMIC_LINK_TEST $(LDFLAGS) -o $@ $(SRC_DEP)
 
 
