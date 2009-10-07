@@ -69,7 +69,7 @@
  * Machine parameters.
  */
 
-#define CACHE_LINE_SIZE 64
+/* #define CACHE_LINE_SIZE 64 */
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 6)))
 
@@ -299,7 +299,7 @@ cmpxchg(volatile long *ptr, long oldval, long newval)
  */
 
 #ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE 128
+/* #define CACHE_LINE_SIZE 128 */
 #endif /* #ifndef CACHE_LINE_SIZE */
 
 /*
