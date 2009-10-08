@@ -52,8 +52,7 @@ AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
 [
-if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" !=
-"xi486" -a "x$target_cpu" != "xi586"; then
+if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" != "xi486" -a "x$target_cpu" != "xi586"; then
 ]
 	AC_DEFINE([CONFIG_HAVE_FENCE], [1])
 [
