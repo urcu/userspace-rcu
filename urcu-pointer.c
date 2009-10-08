@@ -50,5 +50,9 @@ void *rcu_xchg_pointer_sym(void **p, void *v)
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
 	wmb();
-	return uatomic_cmpxchg(p, old, _new);
+	if (likely(URCU_CAS_AVAIL()))
+		return uatomic_cmpxchg(p, old, _new);
+
+	/* Compatibility for i386. Old-timer. */
+	return compat_uatomic_cmpxchg(p, old, _new);
 }

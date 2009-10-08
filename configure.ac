@@ -4,8 +4,12 @@
 
 AC_INIT([userspace-rcu], [0.2.3-alpha], [mathieu dot desnoyers at polymtl dot ca])
 AC_CONFIG_AUX_DIR([config])
+AC_CANONICAL_TARGET
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
+
+AH_TEMPLATE([CONFIG_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
@@ -24,12 +28,15 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([bzero gettimeofday munmap strtoul])
 
 # Find arch type
-case $host_cpu in
+case $target_cpu in
+	i386) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
+	i486) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
+	i586) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
+	i686) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
 	x86_64) ARCHTYPE="x86";;
-	i586) ARCHTYPE="x86" ;;
-	i686) ARCHTYPE="x86" ;;
 	powerpc) ARCHTYPE="ppc" ;;
 	ppc64) ARCHTYPE="ppc" ;;
+	powerpc64) ARCHTYPE="ppc" ;;
 	ppc) ARCHTYPE="ppc" ;;
 	s390) ARCHTYPE="s390" ;;
 	s390x) ARCHTYPE="s390" ;;
@@ -40,9 +47,25 @@ if test "$ARCHTYPE" = "unknown"; then
 	AC_MSG_ERROR([Unable to detect the architecture.])
 fi
 AC_SUBST(ARCHTYPE)
+AC_SUBST(SUBARCHTYPE)
 
 AM_CONDITIONAL([GCC_API], [test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc])
 
+AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" == xx86compat ])
+
+AC_ARG_ENABLE([smp-support], [  --disable-smp-support   Disable SMP support. Warning: only use this
+                          on uniprocessor systems. [[default=enabled]]], [def_smp_support=$enableval], [def_smp_support="yes"])
+
+[
+if test "$def_smp_support" = "no"; then
+	echo "SMP support disabled."
+else
+]
+	AC_DEFINE([CONFIG_SMP], [1])
+[
+	echo "SMP support enabled."
+fi
+]
 
 AC_CONFIG_FILES([
 	Makefile

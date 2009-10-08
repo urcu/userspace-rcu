@@ -29,10 +29,9 @@
  */
 
 #include <compiler.h>
+#include "config.h"
 
 #define CONFIG_HAVE_MEM_COHERENCY
-/* Assume SMP machine, given we don't have this information */
-#define CONFIG_SMP 1
 
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)

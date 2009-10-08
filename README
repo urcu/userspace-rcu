@@ -9,20 +9,22 @@ BUILDING
 	make
 	make install
 
-	Note:	Forcing 32-bit build:
+	Hints:	Forcing 32-bit build:
 		* CFLAGS=-m32 ./configure
 
 		Forcing 64-bit build:
 		* CFLAGS=-m64 ./configure
 
+		Forcing a 32-bit build with down to 386 compatibility:
+		* CFLAGS=-m32 ./configure --target=i386-pc-linux-gnu
+
 ARCHITECTURES SUPPORTED
 -----------------------
 
-Currently, x86 (only P6+), x86 64, PowerPC 32/64 and S390 are
+Currently, x86 (i386, i486, i586, i686), x86 64, PowerPC 32/64 and S390 are
 supported. The current use of sys_futex() makes it Linux-dependent, although
 this portability limitation might go away in a near future by using the pthread
-cond vars. Also, the restriction against i386, i486 and Pentium might go away if
-we integrate some of glibc runtime CPU-detection tests.
+cond vars.
 
 QUICK START GUIDE
 -----------------
@@ -136,3 +138,13 @@ Usage of DEBUG_YIELD
 
 	DEBUG_YIELD is used to add random delays in the code for testing
 	purposes.
+
+SMP support
+
+	By default the library is configured to use synchronization primitives
+	adequate for SMP systems. On uniprocessor systems, support for SMP
+	systems can be disabled with:
+
+		./configure --disable-smp-support
+
+	theoretically yielding slightly better performance.

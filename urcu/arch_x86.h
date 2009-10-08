@@ -23,6 +23,7 @@
  */
 
 #include <urcu/compiler.h>
+#include "config.h"
 
 /* Assume P4 or newer */
 #define CONFIG_HAVE_FENCE 1
@@ -62,9 +63,6 @@
 #define mc()	barrier()
 #define rmc()	barrier()
 #define wmc()	barrier()
-
-/* Assume SMP machine, given we don't have this information */
-#define CONFIG_SMP 1
 
 #ifdef CONFIG_SMP
 #define smp_mb()	mb()

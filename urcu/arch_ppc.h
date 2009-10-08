@@ -23,6 +23,7 @@
  */
 
 #include <urcu/compiler.h>
+#include "config.h"
 
 #define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
@@ -52,9 +53,6 @@
 #define mc()	barrier()
 #define rmc()	barrier()
 #define wmc()	barrier()
-
-/* Assume SMP machine, given we don't have this information */
-#define CONFIG_SMP 1
 
 #ifdef CONFIG_SMP
 #define smp_mb()	mb()

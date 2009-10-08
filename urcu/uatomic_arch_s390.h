@@ -217,4 +217,6 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 					       (unsigned long)(new),	\
 					       sizeof(*(addr)))
 
+#define URCU_CAS_AVAIL()	1
+
 #endif /* _URCU_ARCH_ATOMIC_S390_H */

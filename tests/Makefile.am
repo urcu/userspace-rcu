@@ -13,15 +13,21 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 
 noinst_HEADERS = rcutorture.h
 
-URCU_SIGNAL=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c
+if COMPAT_ARCH
+COMPAT=$(top_builddir)/compat_arch_@ARCHTYPE@.c
+else
+COMPAT=
+endif
+
+URCU_SIGNAL=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
 # URCU_SIGNAL_YIELD uses urcu.c but -DDEBUG_YIELD must be defined
-URCU_SIGNAL_YIELD=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c
+URCU_SIGNAL_YIELD=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
 # URCU_MB uses urcu.c but -DURCU_MB must be defined
-URCU_MB=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c
-URCU_BP=$(top_builddir)/urcu-bp.c $(top_builddir)/urcu-pointer.c
-URCU_QSBR=$(top_builddir)/urcu-qsbr.c $(top_builddir)/urcu-pointer.c
+URCU_MB=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_BP=$(top_builddir)/urcu-bp.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_QSBR=$(top_builddir)/urcu-qsbr.c $(top_builddir)/urcu-pointer.c $(COMPAT)
 # -DURCU_MB must be defined
-URCU_MB_DEFER=$(top_builddir)/urcu.c $(top_builddir)/urcu-defer.c $(top_builddir)/urcu-pointer.c
+URCU_MB_DEFER=$(top_builddir)/urcu.c $(top_builddir)/urcu-defer.c $(top_builddir)/urcu-pointer.c $(COMPAT)
 
 
 if GCC_API

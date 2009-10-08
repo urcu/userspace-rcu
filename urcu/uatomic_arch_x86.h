@@ -397,4 +397,20 @@ void _uatomic_dec(void *addr, int len)
 
 #define uatomic_dec(addr)	(_uatomic_dec((addr), sizeof(*(addr))))
 
+#if (BITS_PER_LONG == 64)
+#define URCU_CAS_AVAIL()	1
+#define compat_uatomic_cmpxchg(ptr, old, _new)	uatomic_cmpxchg(ptr, old, _new)
+#else
+extern int __urcu_cas_avail;
+#define URCU_CAS_AVAIL()	__urcu_cas_avail
+
+extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
+			      unsigned long _new, int len);
+
+#define compat_uatomic_cmpxchg(addr, old, _new)				     \
+	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
+						(unsigned long)(_new), 	     \
+						sizeof(*(addr))))
+#endif
+
 #endif /* _URCU_ARCH_UATOMIC_X86_H */
