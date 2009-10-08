@@ -402,7 +402,13 @@ void _uatomic_dec(void *addr, int len)
 #define compat_uatomic_cmpxchg(ptr, old, _new)	uatomic_cmpxchg(ptr, old, _new)
 #else
 extern int __urcu_cas_avail;
-#define URCU_CAS_AVAIL()	__urcu_cas_avail
+extern int __urcu_cas_init(void);
+#define URCU_CAS_AVAIL()						\
+		((likely(__urcu_cas_avail > 0)) ?			\
+			(1) :						\
+			((unlikely(__urcu_cas_avail < 0) ? 		\
+				(__urcu_cas_init()) :			\
+				(0))))
 
 extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len);

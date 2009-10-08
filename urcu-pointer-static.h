@@ -78,7 +78,10 @@
 		if (!__builtin_constant_p(_new) ||			\
 		    ((_new) != NULL))					\
 			wmb();						\
-		uatomic_cmpxchg(p, _________pold, _________pnew);	\
+		(likely(URCU_CAS_AVAIL()) ?				\
+			(uatomic_cmpxchg(p, _________pold, _________pnew)) : \
+			(compat_uatomic_cmpxchg(p, _________pold,	\
+						_________pnew)))	\
 	})
 
 /**
