@@ -10,13 +10,13 @@ BUILDING
 	make install
 
 	Hints:	Forcing 32-bit build:
-		* CFLAGS=-m32 ./configure
+		* CFLAGS="-m32 -g -O2" ./configure
 
 		Forcing 64-bit build:
-		* CFLAGS=-m64 ./configure
+		* CFLAGS="-m64 -g -O2" ./configure
 
 		Forcing a 32-bit build with down to 386 compatibility:
-		* CFLAGS=-m32 ./configure --target=i386-pc-linux-gnu
+		* CFLAGS="-m32 -g -O2" ./configure --target=i386-pc-linux-gnu
 
 ARCHITECTURES SUPPORTED
 -----------------------
