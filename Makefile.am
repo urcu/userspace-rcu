@@ -3,7 +3,7 @@ INCLUDES = -I$(top_builddir)/urcu
 
 AM_LDFLAGS=-lpthread
 
-SUBDIRS = tests
+SUBDIRS = . tests
 
 include_HEADERS = urcu.h $(top_srcdir)/urcu-*.h
 nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \

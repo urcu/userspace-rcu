@@ -1,5 +1,5 @@
 AM_LDFLAGS=-lpthread
-AM_CFLAGS=-I$(top_srcdir)
+AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir)
 
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
         test_rwlock_timing test_rwlock test_perthreadlock_timing \

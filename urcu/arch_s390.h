@@ -29,7 +29,7 @@
  */
 
 #include <compiler.h>
-#include "config.h"
+#include <config/config.h>
 
 #define CONFIG_HAVE_MEM_COHERENCY
 

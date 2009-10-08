@@ -23,7 +23,7 @@
  */
 
 #include <urcu/compiler.h>
-#include "config.h"
+#include <urcu/config.h>
 
 #define CONFIG_HAVE_MEM_COHERENCY
 

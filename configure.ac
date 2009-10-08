@@ -13,7 +13,7 @@ AH_TEMPLATE([CONFIG_SMP], [Enable SMP support. With SMP support enabled, uniproc
 AH_TEMPLATE([CONFIG_HAVE_FENCE], [Defined when on a system that has memory fence
 instructions.])
 AH_TEMPLATE([CONFIG_HAVE_FUTEX], [Defined when on a system with futex support.])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([urcu/config.h])
 
 # Checks for programs.
 AC_PROG_CC
