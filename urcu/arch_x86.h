@@ -25,8 +25,6 @@
 #include <urcu/compiler.h>
 #include "config.h"
 
-/* Assume P4 or newer */
-#define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
 
 #define CACHE_LINE_SIZE	128

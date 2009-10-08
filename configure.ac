@@ -10,6 +10,8 @@ AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
 
 AH_TEMPLATE([CONFIG_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
+AH_TEMPLATE([CONFIG_HAVE_FENCE], [Defined when on a system that has memory fence
+instructions.])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
@@ -48,6 +50,15 @@ if test "$ARCHTYPE" = "unknown"; then
 fi
 AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
+
+[
+if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" !=
+"xi486" -a "x$target_cpu" != "xi586"; then
+]
+	AC_DEFINE([CONFIG_HAVE_FENCE], [1])
+[
+fi
+]
 
 AM_CONDITIONAL([GCC_API], [test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc])
 
