@@ -102,7 +102,7 @@ static void wait_gp(void)
 	/* Read reader_gp before read futex */
 	smp_rmb();
 	if (uatomic_read(&gp_futex) == -1)
-		futex(&gp_futex, FUTEX_WAIT, -1,
+		futex_noasync(&gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
 }
 

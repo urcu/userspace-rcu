@@ -39,10 +39,7 @@
 #include <urcu/system.h>
 #include <urcu/uatomic_arch.h>
 #include <urcu/list.h>
-
-#define futex(...)		syscall(__NR_futex, __VA_ARGS__)
-#define FUTEX_WAIT		0
-#define FUTEX_WAKE		1
+#include <urcu/urcu-futex.h>
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
@@ -182,7 +179,7 @@ static inline void wake_up_gp(void)
 {
 	if (unlikely(uatomic_read(&gp_futex) == -1)) {
 		uatomic_set(&gp_futex, 0);
-		futex(&gp_futex, FUTEX_WAKE, 1,
+		futex_async(&gp_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }

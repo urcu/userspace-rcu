@@ -6,8 +6,9 @@ AM_LDFLAGS=-lpthread
 SUBDIRS = tests
 
 include_HEADERS = urcu.h $(top_srcdir)/urcu-*.h
-nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h urcu/rculist.h urcu/system.h
-nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic_arch.h
+nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
+		urcu/rculist.h urcu/system.h urcu/urcu-futex.h
+nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic_arch.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch_*.h $(top_srcdir)/urcu/uatomic_arch_*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
@@ -19,6 +20,9 @@ else
 COMPAT=
 endif
 
+if COMPAT_FUTEX
+COMPAT+=compat_futex.c
+endif
 
 lib_LTLIBRARIES = liburcu.la liburcu-mb.la liburcu-defer.la liburcu-qsbr.la liburcu-bp.la
 

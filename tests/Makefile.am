@@ -14,9 +14,13 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 noinst_HEADERS = rcutorture.h
 
 if COMPAT_ARCH
-COMPAT=$(top_builddir)/compat_arch_@ARCHTYPE@.c
+COMPAT=$(top_srcdir)/compat_arch_@ARCHTYPE@.c
 else
 COMPAT=
+endif
+
+if COMPAT_FUTEX
+COMPAT+=$(top_srcdir)/compat_futex.c
 endif
 
 URCU_SIGNAL=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)

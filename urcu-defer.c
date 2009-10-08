@@ -32,13 +32,10 @@
 #include <syscall.h>
 #include <unistd.h>
 
+#include "urcu/urcu-futex.h"
 #include "urcu-defer-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-defer.h"
-
-#define futex(...)	syscall(__NR_futex, __VA_ARGS__)
-#define FUTEX_WAIT		0
-#define FUTEX_WAKE		1
 
 void __attribute__((destructor)) urcu_defer_exit(void);
 
@@ -101,7 +98,7 @@ static void wake_up_defer(void)
 {
 	if (unlikely(uatomic_read(&defer_thread_futex) == -1)) {
 		uatomic_set(&defer_thread_futex, 0);
-		futex(&defer_thread_futex, FUTEX_WAKE, 1,
+		futex_noasync(&defer_thread_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }
@@ -134,7 +131,7 @@ static void wait_defer(void)
 	} else {
 		smp_rmb();	/* Read queue before read futex */
 		if (uatomic_read(&defer_thread_futex) == -1)
-			futex(&defer_thread_futex, FUTEX_WAIT, -1,
+			futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1,
 			      NULL, NULL, 0);
 	}
 }
