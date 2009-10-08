@@ -2,10 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 
-#AC_PREREQ([2.63])
-AC_INIT([userspace-rcu], [0.2.2], [mathieu dot desnoyers at polymtl dot ca])
+AC_INIT([userspace-rcu], [0.2.3-alpha], [mathieu dot desnoyers at polymtl dot ca])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
 AC_CONFIG_HEADERS([config.h])
