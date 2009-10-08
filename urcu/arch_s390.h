@@ -44,12 +44,21 @@
 #define rmc()	barrier()
 #define wmc()	barrier()
 
+#ifdef CONFIG_URCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()
 #define smp_mc()	mc()
 #define smp_rmc()	rmc()
 #define smp_wmc()	wmc()
+#else
+#define smp_mb()	barrier()
+#define smp_rmb()	barrier()
+#define smp_wmb()	barrier()
+#define smp_mc()	barrier()
+#define smp_rmc()	barrier()
+#define smp_wmc()	barrier()
+#endif
 
 /* Nop everywhere except on alpha. */
 #define smp_read_barrier_depends()

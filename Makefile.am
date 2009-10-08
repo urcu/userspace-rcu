@@ -37,7 +37,7 @@ liburcu_defer_la_SOURCES = urcu-defer.c $(COMPAT)
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 
-*.h *.c: urcu/arch.h urcu/uatomic_arch.h
+$(top_srcdir)/*.h $(top_srcdir)/*.c: urcu/arch.h urcu/uatomic_arch.h
 
 urcu/arch.h: $(top_srcdir)/urcu/arch_@ARCHTYPE@.h
 	$(MKDIR_P) $(top_builddir)/urcu

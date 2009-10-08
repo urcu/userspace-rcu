@@ -25,7 +25,6 @@
 #include <urcu/compiler.h>
 #include <urcu/config.h>
 
-#define CONFIG_HAVE_FENCE 1
 #define CONFIG_HAVE_MEM_COHERENCY
 
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
@@ -54,7 +53,7 @@
 #define rmc()	barrier()
 #define wmc()	barrier()
 
-#ifdef CONFIG_SMP
+#ifdef CONFIG_URCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()

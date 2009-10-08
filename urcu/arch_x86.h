@@ -33,7 +33,7 @@
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
-#ifdef CONFIG_HAVE_FENCE
+#ifdef CONFIG_URCU_HAVE_FENCE
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence"::: "memory")
@@ -62,7 +62,7 @@
 #define rmc()	barrier()
 #define wmc()	barrier()
 
-#ifdef CONFIG_SMP
+#ifdef CONFIG_URCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()

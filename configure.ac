@@ -9,10 +9,9 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
 
-AH_TEMPLATE([CONFIG_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_HAVE_FENCE], [Defined when on a system that has memory fence
-instructions.])
-AH_TEMPLATE([CONFIG_HAVE_FUTEX], [Defined when on a system with futex support.])
+AH_TEMPLATE([CONFIG_URCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
+AH_TEMPLATE([CONFIG_URCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
+AH_TEMPLATE([CONFIG_URCU_HAVE_FUTEX], [Defined when on a system with futex support.])
 AC_CONFIG_HEADERS([urcu/config.h])
 
 # Checks for programs.
@@ -55,12 +54,12 @@ AC_SUBST(SUBARCHTYPE)
 [
 if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" != "xi486" -a "x$target_cpu" != "xi586"; then
 ]
-	AC_DEFINE([CONFIG_HAVE_FENCE], [1])
+	AC_DEFINE([CONFIG_URCU_HAVE_FENCE], [1])
 [
 fi
 ]
 
-AC_MSG_CHECKING([presence of sys_futex()])
+AC_MSG_CHECKING([sys_futex()])
 AC_TRY_COMPILE(
 [
 #include <sys/syscall.h>
@@ -72,7 +71,7 @@ AC_TRY_COMPILE(
 ],
 [
 	AC_MSG_RESULT([yes])
-	AC_DEFINE([CONFIG_HAVE_FUTEX], [1])
+	AC_DEFINE([CONFIG_URCU_HAVE_FUTEX], [1])
 	compat_futex_test=0
 ]
 ,
@@ -96,7 +95,7 @@ if test "$def_smp_support" = "no"; then
 	echo "SMP support disabled."
 else
 ]
-	AC_DEFINE([CONFIG_SMP], [1])
+	AC_DEFINE([CONFIG_URCU_SMP], [1])
 [
 	echo "SMP support enabled."
 fi
