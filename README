@@ -15,7 +15,7 @@ BUILDING
 		Forcing 64-bit build:
 		* CFLAGS="-m64 -g -O2" ./configure
 
-		Forcing a 32-bit build with down to 386 compatibility:
+		Forcing a 32-bit build with 386 backward compatibility:
 		* CFLAGS="-m32 -g -O2" ./configure --target=i386-pc-linux-gnu
 
 ARCHITECTURES SUPPORTED
