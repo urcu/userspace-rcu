@@ -18,11 +18,11 @@ BUILDING
 ARCHITECTURES SUPPORTED
 -----------------------
 
-Currently, x86 (only Pentium and +), x86 64, PowerPC 32/64 and S390 are
+Currently, x86 (only P6+), x86 64, PowerPC 32/64 and S390 are
 supported. The current use of sys_futex() makes it Linux-dependent, although
 this portability limitation might go away in a near future by using the pthread
-cond vars. Also, the restriction against i386 and i486 might go away if we
-integrate some of glibc runtime CPU-detection tests.
+cond vars. Also, the restriction against i386, i486 and Pentium might go away if
+we integrate some of glibc runtime CPU-detection tests.
 
 QUICK START GUIDE
 -----------------
