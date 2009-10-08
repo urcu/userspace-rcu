@@ -9,10 +9,12 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
 
+AC_CONFIG_HEADERS([config.h urcu/config.h])
+
+# Keep at the end to do not pollute installed header.
 AH_TEMPLATE([CONFIG_URCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_URCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
 AH_TEMPLATE([CONFIG_URCU_HAVE_FUTEX], [Defined when on a system with futex support.])
-AC_CONFIG_HEADERS([urcu/config.h])
 
 # Checks for programs.
 AC_PROG_CC
