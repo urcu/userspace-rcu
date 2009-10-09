@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS=-I m4
 INCLUDES = -I$(top_builddir)/urcu
 
 AM_LDFLAGS=-lpthread
