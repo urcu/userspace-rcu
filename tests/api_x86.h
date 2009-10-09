@@ -1,5 +1,6 @@
 /* MECHANICALLY GENERATED, DO NOT EDIT!!! */
 
+#ifndef _INCLUDE_API_H
 #define _INCLUDE_API_H
 
 /*
@@ -1391,5 +1392,7 @@ static inline void hlist_move_list(struct hlist_head *old,
 	     pos && ({ n = pos->next; 1; }) && 				 \
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
+
+#endif
 
 #endif

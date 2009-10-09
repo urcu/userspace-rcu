@@ -92,6 +92,12 @@ int goflag __attribute__((__aligned__(CACHE_LINE_SIZE))) = GOFLAG_INIT;
 #define rcu_read_unlock_nest()
 #endif /* #else #ifdef RCU_READ_NESTABLE */
 
+#ifdef TORTURE_QSBR
+#define mark_rcu_quiescent_state	rcu_quiescent_state
+#define put_thread_offline		rcu_thread_offline
+#define put_thread_online		rcu_thread_online
+#endif
+
 #ifndef mark_rcu_quiescent_state
 #define mark_rcu_quiescent_state() do ; while (0)
 #endif /* #ifdef mark_rcu_quiescent_state */
