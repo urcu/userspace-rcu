@@ -72,19 +72,19 @@ test_qsbr_timing_SOURCES = test_qsbr_timing.c $(URCU_QSBR)
 
 test_qsbr_SOURCES = test_qsbr.c $(URCU_QSBR)
 
-rcutorture_urcu_SOURCES = api.h urcutorture.c
+rcutorture_urcu_SOURCES = urcutorture.c
 rcutorture_urcu_CFLAGS = -DTORTURE_URCU_SIGNAL $(AM_CFLAGS)
 rcutorture_urcu_LDADD = $(URCU_SIGNAL_LIB)
 
-rcutorture_urcu_mb_SOURCES = api.h urcutorture.c
+rcutorture_urcu_mb_SOURCES = urcutorture.c
 rcutorture_urcu_mb_CFLAGS = -DTORTURE_URCU_MB $(AM_CFLAGS)
 rcutorture_urcu_mb_LDADD = $(URCU_MB_LIB)
 
-rcutorture_qsbr_SOURCES = api.h urcutorture.c
+rcutorture_qsbr_SOURCES = urcutorture.c
 rcutorture_qsbr_CFLAGS = -DTORTURE_QSBR $(AM_CFLAGS)
 rcutorture_qsbr_LDADD = $(URCU_QSBR_LIB)
 
-rcutorture_urcu_bp_SOURCES = api.h urcutorture.c
+rcutorture_urcu_bp_SOURCES = urcutorture.c
 rcutorture_urcu_bp_CFLAGS = -DTORTURE_URCU_BP $(AM_CFLAGS)
 rcutorture_urcu_bp_LDADD = $(URCU_BP_LIB)
 
@@ -126,7 +126,7 @@ test_urcu_bp_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-*.o: api.h
+urcutorture.c: api.h
 
 api.h: $(APIHEADER)
 	cp -f $(srcdir)/$(APIHEADER) api.h
