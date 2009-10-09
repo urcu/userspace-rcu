@@ -40,11 +40,11 @@ liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 $(top_srcdir)/*.h $(top_srcdir)/*.c: urcu/arch.h urcu/uatomic_arch.h
 
 urcu/arch.h: $(top_srcdir)/urcu/arch_@ARCHTYPE@.h
-	$(MKDIR_P) $(top_builddir)/urcu
+	$(mkdir_p) $(top_builddir)/urcu
 	cp -f $(top_srcdir)/urcu/arch_@ARCHTYPE@.h $(top_builddir)/urcu/arch.h
 
 urcu/uatomic_arch.h: $(top_srcdir)/urcu/uatomic_arch_@ARCHTYPE@.h
-	$(MKDIR_P) $(top_builddir)/urcu
+	$(mkdir_p) $(top_builddir)/urcu
 	cp -f $(top_srcdir)/urcu/uatomic_arch_@ARCHTYPE@.h $(top_builddir)/urcu/uatomic_arch.h
 
 clean-local:
