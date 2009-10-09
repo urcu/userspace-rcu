@@ -23,15 +23,15 @@ if COMPAT_FUTEX
 COMPAT+=$(top_srcdir)/compat_futex.c
 endif
 
-URCU_SIGNAL=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 # URCU_SIGNAL_YIELD uses urcu.c but -DDEBUG_YIELD must be defined
-URCU_SIGNAL_YIELD=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_SIGNAL_YIELD=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 # URCU_MB uses urcu.c but -DURCU_MB must be defined
-URCU_MB=$(top_builddir)/urcu.c $(top_builddir)/urcu-pointer.c $(COMPAT)
-URCU_BP=$(top_builddir)/urcu-bp.c $(top_builddir)/urcu-pointer.c $(COMPAT)
-URCU_QSBR=$(top_builddir)/urcu-qsbr.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
+URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
+URCU_QSBR=$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 # -DURCU_MB must be defined
-URCU_MB_DEFER=$(top_builddir)/urcu.c $(top_builddir)/urcu-defer.c $(top_builddir)/urcu-pointer.c $(COMPAT)
+URCU_MB_DEFER=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-defer.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 
 URCU_SIGNAL_LIB=$(top_builddir)/liburcu.la
 URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
