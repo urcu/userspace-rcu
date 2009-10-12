@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <sys/syscall.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <urcu/arch.h>
 

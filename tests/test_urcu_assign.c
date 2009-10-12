@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <sys/syscall.h>
 #include <sched.h>
+#include <errno.h>
 
 #include <urcu/arch.h>
 

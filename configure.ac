@@ -9,7 +9,6 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([urcu.h])
 AM_PROG_MKDIR_P
-AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_HEADERS([config.h urcu/config.h])
 

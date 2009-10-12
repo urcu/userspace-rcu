@@ -3,6 +3,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <urcu/arch.h>
 #include "api.h"
 #define _LGPL_SOURCE
