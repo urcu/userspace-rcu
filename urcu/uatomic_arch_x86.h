@@ -22,6 +22,14 @@
 
 #include <urcu/compiler.h>
 
+#ifndef __SIZEOF_LONG__
+#if defined(__x86_64__) || defined(__amd64__)
+#define __SIZEOF_LONG__ 8
+#else
+#define __SIZEOF_LONG__ 4
+#endif
+#endif
+
 #ifndef BITS_PER_LONG
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif

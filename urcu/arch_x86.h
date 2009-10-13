@@ -29,10 +29,6 @@
 
 #define CACHE_LINE_SIZE	128
 
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 #ifdef CONFIG_URCU_HAVE_FENCE
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
