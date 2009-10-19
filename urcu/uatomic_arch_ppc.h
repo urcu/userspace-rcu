@@ -21,6 +21,7 @@
  */
 
 #include <urcu/compiler.h>
+#include <urcu/system.h>
 
 #ifndef __SIZEOF_LONG__
 #ifdef __powerpc64__
@@ -36,12 +37,8 @@
 
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
-#define uatomic_set(addr, v)				\
-do {							\
-	ACCESS_ONCE(*(addr)) = (v);			\
-} while (0)
-
-#define uatomic_read(addr)	ACCESS_ONCE(*(addr))
+#define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
+#define uatomic_read(addr)	LOAD_SHARED(*(addr))
 
 /*
  * Using a isync as second barrier for exchange to provide acquire semantic.

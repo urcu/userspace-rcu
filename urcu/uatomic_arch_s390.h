@@ -28,6 +28,9 @@
  * IN THE SOFTWARE.
  */
 
+#include <urcu/compiler.h>
+#include <urcu/system.h>
+
 #ifndef __SIZEOF_LONG__
 #ifdef __s390x__
 #define __SIZEOF_LONG__ 8
@@ -40,12 +43,8 @@
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
-#define uatomic_set(addr, v)				\
-do {							\
-	ACCESS_ONCE(*(addr)) = (v);			\
-} while (0)
-
-#define uatomic_read(addr)	ACCESS_ONCE(*(addr))
+#define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
+#define uatomic_read(addr)	LOAD_SHARED(*(addr))
 
 static inline __attribute__((always_inline))
 unsigned int uatomic_exchange_32(volatile unsigned int *addr, unsigned int val)
