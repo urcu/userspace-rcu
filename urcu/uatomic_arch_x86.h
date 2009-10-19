@@ -21,6 +21,7 @@
  */
 
 #include <urcu/compiler.h>
+#include <urcu/system.h>
 
 #ifndef __SIZEOF_LONG__
 #if defined(__x86_64__) || defined(__amd64__)
@@ -43,17 +44,13 @@ struct __uatomic_dummy {
 };
 #define __hp(x)	((struct __uatomic_dummy *)(x))
 
-#define uatomic_set(addr, v)				\
-do {							\
-	ACCESS_ONCE(*(addr)) = (v);			\
-} while (0)
-
-#define uatomic_read(addr)	ACCESS_ONCE(*(addr))
+#define _uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
+#define _uatomic_read(addr)	LOAD_SHARED(*(addr))
 
 /* cmpxchg */
 
 static inline __attribute__((always_inline))
-unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
+unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
@@ -110,15 +107,15 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	return 0;
 }
 
-#define uatomic_cmpxchg(addr, old, _new)				    \
-	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
-						(unsigned long)(_new), 	    \
+#define _uatomic_cmpxchg(addr, old, _new)				      \
+	((__typeof__(*(addr))) __uatomic_cmpxchg((addr), (unsigned long)(old),\
+						(unsigned long)(_new), 	      \
 						sizeof(*(addr))))
 
 /* xchg */
 
 static inline __attribute__((always_inline))
-unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
+unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	/* Note: the "xchg" instruction does not need a "lock" prefix. */
 	switch (len) {
@@ -171,14 +168,14 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define uatomic_xchg(addr, v)						    \
-	((__typeof__(*(addr))) _uatomic_exchange((addr), (unsigned long)(v), \
+#define _uatomic_xchg(addr, v)						      \
+	((__typeof__(*(addr))) __uatomic_exchange((addr), (unsigned long)(v), \
 						sizeof(*(addr))))
 
 /* uatomic_add_return, uatomic_sub_return */
 
 static inline __attribute__((always_inline))
-unsigned long _uatomic_add_return(void *addr, unsigned long val,
+unsigned long __uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {
@@ -235,17 +232,17 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 	return 0;
 }
 
-#define uatomic_add_return(addr, v)					\
-	((__typeof__(*(addr))) _uatomic_add_return((addr),		\
+#define _uatomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) __uatomic_add_return((addr),		\
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
-#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
+#define _uatomic_sub_return(addr, v)	_uatomic_add_return((addr), -(v))
 
 /* uatomic_add, uatomic_sub */
 
 static inline __attribute__((always_inline))
-void _uatomic_add(void *addr, unsigned long val, int len)
+void __uatomic_add(void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 1:
@@ -293,16 +290,16 @@ void _uatomic_add(void *addr, unsigned long val, int len)
 	return;
 }
 
-#define uatomic_add(addr, v)						   \
-	(_uatomic_add((addr), (unsigned long)(v), sizeof(*(addr))))
+#define _uatomic_add(addr, v)						   \
+	(__uatomic_add((addr), (unsigned long)(v), sizeof(*(addr))))
 
-#define uatomic_sub(addr, v)	uatomic_add((addr), -(v))
+#define _uatomic_sub(addr, v)	_uatomic_add((addr), -(v))
 
 
 /* uatomic_inc */
 
 static inline __attribute__((always_inline))
-void _uatomic_inc(void *addr, int len)
+void __uatomic_inc(void *addr, int len)
 {
 	switch (len) {
 	case 1:
@@ -350,12 +347,12 @@ void _uatomic_inc(void *addr, int len)
 	return;
 }
 
-#define uatomic_inc(addr)	(_uatomic_inc((addr), sizeof(*(addr))))
+#define _uatomic_inc(addr)	(__uatomic_inc((addr), sizeof(*(addr))))
 
 /* uatomic_dec */
 
 static inline __attribute__((always_inline))
-void _uatomic_dec(void *addr, int len)
+void __uatomic_dec(void *addr, int len)
 {
 	switch (len) {
 	case 1:
@@ -403,28 +400,82 @@ void _uatomic_dec(void *addr, int len)
 	return;
 }
 
-#define uatomic_dec(addr)	(_uatomic_dec((addr), sizeof(*(addr))))
+#define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
 
-#if (BITS_PER_LONG == 64)
-#define URCU_CAS_AVAIL()	1
-#define compat_uatomic_cmpxchg(ptr, old, _new)	uatomic_cmpxchg(ptr, old, _new)
-#else
+#if ((BITS_PER_LONG != 64) && defined(CONFIG_URCU_COMPAT_ARCH))
 extern int __urcu_cas_avail;
 extern int __urcu_cas_init(void);
-#define URCU_CAS_AVAIL()						\
-		((likely(__urcu_cas_avail > 0)) ?			\
-			(1) :						\
-			((unlikely(__urcu_cas_avail < 0) ? 		\
-				(__urcu_cas_init()) :			\
-				(0))))
+
+#define UATOMIC_COMPAT(insn)							\
+	((likely(__urcu_cas_avail > 0))						\
+	? (_uatomic_##insn)							\
+		: ((unlikely(__urcu_cas_avail < 0)				\
+			? ((__urcu_cas_init() > 0)				\
+				? (_uatomic_##insn)				\
+				: (compat_uatomic_##insn))			\
+			: (compat_uatomic_##insn))))
+
+extern unsigned long _compat_uatomic_set(void *addr,
+					 unsigned long _new, int len);
+#define compat_uatomic_set(addr, _new)				     	       \
+	((__typeof__(*(addr))) _compat_uatomic_set((addr),		       \
+						(unsigned long)(_new), 	       \
+						sizeof(*(addr))))
+
+
+extern unsigned long _compat_uatomic_xchg(void *addr,
+					  unsigned long _new, int len);
+#define compat_uatomic_xchg(addr, _new)					       \
+	((__typeof__(*(addr))) _compat_uatomic_xchg((addr),		       \
+						(unsigned long)(_new), 	       \
+						sizeof(*(addr))))
 
 extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
-			      unsigned long _new, int len);
-
-#define compat_uatomic_cmpxchg(addr, old, _new)				     \
-	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
-						(unsigned long)(_new), 	     \
+					     unsigned long _new, int len);
+#define compat_uatomic_cmpxchg(addr, old, _new)				       \
+	((__typeof__(*(addr))) _compat_uatomic_cmpxchg((addr),		       \
+						(unsigned long)(old),	       \
+						(unsigned long)(_new), 	       \
 						sizeof(*(addr))))
+
+extern unsigned long _compat_uatomic_xchg(void *addr,
+					  unsigned long _new, int len);
+#define compat_uatomic_add_return(addr, v)				       \
+	((__typeof__(*(addr))) _compat_uatomic_add_return((addr),	       \
+						(unsigned long)(v), 	       \
+						sizeof(*(addr))))
+
+#define compat_uatomic_sub_return(addr, v)				       \
+		compat_uatomic_add_return((addr), -(v))
+#define compat_uatomic_add(addr, v)					       \
+		((void)compat_uatomic_add_return((addr), (v)))
+#define compat_uatomic_sub(addr, v)					       \
+		((void)compat_uatomic_sub_return((addr), (v)))
+#define compat_uatomic_inc(addr)					       \
+		(compat_uatomic_add((addr), 1))
+#define compat_uatomic_dec(addr)					       \
+		(compat_uatomic_sub((addr), 1))
+
+#else
+#define UATOMIC_COMPAT(insn)	(_uatomic_##insn)
 #endif
+
+/* Read is atomic even in compat mode */
+#define uatomic_read(addr)	_uatomic_read(addr)
+
+#define uatomic_set(addr, v)			\
+		UATOMIC_COMPAT(set(addr, v))
+#define uatomic_cmpxchg(addr, old, _new)	\
+		UATOMIC_COMPAT(cmpxchg(addr, old, _new))
+#define uatomic_xchg(addr, v)			\
+		UATOMIC_COMPAT(xchg(addr, v))
+#define uatomic_add_return(addr, v)		\
+		UATOMIC_COMPAT(add_return(addr, v))
+#define uatomic_sub_return(addr, v)		\
+		UATOMIC_COMPAT(sub_return(addr, v))
+#define uatomic_add(addr, v)	UATOMIC_COMPAT(add(addr, v))
+#define uatomic_sub(addr, v)	UATOMIC_COMPAT(sub(addr, v))
+#define uatomic_inc(addr)	UATOMIC_COMPAT(inc(addr))
+#define uatomic_dec(addr)	UATOMIC_COMPAT(dec(addr))
 
 #endif /* _URCU_ARCH_UATOMIC_X86_H */

@@ -16,6 +16,8 @@ AC_CONFIG_HEADERS([config.h urcu/config.h])
 AH_TEMPLATE([CONFIG_URCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_URCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
 AH_TEMPLATE([CONFIG_URCU_HAVE_FUTEX], [Defined when on a system with futex support.])
+AH_TEMPLATE([CONFIG_URCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks
+cmpxchg instruction.])
 
 # Checks for programs.
 AC_PROG_CC
@@ -35,9 +37,9 @@ AC_CHECK_FUNCS([bzero gettimeofday munmap strtoul])
 # Find arch type
 case $target_cpu in
 	i386) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
-	i486) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
-	i586) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
-	i686) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
+	i486) ARCHTYPE="x86";;
+	i586) ARCHTYPE="x86";;
+	i686) ARCHTYPE="x86";;
 	x86_64) ARCHTYPE="x86";;
 	powerpc) ARCHTYPE="ppc" ;;
 	ppc64) ARCHTYPE="ppc" ;;
@@ -93,6 +95,14 @@ AM_CONDITIONAL([COMPAT_FUTEX], [ test "x$compat_futex_test" = "x1" ])
 AM_CONDITIONAL([GCC_API], [test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc])
 
 AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = xx86compat ])
+
+[
+if test "x$SUBARCHTYPE" = xx86compat; then
+]
+	AC_DEFINE([CONFIG_URCU_COMPAT_ARCH], [1])
+[
+fi
+]
 
 AC_ARG_ENABLE([smp-support], [  --disable-smp-support   Disable SMP support. Warning: only use this
                           on uniprocessor systems. [[default=enabled]]], [def_smp_support=$enableval], [def_smp_support="yes"])

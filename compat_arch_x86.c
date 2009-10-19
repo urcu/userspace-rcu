@@ -33,8 +33,6 @@
  */
 int __attribute__((constructor)) __urcu_cas_init(void);
 
-static pthread_mutex_t compat_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 /*
  * -1: unknown
  *  1: available
@@ -42,23 +40,26 @@ static pthread_mutex_t compat_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 int __urcu_cas_avail = -1;
 
+static pthread_mutex_t compat_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
- * Imported from glibc 2.3.5. linuxthreads/sysdeps/i386/pt-machine.h.
+ * get_eflags/set_eflags/compare_and_swap_is_available imported from glibc
+ * 2.3.5. linuxthreads/sysdeps/i386/pt-machine.h.
  */
 
-int get_eflags (void)
+static int get_eflags (void)
 {
 	int res;
 	__asm__ __volatile__ ("pushfl; popl %0" : "=r" (res) : );
 	return res;
 }
 
-void set_eflags (int newflags)
+static void set_eflags (int newflags)
 {
 	__asm__ __volatile__ ("pushl %0; popfl" : : "r" (newflags) : "cc");
 }
 
-int compare_and_swap_is_available (void)
+static int compare_and_swap_is_available (void)
 {
 	int oldflags = get_eflags ();
 	int changed;
@@ -73,52 +74,161 @@ int compare_and_swap_is_available (void)
 	return changed != 0;
 }
 
-unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
-			      unsigned long _new, int len)
+static void mutex_lock_signal_save(pthread_mutex_t *mutex, sigset_t *oldmask)
 {
-	sigset_t newmask, oldmask;
+	sigset_t newmask;
 	int ret;
 
 	/* Disable signals */
 	ret = sigemptyset(&newmask);
 	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
+	ret = pthread_sigmask(SIG_SETMASK, &newmask, oldmask);
 	assert(!ret);
 	ret = pthread_mutex_lock(&compat_mutex);
 	assert(!ret);
+}
 
+static void mutex_lock_signal_restore(pthread_mutex_t *mutex, sigset_t *oldmask)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&compat_mutex);
+	assert(!ret);
+	ret = pthread_sigmask(SIG_SETMASK, oldmask, NULL);
+	assert(!ret);
+}
+
+unsigned long _compat_uatomic_set(void *addr, unsigned long _new, int len)
+{
+	sigset_t mask;
+	unsigned long result;
+
+	mutex_lock_signal_save(&compat_mutex, &mask);
+	switch (len) {
+	case 1:
+		*(unsigned char *)addr = (unsigned char)_new;
+		result = *(unsigned char *)addr;
+		break;
+	case 2:
+		*(unsigned short *)addr = (unsigned short)_new;
+		result = *(unsigned short *)addr;
+		break;
+	case 4:
+		*(unsigned int *)addr = (unsigned int)_new;
+		result = *(unsigned int *)addr;
+		break;
+	default:
+		/*
+		 * generate an illegal instruction. Cannot catch this with
+		 * linker tricks when optimizations are disabled.
+		 */
+		__asm__ __volatile__("ud2");
+	}
+	mutex_lock_signal_restore(&compat_mutex, &mask);
+	return _new;
+}
+
+unsigned long _compat_uatomic_xchg(void *addr, unsigned long _new, int len)
+{
+	sigset_t mask;
+	unsigned long retval;
+
+	mutex_lock_signal_save(&compat_mutex, &mask);
+	switch (len) {
+	case 1:
+		retval = *(unsigned char *)addr;
+		*(unsigned char *)addr = (unsigned char)_new;
+		break;
+	case 2:
+		retval = *(unsigned short *)addr;
+		*(unsigned short *)addr = (unsigned short)_new;
+		break;
+	case 4:
+		retval = *(unsigned int *)addr;
+		*(unsigned int *)addr = (unsigned int)_new;
+		break;
+	default:
+		/*
+		 * generate an illegal instruction. Cannot catch this with
+		 * linker tricks when optimizations are disabled.
+		 */
+		__asm__ __volatile__("ud2");
+	}
+	mutex_lock_signal_restore(&compat_mutex, &mask);
+	return retval;
+}
+
+unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
+				      unsigned long _new, int len)
+{
+	unsigned long retval;
+	sigset_t mask;
+
+	mutex_lock_signal_save(&compat_mutex, &mask);
 	switch (len) {
 	case 1:
 	{
 		unsigned char result = *(unsigned char *)addr;
-		if (result == old)
+		if (result == (unsigned char)old)
 			*(unsigned char *)addr = (unsigned char)_new;
-		return result;
+		retval = result;
+		break;
 	}
 	case 2:
 	{
 		unsigned short result = *(unsigned short *)addr;
-		if (result == old)
+		if (result == (unsigned short)old)
 			*(unsigned short *)addr = (unsigned short)_new;
-		return result;
+		retval = result;
+		break;
 	}
 	case 4:
 	{
 		unsigned int result = *(unsigned int *)addr;
-		if (result == old)
+		if (result == (unsigned int)old)
 			*(unsigned int *)addr = (unsigned int)_new;
-		return result;
+		retval = result;
+		break;
 	}
+	default:
+		/*
+		 * generate an illegal instruction. Cannot catch this with
+		 * linker tricks when optimizations are disabled.
+		 */
+		__asm__ __volatile__("ud2");
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
-	__asm__ __volatile__("ud2");
-	return 0;
+	mutex_lock_signal_restore(&compat_mutex, &mask);
+	return retval;
+}
 
-	ret = pthread_mutex_unlock(&compat_mutex);
-	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
-	assert(!ret);
+unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
+{
+	sigset_t mask;
+	unsigned long result;
+
+	mutex_lock_signal_save(&compat_mutex, &mask);
+	switch (len) {
+	case 1:
+		*(unsigned char *)addr += (unsigned char)v;
+		result = *(unsigned char *)addr;
+		break;
+	case 2:
+		*(unsigned short *)addr += (unsigned short)v;
+		result = *(unsigned short *)addr;
+		break;
+	case 4:
+		*(unsigned int *)addr += (unsigned int)v;
+		result = *(unsigned int *)addr;
+		break;
+	default:
+		/*
+		 * generate an illegal instruction. Cannot catch this with
+		 * linker tricks when optimizations are disabled.
+		 */
+		__asm__ __volatile__("ud2");
+	}
+	mutex_lock_signal_restore(&compat_mutex, &mask);
+	return result;
 }
 
 int __urcu_cas_init(void)

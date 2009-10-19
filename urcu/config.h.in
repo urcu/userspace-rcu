@@ -10,3 +10,6 @@
    supported. With SMP support disabled, UP systems work fine, but the
    behavior of SMP systems is undefined. */
 #undef CONFIG_URCU_SMP
+
+/* Compatibility mode for i386 which lacks cmpxchg instruction. */
+#undef CONFIG_URCU_COMPAT_ARCH

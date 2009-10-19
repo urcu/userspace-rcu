@@ -78,10 +78,7 @@
 		if (!__builtin_constant_p(_new) ||			\
 		    ((_new) != NULL))					\
 			wmb();						\
-		(likely(URCU_CAS_AVAIL()) ?				\
-			(uatomic_cmpxchg(p, _________pold, _________pnew)) : \
-			(compat_uatomic_cmpxchg(p, _________pold,	\
-						_________pnew)))	\
+		uatomic_cmpxchg(p, _________pold, _________pnew);	\
 	})
 
 /**
@@ -106,7 +103,7 @@
 		if (!__builtin_constant_p(v) || 	\
 		    ((v) != NULL))			\
 			wmb();				\
-		STORE_SHARED(*(p), _________pv);	\
+		uatomic_set(p, _________pv);		\
 	})
 
 /**

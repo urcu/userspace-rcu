@@ -114,7 +114,7 @@ test_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_mb_defer_SOURCES = test_urcu_defer.c $(URCU_MB_DEFER)
 test_urcu_mb_defer_CFLAGS = -DURCU_MB $(AM_CFLAGS)
 
-test_uatomic_SOURCES = test_uatomic.c
+test_uatomic_SOURCES = test_uatomic.c $(COMPAT)
 
 test_urcu_assign_SOURCES = test_urcu_assign.c $(URCU_SIGNAL)
 

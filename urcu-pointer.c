@@ -40,7 +40,7 @@ void *rcu_dereference_sym(void *p)
 void *rcu_set_pointer_sym(void **p, void *v)
 {
 	wmb();
-	return STORE_SHARED(*p, v);
+	return uatomic_set(p, v);
 }
 
 void *rcu_xchg_pointer_sym(void **p, void *v)
@@ -52,9 +52,5 @@ void *rcu_xchg_pointer_sym(void **p, void *v)
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
 	wmb();
-	if (likely(URCU_CAS_AVAIL()))
-		return uatomic_cmpxchg(p, old, _new);
-
-	/* Compatibility for i386. Old-timer. */
-	return compat_uatomic_cmpxchg(p, old, _new);
+	return uatomic_cmpxchg(p, old, _new);
 }
