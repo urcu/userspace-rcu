@@ -47,7 +47,7 @@ case $target_cpu in
 	ppc) ARCHTYPE="ppc" ;;
 	s390) ARCHTYPE="s390" ;;
 	s390x) ARCHTYPE="s390" ;;
-	sparc) ARCHTYPE="sparc" ;;
+	sparc64) ARCHTYPE="sparc64" ;;
 	*) ARCHTYPE="unknown";;
 esac
 

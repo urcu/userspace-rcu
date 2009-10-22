@@ -90,9 +90,9 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 	switch (len) {
 	case 4:
 	{
-		unsigned int old;
+		unsigned int old, oldt;
 
-		oldt = uatomic_read(addr);
+		oldt = uatomic_read((unsigned int *)addr);
 		do {
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, val, 4);
@@ -103,9 +103,9 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 #if (BITS_PER_LONG == 64)
 	case 8:
 	{
-		unsigned long old;
+		unsigned long old, oldt;
 
-		oldt = uatomic_read(addr);
+		oldt = uatomic_read((unsigned long *)addr);
 		do {
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, val, 8);
@@ -132,9 +132,9 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 	switch (len) {
 	case 4:
 	{
-		unsigned int old;
+		unsigned int old, oldt;
 
-		oldt = uatomic_read(addr);
+		oldt = uatomic_read((unsigned int *)addr);
 		do {
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old + val, 4);
@@ -145,9 +145,9 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 #if (BITS_PER_LONG == 64)
 	case 8:
 	{
-		unsigned long old;
+		unsigned long old, oldt;
 
-		oldt = uatomic_read(addr);
+		oldt = uatomic_read((unsigned long *)addr);
 		do {
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old + val, 8);
