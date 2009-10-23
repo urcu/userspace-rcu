@@ -110,6 +110,8 @@ Usage of liburcu-defer
 	* Requires that rcu_defer_barrier() must be called in library destructor
 	  if a library queues callbacks and is expected to be unloaded with
 	  dlclose().
+	* Its API is currently experimental. It may change in future library
+	  releases.
 
 Being careful with signals
 
