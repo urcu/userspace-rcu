@@ -107,6 +107,9 @@ Usage of liburcu-defer
 	* Provides defer_rcu_ratelimit() primitive, which acts just like
 	  defer_rcu(), but takes an additional rate limiter callback forcing
 	  synchronized callback execution of the limiter returns non-zero.
+	* Requires that rcu_defer_barrier() must be called in library destructor
+	  if a library queues callbacks and is expected to be unloaded with
+	  dlclose().
 
 Being careful with signals
 
