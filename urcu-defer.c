@@ -232,15 +232,9 @@ end:
 /*
  * _defer_rcu - Queue a RCU callback.
  */
-void _defer_rcu_ratelimit(void (*fct)(void *p), void *p, int (*rl)(void *p))
+void _defer_rcu(void (*fct)(void *p), void *p)
 {
 	unsigned long head, tail;
-	int sync;
-
-	/*
-	 * Verify if we reached the rate limiter threshold.
-	 */
-	sync = rl ? rl(p) : 0;
 
 	/*
 	 * Head is only modified by ourself. Tail can be modified by reclamation
@@ -321,9 +315,9 @@ void *thr_defer(void *args)
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void defer_rcu_ratelimit(void (*fct)(void *p), void *p, int (*rl)(void *p))
+void defer_rcu(void (*fct)(void *p), void *p)
 {
-	_defer_rcu_ratelimit(fct, p, rl);
+	_defer_rcu(fct, p);
 }
 
 static void start_defer_thread(void)

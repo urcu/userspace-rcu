@@ -33,6 +33,9 @@
 #include <pthread.h>
 
 /*
+ * Note: the defer_rcu() API is currently EXPERIMENTAL. It may change in the
+ * future.
+ * 
  * Important !
  *
  * Each thread queuing memory reclamation must be registered with
@@ -43,10 +46,7 @@
  * primitive need to call synchronize_rcu() if the thread queue is full.
  */
 
-#define defer_rcu(fct, p)	defer_rcu_ratelimit(fct, p, NULL)
-
-extern void defer_rcu_ratelimit(void (*fct)(void *p), void *p,
-				int (*rl)(void *p));
+extern void defer_rcu(void (*fct)(void *p), void *p);
 
 /*
  * Thread registration for reclamation.
