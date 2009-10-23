@@ -43,9 +43,10 @@
  * primitive need to call synchronize_rcu() if the thread queue is full.
  */
 
-#define rcu_reclaim_queue(p)	defer_rcu(free, p)
+#define defer_rcu(fct, p)	defer_rcu_ratelimit(fct, p, NULL)
 
-extern void defer_rcu(void (*fct)(void *p), void *p);
+extern void defer_rcu_ratelimit(void (*fct)(void *p), void *p,
+				int (*rl)(void *p));
 
 /*
  * Thread registration for reclamation.

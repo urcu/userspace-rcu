@@ -232,9 +232,15 @@ end:
 /*
  * _defer_rcu - Queue a RCU callback.
  */
-void _defer_rcu(void (*fct)(void *p), void *p)
+void _defer_rcu_ratelimit(void (*fct)(void *p), void *p, int (*rl)(void *p))
 {
 	unsigned long head, tail;
+	int sync;
+
+	/*
+	 * Verify if we reached the rate limiter threshold.
+	 */
+	sync = rl ? rl(p) : 0;
 
 	/*
 	 * Head is only modified by ourself. Tail can be modified by reclamation
@@ -244,10 +250,10 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	tail = LOAD_SHARED(defer_queue.tail);
 
 	/*
-	 * If queue is full, empty it ourself.
+	 * If queue is full, or reached threshold. Empty queue ourself.
 	 * Worse-case: must allow 2 supplementary entries for fct pointer.
 	 */
-	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
+	if (unlikely(sync || (head - tail >= DEFER_QUEUE_SIZE - 2))) {
 		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
 		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
@@ -315,9 +321,9 @@ void *thr_defer(void *args)
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void defer_rcu(void (*fct)(void *p), void *p)
+void defer_rcu_ratelimit(void (*fct)(void *p), void *p, int (*rl)(void *p))
 {
-	_defer_rcu(fct, p);
+	_defer_rcu_ratelimit(fct, p, rl);
 }
 
 static void start_defer_thread(void)

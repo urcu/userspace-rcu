@@ -104,6 +104,9 @@ Usage of liburcu-defer
 	  callbacks are executed in batch periodically after a grace period.
 	  Do _not_ use defer_rcu() within a read-side critical section, because
 	  it may call synchronize_rcu() if the thread queue is full.
+	* Provides defer_rcu_ratelimit() primitive, which acts just like
+	  defer_rcu(), but takes an additional rate limiter callback forcing
+	  synchronized callback execution of the limiter returns non-zero.
 
 Being careful with signals
 
