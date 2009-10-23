@@ -39,15 +39,13 @@
  * rcu_defer_register_thread(). rcu_defer_unregister_thread() should be
  * called before the thread exits.
  *
- * *NEVER* use call_rcu()/rcu_defer_queue() within a RCU read-side critical
- * section, because this primitive need to call synchronize_rcu() if the thread
- * queue is full.
+ * *NEVER* use defer_rcu() within a RCU read-side critical section, because this
+ * primitive need to call synchronize_rcu() if the thread queue is full.
  */
 
-#define call_rcu		rcu_defer_queue
-#define rcu_reclaim_queue(p)	rcu_defer_queue(free, p)
+#define rcu_reclaim_queue(p)	defer_rcu(free, p)
 
-extern void rcu_defer_queue(void (*fct)(void *p), void *p);
+extern void defer_rcu(void (*fct)(void *p), void *p);
 
 /*
  * Thread registration for reclamation.

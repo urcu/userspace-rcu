@@ -236,14 +236,14 @@ void *thr_writer(void *data)
 		new = malloc(sizeof(*new));
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
-		call_rcu(free, old);
-		call_rcu(test_cb1, old);
-		call_rcu(test_cb1, (void *)-2L);
-		call_rcu(test_cb1, (void *)-2L);
-		call_rcu(test_cb1, old);
-		call_rcu(test_cb2, (void *)-2L);
-		call_rcu(test_cb2, (void *)-4L);
-		call_rcu(test_cb2, (void *)-2L);
+		defer_rcu(free, old);
+		defer_rcu(test_cb1, old);
+		defer_rcu(test_cb1, (void *)-2L);
+		defer_rcu(test_cb1, (void *)-2L);
+		defer_rcu(test_cb1, old);
+		defer_rcu(test_cb2, (void *)-2L);
+		defer_rcu(test_cb2, (void *)-4L);
+		defer_rcu(test_cb2, (void *)-2L);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;
