@@ -35,7 +35,7 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([bzero gettimeofday munmap strtoul])
 
 # Find arch type
-case $target_cpu in
+case $host_cpu in
 	i386) ARCHTYPE="x86"; SUBARCHTYPE="x86compat" ;;
 	i486) ARCHTYPE="x86";;
 	i586) ARCHTYPE="x86";;
@@ -58,11 +58,11 @@ AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
 [
-#if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" != "xi486" -a "x$target_cpu" != "xi586"; then
+#if test "x$ARCHTYPE" = "xx86" -a "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586"; then
 #For now, using lock; addl compatibility mode even for i686, because the
 #Pentium III is seen as a i686, but lacks mfence instruction.
 #Only using fence for x86_64.
-if test "x$ARCHTYPE" = "xx86" -a "x$target_cpu" != "xi386" -a "x$target_cpu" != "xi486" -a "x$target_cpu" != "xi586" -a "x$target_cpu" != "xi686"; then
+if test "x$ARCHTYPE" = "xx86" -a "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686"; then
 ]
 	AC_DEFINE([CONFIG_URCU_HAVE_FENCE], [1])
 [
