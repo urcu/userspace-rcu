@@ -99,7 +99,8 @@ Writing
 Usage of liburcu-defer
 
 	* #include <urcu-defer.h>
-	* Link with "-lurcu-defer"
+	* Link with "-lurcu-defer", and also with one of the urcu library
+	  (either urcu, urcu-bp, urcu-mb or urcu-qsbr).
 	* Provides defer_rcu() primitive to enqueue delayed callbacks. Queued
 	  callbacks are executed in batch periodically after a grace period.
 	  Do _not_ use defer_rcu() within a read-side critical section, because
