@@ -24,7 +24,7 @@
 #include <urcu/system.h>
 
 #ifndef __SIZEOF_LONG__
-#if (defined(__sparc_v8__) || defined(__sparc_v9__))
+#ifdef __LP64__
 #define __SIZEOF_LONG__ 8
 #else
 #define __SIZEOF_LONG__ 4

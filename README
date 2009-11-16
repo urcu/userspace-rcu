@@ -18,11 +18,14 @@ BUILDING
 		Forcing a 32-bit build with 386 backward compatibility:
 		* CFLAGS="-m32 -g -O2" ./configure --host=i386-pc-linux-gnu
 
+		Forcing a 32-bit build for Sparcv9 (typical for Sparc v9)
+		* CFLAGS="-m32 -Wa,-Av9a -g -O2" ./configure
+
 ARCHITECTURES SUPPORTED
 -----------------------
 
 Currently, x86 (i386, i486, i586, i686), x86 64-bit, PowerPC 32/64, S390, S390x
-and Sparc64 are supported. Only tested on Linux so far, but should
+and Sparcv9 32/64 are supported. Only tested on Linux so far, but should
 theoretically work on other operating systems.
 
 QUICK START GUIDE
