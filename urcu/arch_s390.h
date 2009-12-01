@@ -1,5 +1,5 @@
-#ifndef _ARCH_S390_H
-#define _ARCH_S390_H
+#ifndef _URCU_ARCH_S390_H
+#define _URCU_ARCH_S390_H
 
 /*
  * Trivial definitions for the S390 architecture based on information from the
@@ -94,4 +94,4 @@ static inline cycles_t get_cycles (void)
 	return cycles;
 }
 
-#endif /* _ARCH_S390_H */
+#endif /* _URCU_ARCH_S390_H */
