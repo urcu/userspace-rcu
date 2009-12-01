@@ -52,6 +52,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 4:
+	{
 		unsigned int old_val;
 
 		__asm__ __volatile__(
@@ -60,8 +61,10 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "=&r"(old_val), "=m" (*addr)
 			: "r"(val), "m" (*addr)
 			: "memory", "cc");
+	}
 #if (BITS_PER_LONG == 64)
 	case 8:
+	{
 		unsigned long old_val;
 
 		__asm__ __volatile__(
@@ -70,6 +73,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "=&r"(old_val), "=m" (*addr)
 			: "r"(val), "m" (*addr)
 			: "memory", "cc");
+	}
 #endif
 	default:
 		__asm__ __volatile__(".long	0xd00d00");
@@ -90,6 +94,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 {
 	switch (len) {
 	case 4:
+	{
 		unsigned int old_val = (unsigned int)old;
 
 		__asm__ __volatile__(
@@ -98,6 +103,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			: "r"(new)
 			: "memory", "cc");
 		return old_val;
+	}
 #if (BITS_PER_LONG == 64)
 	case 8:
 		__asm__ __volatile__(
