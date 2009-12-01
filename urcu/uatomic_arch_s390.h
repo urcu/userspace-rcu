@@ -1,5 +1,5 @@
-#ifndef _URCU_ARCH_ATOMIC_S390_H
-#define _URCU_ARCH_ATOMIC_S390_H
+#ifndef _URCU_UATOMIC_ARCH_S390_H
+#define _URCU_UATOMIC_ARCH_S390_H
 
 /*
  * Atomic exchange operations for the S390 architecture. Based on information
@@ -8,6 +8,7 @@
  *
  * Copyright (c) 2009 Novell, Inc.
  * Author: Jan Blunck <jblunck@suse.de>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -46,50 +47,29 @@
 #define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
 #define uatomic_read(addr)	LOAD_SHARED(*(addr))
 
-static inline __attribute__((always_inline))
-unsigned int uatomic_exchange_32(volatile unsigned int *addr, unsigned int val)
-{
-	unsigned int result;
-
-	__asm__ __volatile__(
-		"0:	cs %0,%2,%1\n"
-		"	brc 4,0b\n"
-		: "=&r"(result), "=m" (*addr)
-		: "r"(val), "m" (*addr)
-		: "memory", "cc");
-
-	return result;
-}
-
-#if (BITS_PER_LONG == 64)
-
-static inline __attribute__((always_inline))
-unsigned long uatomic_exchange_64(volatile unsigned long *addr,
-				 unsigned long val)
-{
-	unsigned long result;
-
-	__asm__ __volatile__(
-		"0:	csg %0,%2,%1\n"
-		"	brc 4,0b\n"
-		: "=&r"(result), "=m" (*addr)
-		: "r"(val), "m" (*addr)
-		: "memory", "cc");
-
-	return result;
-}
-
-#endif
-
-static inline __attribute__((always_inline))
+/* xchg */
 unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
 	case 4:
-		return uatomic_exchange_32(addr, val);
+		unsigned int old_val;
+
+		__asm__ __volatile__(
+			"0:	cs %0,%2,%1\n"
+			"	brc 4,0b\n"
+			: "=&r"(old_val), "=m" (*addr)
+			: "r"(val), "m" (*addr)
+			: "memory", "cc");
 #if (BITS_PER_LONG == 64)
 	case 8:
-		return uatomic_exchange_64(addr, val);
+		unsigned long old_val;
+
+		__asm__ __volatile__(
+			"0:	csg %0,%2,%1\n"
+			"	brc 4,0b\n"
+			: "=&r"(old_val), "=m" (*addr)
+			: "r"(val), "m" (*addr)
+			: "memory", "cc");
 #endif
 	default:
 		__asm__ __volatile__(".long	0xd00d00");
@@ -98,110 +78,34 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define uatomic_xchg(addr, v)						\
+#define uatomic_xchg(addr, v)						    \
 	(__typeof__(*(addr))) _uatomic_exchange((addr), (unsigned long)(v), \
 					       sizeof(*(addr)))
 
+/* cmpxchg */
 
 static inline __attribute__((always_inline))
-void uatomic_add_32(volatile unsigned int *addr, unsigned int val)
-{
-	unsigned int result, old;
-
-	__asm__ __volatile__(
-		"	l %0, %1\n"
-		"0:	lr %2, %0\n"
-		"	ar %2, %3\n"
-		"	cs %0,%2,%1\n"
-		"	brc 4,0b\n"
-		: "=&r"(old), "+m" (*addr),
-		  "=&r"(result)
-		: "r"(val)
-		: "memory", "cc");
-}
-
-#if (BITS_PER_LONG == 64)
-
-static inline __attribute__((always_inline))
-void uatomic_add_64(volatile unsigned long *addr, unsigned long val)
-{
-	unsigned long result, old;
-
-	__asm__ __volatile__(
-		"	lg %0, %1\n"
-		"0:	lgr %2, %0\n"
-		"	agr %2, %3\n"
-		"	csg %0,%2,%1\n"
-		"	brc 4,0b\n"
-		: "=&r"(old), "+m" (*addr),
-		  "=&r"(result)
-		: "r"(val)
-		: "memory", "cc");
-}
-
-#endif
-
-static inline __attribute__((always_inline))
-void _uatomic_add(void *addr, unsigned long val, int len)
-{
-	switch (len) {
-	case 4:
-		uatomic_add_32(addr, val);
-		return;
-#if (BITS_PER_LONG == 64)
-	case 8:
-		uatomic_add_64(addr, val);
-		return;
-#endif
-	default:
-		__asm__ __volatile__(".long	0xd00d00");
-	}
-
-	return;
-}
-
-#define uatomic_add(addr, val)						\
-	_uatomic_add((addr), (unsigned long)(val), sizeof(*(addr)))
-
-static inline __attribute__((always_inline))
-unsigned int uatomic_cmpxchg_32(volatile unsigned int *addr, unsigned int old,
-				unsigned int new)
-{
-	__asm__ __volatile__(
-		"	cs %0,%2,%1\n"
-		: "+r"(old), "+m"(*addr)
-		: "r"(new)
-		: "memory", "cc");
-
-	return old;
-}
-
-#if (BITS_PER_LONG == 64)
-
-static inline __attribute__((always_inline))
-unsigned long uatomic_cmpxchg_64(volatile unsigned long *addr,
-				 unsigned long old, unsigned long new)
-{
-	__asm__ __volatile__(
-		"	csg %0,%2,%1\n"
-		: "+r"(old), "+m"(*addr)
-		: "r"(new)
-		: "memory", "cc");
-
-	return old;
-}
-
-#endif
-
 unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			       unsigned long new, int len)
 {
 	switch (len) {
 	case 4:
-		return uatomic_cmpxchg_32(addr, old, new);
+		unsigned int old_val = (unsigned int)old;
+
+		__asm__ __volatile__(
+			"	cs %0,%2,%1\n"
+			: "+r"(old_val), "+m"(*addr)
+			: "r"(new)
+			: "memory", "cc");
+		return old_val;
 #if (BITS_PER_LONG == 64)
 	case 8:
-		return uatomic_cmpxchg_64(addr, old, new);
+		__asm__ __volatile__(
+			"	csg %0,%2,%1\n"
+			: "+r"(old), "+m"(*addr)
+			: "r"(new)
+			: "memory", "cc");
+		return old;
 #endif
 	default:
 		__asm__ __volatile__(".long	0xd00d00");
@@ -216,6 +120,58 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 					       (unsigned long)(new),	\
 					       sizeof(*(addr)))
 
-#define URCU_CAS_AVAIL()	1
+/* uatomic_add_return */
 
-#endif /* _URCU_ARCH_ATOMIC_S390_H */
+static inline __attribute__((always_inline))
+unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
+{
+	switch (len) {
+	case 4:
+	{
+		unsigned int old, oldt;
+
+		oldt = uatomic_read((unsigned int *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, old + val, 4);
+		} while (oldt != old);
+
+		return old + val;
+	}
+#if (BITS_PER_LONG == 64)
+	case 8:
+	{
+		unsigned long old, oldt;
+
+		oldt = uatomic_read((unsigned long *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, old + val, 8);
+		} while (oldt != old);
+
+		return old + val;
+	}
+#endif
+	}
+	__builtin_trap();
+	return 0;
+}
+
+#define uatomic_add_return(addr, v)					\
+	((__typeof__(*(addr))) _uatomic_add_return((addr),		\
+						  (unsigned long)(v),	\
+						  sizeof(*(addr))))
+
+/* uatomic_sub_return, uatomic_add, uatomic_sub, uatomic_inc, uatomic_dec */
+
+#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
+
+#define uatomic_add(addr, v)		(void)uatomic_add_return((addr), (v))
+#define uatomic_sub(addr, v)		(void)uatomic_sub_return((addr), (v))
+
+#define uatomic_inc(addr)		uatomic_add((addr), 1)
+#define uatomic_dec(addr)		uatomic_add((addr), -1)
+
+#define compat_uatomic_cmpxchg(ptr, old, _new)	uatomic_cmpxchg(ptr, old, _new)
+
+#endif /* _URCU_UATOMIC_ARCH_S390_H */
