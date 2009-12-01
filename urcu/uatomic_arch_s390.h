@@ -63,6 +63,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "=&r"(old_val), "=m" (*addr)
 			: "r"(val), "m" (*addr)
 			: "memory", "cc");
+		return old_val;
 	}
 #if (BITS_PER_LONG == 64)
 	case 8:
@@ -75,6 +76,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "=&r"(old_val), "=m" (*addr)
 			: "r"(val), "m" (*addr)
 			: "memory", "cc");
+		return old_val;
 	}
 #endif
 	default:
@@ -92,7 +94,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 
 static inline __attribute__((always_inline))
 unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
-			       unsigned long new, int len)
+			       unsigned long _new, int len)
 {
 	switch (len) {
 	case 4:
@@ -102,7 +104,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		__asm__ __volatile__(
 			"	cs %0,%2,%1\n"
 			: "+r"(old_val), "+m"(*addr)
-			: "r"(new)
+			: "r"(_new)
 			: "memory", "cc");
 		return old_val;
 	}
@@ -112,7 +114,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		__asm__ __volatile__(
 			"	csg %0,%2,%1\n"
 			: "+r"(old), "+m"(*addr)
-			: "r"(new)
+			: "r"(_new)
 			: "memory", "cc");
 		return old;
 	}
@@ -124,10 +126,10 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	return 0;
 }
 
-#define uatomic_cmpxchg(addr, old, new)					\
+#define uatomic_cmpxchg(addr, old, _new)				\
 	(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			\
 					       (unsigned long)(old),	\
-					       (unsigned long)(new),	\
+					       (unsigned long)(_new),	\
 					       sizeof(*(addr)))
 
 /* uatomic_add_return */
