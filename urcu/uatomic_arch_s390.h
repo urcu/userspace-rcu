@@ -48,6 +48,8 @@
 #define uatomic_read(addr)	LOAD_SHARED(*(addr))
 
 /* xchg */
+
+static inline __attribute__((always_inline))
 unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -106,12 +108,14 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #if (BITS_PER_LONG == 64)
 	case 8:
+	{
 		__asm__ __volatile__(
 			"	csg %0,%2,%1\n"
 			: "+r"(old), "+m"(*addr)
 			: "r"(new)
 			: "memory", "cc");
 		return old;
+	}
 #endif
 	default:
 		__asm__ __volatile__(".long	0xd00d00");
