@@ -44,6 +44,31 @@
 #define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 2)
+#define COMPILER_HAVE_SHORT_MEM_OPERAND
+#endif
+
+/*
+ * MEMOP assembler operand rules:
+ * - op refer to MEMOP_IN operand
+ * - MEMOP_IN can expand to more than a single operand. Use it at the end of
+ *   operand list only.
+ */
+
+#ifdef COMPILER_HAVE_SHORT_MEM_OPERAND
+
+#define MEMOP_OUT(addr)	"=Q" (*(addr))
+#define MEMOP_IN	"Q" (*(addr))
+#define MEMOP_REF(op)	op		/* op refer to MEMOP_IN operand */
+
+#else /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
+
+#define MEMOP_OUT(addr)	"=m" (*(addr))
+#define MEMOP_IN	"a" (addr), "m" (*(addr))
+#define MEMOP_REF(op)	"0(" #op ")"	/* op refer to MEMOP_IN operand */
+
+#endif /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
+
 #define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
 #define uatomic_read(addr)	LOAD_SHARED(*(addr))
 
@@ -58,10 +83,10 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 		unsigned int old_val;
 
 		__asm__ __volatile__(
-			"0:	cs %0,%2,%1\n"
+			"0:	cs %0,%2," MEMOP_REF(%3) "\n"
 			"	brc 4,0b\n"
-			: "=&r"(old_val), "=m" (*addr)
-			: "r"(val), "m" (*addr)
+			: "=&r" (old_val), MEMOP_OUT (addr)
+			: "r" (val), MEMOP_IN (addr)
 			: "memory", "cc");
 		return old_val;
 	}
@@ -71,10 +96,10 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 		unsigned long old_val;
 
 		__asm__ __volatile__(
-			"0:	csg %0,%2,%1\n"
+			"0:	csg %0,%2," MEMOP_REF(%3) "\n"
 			"	brc 4,0b\n"
-			: "=&r"(old_val), "=m" (*addr)
-			: "r"(val), "m" (*addr)
+			: "=&r" (old_val), MEMOP_OUT (addr)
+			: "r" (val), MEMOP_IN (addr)
 			: "memory", "cc");
 		return old_val;
 	}
@@ -102,9 +127,9 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		unsigned int old_val = (unsigned int)old;
 
 		__asm__ __volatile__(
-			"	cs %0,%2,%1\n"
-			: "+r"(old_val), "+m"(*addr)
-			: "r"(_new)
+			"	cs %0,%2," MEMOP_REF(%3) "\n"
+			: "+r" (old_val), MEMOP_OUT (addr)
+			: "r" (_new), MEMOP_IN (addr)
 			: "memory", "cc");
 		return old_val;
 	}
@@ -112,9 +137,9 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	case 8:
 	{
 		__asm__ __volatile__(
-			"	csg %0,%2,%1\n"
-			: "+r"(old), "+m"(*addr)
-			: "r"(_new)
+			"	csg %0,%2," MEMOP_REF(%3) "\n"
+			: "+r" (old), MEMOP_OUT (addr)
+			: "r" (_new), MEMOP_IN (addr)
 			: "memory", "cc");
 		return old;
 	}
