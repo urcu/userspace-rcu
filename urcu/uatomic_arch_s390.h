@@ -59,7 +59,7 @@
 
 #define MEMOP_OUT(addr)	"=Q" (*(addr))
 #define MEMOP_IN	"Q" (*(addr))
-#define MEMOP_REF(op)	op		/* op refer to MEMOP_IN operand */
+#define MEMOP_REF(op)	#op		/* op refer to MEMOP_IN operand */
 
 #else /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
 
