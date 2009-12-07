@@ -36,6 +36,10 @@
  */
 #include <urcu-pointer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 /*
  * Important !
  *
@@ -113,5 +117,9 @@ extern void synchronize_rcu(void);
  */
 extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_QSBR_H */

@@ -41,6 +41,10 @@
 #include <urcu/list.h>
 #include <urcu/urcu-futex.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
  * See below for the function call wrappers which can be used in code meant to
@@ -236,5 +240,9 @@ static inline void _rcu_read_unlock(void)
 		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
 	}
 }
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_STATIC_H */

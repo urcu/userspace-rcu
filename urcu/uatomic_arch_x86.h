@@ -23,6 +23,10 @@
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #ifndef __SIZEOF_LONG__
 #if defined(__x86_64__) || defined(__amd64__)
 #define __SIZEOF_LONG__ 8
@@ -477,5 +481,9 @@ extern unsigned long _compat_uatomic_xchg(void *addr,
 #define uatomic_sub(addr, v)	UATOMIC_COMPAT(sub(addr, v))
 #define uatomic_inc(addr)	UATOMIC_COMPAT(inc(addr))
 #define uatomic_dec(addr)	UATOMIC_COMPAT(dec(addr))
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_ARCH_UATOMIC_X86_H */

@@ -48,6 +48,10 @@
  * This is required to permit relinking with newer versions of the library.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Active attempts to check for reader Q.S. before calling sleep().
  */
@@ -193,5 +197,9 @@ static inline void _rcu_read_unlock(void)
 	smp_mb();
 	_STORE_SHARED(urcu_reader->ctr, urcu_reader->ctr - RCU_GP_COUNT);
 }
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_BP_STATIC_H */

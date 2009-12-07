@@ -32,6 +32,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Note: the defer_rcu() API is currently EXPERIMENTAL. It may change in the
  * future.
@@ -63,5 +67,9 @@ extern void rcu_defer_register_thread(void);
 extern void rcu_defer_unregister_thread(void);
 extern void rcu_defer_barrier(void);
 extern void rcu_defer_barrier_thread(void);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_BATCH_H */

@@ -30,6 +30,10 @@
 #include <urcu/arch.h>
 #include <urcu/uatomic_arch.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #ifdef _LGPL_SOURCE
 
 #include <urcu-pointer-static.h>
@@ -106,5 +110,9 @@ extern void *rcu_set_pointer_sym(void **p, void *v);
  * RCU semantic.
  */
 #define rcu_assign_pointer(p, v)	rcu_set_pointer((&p), (v))
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_POINTER_H */

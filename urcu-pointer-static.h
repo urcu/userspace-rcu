@@ -34,6 +34,10 @@
 #include <urcu/system.h>
 #include <urcu/uatomic_arch.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 /**
  * _rcu_dereference - reads (copy) a RCU-protected pointer to a local variable
  * into a RCU read-side critical section. The pointer can later be safely
@@ -120,5 +124,9 @@
  */
 
 #define _rcu_assign_pointer(p, v)	_rcu_set_pointer(&(p), v)
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_POINTER_STATIC_H */

@@ -31,6 +31,10 @@
 #include <compiler.h>
 #include <urcu/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #define CONFIG_HAVE_MEM_COHERENCY
 
 #define CACHE_LINE_SIZE	128
@@ -93,5 +97,9 @@ static inline cycles_t get_cycles (void)
 
 	return cycles;
 }
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_ARCH_S390_H */

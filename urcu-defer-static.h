@@ -37,6 +37,9 @@
 #include <urcu/uatomic_arch.h>
 #include <urcu/list.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Number of entries in the per-thread defer queue. Must be power of 2.
@@ -126,5 +129,9 @@ struct defer_queue {
 	unsigned long last_head;
 	struct list_head list;	/* list of thread queues */
 };
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_DEFER_STATIC_H */

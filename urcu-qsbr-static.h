@@ -43,6 +43,10 @@
 #include <urcu/list.h>
 #include <urcu/urcu-futex.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
  * See below for the function call wrappers which can be used in code meant to
@@ -209,5 +213,9 @@ static inline void _rcu_thread_online(void)
 	_STORE_SHARED(urcu_reader.ctr, LOAD_SHARED(urcu_gp_ctr));
 	smp_mb();
 }
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_QSBR_STATIC_H */

@@ -23,6 +23,10 @@
 
 #include <urcu/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #define FUTEX_WAIT		0
 #define FUTEX_WAKE		1
 
@@ -53,6 +57,10 @@ extern int compat_futex_async(int *uaddr, int op, int val,
 	const struct timespec *timeout, int *uaddr2, int val3);
 #define futex_async(uaddr, op, val, timeout, uaddr2, val3)	\
 		compat_futex_async(uaddr, op, val, timeout, uaddr2, val3)
+#endif
+
+#ifdef __cplusplus 
+}
 #endif
 
 #endif /* _URCU_FUTEX_H */

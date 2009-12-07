@@ -39,6 +39,10 @@
  */
 #include <urcu-pointer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 /*
  * Important !
  *
@@ -91,5 +95,9 @@ extern void rcu_unregister_thread(void);
  * Explicit urcu initialization, for "early" use within library constructors.
  */
 extern void urcu_init(void);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_H */

@@ -25,6 +25,10 @@
 #include <urcu/compiler.h>
 #include <urcu/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 #define CONFIG_HAVE_MEM_COHERENCY
 
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
@@ -114,5 +118,9 @@ static inline cycles_t get_cycles (void)
 			return (((cycles_t) h) << 32) + l;
 	}
 }
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_ARCH_PPC_H */
