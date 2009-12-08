@@ -62,13 +62,13 @@ extern "C" {
 #ifdef COMPILER_HAVE_SHORT_MEM_OPERAND
 
 #define MEMOP_OUT(addr)	"=Q" (*(addr))
-#define MEMOP_IN	"Q" (*(addr))
+#define MEMOP_IN(addr)	"Q" (*(addr))
 #define MEMOP_REF(op)	#op		/* op refer to MEMOP_IN operand */
 
 #else /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
 
 #define MEMOP_OUT(addr)	"=m" (*(addr))
-#define MEMOP_IN	"a" (addr), "m" (*(addr))
+#define MEMOP_IN(addr)	"a" (addr), "m" (*(addr))
 #define MEMOP_REF(op)	"0(" #op ")"	/* op refer to MEMOP_IN operand */
 
 #endif /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
