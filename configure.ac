@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_INIT([userspace-rcu], [0.3.1], [mathieu dot desnoyers at polymtl dot ca])
+AC_INIT([userspace-rcu], [0.3.2], [mathieu dot desnoyers at polymtl dot ca])
 AC_CONFIG_AUX_DIR([config])
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
