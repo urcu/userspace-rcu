@@ -23,7 +23,7 @@
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
 
-#define	barrier()	asm volatile("" : : : "memory");
+#define	barrier()	asm volatile("" : : : "memory")
 
 /*
  * Instruct the compiler to perform only a single access to a variable

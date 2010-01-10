@@ -52,8 +52,8 @@ extern "C" {
 #endif
 
 #define mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
-#define rmb()   __asm__ __volatile__("bcr 15,0" : : : "memory");
-#define wmb()   __asm__ __volatile__("bcr 15,0" : : : "memory");
+#define rmb()   __asm__ __volatile__("bcr 15,0" : : : "memory")
+#define wmb()   __asm__ __volatile__("bcr 15,0" : : : "memory")
 #define mc()	barrier()
 #define rmc()	barrier()
 #define wmc()	barrier()
