@@ -2,6 +2,8 @@
 #ifndef _INCLUDE_API_H
 #define _INCLUDE_API_H
 
+#include "../config.h"
+
 /*
  * common.h: Common Linux kernel-isms.
  *
@@ -461,13 +463,25 @@ static void wait_all_threads(void)
 	}
 }
 
+#ifndef HAVE_CPU_SET_T
+typedef unsigned long cpu_set_t;
+# define CPU_ZERO(cpuset) do { *(cpuset) = 0; } while(0)
+# define CPU_SET(cpu, cpuset) do { *(cpuset) |= (1UL << (cpu)); } while(0)
+#endif
+
 static void run_on(int cpu)
 {
+#if HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
 
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
+#if SCHED_SETAFFINITY_ARGS == 2
+	sched_setaffinity(0, &mask);
+#else
 	sched_setaffinity(0, sizeof(mask), &mask);
+#endif
+#endif /* HAVE_SCHED_SETAFFINITY */
 }
 
 /*

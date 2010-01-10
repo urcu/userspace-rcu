@@ -119,6 +119,89 @@ else
 fi
 ]
 
+# From the sched_setaffinity(2)'s man page:
+# ~~~~
+# The CPU affinity system calls were introduced in Linux kernel 2.5.8.
+# The library interfaces were introduced in glibc 2.3.  Initially, the
+# glibc interfaces included a cpusetsize argument.  In glibc 2.3.3,
+# the cpuset size argument was removed, but this argument was
+# restored in glibc 2.3.4.
+# ~~~~
+
+# In addition to that, some vendors ported the system call to 2.4
+# kernels.
+
+# Furthermore, when the function first appeared, the MASK argument was
+# an unsigned long pointer, while later it was made into a cpu_set_t
+# pointer.  Systems that have the cpu_set_t version also should have
+# the CPU_ZERO, CPU_SET, etc. macros.
+
+# All this mess means we have to cater for at least 3 different
+# sched_setaffinity prototypes:
+
+# ~~~~
+#  int sched_setaffinity (pid_t pid, unsigned int len, unsigned long *mask);
+#  int sched_setaffinity (pid_t __pid, size_t __cpusetsize, const cpu_set_t *__cpuset);
+#  int sched_setaffinity (pid_t __pid, const cpu_set_t *__mask);
+# ~~~~
+
+dnl Since we define _GNU_SOURCE in the sources, must do so too in the
+dnl autoconf tests, as defining _GNU_SOURCE or not exposes
+dnl sched_setaffinity bits differently.
+saved_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -D_GNU_SOURCE"
+
+# First check if the function is available at all.
+AC_CHECK_FUNCS(
+  [sched_setaffinity],
+  [ # Okay, we have it.  Check if also have cpu_set_t.  If we don't,
+    # then we have the first version using unsigned long, and no
+    # CPU_ZERO, etc. macros.  If we do have cpu_set_t, we may have the
+    # version with 2 or 3 arguments.  In that case, CPU_ZERO, etc.,
+    # should also be present, but we confirm nonetheless.
+
+    AC_CHECK_TYPES(
+      [cpu_set_t],
+      [ # We do have it.  Confirm that we have CPU_ZERO, and it actually works.
+	AC_MSG_CHECKING([whether CPU_ZERO works])
+	AH_TEMPLATE([HAVE_CPU_ZERO],
+		    [Define to 1 if we have CPU_ZERO and if it works])
+	AC_COMPILE_IFELSE(
+	  [AC_LANG_PROGRAM(
+	    [#define _GNU_SOURCE
+	    #include <sched.h>],
+	    [cpu_set_t foo; CPU_ZERO (&foo);])
+	  ],
+	  [ # Works!
+	    AC_DEFINE(HAVE_CPU_ZERO, 1)
+	    AC_MSG_RESULT([yes])
+	  ],
+	  [AC_MSG_RESULT([no])]
+	)
+
+	# Check how many arguments does sched_setaffinity take.
+	# Should be 3 or 2.
+	AC_MSG_CHECKING([how many arguments sched_setaffinity takes])
+	AC_COMPILE_IFELSE(
+	  [AC_LANG_PROGRAM(
+	    [#include <sched.h>],
+	    [cpu_set_t foo; sched_setaffinity (0, sizeof (foo), &foo);])
+	  ],
+	  [sched_set_affinity_args=3],
+	  [sched_set_affinity_args=2])
+	AC_DEFINE_UNQUOTED(SCHED_SETAFFINITY_ARGS, $sched_set_affinity_args,
+	 [Define to sched_setaffinity's number of arguments.])
+	AC_MSG_RESULT([$sched_set_affinity_args])
+      ],
+      [ # No cpu_set_t, always 3 args.
+	AC_DEFINE(SCHED_SETAFFINITY_ARGS, 3) ],
+      [#include <sched.h>]
+    )
+  ]
+)
+
+CFLAGS=$saved_CFLAGS
+
 AC_CONFIG_FILES([
 	Makefile
 	tests/Makefile

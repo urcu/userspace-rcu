@@ -21,6 +21,7 @@
  */
 
 #define _GNU_SOURCE
+#include "../config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -105,6 +106,12 @@ static int use_affinity = 0;
 
 pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+#ifndef HAVE_CPU_SET_T
+typedef unsigned long cpu_set_t;
+# define CPU_ZERO(cpuset) do { *(cpuset) = 0; } while(0)
+# define CPU_SET(cpu, cpuset) do { *(cpuset) |= (1UL << (cpu)); } while(0)
+#endif
+
 static void set_affinity(void)
 {
 	cpu_set_t mask;
@@ -114,6 +121,7 @@ static void set_affinity(void)
 	if (!use_affinity)
 		return;
 
+#if HAVE_SCHED_SETAFFINITY
 	ret = pthread_mutex_lock(&affinity_mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
@@ -125,9 +133,15 @@ static void set_affinity(void)
 		perror("Error in pthread mutex unlock");
 		exit(-1);
 	}
+
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
+#if SCHED_SETAFFINITY_ARGS == 2
+	sched_setaffinity(0, &mask);
+#else
 	sched_setaffinity(0, sizeof(mask), &mask);
+#endif
+#endif /* HAVE_SCHED_SETAFFINITY */
 }
 
 /*
