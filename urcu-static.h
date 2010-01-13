@@ -216,7 +216,7 @@ static inline void _rcu_read_lock(void)
 		_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
-		 * accessing the pointer. See force_mb_all_threads().
+		 * accessing the pointer. See force_mb_all_readers().
 		 */
 		reader_barrier();
 	} else {
@@ -231,7 +231,7 @@ static inline void _rcu_read_unlock(void)
 	tmp = rcu_reader.ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
-	 * See force_mb_all_threads().
+	 * See force_mb_all_readers().
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		reader_barrier();

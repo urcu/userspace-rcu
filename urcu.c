@@ -126,7 +126,7 @@ static void force_mb_single_thread(struct rcu_reader *index)
 }
 #endif //0
 
-static void force_mb_all_threads(void)
+static void force_mb_all_readers(void)
 {
 	smp_mb();
 }
@@ -156,7 +156,7 @@ static void force_mb_single_thread(struct rcu_reader *index)
 }
 #endif //0
 
-static void force_mb_all_threads(void)
+static void force_mb_all_readers(void)
 {
 	struct rcu_reader *index;
 
@@ -206,7 +206,7 @@ static void force_mb_all_threads(void)
 static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
-	force_mb_all_threads();
+	force_mb_all_readers();
 	if (uatomic_read(&gp_futex) == -1)
 		futex_async(&gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
@@ -228,7 +228,7 @@ void wait_for_quiescent_state(void)
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
-			force_mb_all_threads();
+			force_mb_all_readers();
 		}
 
 		list_for_each_entry_safe(index, tmp, &registry, head) {
@@ -240,7 +240,7 @@ void wait_for_quiescent_state(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				force_mb_all_threads();
+				force_mb_all_readers();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -258,7 +258,7 @@ void wait_for_quiescent_state(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				force_mb_all_threads();
+				force_mb_all_readers();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -268,7 +268,7 @@ void wait_for_quiescent_state(void)
 				wait_gp();
 				break; /* only escape switch */
 			case KICK_READER_LOOPS:
-				force_mb_all_threads();
+				force_mb_all_readers();
 				wait_loops = 0;
 				break; /* only escape switch */
 			default:
@@ -289,7 +289,7 @@ void synchronize_rcu(void)
 	 * where new ptr points to. Must be done within internal_rcu_lock
 	 * because it iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
-	force_mb_all_threads();
+	force_mb_all_readers();
 
 	switch_next_rcu_qparity();	/* 0 -> 1 */
 
@@ -353,7 +353,7 @@ void synchronize_rcu(void)
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. Must be done within internal_rcu_lock because it iterates on
 	 * reader threads. */
-	force_mb_all_threads();
+	force_mb_all_readers();
 
 	internal_rcu_unlock();
 }
