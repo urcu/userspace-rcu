@@ -136,12 +136,12 @@ static inline void debug_yield_init(void)
 #endif
 
 #ifdef RCU_MB
-static inline void reader_barrier()
+static inline void smp_mb_light()
 {
 	smp_mb();
 }
 #else
-static inline void reader_barrier()
+static inline void smp_mb_light()
 {
 	barrier();
 }
@@ -216,9 +216,9 @@ static inline void _rcu_read_lock(void)
 		_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
-		 * accessing the pointer. See force_mb_all_readers().
+		 * accessing the pointer. See smp_mb_heavy().
 		 */
-		reader_barrier();
+		smp_mb_light();
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
 	}
@@ -231,13 +231,13 @@ static inline void _rcu_read_unlock(void)
 	tmp = rcu_reader.ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
-	 * See force_mb_all_readers().
+	 * See smp_mb_heavy().
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
-		reader_barrier();
+		smp_mb_light();
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 		/* write rcu_reader.ctr before read futex */
-		reader_barrier();
+		smp_mb_light();
 		wake_up_gp();
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);

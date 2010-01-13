@@ -119,43 +119,11 @@ static void switch_next_rcu_qparity(void)
 }
 
 #ifdef RCU_MB
-#if 0 /* unused */
-static void force_mb_single_thread(struct rcu_reader *index)
+static void smp_mb_heavy()
 {
 	smp_mb();
 }
-#endif //0
-
-static void force_mb_all_readers(void)
-{
-	smp_mb();
-}
-#else /* #ifdef RCU_MB */
-#if 0 /* unused */
-static void force_mb_single_thread(struct rcu_reader *index)
-{
-	assert(!list_empty(&registry));
-	/*
-	 * pthread_kill has a smp_mb(). But beware, we assume it performs
-	 * a cache flush on architectures with non-coherent cache. Let's play
-	 * safe and don't assume anything : we use smp_mc() to make sure the
-	 * cache flush is enforced.
-	 */
-	index->need_mb = 1;
-	smp_mc();	/* write ->need_mb before sending the signals */
-	pthread_kill(index->tid, SIGRCU);
-	smp_mb();
-	/*
-	 * Wait for sighandler (and thus mb()) to execute on every thread.
-	 * BUSY-LOOP.
-	 */
-	while (index->need_mb) {
-		poll(NULL, 0, 1);
-	}
-	smp_mb();	/* read ->need_mb before ending the barrier */
-}
-#endif //0
-
+#else
 static void force_mb_all_readers(void)
 {
 	struct rcu_reader *index;
@@ -198,6 +166,11 @@ static void force_mb_all_readers(void)
 	}
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
+
+static void smp_mb_heavy()
+{
+	force_mb_all_readers();
+}
 #endif /* #else #ifdef RCU_MB */
 
 /*
@@ -206,7 +179,7 @@ static void force_mb_all_readers(void)
 static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
-	force_mb_all_readers();
+	smp_mb_heavy();
 	if (uatomic_read(&gp_futex) == -1)
 		futex_async(&gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
@@ -228,7 +201,7 @@ void wait_for_quiescent_state(void)
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
-			force_mb_all_readers();
+			smp_mb_heavy();
 		}
 
 		list_for_each_entry_safe(index, tmp, &registry, head) {
@@ -240,7 +213,7 @@ void wait_for_quiescent_state(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				force_mb_all_readers();
+				smp_mb_heavy();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -258,7 +231,7 @@ void wait_for_quiescent_state(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				force_mb_all_readers();
+				smp_mb_heavy();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -268,7 +241,7 @@ void wait_for_quiescent_state(void)
 				wait_gp();
 				break; /* only escape switch */
 			case KICK_READER_LOOPS:
-				force_mb_all_readers();
+				smp_mb_heavy();
 				wait_loops = 0;
 				break; /* only escape switch */
 			default:
@@ -289,7 +262,7 @@ void synchronize_rcu(void)
 	 * where new ptr points to. Must be done within internal_rcu_lock
 	 * because it iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
-	force_mb_all_readers();
+	smp_mb_heavy();
 
 	switch_next_rcu_qparity();	/* 0 -> 1 */
 
@@ -353,7 +326,7 @@ void synchronize_rcu(void)
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. Must be done within internal_rcu_lock because it iterates on
 	 * reader threads. */
-	force_mb_all_readers();
+	smp_mb_heavy();
 
 	internal_rcu_unlock();
 }
