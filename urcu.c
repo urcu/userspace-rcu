@@ -132,7 +132,7 @@ static void switch_next_rcu_qparity(void)
 static void smp_mb_heavy(void)
 {
 	if (likely(has_sys_membarrier))
-		membarrier(1);
+		membarrier(MEMBARRIER_EXPEDITED);
 	else
 		smp_mb();
 }
@@ -392,7 +392,7 @@ void rcu_init(void)
 	if (init_done)
 		return;
 	init_done = 1;
-	if (!membarrier(1))
+	if (!membarrier(MEMBARRIER_EXPEDITED))
 		has_sys_membarrier = 1;
 }
 #endif
