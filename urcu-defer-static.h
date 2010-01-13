@@ -36,6 +36,7 @@
 #include <urcu/arch.h>
 #include <urcu/uatomic_arch.h>
 #include <urcu/list.h>
+#include <urcu/system.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,36 +64,6 @@ extern "C" {
 #define DQ_CLEAR_FCT_BIT(x)	\
 	(x = (void *)((unsigned long)(x) & ~DQ_FCT_BIT))
 #define DQ_FCT_MARK		((void *)(~DQ_FCT_BIT))
-
-/*
- * Identify a shared load. A smp_rmc() or smp_mc() should come before the load.
- */
-#define _LOAD_SHARED(p)	       ACCESS_ONCE(p)
-
-/*
- * Load a data from shared memory, doing a cache flush if required.
- */
-#define LOAD_SHARED(p)			\
-	({				\
-		smp_rmc();		\
-		_LOAD_SHARED(p);	\
-	})
-
-/*
- * Identify a shared store. A smp_wmc() or smp_mc() should follow the store.
- */
-#define _STORE_SHARED(x, v)	({ ACCESS_ONCE(x) = (v); })
-
-/*
- * Store v into x, where x is located in shared memory. Performs the required
- * cache flush after writing. Returns v.
- */
-#define STORE_SHARED(x, v)		\
-	({				\
-		_STORE_SHARED(x, v);	\
-		smp_wmc();		\
-		(v);			\
-	})
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
