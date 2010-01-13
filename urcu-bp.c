@@ -43,9 +43,9 @@
 #define RCU_SLEEP_DELAY		1000
 #define ARENA_INIT_ALLOC	16
 
-void __attribute__((destructor)) urcu_bp_exit(void);
+void __attribute__((destructor)) rcu_bp_exit(void);
 
-static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
@@ -54,17 +54,17 @@ unsigned int __thread rand_yield;
 
 /*
  * Global grace period counter.
- * Contains the current RCU_GP_CTR_BIT.
+ * Contains the current RCU_GP_CTR_PHASE.
  * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
  * Written to only by writer with mutex taken. Read by both writer and readers.
  */
-long urcu_gp_ctr = RCU_GP_COUNT;
+long rcu_gp_ctr = RCU_GP_COUNT;
 
 /*
  * Pointer to registry elements. Written to only by each individual reader. Read
  * by both the reader and the writers.
  */
-struct urcu_reader __thread *urcu_reader;
+struct rcu_reader __thread *rcu_reader;
 
 static LIST_HEAD(registry);
 
@@ -78,26 +78,26 @@ static struct registry_arena registry_arena;
 
 static void rcu_gc_registry(void);
 
-static void internal_urcu_lock(void)
+static void internal_rcu_lock(void)
 {
 	int ret;
 
 #ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(&urcu_mutex);
+	ret = pthread_mutex_lock(&rcu_mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(&urcu_mutex)) != 0) {
+	while ((ret = pthread_mutex_trylock(&rcu_mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR) {
 			printf("ret = %d, errno = %d\n", ret, errno);
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (urcu_reader.need_mb) {
+		if (rcu_reader.need_mb) {
 			smp_mb();
-			urcu_reader.need_mb = 0;
+			rcu_reader.need_mb = 0;
 			smp_mb();
 		}
 		poll(NULL,0,10);
@@ -105,11 +105,11 @@ static void internal_urcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_urcu_unlock(void)
+static void internal_rcu_unlock(void)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&urcu_mutex);
+	ret = pthread_mutex_unlock(&rcu_mutex);
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
@@ -117,23 +117,23 @@ static void internal_urcu_unlock(void)
 }
 
 /*
- * called with urcu_mutex held.
+ * called with rcu_mutex held.
  */
-static void switch_next_urcu_qparity(void)
+static void switch_next_rcu_qparity(void)
 {
-	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr ^ RCU_GP_CTR_BIT);
+	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
 }
 
 void wait_for_quiescent_state(void)
 {
 	LIST_HEAD(qsreaders);
 	int wait_loops = 0;
-	struct urcu_reader *index, *tmp;
+	struct rcu_reader *index, *tmp;
 
 	if (list_empty(&registry))
 		return;
 	/*
-	 * Wait for each thread urcu_reader.ctr count to become 0.
+	 * Wait for each thread rcu_reader.ctr count to become 0.
 	 */
 	for (;;) {
 		wait_loops++;
@@ -165,18 +165,18 @@ void synchronize_rcu(void)
 	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
 	assert(!ret);
 
-	internal_urcu_lock();
+	internal_rcu_lock();
 
 	/* Remove old registry elements */
 	rcu_gc_registry();
 
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. Must be done within internal_urcu_lock
+	 * where new ptr points to. Must be done within internal_rcu_lock
 	 * because it iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
 	smp_mb();
 
-	switch_next_urcu_qparity();	/* 0 -> 1 */
+	switch_next_rcu_qparity();	/* 0 -> 1 */
 
 	/*
 	 * Must commit qparity update to memory before waiting for parity
@@ -213,7 +213,7 @@ void synchronize_rcu(void)
 	 */
 	smp_mb();
 
-	switch_next_urcu_qparity();	/* 1 -> 0 */
+	switch_next_rcu_qparity();	/* 1 -> 0 */
 
 	/*
 	 * Must commit qparity update to memory before waiting for parity
@@ -236,11 +236,11 @@ void synchronize_rcu(void)
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
 
 	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. Must be done within internal_urcu_lock because it iterates on
+	 * freed. Must be done within internal_rcu_lock because it iterates on
 	 * reader threads. */
 	smp_mb();
 
-	internal_urcu_unlock();
+	internal_rcu_unlock();
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
@@ -290,50 +290,50 @@ static void resize_arena(struct registry_arena *arena, size_t len)
 /* Called with signals off and mutex locked */
 static void add_thread(void)
 {
-	struct urcu_reader *urcu_reader_reg;
+	struct rcu_reader *rcu_reader_reg;
 
 	if (registry_arena.len
-	    < registry_arena.used + sizeof(struct urcu_reader))
+	    < registry_arena.used + sizeof(struct rcu_reader))
 		resize_arena(&registry_arena,
 		max(registry_arena.len << 1, ARENA_INIT_ALLOC));
 	/*
 	 * Find a free spot.
 	 */
-	for (urcu_reader_reg = registry_arena.p;
-	     (void *)urcu_reader_reg < registry_arena.p + registry_arena.len;
-	     urcu_reader_reg++) {
-		if (!urcu_reader_reg->alloc)
+	for (rcu_reader_reg = registry_arena.p;
+	     (void *)rcu_reader_reg < registry_arena.p + registry_arena.len;
+	     rcu_reader_reg++) {
+		if (!rcu_reader_reg->alloc)
 			break;
 	}
-	urcu_reader_reg->alloc = 1;
-	registry_arena.used += sizeof(struct urcu_reader);
+	rcu_reader_reg->alloc = 1;
+	registry_arena.used += sizeof(struct rcu_reader);
 
 	/* Add to registry */
-	urcu_reader_reg->tid = pthread_self();
-	assert(urcu_reader_reg->ctr == 0);
-	list_add(&urcu_reader_reg->head, &registry);
-	urcu_reader = urcu_reader_reg;
+	rcu_reader_reg->tid = pthread_self();
+	assert(rcu_reader_reg->ctr == 0);
+	list_add(&rcu_reader_reg->head, &registry);
+	rcu_reader = rcu_reader_reg;
 }
 
 /* Called with signals off and mutex locked */
 static void rcu_gc_registry(void)
 {
-	struct urcu_reader *urcu_reader_reg;
+	struct rcu_reader *rcu_reader_reg;
 	pthread_t tid;
 	int ret;
 
-	for (urcu_reader_reg = registry_arena.p;
-	     (void *)urcu_reader_reg < registry_arena.p + registry_arena.len;
-	     urcu_reader_reg++) {
-		if (!urcu_reader_reg->alloc)
+	for (rcu_reader_reg = registry_arena.p;
+	     (void *)rcu_reader_reg < registry_arena.p + registry_arena.len;
+	     rcu_reader_reg++) {
+		if (!rcu_reader_reg->alloc)
 			continue;
-		tid = urcu_reader_reg->tid;
+		tid = rcu_reader_reg->tid;
 		ret = pthread_kill(tid, 0);
 		assert(ret != EINVAL);
 		if (ret == ESRCH) {
-			list_del(&urcu_reader_reg->head);
-			urcu_reader_reg->alloc = 0;
-			registry_arena.used -= sizeof(struct urcu_reader);
+			list_del(&rcu_reader_reg->head);
+			rcu_reader_reg->alloc = 0;
+			registry_arena.used -= sizeof(struct rcu_reader);
 		}
 	}
 }
@@ -352,18 +352,18 @@ void rcu_bp_register(void)
 	/*
 	 * Check if a signal concurrently registered our thread since
 	 * the check in rcu_read_lock(). */
-	if (urcu_reader)
+	if (rcu_reader)
 		goto end;
 
-	internal_urcu_lock();
+	internal_rcu_lock();
 	add_thread();
-	internal_urcu_unlock();
+	internal_rcu_unlock();
 end:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
 
-void urcu_bp_exit()
+void rcu_bp_exit()
 {
 	munmap(registry_arena.p, registry_arena.len);
 }

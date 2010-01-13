@@ -46,15 +46,15 @@ Usage of liburcu
 	* Link the application with "-lurcu".
 	* This is the preferred version of the library, both in terms of speed
 	  and flexibility. Requires a signal, typically SIGUSR1. Can be
-	  overridden with -DSIGURCU by modifying Makefile.build.inc.
+	  overridden with -DSIGRCU by modifying Makefile.build.inc.
 
 Usage of liburcu-mb
 
 	* #include <urcu.h>
-	* Compile any _LGPL_SOURCE code using this library with "-DURCU_MB".
+	* Compile any _LGPL_SOURCE code using this library with "-DRCU_MB".
 	* Link with "-lurcu-mb".
 	* This version of the urcu library does not need to
-	  reserve a signal number. URCU_MB uses full memory barriers for
+	  reserve a signal number. RCU_MB uses full memory barriers for
 	  readers. This eliminates the need for signals but results in slower
 	  reads.
 
@@ -74,7 +74,7 @@ Usage of liburcu-bp
 	* Link with "-lurcu-bp".
 	* The BP library flavor stands for "bulletproof". It is specifically
 	  designed to help tracing library to hook on applications without
-	  requiring to modify these applications. urcu_init(),
+	  requiring to modify these applications. rcu_init(),
 	  rcu_register_thread() and rcu_unregister_thread() all become nops.
 	  The state is dealt with by the library internally at the expense of
 	  read-side and write-side performance.

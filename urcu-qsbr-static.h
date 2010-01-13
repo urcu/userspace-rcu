@@ -57,7 +57,7 @@ extern "C" {
 
 /*
  * If a reader is really non-cooperative and refuses to commit its
- * urcu_reader.ctr count to memory (there is no barrier in the reader
+ * rcu_reader.ctr count to memory (there is no barrier in the reader
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
@@ -134,9 +134,9 @@ static inline void reader_barrier()
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern unsigned long urcu_gp_ctr;
+extern unsigned long rcu_gp_ctr;
 
-struct urcu_reader {
+struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	unsigned long ctr;
 	/* Data used for registry */
@@ -144,7 +144,7 @@ struct urcu_reader {
 	pthread_t tid;
 };
 
-extern struct urcu_reader __thread urcu_reader;
+extern struct rcu_reader __thread rcu_reader;
 
 extern int gp_futex;
 
@@ -168,7 +168,7 @@ static inline int rcu_gp_ongoing(unsigned long *value)
 	if (value == NULL)
 		return 0;
 	reader_gp = LOAD_SHARED(*value);
-	return reader_gp && ((reader_gp ^ urcu_gp_ctr) & RCU_GP_CTR);
+	return reader_gp && ((reader_gp ^ rcu_gp_ctr) & RCU_GP_CTR);
 }
 #else /* !(BITS_PER_LONG < 64) */
 static inline int rcu_gp_ongoing(unsigned long *value)
@@ -178,13 +178,13 @@ static inline int rcu_gp_ongoing(unsigned long *value)
 	if (value == NULL)
 		return 0;
 	reader_gp = LOAD_SHARED(*value);
-	return reader_gp && (reader_gp - urcu_gp_ctr > ULONG_MAX / 2);
+	return reader_gp && (reader_gp - rcu_gp_ctr > ULONG_MAX / 2);
 }
 #endif  /* !(BITS_PER_LONG < 64) */
 
 static inline void _rcu_read_lock(void)
 {
-	rcu_assert(urcu_reader.ctr);
+	rcu_assert(rcu_reader.ctr);
 }
 
 static inline void _rcu_read_unlock(void)
@@ -194,8 +194,8 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	smp_mb();	
-	_STORE_SHARED(urcu_reader.ctr, _LOAD_SHARED(urcu_gp_ctr));
-	smp_mb();	/* write urcu_reader.ctr before read futex */
+	_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
+	smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
 	smp_mb();
 }
@@ -203,14 +203,14 @@ static inline void _rcu_quiescent_state(void)
 static inline void _rcu_thread_offline(void)
 {
 	smp_mb();
-	STORE_SHARED(urcu_reader.ctr, 0);
-	smp_mb();	/* write urcu_reader.ctr before read futex */
+	STORE_SHARED(rcu_reader.ctr, 0);
+	smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
 }
 
 static inline void _rcu_thread_online(void)
 {
-	_STORE_SHARED(urcu_reader.ctr, LOAD_SHARED(urcu_gp_ctr));
+	_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
 	smp_mb();
 }
 

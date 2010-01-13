@@ -55,15 +55,15 @@ extern "C" {
 
 /*
  * The signal number used by the RCU library can be overridden with
- * -DSIGURCU= when compiling the library.
+ * -DSIGRCU= when compiling the library.
  */
-#ifndef SIGURCU
-#define SIGURCU SIGUSR1
+#ifndef SIGRCU
+#define SIGRCU SIGUSR1
 #endif
 
 /*
  * If a reader is really non-cooperative and refuses to commit its
- * urcu_active_readers count to memory (there is no barrier in the reader
+ * rcu_active_readers count to memory (there is no barrier in the reader
  * per-se), kick it after a few loops waiting for it.
  */
 #define KICK_READER_LOOPS 10000
@@ -89,10 +89,10 @@ extern "C" {
 #define YIELD_WRITE	(1 << 1)
 
 /*
- * Updates without URCU_MB are much slower. Account this in
+ * Updates without RCU_MB are much slower. Account this in
  * the delay.
  */
-#ifdef URCU_MB
+#ifdef RCU_MB
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
 #else
@@ -135,7 +135,7 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-#ifdef URCU_MB
+#ifdef RCU_MB
 static inline void reader_barrier()
 {
 	smp_mb();
@@ -148,22 +148,22 @@ static inline void reader_barrier()
 #endif
 
 /*
- * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
- * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
+ * The trick here is that RCU_GP_CTR_PHASE must be a multiple of 8 so we can use
+ * a full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
  */
 #define RCU_GP_COUNT		(1UL << 0)
 /* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
-#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
+#define RCU_GP_CTR_PHASE	(1UL << (sizeof(long) << 2))
+#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_PHASE - 1)
 
 /*
  * Global quiescent period counter with low-order bits unused.
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern long urcu_gp_ctr;
+extern long rcu_gp_ctr;
 
-struct urcu_reader {
+struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	long ctr;
 	char need_mb;
@@ -172,7 +172,7 @@ struct urcu_reader {
 	pthread_t tid;
 };
 
-extern struct urcu_reader __thread urcu_reader;
+extern struct rcu_reader __thread rcu_reader;
 
 extern int gp_futex;
 
@@ -200,24 +200,27 @@ static inline int rcu_old_gp_ongoing(long *value)
 	 */
 	v = LOAD_SHARED(*value);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
+		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
 
 static inline void _rcu_read_lock(void)
 {
 	long tmp;
 
-	tmp = urcu_reader.ctr;
-	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
+	tmp = rcu_reader.ctr;
+	/*
+	 * rcu_gp_ctr is
+	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
+	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_STORE_SHARED(urcu_reader.ctr, _LOAD_SHARED(urcu_gp_ctr));
+		_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer. See force_mb_all_threads().
 		 */
 		reader_barrier();
 	} else {
-		_STORE_SHARED(urcu_reader.ctr, tmp + RCU_GP_COUNT);
+		_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -225,19 +228,19 @@ static inline void _rcu_read_unlock(void)
 {
 	long tmp;
 
-	tmp = urcu_reader.ctr;
+	tmp = rcu_reader.ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See force_mb_all_threads().
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		reader_barrier();
-		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
-		/* write urcu_reader.ctr before read futex */
+		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
+		/* write rcu_reader.ctr before read futex */
 		reader_barrier();
 		wake_up_gp();
 	} else {
-		_STORE_SHARED(urcu_reader.ctr, urcu_reader.ctr - RCU_GP_COUNT);
+		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 	}
 }
 

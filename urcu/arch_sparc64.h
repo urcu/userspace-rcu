@@ -65,7 +65,7 @@ __asm__ __volatile__("ba,pt %%xcc, 1f\n\t"	\
 #define rmc()	barrier()
 #define wmc()	barrier()
 
-#ifdef CONFIG_URCU_SMP
+#ifdef CONFIG_RCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()

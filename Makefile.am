@@ -28,7 +28,7 @@ lib_LTLIBRARIES = liburcu.la liburcu-mb.la liburcu-defer.la liburcu-qsbr.la libu
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_mb_la_CFLAGS = -DURCU_MB
+liburcu_mb_la_CFLAGS = -DRCU_MB
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 

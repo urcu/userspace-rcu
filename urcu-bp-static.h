@@ -73,7 +73,7 @@ extern "C" {
 #define YIELD_WRITE	(1 << 1)
 
 /*
- * Updates without URCU_MB are much slower. Account this in
+ * Updates without RCU_MB are much slower. Account this in
  * the delay.
  */
 /* maximum sleep delay, in us */
@@ -116,13 +116,13 @@ static inline void debug_yield_init(void)
 #endif
 
 /*
- * The trick here is that RCU_GP_CTR_BIT must be a multiple of 8 so we can use a
+ * The trick here is that RCU_GP_CTR_PHASE must be a multiple of 8 so we can use a
  * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
  */
 #define RCU_GP_COUNT		(1UL << 0)
 /* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_BIT		(1UL << (sizeof(long) << 2))
-#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_BIT - 1)
+#define RCU_GP_CTR_PHASE		(1UL << (sizeof(long) << 2))
+#define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_PHASE - 1)
 
 /*
  * Used internally by _rcu_read_lock.
@@ -134,9 +134,9 @@ extern void rcu_bp_register(void);
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern long urcu_gp_ctr;
+extern long rcu_gp_ctr;
 
-struct urcu_reader {
+struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	long ctr;
 	/* Data used for registry */
@@ -150,7 +150,7 @@ struct urcu_reader {
  * Adds a pointer dereference on the read-side, but won't require to unregister
  * the reader thread.
  */
-extern struct urcu_reader __thread *urcu_reader;
+extern struct rcu_reader __thread *rcu_reader;
 
 static inline int rcu_old_gp_ongoing(long *value)
 {
@@ -164,7 +164,7 @@ static inline int rcu_old_gp_ongoing(long *value)
 	 */
 	v = LOAD_SHARED(*value);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ urcu_gp_ctr) & RCU_GP_CTR_BIT);
+		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
 
 static inline void _rcu_read_lock(void)
@@ -172,20 +172,23 @@ static inline void _rcu_read_lock(void)
 	long tmp;
 
 	/* Check if registered */
-	if (unlikely(!urcu_reader))
+	if (unlikely(!rcu_reader))
 		rcu_bp_register();
 
-	tmp = urcu_reader->ctr;
-	/* urcu_gp_ctr = RCU_GP_COUNT | (~RCU_GP_CTR_BIT or RCU_GP_CTR_BIT) */
+	tmp = rcu_reader->ctr;
+	/*
+	 * rcu_gp_ctr is
+	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
+	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_STORE_SHARED(urcu_reader->ctr, _LOAD_SHARED(urcu_gp_ctr));
+		_STORE_SHARED(rcu_reader->ctr, _LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer.
 		 */
 		smp_mb();
 	} else {
-		_STORE_SHARED(urcu_reader->ctr, tmp + RCU_GP_COUNT);
+		_STORE_SHARED(rcu_reader->ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -195,7 +198,7 @@ static inline void _rcu_read_unlock(void)
 	 * Finish using rcu before decrementing the pointer.
 	 */
 	smp_mb();
-	_STORE_SHARED(urcu_reader->ctr, urcu_reader->ctr - RCU_GP_COUNT);
+	_STORE_SHARED(rcu_reader->ctr, rcu_reader->ctr - RCU_GP_COUNT);
 }
 
 #ifdef __cplusplus 

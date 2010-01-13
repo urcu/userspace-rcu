@@ -92,9 +92,9 @@ extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
 
 /*
- * Explicit urcu initialization, for "early" use within library constructors.
+ * Explicit rcu initialization, for "early" use within library constructors.
  */
-extern void urcu_init(void);
+extern void rcu_init(void);
 
 #ifdef __cplusplus 
 }

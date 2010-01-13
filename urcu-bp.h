@@ -97,7 +97,7 @@ static inline void rcu_unregister_thread(void)
 {
 }
 
-static inline void urcu_init(void)
+static inline void rcu_init(void)
 {
 }
 

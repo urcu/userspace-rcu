@@ -62,8 +62,8 @@ extern "C" {
  * rcu_read_unlock()
  *
  * Mark the beginning and end of a read-side critical section.
- * DON'T FORGET TO USE RCU_REGISTER/UNREGISTER_THREAD() FOR EACH THREAD WITH
- * READ-SIDE CRITICAL SECTION.
+ * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread() FOR EACH
+ * THREAD WITH READ-SIDE CRITICAL SECTION.
  */
 #define rcu_read_lock()		_rcu_read_lock()
 #define rcu_read_unlock()	_rcu_read_unlock()
@@ -82,12 +82,12 @@ extern "C" {
  * QSBR read lock/unlock are guaranteed to be no-ops. Therefore, we expose them
  * in the LGPL header for any code to use. However, the debug version is not
  * nops and may contain sanity checks. To activate it, applications must be
- * recompiled with -DURCU_DEBUG (even non-LGPL/GPL applications). This is the
+ * recompiled with -DRCU_DEBUG (even non-LGPL/GPL applications). This is the
  * best trade-off between license/performance/code triviality and
  * library debugging & tracing features we could come up with.
  */
 
-#if (!defined(BUILD_QSBR_LIB) && defined(URCU_DEBUG))
+#if (!defined(BUILD_QSBR_LIB) && defined(RCU_DEBUG))
 
 static inline void rcu_read_lock(void)
 {
@@ -97,12 +97,12 @@ static inline void rcu_read_lock(void)
 {
 }
 
-#else /* !URCU_DEBUG */
+#else /* !RCU_DEBUG */
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
 
-#endif /* !URCU_DEBUG */
+#endif /* !RCU_DEBUG */
 
 extern void rcu_quiescent_state(void);
 extern void rcu_thread_offline(void);

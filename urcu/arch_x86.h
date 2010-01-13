@@ -33,7 +33,7 @@ extern "C" {
 
 #define CACHE_LINE_SIZE	128
 
-#ifdef CONFIG_URCU_HAVE_FENCE
+#ifdef CONFIG_RCU_HAVE_FENCE
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence"::: "memory")
@@ -62,7 +62,7 @@ extern "C" {
 #define rmc()	barrier()
 #define wmc()	barrier()
 
-#ifdef CONFIG_URCU_SMP
+#ifdef CONFIG_RCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()

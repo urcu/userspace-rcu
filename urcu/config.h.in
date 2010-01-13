@@ -1,15 +1,15 @@
 /* urcu/config.h.in. Manually generatad for control over the contained defs. */
 
 /* Defined when on a system that has memory fence instructions. */
-#undef CONFIG_URCU_HAVE_FENCE
+#undef CONFIG_RCU_HAVE_FENCE
 
 /* Defined when on a system with futex support. */
-#undef CONFIG_URCU_HAVE_FUTEX
+#undef CONFIG_RCU_HAVE_FUTEX
 
 /* Enable SMP support. With SMP support enabled, uniprocessors are also
    supported. With SMP support disabled, UP systems work fine, but the
    behavior of SMP systems is undefined. */
-#undef CONFIG_URCU_SMP
+#undef CONFIG_RCU_SMP
 
 /* Compatibility mode for i386 which lacks cmpxchg instruction. */
-#undef CONFIG_URCU_COMPAT_ARCH
+#undef CONFIG_RCU_COMPAT_ARCH

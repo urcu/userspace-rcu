@@ -26,11 +26,11 @@ endif
 URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 # URCU_SIGNAL_YIELD uses urcu.c but -DDEBUG_YIELD must be defined
 URCU_SIGNAL_YIELD=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
-# URCU_MB uses urcu.c but -DURCU_MB must be defined
+# URCU_MB uses urcu.c but -DRCU_MB must be defined
 URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 URCU_QSBR=$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
-# -DURCU_MB must be defined
+# -DRCU_MB must be defined
 URCU_MB_DEFER=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-defer.c $(top_srcdir)/urcu-pointer.c $(COMPAT)
 
 URCU_SIGNAL_LIB=$(top_builddir)/liburcu.la
@@ -66,7 +66,7 @@ test_urcu_yield_SOURCES = test_urcu.c $(URCU_SIGNAL_YIELD)
 test_urcu_yield_CFLAGS = -DDEBUG_YIELD $(AM_CFLAGS)
 
 test_urcu_mb_SOURCES = test_urcu.c $(URCU_MB)
-test_urcu_mb_CFLAGS = -DURCU_MB $(AM_CFLAGS)
+test_urcu_mb_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
 test_qsbr_timing_SOURCES = test_qsbr_timing.c $(URCU_QSBR)
 
@@ -95,7 +95,7 @@ test_looplen_SOURCES = test_looplen.c
 test_urcu_gc_SOURCES = test_urcu_gc.c $(URCU_SIGNAL)
 
 test_urcu_gc_mb_SOURCES = test_urcu_gc.c $(URCU_MB)
-test_urcu_gc_mb_CFLAGS = -DURCU_MB $(AM_CFLAGS)
+test_urcu_gc_mb_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
 test_qsbr_gc_SOURCES = test_qsbr_gc.c $(URCU_QSBR)
 
@@ -106,13 +106,13 @@ test_urcu_lgc_SOURCES = test_urcu_gc.c $(URCU_SIGNAL)
 test_urcu_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
 test_urcu_lgc_mb_SOURCES = test_urcu_gc.c $(URCU_MB)
-test_urcu_lgc_mb_CFLAGS = -DTEST_LOCAL_GC -DURCU_MB $(AM_CFLAGS)
+test_urcu_lgc_mb_CFLAGS = -DTEST_LOCAL_GC -DRCU_MB $(AM_CFLAGS)
 
 test_qsbr_dynamic_link_SOURCES = test_qsbr.c $(URCU_QSBR)
 test_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_mb_defer_SOURCES = test_urcu_defer.c $(URCU_MB_DEFER)
-test_urcu_mb_defer_CFLAGS = -DURCU_MB $(AM_CFLAGS)
+test_urcu_mb_defer_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
 test_uatomic_SOURCES = test_uatomic.c $(COMPAT)
 

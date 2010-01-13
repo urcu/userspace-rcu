@@ -12,7 +12,7 @@
 #include <urcu.h>
 #endif
 #ifdef TORTURE_URCU_MB
-#define URCU_MB
+#define RCU_MB
 #include <urcu.h>
 #endif
 #ifdef TORTURE_QSBR

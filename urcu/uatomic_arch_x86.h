@@ -406,15 +406,15 @@ void __uatomic_dec(void *addr, int len)
 
 #define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
 
-#if ((BITS_PER_LONG != 64) && defined(CONFIG_URCU_COMPAT_ARCH))
-extern int __urcu_cas_avail;
-extern int __urcu_cas_init(void);
+#if ((BITS_PER_LONG != 64) && defined(CONFIG_RCU_COMPAT_ARCH))
+extern int __rcu_cas_avail;
+extern int __rcu_cas_init(void);
 
 #define UATOMIC_COMPAT(insn)							\
-	((likely(__urcu_cas_avail > 0))						\
+	((likely(__rcu_cas_avail > 0))						\
 	? (_uatomic_##insn)							\
-		: ((unlikely(__urcu_cas_avail < 0)				\
-			? ((__urcu_cas_init() > 0)				\
+		: ((unlikely(__rcu_cas_avail < 0)				\
+			? ((__rcu_cas_init() > 0)				\
 				? (_uatomic_##insn)				\
 				: (compat_uatomic_##insn))			\
 			: (compat_uatomic_##insn))))

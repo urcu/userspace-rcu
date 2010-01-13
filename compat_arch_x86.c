@@ -28,17 +28,17 @@
 
 /*
  * It does not really matter if the constructor is called before using
- * the library, as long as the caller checks if __urcu_cas_avail < 0 and calls
+ * the library, as long as the caller checks if __rcu_cas_avail < 0 and calls
  * compat_arch_init() explicitely if needed.
  */
-int __attribute__((constructor)) __urcu_cas_init(void);
+int __attribute__((constructor)) __rcu_cas_init(void);
 
 /*
  * -1: unknown
  *  1: available
  *  0: unavailable
  */
-int __urcu_cas_avail = -1;
+int __rcu_cas_avail = -1;
 
 static pthread_mutex_t compat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -231,9 +231,9 @@ unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
 	return result;
 }
 
-int __urcu_cas_init(void)
+int __rcu_cas_init(void)
 {
-	if (__urcu_cas_avail < 0)
-		__urcu_cas_avail = compare_and_swap_is_available();
-	return __urcu_cas_avail;
+	if (__rcu_cas_avail < 0)
+		__rcu_cas_avail = compare_and_swap_is_available();
+	return __rcu_cas_avail;
 }

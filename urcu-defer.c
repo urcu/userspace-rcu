@@ -37,14 +37,14 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-defer.h"
 
-void __attribute__((destructor)) urcu_defer_exit(void);
+void __attribute__((destructor)) rcu_defer_exit(void);
 
 extern void synchronize_rcu(void);
 
 /*
- * urcu_defer_mutex nests inside defer_thread_mutex.
+ * rcu_defer_mutex nests inside defer_thread_mutex.
  */
-static pthread_mutex_t urcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t defer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int defer_thread_futex;
@@ -57,7 +57,7 @@ static struct defer_queue __thread defer_queue;
 static LIST_HEAD(registry);
 static pthread_t tid_defer;
 
-static void internal_urcu_lock(pthread_mutex_t *mutex)
+static void internal_rcu_lock(pthread_mutex_t *mutex)
 {
 	int ret;
 
@@ -80,7 +80,7 @@ static void internal_urcu_lock(pthread_mutex_t *mutex)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_urcu_unlock(pthread_mutex_t *mutex)
+static void internal_rcu_unlock(pthread_mutex_t *mutex)
 {
 	int ret;
 
@@ -108,12 +108,12 @@ static unsigned long rcu_defer_num_callbacks(void)
 	unsigned long num_items = 0, head;
 	struct defer_queue *index;
 
-	internal_urcu_lock(&urcu_defer_mutex);
+	internal_rcu_lock(&rcu_defer_mutex);
 	list_for_each_entry(index, &registry, list) {
 		head = LOAD_SHARED(index->head);
 		num_items += head - index->tail;
 	}
-	internal_urcu_unlock(&urcu_defer_mutex);
+	internal_rcu_unlock(&rcu_defer_mutex);
 	return num_items;
 }
 
@@ -184,9 +184,9 @@ static void _rcu_defer_barrier_thread(void)
 
 void rcu_defer_barrier_thread(void)
 {
-	internal_urcu_lock(&urcu_defer_mutex);
+	internal_rcu_lock(&rcu_defer_mutex);
 	_rcu_defer_barrier_thread();
-	internal_urcu_unlock(&urcu_defer_mutex);
+	internal_rcu_unlock(&rcu_defer_mutex);
 }
 
 /*
@@ -210,7 +210,7 @@ void rcu_defer_barrier(void)
 	if (list_empty(&registry))
 		return;
 
-	internal_urcu_lock(&urcu_defer_mutex);
+	internal_rcu_lock(&rcu_defer_mutex);
 	list_for_each_entry(index, &registry, list) {
 		index->last_head = LOAD_SHARED(index->head);
 		num_items += index->last_head - index->tail;
@@ -226,7 +226,7 @@ void rcu_defer_barrier(void)
 	list_for_each_entry(index, &registry, list)
 		rcu_defer_barrier_queue(index, index->last_head);
 end:
-	internal_urcu_unlock(&urcu_defer_mutex);
+	internal_rcu_unlock(&rcu_defer_mutex);
 }
 
 /*
@@ -347,36 +347,36 @@ void rcu_defer_register_thread(void)
 	assert(defer_queue.q == NULL);
 	defer_queue.q = malloc(sizeof(void *) * DEFER_QUEUE_SIZE);
 
-	internal_urcu_lock(&defer_thread_mutex);
-	internal_urcu_lock(&urcu_defer_mutex);
+	internal_rcu_lock(&defer_thread_mutex);
+	internal_rcu_lock(&rcu_defer_mutex);
 	was_empty = list_empty(&registry);
 	list_add(&defer_queue.list, &registry);
-	internal_urcu_unlock(&urcu_defer_mutex);
+	internal_rcu_unlock(&rcu_defer_mutex);
 
 	if (was_empty)
 		start_defer_thread();
-	internal_urcu_unlock(&defer_thread_mutex);
+	internal_rcu_unlock(&defer_thread_mutex);
 }
 
 void rcu_defer_unregister_thread(void)
 {
 	int is_empty;
 
-	internal_urcu_lock(&defer_thread_mutex);
-	internal_urcu_lock(&urcu_defer_mutex);
+	internal_rcu_lock(&defer_thread_mutex);
+	internal_rcu_lock(&rcu_defer_mutex);
 	list_del(&defer_queue.list);
 	_rcu_defer_barrier_thread();
 	free(defer_queue.q);
 	defer_queue.q = NULL;
 	is_empty = list_empty(&registry);
-	internal_urcu_unlock(&urcu_defer_mutex);
+	internal_rcu_unlock(&rcu_defer_mutex);
 
 	if (is_empty)
 		stop_defer_thread();
-	internal_urcu_unlock(&defer_thread_mutex);
+	internal_rcu_unlock(&defer_thread_mutex);
 }
 
-void urcu_defer_exit(void)
+void rcu_defer_exit(void)
 {
 	assert(list_empty(&registry));
 }

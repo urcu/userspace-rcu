@@ -58,7 +58,7 @@ extern "C" {
 #define rmc()	barrier()
 #define wmc()	barrier()
 
-#ifdef CONFIG_URCU_SMP
+#ifdef CONFIG_RCU_SMP
 #define smp_mb()	mb()
 #define smp_rmb()	rmb()
 #define smp_wmb()	wmb()

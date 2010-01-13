@@ -13,10 +13,10 @@ AM_PROG_MKDIR_P
 AC_CONFIG_HEADERS([config.h urcu/config.h])
 
 # Keep at the end to do not pollute installed header.
-AH_TEMPLATE([CONFIG_URCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_URCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
-AH_TEMPLATE([CONFIG_URCU_HAVE_FUTEX], [Defined when on a system with futex support.])
-AH_TEMPLATE([CONFIG_URCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks
+AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
+AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
+AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
+AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks
 cmpxchg instruction.])
 
 # Checks for programs.
@@ -64,7 +64,7 @@ AC_SUBST(SUBARCHTYPE)
 #Only using fence for x86_64.
 if test "x$ARCHTYPE" = "xx86" -a "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686"; then
 ]
-	AC_DEFINE([CONFIG_URCU_HAVE_FENCE], [1])
+	AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
 [
 fi
 ]
@@ -81,7 +81,7 @@ AC_TRY_COMPILE(
 ],
 [
 	AC_MSG_RESULT([yes])
-	AC_DEFINE([CONFIG_URCU_HAVE_FUTEX], [1])
+	AC_DEFINE([CONFIG_RCU_HAVE_FUTEX], [1])
 	compat_futex_test=0
 ]
 ,
@@ -100,7 +100,7 @@ AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = xx86compat ])
 [
 if test "x$SUBARCHTYPE" = xx86compat; then
 ]
-	AC_DEFINE([CONFIG_URCU_COMPAT_ARCH], [1])
+	AC_DEFINE([CONFIG_RCU_COMPAT_ARCH], [1])
 [
 fi
 ]
@@ -113,7 +113,7 @@ if test "$def_smp_support" = "no"; then
 	echo "SMP support disabled."
 else
 ]
-	AC_DEFINE([CONFIG_URCU_SMP], [1])
+	AC_DEFINE([CONFIG_RCU_SMP], [1])
 [
 	echo "SMP support enabled."
 fi

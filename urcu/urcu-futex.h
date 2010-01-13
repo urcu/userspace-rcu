@@ -41,7 +41,7 @@ extern "C" {
  * on the wait-side in compatibility mode.
  */
 
-#ifdef CONFIG_URCU_HAVE_FUTEX
+#ifdef CONFIG_RCU_HAVE_FUTEX
 #include <sys/syscall.h>
 #define futex(...)	syscall(__NR_futex, __VA_ARGS__)
 #define futex_noasync(uaddr, op, val, timeout, uaddr2, val3)	\
