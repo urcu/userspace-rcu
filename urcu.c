@@ -23,6 +23,7 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define _BSD_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -36,15 +37,24 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 
-#ifndef RCU_MB
+#ifdef RCU_MEMBARRIER
+static int init_done;
+int has_sys_membarrier;
+
+void __attribute__((constructor)) rcu_init(void);
+#endif
+
+#ifdef RCU_MB
+void rcu_init(void)
+{
+}
+#endif
+
+#ifdef RCU_SIGNAL
 static int init_done;
 
 void __attribute__((constructor)) rcu_init(void);
 void __attribute__((destructor)) rcu_exit(void);
-#else
-void rcu_init(void)
-{
-}
 #endif
 
 static pthread_mutex_t rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -118,12 +128,24 @@ static void switch_next_rcu_qparity(void)
 	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
 }
 
+#ifdef RCU_MEMBARRIER
+static void smp_mb_heavy(void)
+{
+	if (likely(has_sys_membarrier))
+		membarrier(1);
+	else
+		smp_mb();
+}
+#endif
+
 #ifdef RCU_MB
-static void smp_mb_heavy()
+static void smp_mb_heavy(void)
 {
 	smp_mb();
 }
-#else
+#endif
+
+#ifdef RCU_SIGNAL
 static void force_mb_all_readers(void)
 {
 	struct rcu_reader *index;
@@ -167,11 +189,11 @@ static void force_mb_all_readers(void)
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
 
-static void smp_mb_heavy()
+static void smp_mb_heavy(void)
 {
 	force_mb_all_readers();
 }
-#endif /* #else #ifdef RCU_MB */
+#endif /* #ifdef RCU_SIGNAL */
 
 /*
  * synchronize_rcu() waiting. Single thread.
@@ -364,7 +386,18 @@ void rcu_unregister_thread(void)
 	internal_rcu_unlock();
 }
 
-#ifndef RCU_MB
+#ifdef RCU_MEMBARRIER
+void rcu_init(void)
+{
+	if (init_done)
+		return;
+	init_done = 1;
+	if (!membarrier(1))
+		has_sys_membarrier = 1;
+}
+#endif
+
+#ifdef RCU_SIGNAL
 static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	/*
@@ -417,4 +450,4 @@ void rcu_exit(void)
 	assert(act.sa_sigaction == sigrcu_handler);
 	assert(list_empty(&registry));
 }
-#endif /* #ifndef RCU_MB */
+#endif /* #ifdef RCU_SIGNAL */

@@ -23,18 +23,21 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-lib_LTLIBRARIES = liburcu.la liburcu-mb.la liburcu-defer.la liburcu-qsbr.la liburcu-bp.la
+lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la liburcu-mb.la liburcu-signal.la liburcu-bp.la liburcu-defer.la
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
+
+liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
 
+liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
+liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
+
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 
 liburcu_defer_la_SOURCES = urcu-defer.c $(COMPAT)
-
-liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 
 $(top_srcdir)/*.h $(top_srcdir)/*.c: urcu/arch.h urcu/uatomic_arch.h
 

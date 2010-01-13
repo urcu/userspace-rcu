@@ -45,6 +45,24 @@
 extern "C" {
 #endif 
 
+/* Default is RCU_MEMBARRIER */
+#if !defined(RCU_MEMBARRIER) && !defined(RCU_MB) && !defined(RCU_SIGNAL)
+#define RCU_MEMBARRIER
+#endif
+
+#ifdef RCU_MEMBARRIER
+#include <unistd.h>
+#include <sys/syscall.h>
+
+/* If the headers do not support SYS_membarrier, statically use RCU_MB */
+#ifdef SYS_membarrier
+#define membarrier(...)		syscall(__NR_membarrier, __VA_ARGS__)
+#else
+#undef RCU_MEMBARRIER
+#define RCU_MB
+#endif
+#endif
+
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
  * See below for the function call wrappers which can be used in code meant to
@@ -89,14 +107,13 @@ extern "C" {
 #define YIELD_WRITE	(1 << 1)
 
 /*
- * Updates without RCU_MB are much slower. Account this in
- * the delay.
+ * Updates with RCU_SIGNAL are much slower. Account this in the delay.
  */
-#ifdef RCU_MB
+#ifdef RCU_SIGNAL
 /* maximum sleep delay, in us */
-#define MAX_SLEEP 50
-#else
 #define MAX_SLEEP 30000
+#else
+#define MAX_SLEEP 50
 #endif
 
 extern unsigned int yield_active;
@@ -135,12 +152,26 @@ static inline void debug_yield_init(void)
 }
 #endif
 
+#ifdef RCU_MEMBARRIER
+extern int has_sys_membarrier;
+
+static inline void smp_mb_light()
+{
+	if (likely(has_sys_membarrier))
+		barrier();
+	else
+		smp_mb();
+}
+#endif
+
 #ifdef RCU_MB
 static inline void smp_mb_light()
 {
 	smp_mb();
 }
-#else
+#endif
+
+#ifdef RCU_SIGNAL
 static inline void smp_mb_light()
 {
 	barrier();

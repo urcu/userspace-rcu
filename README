@@ -44,19 +44,11 @@ Usage of liburcu
 
 	* #include <urcu.h>
 	* Link the application with "-lurcu".
-	* This is the preferred version of the library, both in terms of speed
-	  and flexibility. Requires a signal, typically SIGUSR1. Can be
-	  overridden with -DSIGRCU by modifying Makefile.build.inc.
-
-Usage of liburcu-mb
-
-	* #include <urcu.h>
-	* Compile any _LGPL_SOURCE code using this library with "-DRCU_MB".
-	* Link with "-lurcu-mb".
-	* This version of the urcu library does not need to
-	  reserve a signal number. RCU_MB uses full memory barriers for
-	  readers. This eliminates the need for signals but results in slower
-	  reads.
+	* This is the preferred version of the library, in terms of
+	  grace-period detection speed, read-side speed and flexibility.
+	  Dynamically detects kernel support for sys_membarrier(). Falls back
+	  on urcu-mb scheme if support is not present, which has slower
+	  read-side.
 
 Usage of liburcu-qsbr
 
@@ -67,6 +59,22 @@ Usage of liburcu-qsbr
 	  and rcu_thread_offline() can be used to mark long periods for which
 	  the threads are not active. It provides the fastest read-side at the
 	  expense of more intrusiveness in the application code.
+
+Usage of liburcu-mb
+
+	* #include <urcu.h>
+	* Compile any _LGPL_SOURCE code using this library with "-DRCU_MB".
+	* Link with "-lurcu-mb".
+	* This version of the urcu library uses memory barriers on the writer
+	  and reader sides. This results in faster grace-period detection, but
+	  results in slower reads.
+
+Usage of liburcu-signal
+
+	* #include <urcu-signal.h>
+	* Link the application with "-lurcu-signal".
+	* Version of the library that requires a signal, typically SIGUSR1. Can
+	  be overridden with -DSIGRCU by modifying Makefile.build.inc.
 
 Usage of liburcu-bp
 
