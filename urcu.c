@@ -392,7 +392,7 @@ void rcu_init(void)
 	if (init_done)
 		return;
 	init_done = 1;
-	if (!membarrier(MEMBARRIER_EXPEDITED))
+	if (!membarrier(MEMBARRIER_EXPEDITED | MEMBARRIER_QUERY))
 		has_sys_membarrier = 1;
 }
 #endif

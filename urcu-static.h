@@ -56,8 +56,9 @@ extern "C" {
 
 /* If the headers do not support SYS_membarrier, statically use RCU_MB */
 #ifdef SYS_membarrier
-# define MEMBARRIER_EXPEDITED            (1 << 0)
-# define MEMBARRIER_DELAYED              (1 << 1)
+# define MEMBARRIER_EXPEDITED		(1 << 0)
+# define MEMBARRIER_DELAYED		(1 << 1)
+# define MEMBARRIER_QUERY		(1 << 16)
 # define membarrier(...)		syscall(__NR_membarrier, __VA_ARGS__)
 #else
 # undef RCU_MEMBARRIER
