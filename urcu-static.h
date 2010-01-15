@@ -77,7 +77,12 @@ extern "C" {
 /*
  * The signal number used by the RCU library can be overridden with
  * -DSIGRCU= when compiling the library.
+ * Provide backward compatibility for liburcu 0.3.x SIGURCU.
  */
+#ifdef SIGURCU
+#define SIGRCU SIGURCU
+#endif
+
 #ifndef SIGRCU
 #define SIGRCU SIGUSR1
 #endif
