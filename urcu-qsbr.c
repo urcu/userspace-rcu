@@ -39,7 +39,7 @@
 
 void __attribute__((destructor)) rcu_exit(void);
 
-static pthread_mutex_t rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int gp_futex;
 
@@ -61,18 +61,18 @@ unsigned int __thread rand_yield;
 
 static LIST_HEAD(registry);
 
-static void internal_rcu_lock(void)
+static void mutex_lock(pthread_mutex_t *mutex)
 {
 	int ret;
 
 #ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(&rcu_mutex);
+	ret = pthread_mutex_lock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(&rcu_mutex)) != 0) {
+	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR) {
 			printf("ret = %d, errno = %d\n", ret, errno);
 			perror("Error in pthread mutex lock");
@@ -83,11 +83,11 @@ static void internal_rcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_rcu_unlock(void)
+static void mutex_unlock(pthread_mutex_t *mutex)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&rcu_mutex);
+	ret = pthread_mutex_unlock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
@@ -160,7 +160,7 @@ static void wait_for_quiescent_state(void)
 
 #if (BITS_PER_LONG < 64)
 /*
- * called with rcu_mutex held.
+ * called with rcu_gp_lock held.
  */
 static void switch_next_rcu_qparity(void)
 {
@@ -187,7 +187,7 @@ void synchronize_rcu(void)
 	if (was_online)
 		STORE_SHARED(rcu_reader.ctr, 0);
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 
 	switch_next_rcu_qparity();	/* 0 -> 1 */
 
@@ -227,7 +227,7 @@ void synchronize_rcu(void)
 	 */
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
 
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 
 	/*
 	 * Finish waiting for reader threads before letting the old ptr being
@@ -253,10 +253,10 @@ void synchronize_rcu(void)
 	if (was_online)
 		STORE_SHARED(rcu_reader.ctr, 0);
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
 	wait_for_quiescent_state();
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)
 		_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
@@ -298,9 +298,9 @@ void rcu_register_thread(void)
 	rcu_reader.tid = pthread_self();
 	assert(rcu_reader.ctr == 0);
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	list_add(&rcu_reader.head, &registry);
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 	_rcu_thread_online();
 }
 
@@ -311,9 +311,9 @@ void rcu_unregister_thread(void)
 	 * with a waiting writer.
 	 */
 	_rcu_thread_offline();
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	list_del(&rcu_reader.head);
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 }
 
 void rcu_exit(void)

@@ -45,7 +45,7 @@
 
 void __attribute__((destructor)) rcu_bp_exit(void);
 
-static pthread_mutex_t rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
@@ -78,18 +78,18 @@ static struct registry_arena registry_arena;
 
 static void rcu_gc_registry(void);
 
-static void internal_rcu_lock(void)
+static void mutex_lock(pthread_mutex_t *mutex)
 {
 	int ret;
 
 #ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(&rcu_mutex);
+	ret = pthread_mutex_lock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(&rcu_mutex)) != 0) {
+	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR) {
 			printf("ret = %d, errno = %d\n", ret, errno);
 			perror("Error in pthread mutex lock");
@@ -105,11 +105,11 @@ static void internal_rcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_rcu_unlock(void)
+static void mutex_unlock(pthread_mutex_t *mutex)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&rcu_mutex);
+	ret = pthread_mutex_unlock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
@@ -117,7 +117,7 @@ static void internal_rcu_unlock(void)
 }
 
 /*
- * called with rcu_mutex held.
+ * called with rcu_gp_lock held.
  */
 static void switch_next_rcu_qparity(void)
 {
@@ -165,14 +165,14 @@ void synchronize_rcu(void)
 	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
 	assert(!ret);
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 
 	/* Remove old registry elements */
 	rcu_gc_registry();
 
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. Must be done within internal_rcu_lock
-	 * because it iterates on reader threads.*/
+	 * where new ptr points to. Must be done within rcu_gp_lock because it
+	 * iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
 	smp_mb();
 
@@ -236,11 +236,11 @@ void synchronize_rcu(void)
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
 
 	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. Must be done within internal_rcu_lock because it iterates on
-	 * reader threads. */
+	 * freed. Must be done within rcu_gp_lock because it iterates on reader
+	 * threads. */
 	smp_mb();
 
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
@@ -355,9 +355,9 @@ void rcu_bp_register(void)
 	if (rcu_reader)
 		goto end;
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	add_thread();
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 end:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);

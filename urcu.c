@@ -57,7 +57,7 @@ void __attribute__((constructor)) rcu_init(void);
 void __attribute__((destructor)) rcu_exit(void);
 #endif
 
-static pthread_mutex_t rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int gp_futex;
 
@@ -82,18 +82,18 @@ unsigned int __thread rand_yield;
 
 static LIST_HEAD(registry);
 
-static void internal_rcu_lock(void)
+static void mutex_lock(pthread_mutex_t *mutex)
 {
 	int ret;
 
 #ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(&rcu_mutex);
+	ret = pthread_mutex_lock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(&rcu_mutex)) != 0) {
+	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR) {
 			printf("ret = %d, errno = %d\n", ret, errno);
 			perror("Error in pthread mutex lock");
@@ -109,11 +109,11 @@ static void internal_rcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_rcu_unlock(void)
+static void mutex_unlock(pthread_mutex_t *mutex)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&rcu_mutex);
+	ret = pthread_mutex_unlock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
@@ -121,7 +121,7 @@ static void internal_rcu_unlock(void)
 }
 
 /*
- * called with rcu_mutex held.
+ * called with rcu_gp_lock held.
  */
 static void switch_next_rcu_qparity(void)
 {
@@ -278,11 +278,11 @@ void wait_for_quiescent_state(void)
 
 void synchronize_rcu(void)
 {
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. Must be done within internal_rcu_lock
-	 * because it iterates on reader threads.*/
+	 * where new ptr points to. Must be done within rcu_gp_lock because it
+	 * iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
 	smp_mb_heavy();
 
@@ -346,11 +346,11 @@ void synchronize_rcu(void)
 	wait_for_quiescent_state();	/* Wait readers in parity 1 */
 
 	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. Must be done within internal_rcu_lock because it iterates on
-	 * reader threads. */
+	 * freed. Must be done within rcu_gp_lock because it iterates on reader
+	 * threads. */
 	smp_mb_heavy();
 
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 }
 
 /*
@@ -373,17 +373,17 @@ void rcu_register_thread(void)
 	assert(rcu_reader.need_mb == 0);
 	assert(rcu_reader.ctr == 0);
 
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	rcu_init();	/* In case gcc does not support constructor attribute */
 	list_add(&rcu_reader.head, &registry);
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 }
 
 void rcu_unregister_thread(void)
 {
-	internal_rcu_lock();
+	mutex_lock(&rcu_gp_lock);
 	list_del(&rcu_reader.head);
-	internal_rcu_unlock();
+	mutex_unlock(&rcu_gp_lock);
 }
 
 #ifdef RCU_MEMBARRIER
@@ -414,9 +414,9 @@ static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
  * rcu_init constructor. Called when the library is linked, but also when
  * reader threads are calling rcu_register_thread().
  * Should only be called by a single thread at a given time. This is ensured by
- * holing the internal_rcu_lock() from rcu_register_thread() or by running at
- * library load time, which should not be executed by multiple threads nor
- * concurrently with rcu_register_thread() anyway.
+ * holing the rcu_gp_lock from rcu_register_thread() or by running at library
+ * load time, which should not be executed by multiple threads nor concurrently
+ * with rcu_register_thread() anyway.
  */
 void rcu_init(void)
 {
