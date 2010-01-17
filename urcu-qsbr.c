@@ -113,7 +113,7 @@ static void update_counter_and_wait(void)
 	struct rcu_reader *index, *tmp;
 
 #if (BITS_PER_LONG < 64)
-	/* Switch parity: 1 -> 0, 0 -> 1 */
+	/* Switch parity: 0 -> 1, 1 -> 0 */
 	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
 #else	/* !(BITS_PER_LONG < 64) */
 	/* Increment current G.P. */

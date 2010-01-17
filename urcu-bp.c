@@ -122,7 +122,7 @@ void update_counter_and_wait(void)
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-	/* Switch parity: 1 -> 0, 0 -> 1 */
+	/* Switch parity: 0 -> 1, 1 -> 0 */
 	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
 
 	/*
