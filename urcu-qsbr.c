@@ -106,14 +106,20 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
-static void wait_for_quiescent_state(void)
+static void update_counter_and_wait(void)
 {
 	LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-	if (list_empty(&registry))
-		return;
+#if (BITS_PER_LONG < 64)
+	/* Switch parity: 1 -> 0, 0 -> 1 */
+	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
+#else	/* !(BITS_PER_LONG < 64) */
+	/* Increment current G.P. */
+	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
+#endif	/* !(BITS_PER_LONG < 64) */
+
 	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
@@ -159,14 +165,6 @@ static void wait_for_quiescent_state(void)
  */
 
 #if (BITS_PER_LONG < 64)
-/*
- * called with rcu_gp_lock held.
- */
-static void switch_next_rcu_qparity(void)
-{
-	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
-}
-
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
@@ -189,20 +187,13 @@ void synchronize_rcu(void)
 
 	mutex_lock(&rcu_gp_lock);
 
-	switch_next_rcu_qparity();	/* 0 -> 1 */
-
-	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 0 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
-	 */
+	if (list_empty(&registry))
+		goto out;
 
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 0 */
+	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
 
 	/*
 	 * Must finish waiting for quiescent state for parity 0 before
@@ -212,21 +203,18 @@ void synchronize_rcu(void)
 	 * Ensured by STORE_SHARED and LOAD_SHARED.
 	 */
 
-	switch_next_rcu_qparity();	/* 1 -> 0 */
-
 	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 1 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
 	 */
+	smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 1 */
-
+	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
+out:
 	mutex_unlock(&rcu_gp_lock);
 
 	/*
@@ -254,8 +242,10 @@ void synchronize_rcu(void)
 		STORE_SHARED(rcu_reader.ctr, 0);
 
 	mutex_lock(&rcu_gp_lock);
-	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
-	wait_for_quiescent_state();
+	if (list_empty(&registry))
+		goto out;
+	update_counter_and_wait();
+out:
 	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)

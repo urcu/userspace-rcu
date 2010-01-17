@@ -116,22 +116,29 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 	}
 }
 
-/*
- * called with rcu_gp_lock held.
- */
-static void switch_next_rcu_qparity(void)
-{
-	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
-}
-
-void wait_for_quiescent_state(void)
+void update_counter_and_wait(void)
 {
 	LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-	if (list_empty(&registry))
-		return;
+	/* Switch parity: 1 -> 0, 0 -> 1 */
+	STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+
+	/*
+	 * Must commit qparity update to memory before waiting for other parity
+	 * quiescent state. Failure to do so could result in the writer waiting
+	 * forever while new readers are always accessing data (no progress).
+	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 */
+
+	/*
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	smp_mb();
+
 	/*
 	 * Wait for each thread rcu_reader.ctr count to become 0.
 	 */
@@ -167,24 +174,21 @@ void synchronize_rcu(void)
 
 	mutex_lock(&rcu_gp_lock);
 
-	/* Remove old registry elements */
-	rcu_gc_registry();
+	if (list_empty(&registry))
+		goto out;
 
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. Must be done within rcu_gp_lock because it
-	 * iterates on reader threads.*/
+	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
 	smp_mb();
 
-	switch_next_rcu_qparity();	/* 0 -> 1 */
+	/* Remove old registry elements */
+	rcu_gc_registry();
 
 	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 0 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 * Wait for previous parity to be empty of readers.
 	 */
+	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
 
 	/*
 	 * Adding a smp_mb() which is _not_ formally required, but makes the
@@ -196,50 +200,14 @@ void synchronize_rcu(void)
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 0 */
+	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
 
 	/*
-	 * Must finish waiting for quiescent state for parity 0 before
-	 * committing qparity update to memory. Failure to do so could result in
-	 * the writer waiting forever while new readers are always accessing
-	 * data (no progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
-	 */
-
-	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
-	 * model easier to understand. It does not have a big performance impact
-	 * anyway, given this is the write-side.
+	 * Finish waiting for reader threads before letting the old ptr being
+	 * freed.
 	 */
 	smp_mb();
-
-	switch_next_rcu_qparity();	/* 1 -> 0 */
-
-	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 1 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
-	 */
-
-	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
-	 * model easier to understand. It does not have a big performance impact
-	 * anyway, given this is the write-side.
-	 */
-	smp_mb();
-
-	/*
-	 * Wait for previous parity to be empty of readers.
-	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 1 */
-
-	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. Must be done within rcu_gp_lock because it iterates on reader
-	 * threads. */
-	smp_mb();
-
+out:
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
