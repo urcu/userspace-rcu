@@ -121,11 +121,6 @@ static inline void debug_yield_init(void)
 }
 #endif
 
-static inline void reader_barrier()
-{
-	smp_mb();
-}
-
 #define RCU_GP_ONLINE		(1UL << 0)
 #define RCU_GP_CTR		(1UL << 1)
 
