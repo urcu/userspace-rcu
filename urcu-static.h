@@ -160,10 +160,25 @@ static inline void debug_yield_init(void)
 }
 #endif
 
+/*
+ * RCU memory barrier broadcast group. Currently, only broadcast to all process
+ * threads is supported (group 0).
+ *
+ * Slave barriers are only guaranteed to be ordered wrt master barriers.
+ *
+ * The pair ordering is detailed as (O: ordered, X: not ordered) :
+ *               slave  master
+ *        slave    X      O
+ *        master   O      O
+ */
+
+#define MB_GROUP_ALL		0
+#define RCU_MB_GROUP		MB_GROUP_ALL
+
 #ifdef RCU_MEMBARRIER
 extern int has_sys_membarrier;
 
-static inline void smp_mb_light()
+static inline void smp_mb_slave(int group)
 {
 	if (likely(has_sys_membarrier))
 		barrier();
@@ -173,14 +188,14 @@ static inline void smp_mb_light()
 #endif
 
 #ifdef RCU_MB
-static inline void smp_mb_light()
+static inline void smp_mb_slave(int group)
 {
 	smp_mb();
 }
 #endif
 
 #ifdef RCU_SIGNAL
-static inline void smp_mb_light()
+static inline void smp_mb_slave(int group)
 {
 	barrier();
 }
@@ -255,9 +270,9 @@ static inline void _rcu_read_lock(void)
 		_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
-		 * accessing the pointer. See smp_mb_heavy().
+		 * accessing the pointer. See smp_mb_master().
 		 */
-		smp_mb_light();
+		smp_mb_slave(RCU_MB_GROUP);
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
 	}
@@ -270,13 +285,13 @@ static inline void _rcu_read_unlock(void)
 	tmp = rcu_reader.ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
-	 * See smp_mb_heavy().
+	 * See smp_mb_master().
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
-		smp_mb_light();
+		smp_mb_slave(RCU_MB_GROUP);
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 		/* write rcu_reader.ctr before read futex */
-		smp_mb_light();
+		smp_mb_slave(RCU_MB_GROUP);
 		wake_up_gp();
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);

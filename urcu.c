@@ -121,7 +121,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 }
 
 #ifdef RCU_MEMBARRIER
-static void smp_mb_heavy(void)
+static void smp_mb_master(int group)
 {
 	if (likely(has_sys_membarrier))
 		membarrier(MEMBARRIER_EXPEDITED);
@@ -131,7 +131,7 @@ static void smp_mb_heavy(void)
 #endif
 
 #ifdef RCU_MB
-static void smp_mb_heavy(void)
+static void smp_mb_master(int group)
 {
 	smp_mb();
 }
@@ -181,7 +181,7 @@ static void force_mb_all_readers(void)
 	smp_mb();	/* read ->need_mb before ending the barrier */
 }
 
-static void smp_mb_heavy(void)
+static void smp_mb_master(int group)
 {
 	force_mb_all_readers();
 }
@@ -193,7 +193,7 @@ static void smp_mb_heavy(void)
 static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
-	smp_mb_heavy();
+	smp_mb_master(RCU_MB_GROUP);
 	if (uatomic_read(&gp_futex) == -1)
 		futex_async(&gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
@@ -230,7 +230,7 @@ void update_counter_and_wait(void)
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
-			smp_mb_heavy();
+			smp_mb_master(RCU_MB_GROUP);
 		}
 
 		list_for_each_entry_safe(index, tmp, &registry, head) {
@@ -242,7 +242,7 @@ void update_counter_and_wait(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				smp_mb_heavy();
+				smp_mb_master(RCU_MB_GROUP);
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -260,7 +260,7 @@ void update_counter_and_wait(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				smp_mb_heavy();
+				smp_mb_master(RCU_MB_GROUP);
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -270,7 +270,7 @@ void update_counter_and_wait(void)
 				wait_gp();
 				break; /* only escape switch */
 			case KICK_READER_LOOPS:
-				smp_mb_heavy();
+				smp_mb_master(RCU_MB_GROUP);
 				wait_loops = 0;
 				break; /* only escape switch */
 			default:
@@ -294,7 +294,7 @@ void synchronize_rcu(void)
 	 * where new ptr points to. Must be done within rcu_gp_lock because it
 	 * iterates on reader threads.*/
 	/* Write new ptr before changing the qparity */
-	smp_mb_heavy();
+	smp_mb_master(RCU_MB_GROUP);
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -324,7 +324,7 @@ void synchronize_rcu(void)
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. Must be done within rcu_gp_lock because it iterates on reader
 	 * threads. */
-	smp_mb_heavy();
+	smp_mb_master(RCU_MB_GROUP);
 out:
 	mutex_unlock(&rcu_gp_lock);
 }
