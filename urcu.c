@@ -67,7 +67,7 @@ int gp_futex;
  * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
  * Written to only by writer with mutex taken. Read by both writer and readers.
  */
-long rcu_gp_ctr = RCU_GP_COUNT;
+unsigned long rcu_gp_ctr = RCU_GP_COUNT;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the

@@ -207,7 +207,7 @@ static inline void smp_mb_slave(int group)
  */
 #define RCU_GP_COUNT		(1UL << 0)
 /* Use the amount of bits equal to half of the architecture long size */
-#define RCU_GP_CTR_PHASE	(1UL << (sizeof(long) << 2))
+#define RCU_GP_CTR_PHASE	(1UL << (sizeof(unsigned long) << 2))
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_PHASE - 1)
 
 /*
@@ -215,11 +215,11 @@ static inline void smp_mb_slave(int group)
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern long rcu_gp_ctr;
+extern unsigned long rcu_gp_ctr;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
-	long ctr;
+	unsigned long ctr;
 	char need_mb;
 	/* Data used for registry */
 	struct list_head head __attribute__((aligned(CACHE_LINE_SIZE)));
@@ -242,9 +242,9 @@ static inline void wake_up_gp(void)
 	}
 }
 
-static inline int rcu_old_gp_ongoing(long *value)
+static inline int rcu_old_gp_ongoing(unsigned long *value)
 {
-	long v;
+	unsigned long v;
 
 	if (value == NULL)
 		return 0;
@@ -259,7 +259,7 @@ static inline int rcu_old_gp_ongoing(long *value)
 
 static inline void _rcu_read_lock(void)
 {
-	long tmp;
+	unsigned long tmp;
 
 	tmp = rcu_reader.ctr;
 	/*
@@ -280,7 +280,7 @@ static inline void _rcu_read_lock(void)
 
 static inline void _rcu_read_unlock(void)
 {
-	long tmp;
+	unsigned long tmp;
 
 	tmp = rcu_reader.ctr;
 	/*
