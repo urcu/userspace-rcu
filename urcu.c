@@ -99,9 +99,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (rcu_reader.need_mb) {
+		if (LOAD_SHARED(rcu_reader.need_mb)) {
 			smp_mb();
-			rcu_reader.need_mb = 0;
+			_STORE_SHARED(rcu_reader.need_mb, 0);
 			smp_mb();
 		}
 		poll(NULL,0,10);
@@ -155,8 +155,7 @@ static void force_mb_all_readers(void)
 	 * cache flush is enforced.
 	 */
 	list_for_each_entry(index, &registry, head) {
-		index->need_mb = 1;
-		smp_mc();	/* write need_mb before sending the signal */
+		STORE_SHARED(index->need_mb, 1);
 		pthread_kill(index->tid, SIGRCU);
 	}
 	/*
@@ -173,7 +172,7 @@ static void force_mb_all_readers(void)
 	 * the Linux Test Project (LTP).
 	 */
 	list_for_each_entry(index, &registry, head) {
-		while (index->need_mb) {
+		while (LOAD_SHARED(index->need_mb)) {
 			pthread_kill(index->tid, SIGRCU);
 			poll(NULL, 0, 1);
 		}
@@ -382,7 +381,7 @@ static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
 	 * executed on.
 	 */
 	smp_mb();
-	rcu_reader.need_mb = 0;
+	_STORE_SHARED(rcu_reader.need_mb, 0);
 	smp_mb();
 }
 
