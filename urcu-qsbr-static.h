@@ -156,24 +156,20 @@ static inline void wake_up_gp(void)
 }
 
 #if (BITS_PER_LONG < 64)
-static inline int rcu_gp_ongoing(unsigned long *value)
+static inline int rcu_gp_ongoing(unsigned long *ctr)
 {
-	unsigned long reader_gp;
+	unsigned long v;
 
-	if (value == NULL)
-		return 0;
-	reader_gp = LOAD_SHARED(*value);
-	return reader_gp && ((reader_gp ^ rcu_gp_ctr) & RCU_GP_CTR);
+	v = LOAD_SHARED(*ctr);
+	return v && ((v ^ rcu_gp_ctr) & RCU_GP_CTR);
 }
 #else /* !(BITS_PER_LONG < 64) */
-static inline int rcu_gp_ongoing(unsigned long *value)
+static inline int rcu_gp_ongoing(unsigned long *ctr)
 {
-	unsigned long reader_gp;
+	unsigned long v;
 
-	if (value == NULL)
-		return 0;
-	reader_gp = LOAD_SHARED(*value);
-	return reader_gp && (reader_gp - rcu_gp_ctr > ULONG_MAX / 2);
+	v = LOAD_SHARED(*ctr);
+	return v && (v - rcu_gp_ctr > ULONG_MAX / 2);
 }
 #endif  /* !(BITS_PER_LONG < 64) */
 

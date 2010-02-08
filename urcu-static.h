@@ -242,17 +242,15 @@ static inline void wake_up_gp(void)
 	}
 }
 
-static inline int rcu_gp_ongoing(unsigned long *value)
+static inline int rcu_gp_ongoing(unsigned long *ctr)
 {
 	unsigned long v;
 
-	if (value == NULL)
-		return 0;
 	/*
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = LOAD_SHARED(*value);
+	v = LOAD_SHARED(*ctr);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
