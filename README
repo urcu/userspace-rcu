@@ -146,6 +146,14 @@ Being careful with signals
 	rcu_quiescent_state() calls, when threads are put offline and around
 	calls to synchronize_rcu(). Even then, we do not recommend it.
 
+Interaction with mutexes
+
+	One must be careful to do not cause deadlocks due to interaction of
+	synchronize_rcu() and RCU read-side with mutexes. If synchronize_rcu()
+	is called with a mutex held, this mutex (or any mutex which has this
+	mutex in its dependency chain) should not be acquired from within a RCU
+	read-side critical section.
+
 Usage of DEBUG_RCU
 
 	DEBUG_RCU is used to add internal debugging self-checks to the
