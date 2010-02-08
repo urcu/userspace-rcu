@@ -242,7 +242,7 @@ static inline void wake_up_gp(void)
 	}
 }
 
-static inline int rcu_old_gp_ongoing(unsigned long *value)
+static inline int rcu_gp_ongoing(unsigned long *value)
 {
 	unsigned long v;
 

@@ -233,7 +233,7 @@ void update_counter_and_wait(void)
 		}
 
 		list_for_each_entry_safe(index, tmp, &registry, head) {
-			if (!rcu_old_gp_ongoing(&index->ctr))
+			if (!rcu_gp_ongoing(&index->ctr))
 				list_move(&index->head, &qsreaders);
 		}
 
