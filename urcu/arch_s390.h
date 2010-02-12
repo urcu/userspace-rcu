@@ -28,7 +28,7 @@
  * IN THE SOFTWARE.
  */
 
-#include <compiler.h>
+#include <urcu/compiler.h>
 #include <urcu/config.h>
 
 #ifdef __cplusplus
