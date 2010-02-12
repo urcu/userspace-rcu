@@ -59,7 +59,7 @@ extern "C" {
 # define MEMBARRIER_EXPEDITED		(1 << 0)
 # define MEMBARRIER_DELAYED		(1 << 1)
 # define MEMBARRIER_QUERY		(1 << 16)
-# define membarrier(...)		syscall(__NR_membarrier, __VA_ARGS__)
+# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
 #else
 # undef RCU_MEMBARRIER
 # define RCU_MB
