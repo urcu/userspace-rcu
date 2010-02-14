@@ -79,6 +79,9 @@ static unsigned long duration;
 /* read-side C.S. duration, in loops */
 static unsigned long rduration;
 
+/* write-side C.S. duration, in loops */
+static unsigned long wduration;
+
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
@@ -232,6 +235,8 @@ void *thr_writer(void *data)
 		pthread_mutex_lock(&lock);
 		test_array.a = 0;
 		test_array.a = 8;
+		if (unlikely(wduration))
+			loop_sleep(wduration);
 		pthread_mutex_unlock(&lock);
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
@@ -254,6 +259,7 @@ void show_usage(int argc, char **argv)
 #endif
 	printf(" [-d delay] (writer period (us))");
 	printf(" [-c duration] (reader C.S. duration (in loops))");
+	printf(" [-e duration] (writer C.S. duration (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
 	printf("\n");
@@ -327,6 +333,13 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			wdelay = atol(argv[++i]);
+			break;
+		case 'e':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			wduration = atol(argv[++i]);
 			break;
 		case 'v':
 			verbose_mode = 1;

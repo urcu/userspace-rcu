@@ -77,6 +77,9 @@ static unsigned long duration;
 /* read-side C.S. duration, in loops */
 static unsigned long rduration;
 
+/* write-side C.S. duration, in loops */
+static unsigned long wduration;
+
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
@@ -274,6 +277,8 @@ void *thr_writer(void *_count)
 		new = test_array_alloc();
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
+		if (unlikely(wduration))
+			loop_sleep(wduration);
 		synchronize_rcu();
 		/* can be done after unlock */
 		if (old)
@@ -300,6 +305,7 @@ void show_usage(int argc, char **argv)
 #endif
 	printf(" [-d delay] (writer period (us))");
 	printf(" [-c duration] (reader C.S. duration (in loops))");
+	printf(" [-e duration] (writer C.S. duration (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
 	printf("\n");
@@ -372,6 +378,13 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			wdelay = atol(argv[++i]);
+			break;
+		case 'e':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			wduration = atol(argv[++i]);
 			break;
 		case 'v':
 			verbose_mode = 1;
