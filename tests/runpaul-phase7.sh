@@ -3,12 +3,12 @@
 #run all tests
 
 #set to number of active CPUS
-#export NUM_CPUS=64
-export NUM_CPUS=8
+export NUM_CPUS=64
+#export NUM_CPUS=8
 
 #extra options, e.g. for setting affinity on even CPUs :
-#EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
-EXTRA_OPTS=$(for a in $(seq 0 1 7); do echo -n "-a ${a} "; done)
+EXTRA_OPTS=$(for a in $(seq 0 2 127); do echo -n "-a ${a} "; done)
+#EXTRA_OPTS=$(for a in $(seq 0 1 7); do echo -n "-a ${a} "; done)
 
 rm -f *.log
 
@@ -35,7 +35,7 @@ done
 
 
 
-#mkdir ppc64-writercslen
-#mv *.log ppc64-writercslen/
-mkdir xeon-writercslen
-mv *.log xeon-writercslen/
+mkdir ppc64-writercslen
+mv *.log ppc64-writercslen/
+#mkdir xeon-writercslen
+#mv *.log xeon-writercslen/
