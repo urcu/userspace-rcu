@@ -159,11 +159,11 @@ static inline int list_empty(list_t *head)
 }
 
 static inline void list_replace_init(list_t *old,
-				     list_t *new)
+				     list_t *_new)
 {
 	list_t *head = old->next;
 	list_del(old);
-	list_add_tail(new, head);
+	list_add_tail(_new, head);
 	INIT_LIST_HEAD(old);
 }
 
