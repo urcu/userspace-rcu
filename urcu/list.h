@@ -88,6 +88,17 @@ list_move (list_t *elem, list_t *head)
   list_add (elem, head);
 }
 
+/* replace an old entry.
+ */
+static inline void
+list_replace(list_t *old, list_t *_new)
+{
+	_new->next = old->next;
+	_new->prev = old->prev;
+	_new->prev->next = _new;
+	_new->next->prev = _new;
+}
+
 /* Join two lists.  */
 static inline void
 list_splice (list_t *add, list_t *head)

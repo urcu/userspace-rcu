@@ -4,7 +4,7 @@
 
    Copyright (C) 2009 Pierre-Marc Fournier
    Conversion to RCU list.
-   Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+   Copyright (C) 2010 Mathieu Desnoyers
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -21,57 +21,44 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef _URCU_RCULIST_H
-#define _URCU_RCULIST_H
+#ifndef _URCU_RCUHLIST_H
+#define _URCU_RCUHLIST_H
 
-#include <urcu/list.h>
+#include <urcu/hlist.h>
 #include <urcu/arch.h>
 #include <urcu-pointer.h>
 
 /* Add new element at the head of the list.
  */
-static inline void list_add_rcu(list_t *newp, list_t *head)
+static inline void hlist_add_head(struct hlist_node *newp,
+				  struct hlist_head *head)
 {
 	newp->next = head->next;
-	newp->prev = head;
+	newp->prev = (struct hlist_node *)head;
 	smp_wmb();
-	head->next->prev = newp;
+	if (head->next)
+		head->next->prev = newp;
 	head->next = newp;
 }
 
-/* replace an old entry atomically.
- */
-static inline void list_replace_rcu(list_t *old, list_t *_new)
-{
-	_new->next = old->next;
-	_new->prev = old->prev;
-	rcu_assign_pointer(_new->prev->next, _new);
-	_new->next->prev = _new;
-}
-
 /* Remove element from list. */
-static inline void list_del_rcu(list_t *elem)
+static inline void hlist_del_rcu(struct hlist_node *elem)
 {
-	elem->next->prev = elem->prev;
+	if (elem->next)
+		elem->next->prev = elem->prev;
 	elem->prev->next = elem->next;
 }
 
-/*
- * Iteration through all elements of the list must be done while rcu_read_lock()
- * is held.
- */
-
-/* Iterate forward over the elements of the list.  */
-#define list_for_each_rcu(pos, head) \
-  for (pos = rcu_dereference((head)->next); pos != (head); \
-       pos = rcu_dereference(pos->next))
-
 
 /* Iterate through elements of the list.
+ * This must be done while rcu_read_lock() is held.
  */
-#define list_for_each_entry_rcu(pos, head, member)				\
-	for (pos = list_entry(rcu_dereference((head)->next), typeof(*pos), member);	\
-	     &pos->member != (head);					\
-	     pos = list_entry(rcu_dereference(pos->member.next), typeof(*pos), member))
 
-#endif	/* _URCU_RCULIST_H */
+#define hlist_for_each_entry_rcu(entry, pos, head, member)		\
+	for (pos = rcu_dereference((head)->next),			\
+		     entry = hlist_entry(pos, typeof(*entry), member);	\
+	     pos != NULL;						\
+	     pos = rcu_dereference(pos->next),				\
+		     entry = hlist_entry(pos, typeof(*entry), member))
+
+#endif	/* _URCU_RCUHLIST_H */
