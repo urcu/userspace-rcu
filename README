@@ -71,7 +71,8 @@ Usage of liburcu-mb
 
 Usage of liburcu-signal
 
-	* #include <urcu-signal.h>
+	* #include <urcu.h>
+	* Compile any _LGPL_SOURCE code using this library with "-DRCU_SIGNAL".
 	* Link the application with "-lurcu-signal".
 	* Version of the library that requires a signal, typically SIGUSR1. Can
 	  be overridden with -DSIGRCU by modifying Makefile.build.inc.
