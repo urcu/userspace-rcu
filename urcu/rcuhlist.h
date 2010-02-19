@@ -30,8 +30,8 @@
 
 /* Add new element at the head of the list.
  */
-static inline void hlist_add_head(struct hlist_node *newp,
-				  struct hlist_head *head)
+static inline void hlist_add_head_rcu(struct hlist_node *newp,
+				      struct hlist_head *head)
 {
 	newp->next = head->next;
 	newp->prev = (struct hlist_node *)head;
