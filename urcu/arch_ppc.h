@@ -32,10 +32,6 @@ extern "C" {
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
 #define CACHE_LINE_SIZE	256
 
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 #define mb()    asm volatile("sync":::"memory")
 
 /*

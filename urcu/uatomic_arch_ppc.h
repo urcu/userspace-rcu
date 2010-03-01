@@ -27,22 +27,10 @@
 extern "C" {
 #endif 
 
-#ifndef __SIZEOF_LONG__
-#ifdef __powerpc64__
-#define __SIZEOF_LONG__ 8
-#else
-#define __SIZEOF_LONG__ 4
-#endif
-#endif
-
 #ifdef __NO_LWSYNC__
 #define LWSYNC_OPCODE	"sync\n"
 #else
 #define LWSYNC_OPCODE	"lwsync\n"
-#endif
-
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #endif
 
 #define ILLEGAL_INSTR	".long	0xd00d00"

@@ -37,18 +37,6 @@ extern "C" {
 
 #define CACHE_LINE_SIZE	128
 
-#ifndef __SIZEOF_LONG__
-#ifdef __s390x__
-#define __SIZEOF_LONG__ 8
-#else
-#define __SIZEOF_LONG__ 4
-#endif
-#endif
-
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 #define mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
 
 typedef unsigned long long cycles_t;

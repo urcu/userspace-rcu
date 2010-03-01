@@ -27,18 +27,6 @@
 extern "C" {
 #endif 
 
-#ifndef __SIZEOF_LONG__
-#ifdef __LP64__
-#define __SIZEOF_LONG__ 8
-#else
-#define __SIZEOF_LONG__ 4
-#endif
-#endif
-
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 /* cmpxchg */
 
 static inline __attribute__((always_inline))

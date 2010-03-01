@@ -28,10 +28,6 @@
 extern "C" {
 #endif
 
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 #ifndef uatomic_set
 #define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
 #endif

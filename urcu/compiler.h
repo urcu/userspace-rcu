@@ -47,4 +47,12 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#if defined(__SIZEOF_LONG__)
+#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
+#elif defined(_LP64)
+#define BITS_PER_LONG	64
+#else
+#define BITS_PER_LONG	32
+#endif
+
 #endif /* _URCU_COMPILER_H */

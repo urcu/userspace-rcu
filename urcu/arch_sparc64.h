@@ -31,10 +31,6 @@ extern "C" {
 
 #define CACHE_LINE_SIZE	256
 
-#ifndef BITS_PER_LONG
-#define BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
-#endif
-
 /*
  * Inspired from the Linux kernel. Workaround Spitfire bug #51.
  */
