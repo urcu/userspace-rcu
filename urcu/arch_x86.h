@@ -49,9 +49,13 @@ extern "C" {
 
 /*
  * Serialize core instruction execution. Also acts as a compiler barrier.
- * Cannot use cpuid on PIC because it clobbers the ebx register;
- * error: PIC register 'ebx' clobbered in 'asm'
+ * On PIC ebx cannot be clobbered
  */
+#ifdef __PIC__
+#define sync_core()							  \
+	asm volatile("push %%ebx; cpuid; pop %%ebx"			  \
+		     : : : "memory", "eax", "ecx", "edx");
+#endif
 #ifndef __PIC__
 #define sync_core()							  \
 	asm volatile("cpuid" : : : "memory", "eax", "ebx", "ecx", "edx");
