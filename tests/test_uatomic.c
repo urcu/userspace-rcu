@@ -1,21 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
-
-#define UATOMIC_NO_LINK_ERROR
 #include <urcu/uatomic_arch.h>
 
-#if (defined(__i386__) || defined(__x86_64__))
-#define HAS_ATOMIC_BYTE
-#define HAS_ATOMIC_SHORT
-#endif
-
 struct testvals {
-#ifdef HAS_ATOMIC_BYTE
 	unsigned char c;
-#endif
-#ifdef HAS_ATOMIC_SHORT
 	unsigned short s;
-#endif
 	unsigned int i;
 	unsigned long l;
 };
@@ -54,10 +43,10 @@ do {						\
 
 int main(int argc, char **argv)
 {
-#ifdef HAS_ATOMIC_BYTE
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
 	do_test(&vals.c);
 #endif
-#ifdef HAS_ATOMIC_SHORT
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
 	do_test(&vals.s);
 #endif
 	do_test(&vals.i);

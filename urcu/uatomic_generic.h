@@ -65,6 +65,14 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
 	switch (len) {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
+	case 1:
+		return __sync_val_compare_and_swap_1(addr, old, _new);
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
+	case 2:
+		return __sync_val_compare_and_swap_2(addr, old, _new);
+#endif
 	case 4:
 		return __sync_val_compare_and_swap_4(addr, old, _new);
 #if (BITS_PER_LONG == 64)
@@ -91,6 +99,14 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
 	switch (len) {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
+	case 1:
+		return __sync_add_and_fetch_1(addr, val);
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
+	case 2:
+		return __sync_add_and_fetch_2(addr, val);
+#endif
 	case 4:
 		return __sync_add_and_fetch_4(addr, val);
 #if (BITS_PER_LONG == 64)
@@ -116,6 +132,30 @@ static inline __attribute__((always_inline))
 unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
+	case 1:
+	{
+		unsigned char old;
+
+		do {
+			old = uatomic_read((unsigned char *)addr);
+		} while (!__sync_bool_compare_and_swap_1(addr, old, val));
+
+		return old;
+	}
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
+	case 2:
+	{
+		unsigned short old;
+
+		do {
+			old = uatomic_read((unsigned short *)addr);
+		} while (!__sync_bool_compare_and_swap_2(addr, old, val));
+
+		return old;
+	}
+#endif
 	case 4:
 	{
 		unsigned int old;
@@ -157,6 +197,34 @@ static inline __attribute__((always_inline))
 unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 {
 	switch (len) {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
+	case 1:
+	{
+		unsigned char old, oldt;
+
+		oldt = uatomic_read((unsigned char *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, old + val, 1);
+		} while (oldt != old);
+
+		return old + val;
+	}
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
+	case 2:
+	{
+		unsigned short old, oldt;
+
+		oldt = uatomic_read((unsigned short *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, old + val, 2);
+		} while (oldt != old);
+
+		return old + val;
+	}
+#endif
 	case 4:
 	{
 		unsigned int old, oldt;
@@ -201,6 +269,34 @@ static inline __attribute__((always_inline))
 unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
+	case 1:
+	{
+		unsigned char old, oldt;
+
+		oldt = uatomic_read((unsigned char *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, val, 1);
+		} while (oldt != old);
+
+		return old;
+	}
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
+	case 2:
+	{
+		unsigned short old, oldt;
+
+		oldt = uatomic_read((unsigned short *)addr);
+		do {
+			old = oldt;
+			oldt = _uatomic_cmpxchg(addr, old, val, 2);
+		} while (oldt != old);
+
+		return old;
+	}
+#endif
 	case 4:
 	{
 		unsigned int old, oldt;

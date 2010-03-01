@@ -23,6 +23,9 @@
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
+#define UATOMIC_HAS_ATOMIC_BYTE
+#define UATOMIC_HAS_ATOMIC_SHORT
+
 #ifdef __cplusplus
 extern "C" {
 #endif 
