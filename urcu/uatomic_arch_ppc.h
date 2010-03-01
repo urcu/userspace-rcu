@@ -47,9 +47,6 @@ extern "C" {
 
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
-#define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
-#define uatomic_read(addr)	LOAD_SHARED(*(addr))
-
 /*
  * Using a isync as second barrier for exchange to provide acquire semantic.
  * According to uatomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
@@ -225,18 +222,10 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
-/* uatomic_sub_return, uatomic_add, uatomic_sub, uatomic_inc, uatomic_dec */
-
-#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
-
-#define uatomic_add(addr, v)		(void)uatomic_add_return((addr), (v))
-#define uatomic_sub(addr, v)		(void)uatomic_sub_return((addr), (v))
-
-#define uatomic_inc(addr)		uatomic_add((addr), 1)
-#define uatomic_dec(addr)		uatomic_add((addr), -1)
-
 #ifdef __cplusplus 
 }
 #endif
+
+#include <urcu/uatomic_generic.h>
 
 #endif /* _URCU_ARCH_UATOMIC_PPC_H */

@@ -78,9 +78,6 @@ struct __uatomic_dummy {
 };
 #define __hp(x)	((struct __uatomic_dummy *)(x))
 
-#define uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
-#define uatomic_read(addr)	LOAD_SHARED(*(addr))
-
 /* xchg */
 
 static inline __attribute__((always_inline))
@@ -208,18 +205,10 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
-/* uatomic_sub_return, uatomic_add, uatomic_sub, uatomic_inc, uatomic_dec */
-
-#define uatomic_sub_return(addr, v)	uatomic_add_return((addr), -(v))
-
-#define uatomic_add(addr, v)		(void)uatomic_add_return((addr), (v))
-#define uatomic_sub(addr, v)		(void)uatomic_sub_return((addr), (v))
-
-#define uatomic_inc(addr)		uatomic_add((addr), 1)
-#define uatomic_dec(addr)		uatomic_add((addr), -1)
-
 #ifdef __cplusplus 
 }
 #endif
+
+#include <urcu/uatomic_generic.h>
 
 #endif /* _URCU_UATOMIC_ARCH_S390_H */

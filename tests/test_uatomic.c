@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
+
+#define UATOMIC_NO_LINK_ERROR
 #include <urcu/uatomic_arch.h>
 
 #if (defined(__i386__) || defined(__x86_64__))
