@@ -35,8 +35,6 @@
 extern "C" {
 #endif 
 
-#define CONFIG_HAVE_MEM_COHERENCY
-
 #define CACHE_LINE_SIZE	128
 
 #ifndef __SIZEOF_LONG__
@@ -52,40 +50,6 @@ extern "C" {
 #endif
 
 #define mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
-#define rmb()   __asm__ __volatile__("bcr 15,0" : : : "memory")
-#define wmb()   __asm__ __volatile__("bcr 15,0" : : : "memory")
-#define mc()	barrier()
-#define rmc()	barrier()
-#define wmc()	barrier()
-
-#ifdef CONFIG_RCU_SMP
-#define smp_mb()	mb()
-#define smp_rmb()	rmb()
-#define smp_wmb()	wmb()
-#define smp_mc()	mc()
-#define smp_rmc()	rmc()
-#define smp_wmc()	wmc()
-#else
-#define smp_mb()	barrier()
-#define smp_rmb()	barrier()
-#define smp_wmb()	barrier()
-#define smp_mc()	barrier()
-#define smp_rmc()	barrier()
-#define smp_wmc()	barrier()
-#endif
-
-/* Nop everywhere except on alpha. */
-#define smp_read_barrier_depends()
-
-static inline void cpu_relax(void)
-{
-	barrier();
-}
-
-static inline void sync_core()
-{
-	__asm__ __volatile__("bcr 15,0" : : : "memory");
-}
 
 typedef unsigned long long cycles_t;
 
@@ -101,5 +65,7 @@ static inline cycles_t get_cycles (void)
 #ifdef __cplusplus 
 }
 #endif
+
+#include <urcu/arch_generic.h>
 
 #endif /* _URCU_ARCH_S390_H */
