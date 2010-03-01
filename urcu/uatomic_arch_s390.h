@@ -163,48 +163,6 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 					       (unsigned long)(_new),	\
 					       sizeof(*(addr)))
 
-/* uatomic_add_return */
-
-static inline __attribute__((always_inline))
-unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
-{
-	switch (len) {
-	case 4:
-	{
-		unsigned int old, oldt;
-
-		oldt = uatomic_read((unsigned int *)addr);
-		do {
-			old = oldt;
-			oldt = _uatomic_cmpxchg(addr, old, old + val, 4);
-		} while (oldt != old);
-
-		return old + val;
-	}
-#if (BITS_PER_LONG == 64)
-	case 8:
-	{
-		unsigned long old, oldt;
-
-		oldt = uatomic_read((unsigned long *)addr);
-		do {
-			old = oldt;
-			oldt = _uatomic_cmpxchg(addr, old, old + val, 8);
-		} while (oldt != old);
-
-		return old + val;
-	}
-#endif
-	}
-	__builtin_trap();
-	return 0;
-}
-
-#define uatomic_add_return(addr, v)					\
-	((__typeof__(*(addr))) _uatomic_add_return((addr),		\
-						  (unsigned long)(v),	\
-						  sizeof(*(addr))))
-
 #ifdef __cplusplus 
 }
 #endif
