@@ -218,8 +218,6 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 #define uatomic_inc(addr)		uatomic_add((addr), 1)
 #define uatomic_dec(addr)		uatomic_add((addr), -1)
 
-#define compat_uatomic_cmpxchg(ptr, old, _new)	uatomic_cmpxchg(ptr, old, _new)
-
 #ifdef __cplusplus 
 }
 #endif
