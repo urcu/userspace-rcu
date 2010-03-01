@@ -249,6 +249,10 @@ void *thr_reader(void *_count)
 
 	rcu_unregister_thread();
 
+	/* test extra thread registration */
+	rcu_register_thread();
+	rcu_unregister_thread();
+
 	*count = nr_reads;
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
