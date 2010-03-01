@@ -346,7 +346,7 @@ void rcu_register_thread(void)
 {
 	rcu_reader.tid = pthread_self();
 	assert(rcu_reader.need_mb == 0);
-	assert(rcu_reader.ctr == 0);
+	assert(!(rcu_reader.ctr & RCU_GP_CTR_NEST_MASK));
 
 	mutex_lock(&rcu_gp_lock);
 	rcu_init();	/* In case gcc does not support constructor attribute */
