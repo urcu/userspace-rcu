@@ -40,12 +40,6 @@ URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
 URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 
-if GCC_API
-APIHEADER=api_gcc.h
-else
-APIHEADER=api_@ARCHTYPE@.h
-endif
-
 EXTRA_DIST = $(top_srcdir)/tests/api_*.h
 
 
@@ -156,9 +150,3 @@ test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 urcutorture.c: api.h
-
-api.h: $(APIHEADER)
-	cp -f $(srcdir)/$(APIHEADER) api.h
-
-clean-local:
-	rm -f api.h

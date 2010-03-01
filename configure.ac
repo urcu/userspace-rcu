@@ -56,6 +56,14 @@ esac
 if test "$ARCHTYPE" = "unknown"; then
 	AC_MSG_ERROR([Unable to detect the architecture.])
 fi
+UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
+ARCHSRC=urcu/arch_$ARCHTYPE.h
+if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
+	APISRC=tests/api_gcc.h
+else
+	APISRC=tests/api_$ARCHTYPE.h
+fi
+
 AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
@@ -94,8 +102,6 @@ AC_TRY_COMPILE(
 )
 
 AM_CONDITIONAL([COMPAT_FUTEX], [ test "x$compat_futex_test" = "x1" ])
-
-AM_CONDITIONAL([GCC_API], [test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc])
 
 AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = xx86compat ])
 
@@ -204,6 +210,11 @@ AC_CHECK_FUNCS(
 
 CFLAGS=$saved_CFLAGS
 
+AC_CONFIG_LINKS([
+	urcu/arch.h:$ARCHSRC
+	urcu/uatomic_arch.h:$UATOMICSRC
+	tests/api.h:$APISRC
+])
 AC_CONFIG_FILES([
 	Makefile
 	tests/Makefile

@@ -38,16 +38,3 @@ liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 
 liburcu_defer_la_SOURCES = urcu-defer.c $(COMPAT)
-
-$(top_srcdir)/*.h $(top_srcdir)/*.c: urcu/arch.h urcu/uatomic_arch.h
-
-urcu/arch.h: $(top_srcdir)/urcu/arch_@ARCHTYPE@.h
-	$(mkdir_p) $(top_builddir)/urcu
-	cp -f $(top_srcdir)/urcu/arch_@ARCHTYPE@.h $(top_builddir)/urcu/arch.h
-
-urcu/uatomic_arch.h: $(top_srcdir)/urcu/uatomic_arch_@ARCHTYPE@.h
-	$(mkdir_p) $(top_builddir)/urcu
-	cp -f $(top_srcdir)/urcu/uatomic_arch_@ARCHTYPE@.h $(top_builddir)/urcu/uatomic_arch.h
-
-clean-local:
-	rm -f urcu/arch.h urcu/uatomic_arch.h
