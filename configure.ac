@@ -50,6 +50,7 @@ case $host_cpu in
 	s390) ARCHTYPE="s390" ;;
 	s390x) ARCHTYPE="s390" ;;
 	sparc64) ARCHTYPE="sparc64" ;;
+	alpha*) ARCHTYPE="alpha" ;;
 	*) ARCHTYPE="unknown";;
 esac
 
