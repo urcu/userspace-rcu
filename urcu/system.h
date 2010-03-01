@@ -46,9 +46,9 @@
  */
 #define STORE_SHARED(x, v)		\
 	({				\
-		_STORE_SHARED(x, v);	\
+		typeof(x) _v = _STORE_SHARED(x, v);	\
 		smp_wmc();		\
-		(v);			\
+		_v;			\
 	})
 
 #endif /* _URCU_SYSTEM_H */
