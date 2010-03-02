@@ -37,7 +37,7 @@
  * use is to mediate communication between process-level code and irq/NMI
  * handlers, all running on the same CPU.
  */
-#define ACCESS_ONCE(x)	(*(volatile typeof(x) *)&x)
+#define ACCESS_ONCE(x)	(*(volatile typeof(x) *)&(x))
 
 #ifndef max
 #define max(a,b) ((a)>(b)?(a):(b))
