@@ -247,7 +247,7 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * If queue is full, or reached threshold. Empty queue ourself.
 	 * Worse-case: must allow 2 supplementary entries for fct pointer.
 	 */
-	if (unlikely(sync || (head - tail >= DEFER_QUEUE_SIZE - 2))) {
+	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
 		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
 		assert(head - LOAD_SHARED(defer_queue.tail) == 0);
