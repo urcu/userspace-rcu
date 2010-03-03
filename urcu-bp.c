@@ -300,6 +300,7 @@ static void rcu_gc_registry(void)
 		assert(ret != EINVAL);
 		if (ret == ESRCH) {
 			list_del(&rcu_reader_reg->head);
+			rcu_reader_reg->ctr = 0;
 			rcu_reader_reg->alloc = 0;
 			registry_arena.used -= sizeof(struct rcu_reader);
 		}
