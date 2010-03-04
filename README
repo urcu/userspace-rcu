@@ -31,6 +31,15 @@ theoretically work on other operating systems.
 Alpha and ia64 architectures are supported, but depend on 4.x gcc with atomic
 builtins support.
 
+The gcc compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
+supported, with the following exceptions:
+
+- gcc 3.3 and 3.4 have a bug that prevents them from generating volatile
+  accesses to offsets in a TLS structure on 32-bit x86. These versions are
+  therefore not compatible with liburcu on x86 32-bit (i386, i486, i586, i686).
+  The problem has been reported to the gcc community:
+    http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
+
 QUICK START GUIDE
 -----------------
 
