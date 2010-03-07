@@ -158,9 +158,9 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 		do {
 			old = uatomic_read((unsigned int *)addr);
-		while (!__sync_bool_compare_and_swap_4(addr, old, val));
+		} while (!__sync_bool_compare_and_swap_4(addr, old, val));
 
-		} return old;
+		return old;
 	}
 #if (BITS_PER_LONG == 64)
 	case 8:
