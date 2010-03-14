@@ -124,8 +124,12 @@ static void update_counter_and_wait(void)
 	 * Enforce compiler-order of store to rcu_gp_ctr before before
 	 * load rcu_reader ctr.
 	 * This ensures synchronize_rcu() cannot be starved by readers.
+	 *
+	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
 	 */
-	barrier();
+	smp_mb();
 
 	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
