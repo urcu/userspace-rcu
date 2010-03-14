@@ -121,6 +121,13 @@ static void update_counter_and_wait(void)
 #endif	/* !(BITS_PER_LONG < 64) */
 
 	/*
+	 * Enforce compiler-order of store to rcu_gp_ctr before before
+	 * load rcu_reader ctr.
+	 * This ensures synchronize_rcu() cannot be starved by readers.
+	 */
+	barrier();
+
+	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
 	for (;;) {
