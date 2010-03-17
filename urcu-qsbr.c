@@ -121,10 +121,14 @@ static void update_counter_and_wait(void)
 #endif	/* !(BITS_PER_LONG < 64) */
 
 	/*
-	 * Enforce compiler-order of store to rcu_gp_ctr before before
-	 * load rcu_reader ctr.
-	 * This ensures synchronize_rcu() cannot be starved by readers.
-	 *
+	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
+	 * state. Failure to do so could result in the writer waiting forever
+	 * while new readers are always accessing data (no progress). Enforce
+	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
+	 */
+	barrier();
+
+	/*
 	 * Adding a smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
@@ -208,11 +212,12 @@ void synchronize_rcu(void)
 
 	/*
 	 * Must finish waiting for quiescent state for parity 0 before
-	 * committing qparity update to memory. Failure to do so could result in
-	 * the writer waiting forever while new readers are always accessing
-	 * data (no progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 * committing next rcu_gp_ctr update to memory. Failure to do so could
+	 * result in the writer waiting forever while new readers are always
+	 * accessing data (no progress).  Enforce compiler-order of load
+	 * rcu_reader ctr before store to rcu_gp_ctr.
 	 */
+	barrier();
 
 	/*
 	 * Adding a smp_mb() which is _not_ formally required, but makes the
