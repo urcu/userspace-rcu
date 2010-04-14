@@ -222,7 +222,7 @@ struct rcu_reader {
 	unsigned long ctr;
 	char need_mb;
 	/* Data used for registry */
-	struct list_head head __attribute__((aligned(CACHE_LINE_SIZE)));
+	struct list_head node __attribute__((aligned(CACHE_LINE_SIZE)));
 	pthread_t tid;
 };
 

@@ -146,9 +146,9 @@ static void update_counter_and_wait(void)
 			smp_mb();
 		}
 
-		list_for_each_entry_safe(index, tmp, &registry, head) {
+		list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
-				list_move(&index->head, &qsreaders);
+				list_move(&index->node, &qsreaders);
 		}
 
 		if (list_empty(&registry)) {
@@ -305,7 +305,7 @@ void rcu_register_thread(void)
 	assert(rcu_reader.ctr == 0);
 
 	mutex_lock(&rcu_gp_lock);
-	list_add(&rcu_reader.head, &registry);
+	list_add(&rcu_reader.node, &registry);
 	mutex_unlock(&rcu_gp_lock);
 	_rcu_thread_online();
 }
@@ -318,7 +318,7 @@ void rcu_unregister_thread(void)
 	 */
 	_rcu_thread_offline();
 	mutex_lock(&rcu_gp_lock);
-	list_del(&rcu_reader.head);
+	list_del(&rcu_reader.node);
 	mutex_unlock(&rcu_gp_lock);
 }
 

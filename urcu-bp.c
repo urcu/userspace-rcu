@@ -144,9 +144,9 @@ void update_counter_and_wait(void)
 	 */
 	for (;;) {
 		wait_loops++;
-		list_for_each_entry_safe(index, tmp, &registry, head) {
+		list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_old_gp_ongoing(&index->ctr))
-				list_move(&index->head, &qsreaders);
+				list_move(&index->node, &qsreaders);
 		}
 
 		if (list_empty(&registry)) {
@@ -279,7 +279,7 @@ static void add_thread(void)
 	/* Add to registry */
 	rcu_reader_reg->tid = pthread_self();
 	assert(rcu_reader_reg->ctr == 0);
-	list_add(&rcu_reader_reg->head, &registry);
+	list_add(&rcu_reader_reg->node, &registry);
 	rcu_reader = rcu_reader_reg;
 }
 
@@ -299,7 +299,7 @@ static void rcu_gc_registry(void)
 		ret = pthread_kill(tid, 0);
 		assert(ret != EINVAL);
 		if (ret == ESRCH) {
-			list_del(&rcu_reader_reg->head);
+			list_del(&rcu_reader_reg->node);
 			rcu_reader_reg->ctr = 0;
 			rcu_reader_reg->alloc = 0;
 			registry_arena.used -= sizeof(struct rcu_reader);
