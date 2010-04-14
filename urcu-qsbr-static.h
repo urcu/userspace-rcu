@@ -169,7 +169,7 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 	unsigned long v;
 
 	v = LOAD_SHARED(*ctr);
-	return v && (v - rcu_gp_ctr > ULONG_MAX / 2);
+	return v && (v != rcu_gp_ctr);
 }
 #endif  /* !(BITS_PER_LONG < 64) */
 
