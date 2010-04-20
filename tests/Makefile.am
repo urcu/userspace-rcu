@@ -150,3 +150,6 @@ test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 urcutorture.c: api.h
+
+check-am:
+	./runall.sh
