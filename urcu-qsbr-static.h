@@ -155,15 +155,6 @@ static inline void wake_up_gp(void)
 	}
 }
 
-#if (BITS_PER_LONG < 64)
-static inline int rcu_gp_ongoing(unsigned long *ctr)
-{
-	unsigned long v;
-
-	v = LOAD_SHARED(*ctr);
-	return v && ((v ^ rcu_gp_ctr) & RCU_GP_CTR);
-}
-#else /* !(BITS_PER_LONG < 64) */
 static inline int rcu_gp_ongoing(unsigned long *ctr)
 {
 	unsigned long v;
@@ -171,7 +162,6 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 	v = LOAD_SHARED(*ctr);
 	return v && (v != rcu_gp_ctr);
 }
-#endif  /* !(BITS_PER_LONG < 64) */
 
 static inline void _rcu_read_lock(void)
 {
