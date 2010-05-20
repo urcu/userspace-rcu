@@ -106,7 +106,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		__asm__ __volatile__(
 			LWSYNC_OPCODE
 		"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
-			"cmpd %0,%3\n"		/* if load is not equal to */
+			"cmpw %0,%3\n"		/* if load is not equal to */
 			"bne 2f\n"		/* old, fail */
 			"stwcx. %2,0,%1\n"	/* else store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
