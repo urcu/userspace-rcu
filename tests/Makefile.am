@@ -152,4 +152,5 @@ test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 urcutorture.c: api.h
 
 check-am:
+	./test_uatomic
 	./runall.sh
