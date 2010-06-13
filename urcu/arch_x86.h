@@ -47,20 +47,6 @@ extern "C" {
 
 #define cpu_relax()	asm volatile("rep; nop" : : : "memory");
 
-/*
- * Serialize core instruction execution. Also acts as a compiler barrier.
- * On PIC ebx cannot be clobbered
- */
-#ifdef __PIC__
-#define sync_core()							  \
-	asm volatile("push %%ebx; cpuid; pop %%ebx"			  \
-		     : : : "memory", "eax", "ecx", "edx");
-#endif
-#ifndef __PIC__
-#define sync_core()							  \
-	asm volatile("cpuid" : : : "memory", "eax", "ebx", "ecx", "edx");
-#endif
-
 #define rdtscll(val)							  \
 	do {						  		  \
 	     unsigned int __a, __d;					  \

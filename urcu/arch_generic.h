@@ -121,10 +121,6 @@ extern "C" {
 #define cpu_relax()	 barrier()
 #endif
 
-#ifndef sync_core
-#define sync_core()	 mb()
-#endif
-
 #ifdef __cplusplus
 }
 #endif

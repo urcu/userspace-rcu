@@ -34,11 +34,6 @@ extern "C" {
 
 #define mb()    asm volatile("sync":::"memory")
 
-/*
- * Serialize core instruction execution. Also acts as a compiler barrier.
- */
-#define sync_core()	asm volatile("isync" : : : "memory")
-
 #define mftbl()						\
 	({ 						\
 		unsigned long rval;			\
