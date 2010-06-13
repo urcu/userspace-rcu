@@ -12,7 +12,7 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
         test_urcu_mb_gc test_qsbr_gc test_qsbr_lgc test_urcu_signal_lgc \
         test_urcu_mb_lgc test_qsbr_dynamic_link test_urcu_defer \
         test_uatomic test_urcu_assign test_urcu_assign_dynamic_link \
-        test_urcu_bp test_urcu_bp_dynamic_link
+        test_urcu_bp test_urcu_bp_dynamic_link test_cycles_per_loop
 noinst_HEADERS = rcutorture.h
 
 if COMPAT_ARCH
@@ -138,6 +138,8 @@ test_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_defer_SOURCES = test_urcu_defer.c $(URCU_DEFER)
 
 test_uatomic_SOURCES = test_uatomic.c $(COMPAT)
+
+test_cycles_per_loop_SOURCES = test_cycles_per_loop.c
 
 test_urcu_assign_SOURCES = test_urcu_assign.c $(URCU)
 
