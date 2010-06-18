@@ -52,6 +52,7 @@ case $host_cpu in
 	sparc64) ARCHTYPE="sparc64" ;;
 	alpha*) ARCHTYPE="alpha" ;;
 	ia64) ARCHTYPE="gcc" ;;
+	armv7l) ARCHTYPE="armv7l" ;;
 	*) ARCHTYPE="unknown";;
 esac
 
@@ -66,6 +67,9 @@ if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
 	APISRC=tests/api_gcc.h
 else
 	APISRC=tests/api_$ARCHTYPE.h
+fi
+if test "$ARCHTYPE" == "armv7l"; then
+	CFLAGS="-mcpu=cortex-a9 -mtune=cortex-a9 -O"
 fi
 
 AC_SUBST(ARCHTYPE)
