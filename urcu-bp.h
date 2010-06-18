@@ -9,7 +9,7 @@
  * Slower RCU read-side adapted for tracing library. Does not require thread
  * registration nor unregistration. Also signal-safe.
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * LGPL-compatible code should include this header with :

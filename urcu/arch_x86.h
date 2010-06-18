@@ -5,7 +5,7 @@
  * arch_x86.h: trivial definitions for the x86 architecture.
  *
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -9,7 +9,7 @@
  * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu.h for linking
  * dynamically with the userspace rcu library.
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * This library is free software; you can redistribute it and/or

@@ -5,7 +5,7 @@
  * arch_sparc64.h: trivial definitions for the Sparc64 architecture.
  *
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

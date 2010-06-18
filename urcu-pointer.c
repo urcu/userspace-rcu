@@ -4,7 +4,7 @@
  *
  * library wrappers to be used by non-LGPL compatible source code.
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * This library is free software; you can redistribute it and/or

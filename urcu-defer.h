@@ -6,7 +6,7 @@
  *
  * Userspace RCU header - deferred execution
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * LGPL-compatible code should include this header with :
