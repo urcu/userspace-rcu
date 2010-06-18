@@ -56,13 +56,8 @@ case $host_cpu in
 	*) ARCHTYPE="unknown";;
 esac
 
-if test "$ARCHTYPE" != "unknown"; then
-	UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
-	ARCHSRC=urcu/arch_$ARCHTYPE.h
-else
-	UATOMICSRC=urcu/uatomic_generic.h
-	ARCHSRC=urcu/arch_generic.h
-fi
+UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
+ARCHSRC=urcu/arch_$ARCHTYPE.h
 if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
 	APISRC=tests/api_gcc.h
 else
