@@ -25,11 +25,10 @@ ARCHITECTURES SUPPORTED
 -----------------------
 
 Currently, x86 (i386, i486, i586, i686), x86 64-bit, PowerPC 32/64, S390, S390x
-and Sparcv9 32/64 are supported. Only tested on Linux so far, but should
-theoretically work on other operating systems.
+ARMv7l, Alpha, ia64 and Sparcv9 32/64 are supported. Only tested on Linux so
+far, but should theoretically work on other operating systems.
 
-Alpha and ia64 architectures are supported, but depend on 4.x gcc with atomic
-builtins support.
+ARMv7l depends on running a Linux kernel 2.6.15 or better.
 
 The gcc compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
 supported, with the following exceptions:
@@ -39,6 +38,9 @@ supported, with the following exceptions:
   therefore not compatible with liburcu on x86 32-bit (i386, i486, i586, i686).
   The problem has been reported to the gcc community:
     http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
+- Alpha, ia64 and ARMv7l architectures depend on 4.x gcc with atomic builtins
+  support.
+
 
 QUICK START GUIDE
 -----------------
