@@ -55,4 +55,10 @@
 #define BITS_PER_LONG	32
 #endif
 
+#define container_of(ptr, type, member)					\
+	({								\
+		const typeof(((type *)NULL)->member) * __ptr = (ptr);	\
+		(type *)((char *)__ptr - offsetof(type, member));	\
+	})
+
 #endif /* _URCU_COMPILER_H */
