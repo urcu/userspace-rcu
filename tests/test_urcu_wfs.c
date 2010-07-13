@@ -218,7 +218,7 @@ void *thr_dequeuer(void *_count)
 	smp_mb();
 
 	for (;;) {
-		struct rcu_wfs_node *node = rcu_wfs_pop(&s);
+		struct rcu_wfs_node *node = rcu_wfs_pop_blocking(&s);
 
 		if (node) {
 			defer_rcu(free, node);
@@ -249,7 +249,7 @@ void test_end(struct rcu_wfs_stack *s, unsigned long long *nr_dequeues)
 	struct rcu_wfs_node *node;
 
 	do {
-		node = rcu_wfs_pop(s);
+		node = rcu_wfs_pop_blocking(s);
 		if (node) {
 			free(node);
 			(*nr_dequeues)++;

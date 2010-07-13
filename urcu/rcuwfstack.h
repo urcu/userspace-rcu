@@ -29,7 +29,7 @@
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
 
-#define RCU_WF_STACK_END ((void *)0x1UL)
+#define RCU_WF_STACK_END		((void *)0x1UL)
 
 struct rcu_wfs_node {
 	struct rcu_wfs_node *next;
@@ -83,7 +83,7 @@ void rcu_wfs_push(struct rcu_wfs_stack *s, struct rcu_wfs_node *node)
  * loops. Better for UP.
  */
 struct rcu_wfs_node *
-rcu_wfs_pop(struct rcu_wfs_stack *s)
+rcu_wfs_pop_blocking(struct rcu_wfs_stack *s)
 {
 	for (;;) {
 		struct rcu_wfs_node *head;
