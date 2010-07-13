@@ -20,9 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
+
+#define RCU_WF_STACK_END ((void *)0x1UL)
 
 struct rcu_wfs_node {
 	struct rcu_wfs_node *next;
@@ -30,7 +34,6 @@ struct rcu_wfs_node {
 
 struct rcu_wfs_stack {
 	struct rcu_wfs_node *head;
-	struct rcu_wfs_node end;
 };
 
 void rcu_wfs_node_init(struct rcu_wfs_node *node)
@@ -40,14 +43,14 @@ void rcu_wfs_node_init(struct rcu_wfs_node *node)
 
 void rcu_wfs_init(struct rcu_wfs_stack *s)
 {
-	s->head = &s->end;
-	rcu_wfs_node_init(&s->end);
+	s->head = RCU_WF_STACK_END;
 }
 
 void rcu_wfs_push(struct rcu_wfs_stack *s, struct rcu_wfs_node *node)
 {
 	struct rcu_wfs_node *old_head;
 
+	assert(node->next == NULL);
 	/*
 	 * uatomic_xchg() implicit memory barrier orders earlier stores to node
 	 * (setting it to NULL) before publication.
@@ -61,7 +64,12 @@ void rcu_wfs_push(struct rcu_wfs_stack *s, struct rcu_wfs_node *node)
 }
 
 /*
- * The caller must wait for a grace period before freeing the returned node.
+ * The caller must wait for a grace period before:
+ * - freeing the returned node.
+ * - modifying the ->next pointer of the returned node. (be careful with unions)
+ * - passing the returned node back to push() on the same stack they got it
+ *   from.
+ *
  * Returns NULL if stack is empty.
  *
  * cmpxchg is protected from ABA races by holding a RCU read lock between
@@ -74,22 +82,25 @@ void rcu_wfs_push(struct rcu_wfs_stack *s, struct rcu_wfs_node *node)
 struct rcu_wfs_node *
 rcu_wfs_pop(struct rcu_wfs_stack *s)
 {
-	rcu_read_lock();
 	for (;;) {
-		struct rcu_wfs_node *head = rcu_dereference(s->head);
+		struct rcu_wfs_node *head;
 
-		if (head != &s->end) {
+		rcu_read_lock();
+		head = rcu_dereference(s->head);
+		if (head != RCU_WF_STACK_END) {
 			struct rcu_wfs_node *next = rcu_dereference(head->next);
 
 			/* Retry while head is being set by push(). */
-			if (!next)
+			if (!next) {
+				rcu_read_unlock();
 				continue;
-
+			}
 			if (uatomic_cmpxchg(&s->head, head, next) == head) {
 				rcu_read_unlock();
 				return head;
 			} else {
 				/* Concurrent modification. Retry. */
+				rcu_read_unlock();
 				continue;
 			}
 		} else {
