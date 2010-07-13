@@ -43,10 +43,11 @@ void rcu_lfs_init(struct rcu_lfs_stack *s)
 
 void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 {
-	rcu_read_lock();
 	for (;;) {
-		struct rcu_lfs_node *head = rcu_dereference(s->head);
+		struct rcu_lfs_node *head;
 
+		rcu_read_lock();
+		head = rcu_dereference(s->head);
 		node->next = head;
 		/*
 		 * uatomic_cmpxchg() implicit memory barrier orders earlier
@@ -57,6 +58,7 @@ void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 			return;
 		} else {
 			/* Failure to prepend. Retry. */
+			rcu_read_unlock();
 			continue;
 		}
 	}
@@ -70,10 +72,11 @@ void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 struct rcu_lfs_node *
 rcu_lfs_pop(struct rcu_lfs_stack *s)
 {
-	rcu_read_lock();
 	for (;;) {
-		struct rcu_lfs_node *head = rcu_dereference(s->head);
+		struct rcu_lfs_node *head;
 
+		rcu_read_lock();
+		head = rcu_dereference(s->head);
 		if (head) {
 			struct rcu_lfs_node *next = rcu_dereference(head->next);
 
@@ -82,6 +85,7 @@ rcu_lfs_pop(struct rcu_lfs_stack *s)
 				return head;
 			} else {
 				/* Concurrent modification. Retry. */
+				rcu_read_unlock();
 				continue;
 			}
 		} else {
