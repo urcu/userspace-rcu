@@ -72,11 +72,11 @@ void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
 	 * node before publication.
 	 */
 
-	rcu_read_lock();
 	for (;;) {
-		struct rcu_lfq_node *tail = rcu_dereference(q->tail);
-		struct rcu_lfq_node *next;
+		struct rcu_lfq_node *tail, *next;
 
+		rcu_read_lock();
+		tail = rcu_dereference(q->tail);
 		/*
 		 * Typically expect tail->next to be NULL.
 		 */
@@ -97,6 +97,7 @@ void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
 			 * further and retry.
 			 */
 			uatomic_cmpxchg(&q->tail, tail, next);
+			rcu_read_unlock();
 			continue;
 		}
 	}
@@ -113,11 +114,12 @@ void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
 struct rcu_lfq_node *
 rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
 {
-	rcu_read_lock();
 	for (;;) {
-		struct rcu_lfq_node *head = rcu_dereference(q->head);
-		struct rcu_lfq_node *next = rcu_dereference(head->next);
+		struct rcu_lfq_node *head, *next;
 
+		rcu_read_lock();
+		head = rcu_dereference(q->head);
+		next = rcu_dereference(head->next);
 		if (next) {
 			if (uatomic_cmpxchg(&q->head, head, next) == head) {
 				rcu_read_unlock();
@@ -125,6 +127,7 @@ rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
 				return next;
 			} else {
 				/* Concurrently pushed, retry */
+				rcu_read_unlock();
 				continue;
 			}
 		} else {
