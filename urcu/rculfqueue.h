@@ -111,8 +111,9 @@ void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
  * which calls the release primitive when the reference count drops to zero. A
  * grace period must be waited before performing the actual memory reclamation
  * in the release primitive.
- * The entry lfq node returned by dequeue must not be re-used before the
- * reference count reaches zero.
+ * The entry lfq node returned by dequeue must not be modified/re-used/freed
+ * until the reference count reaches zero and a grace period has elapsed (after
+ * the refcount reached 0).
  */
 struct rcu_lfq_node *
 rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
