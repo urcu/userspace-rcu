@@ -1,3 +1,6 @@
+#ifndef _URCU_RCUWFSTACK_H
+#define _URCU_RCUWFSTACK_H
+
 /*
  * rcuwfstack.h
  *
@@ -110,3 +113,5 @@ rcu_wfs_pop(struct rcu_wfs_stack *s)
 		}
 	}
 }
+
+#endif /* _URCU_RCUWFSTACK_H */

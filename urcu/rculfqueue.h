@@ -1,3 +1,6 @@
+#ifndef _URCU_RCULFQUEUE_H
+#define _URCU_RCULFQUEUE_H
+
 /*
  * rculfqueue.h
  *
@@ -137,3 +140,5 @@ rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
 		}
 	}
 }
+
+#endif /* _URCU_RCULFQUEUE_H */

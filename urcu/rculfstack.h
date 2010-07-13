@@ -1,3 +1,6 @@
+#ifndef _URCU_RCULFSTACK_H
+#define _URCU_RCULFSTACK_H
+
 /*
  * rculfstack.h
  *
@@ -95,3 +98,5 @@ rcu_lfs_pop(struct rcu_lfs_stack *s)
 		}
 	}
 }
+
+#endif /* _URCU_RCULFSTACK_H */
