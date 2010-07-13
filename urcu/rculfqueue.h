@@ -78,7 +78,7 @@ void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
 		struct rcu_lfq_node *next;
 
 		/*
-		 * Typically expect tail to be NULL.
+		 * Typically expect tail->next to be NULL.
 		 */
 		next = uatomic_cmpxchg(&tail->next, NULL, node);
 		if (next == NULL) {
