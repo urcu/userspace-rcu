@@ -25,11 +25,19 @@
 
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
 
 #define RCU_WF_STACK_END		((void *)0x1UL)
+#define RCU_WFS_ADAPT_ATTEMPTS		10	/* Retry if being set */
+#define RCU_WFS_WAIT			10	/* Wait 10 ms if being set */
+
+extern int rcu_wfs_futex;
 
 struct rcu_wfs_node {
 	struct rcu_wfs_node *next;
@@ -78,13 +86,12 @@ void rcu_wfs_push(struct rcu_wfs_stack *s, struct rcu_wfs_node *node)
  * cmpxchg is protected from ABA races by holding a RCU read lock between
  * s->head read and cmpxchg modifying s->head and requiring that dequeuers wait
  * for a grace period before freeing the returned node.
- *
- * TODO: implement adaptative busy-wait and wait/wakeup scheme rather than busy
- * loops. Better for UP.
  */
 struct rcu_wfs_node *
 rcu_wfs_pop_blocking(struct rcu_wfs_stack *s)
 {
+	int attempt = 0;
+
 	for (;;) {
 		struct rcu_wfs_node *head;
 
@@ -96,6 +103,11 @@ rcu_wfs_pop_blocking(struct rcu_wfs_stack *s)
 			/* Retry while head is being set by push(). */
 			if (!next) {
 				rcu_read_unlock();
+				if (++attempt >= RCU_WFS_ADAPT_ATTEMPTS) {
+					/* Sleep for 10ms */
+					poll(NULL, 0, RCU_WFS_WAIT);
+					attempt = 0;
+				}
 				continue;
 			}
 			if (uatomic_cmpxchg(&s->head, head, next) == head) {
@@ -113,5 +125,9 @@ rcu_wfs_pop_blocking(struct rcu_wfs_stack *s)
 		}
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _URCU_RCUWFSTACK_H */

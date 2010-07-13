@@ -26,6 +26,10 @@
 #include <urcu/urcu_ref.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
@@ -141,5 +145,9 @@ rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
 		}
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _URCU_RCULFQUEUE_H */

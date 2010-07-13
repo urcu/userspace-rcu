@@ -23,6 +23,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
@@ -98,5 +102,9 @@ rcu_lfs_pop(struct rcu_lfs_stack *s)
 		}
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _URCU_RCULFSTACK_H */

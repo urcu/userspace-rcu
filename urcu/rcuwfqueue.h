@@ -1,3 +1,6 @@
+#ifndef _URCU_RCUWFQUEUE_H
+#define _URCU_RCUWFQUEUE_H
+
 /*
  * rcuwfqueue.h
  *
@@ -22,6 +25,10 @@
 
 #include <urcu/urcu_ref.h>
 #include <assert.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
 #error "Dynamic loader LGPL wrappers not implemented yet"
@@ -92,8 +99,10 @@ void rcu_wfq_enqueue(struct rcu_wfq_queue *q, struct rcu_wfq_node *node)
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed (after the refcount reached 0).
  *
- * TODO: implement adaptative busy-wait and wait/wakeup scheme rather than busy
- * loops. Better for UP.
+ * No need to go on a waitqueue here, as there is no possible state in which the
+ * list could cause dequeue to busy-loop needlessly while waiting for another
+ * thread to be scheduled. The queue appears empty until tail->next is set by
+ * enqueue.
  */
 struct rcu_wfq_node *
 rcu_wfq_dequeue_blocking(struct rcu_wfq_queue *q,
@@ -122,3 +131,9 @@ rcu_wfq_dequeue_blocking(struct rcu_wfq_queue *q,
 		}
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _URCU_RCUWFQUEUE_H */
