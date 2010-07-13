@@ -296,7 +296,7 @@ static inline void _rcu_read_unlock(void)
 	}
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 
