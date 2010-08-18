@@ -5,8 +5,7 @@
 
 /*
  * Caution !
- * Ensure writer threads are registered as urcu readers and with with
- * urcu-defer.
+ * Ensure writer threads are registered as urcu readers and with urcu-defer.
  * Ensure reader threads are registered as urcu readers.
  */
 
