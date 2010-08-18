@@ -73,7 +73,7 @@ void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 
 /*
  * The caller must wait for a grace period to pass before freeing the returned
- * node.
+ * node or modifying the rcu_lfs_node structure.
  * Returns NULL if stack is empty.
  */
 struct rcu_lfs_node *
