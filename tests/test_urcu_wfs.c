@@ -62,8 +62,7 @@ static inline pid_t gettid(void)
 #define _LGPL_SOURCE
 #endif
 #include <urcu.h>
-#include <urcu/rcuwfstack.h>
-#include <urcu-defer.h>
+#include <urcu/wfstack.h>
 
 static volatile int test_go, test_stop;
 
@@ -154,7 +153,7 @@ static unsigned long long __thread nr_successful_enqueues;
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct rcu_wfs_stack s;
+static struct wfs_stack s;
 
 void *thr_enqueuer(void *_count)
 {
@@ -165,19 +164,17 @@ void *thr_enqueuer(void *_count)
 
 	set_affinity();
 
-	rcu_register_thread();
-
 	while (!test_go)
 	{
 	}
 	smp_mb();
 
 	for (;;) {
-		struct rcu_wfs_node *node = malloc(sizeof(*node));
+		struct wfs_node *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		rcu_wfs_node_init(node);
-		rcu_wfs_push(&s, node);
+		wfs_node_init(node);
+		wfs_push(&s, node);
 		nr_successful_enqueues++;
 
 		if (unlikely(wdelay))
@@ -187,8 +184,6 @@ fail:
 		if (unlikely(!test_duration_enqueue()))
 			break;
 	}
-
-	rcu_unregister_thread();
 
 	count[0] = nr_enqueues;
 	count[1] = nr_successful_enqueues;
@@ -209,19 +204,16 @@ void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
-	rcu_defer_register_thread();
-	rcu_register_thread();
-
 	while (!test_go)
 	{
 	}
 	smp_mb();
 
 	for (;;) {
-		struct rcu_wfs_node *node = rcu_wfs_pop_blocking(&s);
+		struct wfs_node *node = wfs_pop_blocking(&s);
 
 		if (node) {
-			defer_rcu(free, node);
+			free(node);
 			nr_successful_dequeues++;
 		}
 
@@ -232,9 +224,6 @@ void *thr_dequeuer(void *_count)
 			loop_sleep(rduration);
 	}
 
-	rcu_unregister_thread();
-	rcu_defer_unregister_thread();
-
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
 		       pthread_self(), (unsigned long)gettid(), nr_dequeues,
@@ -244,12 +233,12 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-void test_end(struct rcu_wfs_stack *s, unsigned long long *nr_dequeues)
+void test_end(struct wfs_stack *s, unsigned long long *nr_dequeues)
 {
-	struct rcu_wfs_node *node;
+	struct wfs_node *node;
 
 	do {
-		node = rcu_wfs_pop_blocking(s);
+		node = wfs_pop_blocking(s);
 		if (node) {
 			free(node);
 			(*nr_dequeues)++;
@@ -348,7 +337,7 @@ int main(int argc, char **argv)
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
-	rcu_wfs_init(&s);
+	wfs_init(&s);
 
 	next_aff = 0;
 
