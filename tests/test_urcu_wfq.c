@@ -62,8 +62,7 @@ static inline pid_t gettid(void)
 #define _LGPL_SOURCE
 #endif
 #include <urcu.h>
-#include <urcu/rcuwfqueue.h>
-#include <urcu-defer.h>
+#include <urcu/wfqueue.h>
 
 static volatile int test_go, test_stop;
 
@@ -154,7 +153,7 @@ static unsigned long long __thread nr_successful_enqueues;
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct rcu_wfq_queue q;
+static struct wfq_queue q;
 
 void *thr_enqueuer(void *_count)
 {
@@ -165,19 +164,17 @@ void *thr_enqueuer(void *_count)
 
 	set_affinity();
 
-	rcu_register_thread();
-
 	while (!test_go)
 	{
 	}
 	smp_mb();
 
 	for (;;) {
-		struct rcu_wfq_node *node = malloc(sizeof(*node));
+		struct wfq_node *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		rcu_wfq_node_init(node);
-		rcu_wfq_enqueue(&q, node);
+		wfq_node_init(node);
+		wfq_enqueue(&q, node);
 		nr_successful_enqueues++;
 
 		if (unlikely(wdelay))
@@ -187,8 +184,6 @@ fail:
 		if (unlikely(!test_duration_enqueue()))
 			break;
 	}
-
-	rcu_unregister_thread();
 
 	count[0] = nr_enqueues;
 	count[1] = nr_successful_enqueues;
@@ -200,14 +195,6 @@ fail:
 
 }
 
-static void rcu_release_node(struct urcu_ref *ref)
-{
-	struct rcu_wfq_node *node = container_of(ref, struct rcu_wfq_node, ref);
-	defer_rcu(free, node);
-	//synchronize_rcu();
-	//free(node);
-}
-
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -217,20 +204,16 @@ void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
-	rcu_defer_register_thread();
-	rcu_register_thread();
-
 	while (!test_go)
 	{
 	}
 	smp_mb();
 
 	for (;;) {
-		struct rcu_wfq_node *node =
-			rcu_wfq_dequeue_blocking(&q, rcu_release_node);
+		struct wfq_node *node = wfq_dequeue_blocking(&q);
 
 		if (node) {
-			urcu_ref_put(&node->ref, rcu_release_node);
+			free(node);
 			nr_successful_dequeues++;
 		}
 
@@ -241,9 +224,6 @@ void *thr_dequeuer(void *_count)
 			loop_sleep(rduration);
 	}
 
-	rcu_unregister_thread();
-	rcu_defer_unregister_thread();
-
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
 		       pthread_self(), (unsigned long)gettid(), nr_dequeues,
@@ -253,20 +233,14 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-static void release_node(struct urcu_ref *ref)
+void test_end(struct wfq_queue *q, unsigned long long *nr_dequeues)
 {
-	struct rcu_wfq_node *node = container_of(ref, struct rcu_wfq_node, ref);
-	free(node);
-}
-
-void test_end(struct rcu_wfq_queue *q, unsigned long long *nr_dequeues)
-{
-	struct rcu_wfq_node *node;
+	struct wfq_node *node;
 
 	do {
-		node = rcu_wfq_dequeue_blocking(q, release_node);
+		node = wfq_dequeue_blocking(q);
 		if (node) {
-			urcu_ref_put(&node->ref, release_node);
+			free(node);
 			(*nr_dequeues)++;
 		}
 	} while (node);
@@ -363,7 +337,7 @@ int main(int argc, char **argv)
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
-	rcu_wfq_init(&q);
+	wfq_init(&q);
 
 	next_aff = 0;
 

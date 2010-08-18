@@ -153,7 +153,7 @@ test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_lfq_SOURCES = test_urcu_lfq.c $(URCU_DEFER)
-test_urcu_wfq_SOURCES = test_urcu_wfq.c $(URCU_DEFER)
+test_urcu_wfq_SOURCES = test_urcu_wfq.c
 test_urcu_lfs_SOURCES = test_urcu_lfs.c $(URCU_DEFER)
 test_urcu_wfs_SOURCES = test_urcu_wfs.c $(URCU_DEFER)
 
