@@ -35,6 +35,9 @@ extern "C" {
 #error "Dynamic loader LGPL wrappers not implemented yet"
 #endif
 
+#define WFQ_ADAPT_ATTEMPTS		10	/* Retry if being set */
+#define WFQ_WAIT			10	/* Wait 10 ms if being set */
+
 /*
  * Queue with wait-free enqueue/blocking dequeue.
  * This implementation adds a dummy head node when the queue is empty to ensure
@@ -101,7 +104,7 @@ struct wfq_node *
 __wfq_dequeue_blocking(struct wfq_queue *q)
 {
 	struct wfq_node *node, *next;
-	int busy_wait = 16;
+	int attempt = 0;
 
 	/*
 	 * Queue is empty if it only contains the dummy node.
@@ -114,11 +117,11 @@ __wfq_dequeue_blocking(struct wfq_queue *q)
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
 	 */
 	while ((next = LOAD_SHARED(node->next)) == NULL) {
-		if (busy_wait > 0) {
-			cpu_relax();
-			busy_wait--;
+		if (++attempt >= WFQ_ADAPT_ATTEMPTS) {
+			poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
+			attempt = 0;
 		} else
-			poll(NULL, 0, 1);	/* Wait for 1ms */
+			cpu_relax();
 	}
 	/*
 	 * Move queue head forward.
