@@ -24,6 +24,10 @@
 #include "urcu/wfstack.h"
 #include "urcu/wfstack-static.h"
 
+/*
+ * library wrappers to be used by non-LGPL compatible source code.
+ */
+
 void wfs_node_init(struct wfs_node *node)
 {
 	_wfs_node_init(node);
