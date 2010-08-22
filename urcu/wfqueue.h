@@ -31,13 +31,6 @@
 extern "C" {
 #endif
 
-#if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
-#error "Dynamic loader LGPL wrappers not implemented yet"
-#endif
-
-#define WFQ_ADAPT_ATTEMPTS		10	/* Retry if being set */
-#define WFQ_WAIT			10	/* Wait 10 ms if being set */
-
 /*
  * Queue with wait-free enqueue/blocking dequeue.
  * This implementation adds a dummy head node when the queue is empty to ensure
@@ -57,100 +50,23 @@ struct wfq_queue {
 	pthread_mutex_t lock;
 };
 
-void wfq_node_init(struct wfq_node *node)
-{
-	node->next = NULL;
-}
+#ifdef _LGPL_SOURCE
 
-void wfq_init(struct wfq_queue *q)
-{
-	int ret;
+#include <urcu/wfqueue-static.h>
 
-	wfq_node_init(&q->dummy);
-	/* Set queue head and tail */
-	q->head = &q->dummy;
-	q->tail = &q->dummy.next;
-	ret = pthread_mutex_init(&q->lock, NULL);
-	assert(!ret);
-}
+#define wfq_node_init		_wfq_node_init
+#define wfq_init		_wfq_init
+#define wfq_enqueue		_wfq_enqueue
+#define wfq_dequeue_blocking	_wfq_dequeue_blocking
 
-void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
-{
-	struct wfq_node **old_tail;
+#else /* !_LGPL_SOURCE */
 
-	/*
-	 * uatomic_xchg() implicit memory barrier orders earlier stores to data
-	 * structure containing node and setting node->next to NULL before
-	 * publication.
-	 */
-	old_tail = uatomic_xchg(&q->tail, node);
-	/*
-	 * At this point, dequeuers see a NULL old_tail->next, which indicates
-	 * that the queue is being appended to. The following store will append
-	 * "node" to the queue from a dequeuer perspective.
-	 */
-	STORE_SHARED(*old_tail, node);
-}
+extern void wfq_node_init(struct wfq_node *node);
+extern void wfq_init(struct wfq_queue *q);
+extern void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node);
+extern struct wfq_node *wfq_dequeue_blocking(struct wfq_queue *q);
 
-/*
- * It is valid to reuse and free a dequeued node immediately.
- *
- * No need to go on a waitqueue here, as there is no possible state in which the
- * list could cause dequeue to busy-loop needlessly while waiting for another
- * thread to be scheduled. The queue appears empty until tail->next is set by
- * enqueue.
- */
-struct wfq_node *
-__wfq_dequeue_blocking(struct wfq_queue *q)
-{
-	struct wfq_node *node, *next;
-	int attempt = 0;
-
-	/*
-	 * Queue is empty if it only contains the dummy node.
-	 */
-	if (q->head == &q->dummy && LOAD_SHARED(q->tail) == &q->dummy.next)
-		return NULL;
-	node = q->head;
-
-	/*
-	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
-	 */
-	while ((next = LOAD_SHARED(node->next)) == NULL) {
-		if (++attempt >= WFQ_ADAPT_ATTEMPTS) {
-			poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
-			attempt = 0;
-		} else
-			cpu_relax();
-	}
-	/*
-	 * Move queue head forward.
-	 */
-	q->head = next;
-	/*
-	 * Requeue dummy node if we just dequeued it.
-	 */
-	if (node == &q->dummy) {
-		wfq_node_init(node);
-		wfq_enqueue(q, node);
-		return __wfq_dequeue_blocking(q);
-	}
-	return node;
-}
-
-struct wfq_node *
-wfq_dequeue_blocking(struct wfq_queue *q)
-{
-	struct wfq_node *retnode;
-	int ret;
-
-	ret = pthread_mutex_lock(&q->lock);
-	assert(!ret);
-	retnode = __wfq_dequeue_blocking(q);
-	ret = pthread_mutex_unlock(&q->lock);
-	assert(!ret);
-	return retnode;
-}
+#endif /* !_LGPL_SOURCE */
 
 #ifdef __cplusplus
 }
