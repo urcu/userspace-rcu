@@ -27,10 +27,6 @@
 extern "C" {
 #endif
 
-#if (!defined(_GNU_SOURCE) && !defined(_LGPL_SOURCE))
-#error "Dynamic loader LGPL wrappers not implemented yet"
-#endif
-
 struct rcu_lfs_node {
 	struct rcu_lfs_node *next;
 };
@@ -39,69 +35,29 @@ struct rcu_lfs_stack {
 	struct rcu_lfs_node *head;
 };
 
-void rcu_lfs_node_init(struct rcu_lfs_node *node)
-{
-}
+#ifdef _LGPL_SOURCE
 
-void rcu_lfs_init(struct rcu_lfs_stack *s)
-{
-	s->head = NULL;
-}
+#include <urcu/rculfstack-static.h>
 
-void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
-{
-	for (;;) {
-		struct rcu_lfs_node *head;
+#define rcu_lfs_node_init	_rcu_lfs_node_init
+#define rcu_lfs_init		_rcu_lfs_init
+#define rcu_lfs_push		_rcu_lfs_push
+#define rcu_lfs_pop		_rcu_lfs_pop
 
-		rcu_read_lock();
-		head = rcu_dereference(s->head);
-		node->next = head;
-		/*
-		 * uatomic_cmpxchg() implicit memory barrier orders earlier
-		 * stores to node before publication.
-		 */
-		if (uatomic_cmpxchg(&s->head, head, node) == head) {
-			rcu_read_unlock();
-			return;
-		} else {
-			/* Failure to prepend. Retry. */
-			rcu_read_unlock();
-			continue;
-		}
-	}
-}
+#else /* !_LGPL_SOURCE */
+
+extern void rcu_lfs_node_init(struct rcu_lfs_node *node);
+extern void rcu_lfs_init(struct rcu_lfs_stack *s);
+extern void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node);
 
 /*
  * The caller must wait for a grace period to pass before freeing the returned
  * node or modifying the rcu_lfs_node structure.
  * Returns NULL if stack is empty.
  */
-struct rcu_lfs_node *
-rcu_lfs_pop(struct rcu_lfs_stack *s)
-{
-	for (;;) {
-		struct rcu_lfs_node *head;
+extern struct rcu_lfs_node *rcu_lfs_pop(struct rcu_lfs_stack *s);
 
-		rcu_read_lock();
-		head = rcu_dereference(s->head);
-		if (head) {
-			struct rcu_lfs_node *next = rcu_dereference(head->next);
-
-			if (uatomic_cmpxchg(&s->head, head, next) == head) {
-				rcu_read_unlock();
-				return head;
-			} else {
-				/* Concurrent modification. Retry. */
-				rcu_read_unlock();
-				continue;
-			}
-		} else {
-			/* Empty stack */
-			rcu_read_unlock();
-			return NULL;
-		}
-	}
-}
+#endif /* !_LGPL_SOURCE */
 
 #ifdef __cplusplus
 }

@@ -10,7 +10,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/uatomic_generic.h urcu/arch_generic.h urcu/wfstack.h \
 		urcu/wfqueue.h urcu/rculfstack.h urcu/rculfqueue.h \
 		urcu/wfqueue-static.h urcu/wfstack-static.h \
-		urcu/rculfqueue-static.h
+		urcu/rculfqueue-static.h urcu/rculfstack-static.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic_arch.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch_*.h $(top_srcdir)/urcu/uatomic_arch_*.h \
@@ -29,7 +29,7 @@ endif
 
 lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la liburcu-mb.la liburcu-signal.la \
 		  liburcu-bp.la liburcu-defer.la libwfqueue.la libwfstack.la \
-		  librculfqueue.la
+		  librculfqueue.la librculfstack.la
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 
@@ -48,3 +48,4 @@ liburcu_defer_la_SOURCES = urcu-defer.c $(COMPAT)
 libwfqueue_la_SOURCES = wfqueue.c $(COMPAT)
 libwfstack_la_SOURCES = wfstack.c $(COMPAT)
 librculfqueue_la_SOURCES = rculfqueue.c $(COMPAT)
+librculfstack_la_SOURCES = rculfstack.c $(COMPAT)
