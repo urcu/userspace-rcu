@@ -57,6 +57,7 @@ struct wfq_queue {
 #define wfq_node_init		_wfq_node_init
 #define wfq_init		_wfq_init
 #define wfq_enqueue		_wfq_enqueue
+#define __wfq_dequeue_blocking	___wfq_dequeue_blocking
 #define wfq_dequeue_blocking	_wfq_dequeue_blocking
 
 #else /* !_LGPL_SOURCE */
@@ -64,6 +65,8 @@ struct wfq_queue {
 extern void wfq_node_init(struct wfq_node *node);
 extern void wfq_init(struct wfq_queue *q);
 extern void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node);
+/* __wfq_dequeue_blocking: caller ensures mutual exclusion between dequeues */
+extern struct wfq_node *__wfq_dequeue_blocking(struct wfq_queue *q);
 extern struct wfq_node *wfq_dequeue_blocking(struct wfq_queue *q);
 
 #endif /* !_LGPL_SOURCE */

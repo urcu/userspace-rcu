@@ -43,6 +43,11 @@ void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
 	_wfq_enqueue(q, node);
 }
 
+struct wfq_node *__wfq_dequeue_blocking(struct wfq_queue *q)
+{
+	return ___wfq_dequeue_blocking(q);
+}
+
 struct wfq_node *wfq_dequeue_blocking(struct wfq_queue *q)
 {
 	return _wfq_dequeue_blocking(q);

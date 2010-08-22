@@ -91,7 +91,7 @@ void _wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
  * enqueue.
  */
 struct wfq_node *
-__wfq_dequeue_blocking(struct wfq_queue *q)
+___wfq_dequeue_blocking(struct wfq_queue *q)
 {
 	struct wfq_node *node, *next;
 	int attempt = 0;
@@ -123,7 +123,7 @@ __wfq_dequeue_blocking(struct wfq_queue *q)
 	if (node == &q->dummy) {
 		_wfq_node_init(node);
 		_wfq_enqueue(q, node);
-		return __wfq_dequeue_blocking(q);
+		return ___wfq_dequeue_blocking(q);
 	}
 	return node;
 }
@@ -136,7 +136,7 @@ _wfq_dequeue_blocking(struct wfq_queue *q)
 
 	ret = pthread_mutex_lock(&q->lock);
 	assert(!ret);
-	retnode = __wfq_dequeue_blocking(q);
+	retnode = ___wfq_dequeue_blocking(q);
 	ret = pthread_mutex_unlock(&q->lock);
 	assert(!ret);
 	return retnode;
