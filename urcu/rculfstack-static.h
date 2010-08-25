@@ -68,22 +68,28 @@ void _rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 struct rcu_lfs_node *
 _rcu_lfs_pop(struct rcu_lfs_stack *s)
 {
-	struct rcu_lfs_node *head = NULL;
-
 	for (;;) {
-		struct rcu_lfs_node *old_head = head;
-		struct rcu_lfs_node *next;
+		struct rcu_lfs_node *head;
 
-		if (head)
-			next = head->next;
-		else
-			next = NULL;
+		rcu_read_lock();
+		head = rcu_dereference(s->head);
+		if (head) {
+			struct rcu_lfs_node *next = rcu_dereference(head->next);
 
-		head = uatomic_cmpxchg(&s->head, old_head, next);
-		if (old_head == head)
-			break;
+			if (uatomic_cmpxchg(&s->head, head, next) == head) {
+				rcu_read_unlock();
+				return head;
+			} else {
+				/* Concurrent modification. Retry. */
+				rcu_read_unlock();
+				continue;
+			}
+		} else {
+			/* Empty stack */
+			rcu_read_unlock();
+			return NULL;
+		}
 	}
-	return head;
 }
 
 #ifdef __cplusplus
