@@ -44,24 +44,19 @@ void _rcu_lfs_init(struct rcu_lfs_stack *s)
 
 void _rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 {
-	for (;;) {
-		struct rcu_lfs_node *head;
+	struct rcu_lfs_node *head = NULL;
 
-		rcu_read_lock();
-		head = rcu_dereference(s->head);
+	for (;;) {
+		struct rcu_lfs_node *old_head = head;
+
 		node->next = head;
 		/*
 		 * uatomic_cmpxchg() implicit memory barrier orders earlier
 		 * stores to node before publication.
 		 */
-		if (uatomic_cmpxchg(&s->head, head, node) == head) {
-			rcu_read_unlock();
-			return;
-		} else {
-			/* Failure to prepend. Retry. */
-			rcu_read_unlock();
-			continue;
-		}
+		head = uatomic_cmpxchg(&s->head, old_head, node);
+		if (old_head == head)
+			break;
 	}
 }
 
@@ -73,28 +68,22 @@ void _rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 struct rcu_lfs_node *
 _rcu_lfs_pop(struct rcu_lfs_stack *s)
 {
+	struct rcu_lfs_node *head = NULL;
+
 	for (;;) {
-		struct rcu_lfs_node *head;
+		struct rcu_lfs_node *old_head = head;
+		struct rcu_lfs_node *next;
 
-		rcu_read_lock();
-		head = rcu_dereference(s->head);
-		if (head) {
-			struct rcu_lfs_node *next = rcu_dereference(head->next);
+		if (head)
+			next = head->next;
+		else
+			next = NULL;
 
-			if (uatomic_cmpxchg(&s->head, head, next) == head) {
-				rcu_read_unlock();
-				return head;
-			} else {
-				/* Concurrent modification. Retry. */
-				rcu_read_unlock();
-				continue;
-			}
-		} else {
-			/* Empty stack */
-			rcu_read_unlock();
-			return NULL;
-		}
+		head = uatomic_cmpxchg(&s->head, old_head, next);
+		if (old_head == head)
+			break;
 	}
+	return head;
 }
 
 #ifdef __cplusplus
