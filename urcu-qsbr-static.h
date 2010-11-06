@@ -187,10 +187,12 @@ static inline void _rcu_thread_offline(void)
 	STORE_SHARED(rcu_reader.ctr, 0);
 	smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
+	barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
 static inline void _rcu_thread_online(void)
 {
+	barrier();	/* Ensure the compiler does not reorder us with mutex */
 	_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
 	smp_mb();
 }

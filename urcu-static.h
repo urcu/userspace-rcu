@@ -259,6 +259,7 @@ static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
+	barrier();	/* Ensure the compiler does not reorder us with mutex */
 	tmp = rcu_reader.ctr;
 	/*
 	 * rcu_gp_ctr is
@@ -294,6 +295,7 @@ static inline void _rcu_read_unlock(void)
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 	}
+	barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
 #ifdef __cplusplus
