@@ -100,7 +100,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
-	smp_rmb();
+	cmm_smp_rmb();
 	if (uatomic_read(&gp_futex) == -1)
 		futex_noasync(&gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
@@ -126,14 +126,14 @@ static void update_counter_and_wait(void)
 	 * while new readers are always accessing data (no progress). Enforce
 	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
 	 */
-	barrier();
+	cmm_barrier();
 
 	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
@@ -143,7 +143,7 @@ static void update_counter_and_wait(void)
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
-			smp_mb();
+			cmm_smp_mb();
 		}
 
 		list_for_each_entry_safe(index, tmp, &registry, node) {
@@ -154,7 +154,7 @@ static void update_counter_and_wait(void)
 		if (list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				smp_mb();
+				cmm_smp_mb();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
@@ -165,7 +165,7 @@ static void update_counter_and_wait(void)
 #ifndef HAS_INCOHERENT_CACHES
 				cpu_relax();
 #else /* #ifndef HAS_INCOHERENT_CACHES */
-				smp_mb();
+				cmm_smp_mb();
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 			}
 		}
@@ -190,7 +190,7 @@ void synchronize_rcu(void)
 	 * where new ptr points to.
 	 */
 	/* Write new ptr before changing the qparity */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
@@ -217,14 +217,14 @@ void synchronize_rcu(void)
 	 * accessing data (no progress).  Enforce compiler-order of load
 	 * rcu_reader ctr before store to rcu_gp_ctr.
 	 */
-	barrier();
+	cmm_barrier();
 
 	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -239,7 +239,7 @@ out:
 	 */
 	if (was_online)
 		_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
-	smp_mb();
+	cmm_smp_mb();
 }
 #else /* !(BITS_PER_LONG < 64) */
 void synchronize_rcu(void)
@@ -253,7 +253,7 @@ void synchronize_rcu(void)
 	 * our own quiescent state. This allows using synchronize_rcu() in
 	 * threads registered as readers.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 	if (was_online)
 		STORE_SHARED(rcu_reader.ctr, 0);
 
@@ -266,7 +266,7 @@ out:
 
 	if (was_online)
 		_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
-	smp_mb();
+	cmm_smp_mb();
 }
 #endif  /* !(BITS_PER_LONG < 64) */
 

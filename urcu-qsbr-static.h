@@ -174,27 +174,27 @@ static inline void _rcu_read_unlock(void)
 
 static inline void _rcu_quiescent_state(void)
 {
-	smp_mb();	
+	cmm_smp_mb();
 	_STORE_SHARED(rcu_reader.ctr, _LOAD_SHARED(rcu_gp_ctr));
-	smp_mb();	/* write rcu_reader.ctr before read futex */
+	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
-	smp_mb();
+	cmm_smp_mb();
 }
 
 static inline void _rcu_thread_offline(void)
 {
-	smp_mb();
+	cmm_smp_mb();
 	STORE_SHARED(rcu_reader.ctr, 0);
-	smp_mb();	/* write rcu_reader.ctr before read futex */
+	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
-	barrier();	/* Ensure the compiler does not reorder us with mutex */
+	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
 static inline void _rcu_thread_online(void)
 {
-	barrier();	/* Ensure the compiler does not reorder us with mutex */
+	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	_STORE_SHARED(rcu_reader.ctr, LOAD_SHARED(rcu_gp_ctr));
-	smp_mb();
+	cmm_smp_mb();
 }
 
 #ifdef __cplusplus 

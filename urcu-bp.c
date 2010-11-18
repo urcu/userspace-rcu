@@ -96,9 +96,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			exit(-1);
 		}
 		if (rcu_reader.need_mb) {
-			smp_mb();
+			cmm_smp_mb();
 			rcu_reader.need_mb = 0;
-			smp_mb();
+			cmm_smp_mb();
 		}
 		poll(NULL,0,10);
 	}
@@ -133,11 +133,11 @@ void update_counter_and_wait(void)
 	 */
 
 	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for each thread rcu_reader.ctr count to become 0.
@@ -180,7 +180,7 @@ void synchronize_rcu(void)
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
-	smp_mb();
+	cmm_smp_mb();
 
 	/* Remove old registry elements */
 	rcu_gc_registry();
@@ -191,11 +191,11 @@ void synchronize_rcu(void)
 	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
 
 	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -206,7 +206,7 @@ void synchronize_rcu(void)
 	 * Finish waiting for reader threads before letting the old ptr being
 	 * freed.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 out:
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);

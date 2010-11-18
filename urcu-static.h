@@ -181,23 +181,23 @@ extern int has_sys_membarrier;
 static inline void smp_mb_slave(int group)
 {
 	if (likely(has_sys_membarrier))
-		barrier();
+		cmm_barrier();
 	else
-		smp_mb();
+		cmm_smp_mb();
 }
 #endif
 
 #ifdef RCU_MB
 static inline void smp_mb_slave(int group)
 {
-	smp_mb();
+	cmm_smp_mb();
 }
 #endif
 
 #ifdef RCU_SIGNAL
 static inline void smp_mb_slave(int group)
 {
-	barrier();
+	cmm_barrier();
 }
 #endif
 
@@ -259,7 +259,7 @@ static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
-	barrier();	/* Ensure the compiler does not reorder us with mutex */
+	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	tmp = rcu_reader.ctr;
 	/*
 	 * rcu_gp_ctr is
@@ -295,7 +295,7 @@ static inline void _rcu_read_unlock(void)
 	} else {
 		_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 	}
-	barrier();	/* Ensure the compiler does not reorder us with mutex */
+	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
 #ifdef __cplusplus

@@ -63,7 +63,7 @@ extern "C" {
 
 #define _rcu_dereference(p)     ({					\
 				typeof(p) _________p1 = LOAD_SHARED(p); \
-				smp_read_barrier_depends();		\
+				cmm_smp_read_barrier_depends();		\
 				(_________p1);				\
 				})
 
@@ -81,7 +81,7 @@ extern "C" {
 		typeof(*p) _________pnew = (_new);			\
 		if (!__builtin_constant_p(_new) ||			\
 		    ((_new) != NULL))					\
-			wmb();						\
+			cmm_wmb();						\
 		uatomic_cmpxchg(p, _________pold, _________pnew);	\
 	})
 
@@ -96,7 +96,7 @@ extern "C" {
 		typeof(*p) _________pv = (v);		\
 		if (!__builtin_constant_p(v) ||		\
 		    ((v) != NULL))			\
-			wmb();				\
+			cmm_wmb();				\
 		uatomic_xchg(p, _________pv);		\
 	})
 
@@ -106,7 +106,7 @@ extern "C" {
 		typeof(*p) _________pv = (v);		\
 		if (!__builtin_constant_p(v) || 	\
 		    ((v) != NULL))			\
-			wmb();				\
+			cmm_wmb();				\
 		uatomic_set(p, _________pv);		\
 	})
 

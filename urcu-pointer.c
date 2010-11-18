@@ -39,18 +39,18 @@ void *rcu_dereference_sym(void *p)
 
 void *rcu_set_pointer_sym(void **p, void *v)
 {
-	wmb();
+	cmm_wmb();
 	return uatomic_set(p, v);
 }
 
 void *rcu_xchg_pointer_sym(void **p, void *v)
 {
-	wmb();
+	cmm_wmb();
 	return uatomic_xchg(p, v);
 }
 
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
-	wmb();
+	cmm_wmb();
 	return uatomic_cmpxchg(p, old, _new);
 }

@@ -616,10 +616,10 @@ static __inline__ int atomic_add_unless(atomic_t *v, int a, int u)
 #define atomic_dec_return(v)  (atomic_sub_return(1,v))
 
 /* Atomic operations are already serializing on x86 */
-#define smp_mb__before_atomic_dec()	smp_mb()
-#define smp_mb__after_atomic_dec()	smp_mb()
-#define smp_mb__before_atomic_inc()	smp_mb()
-#define smp_mb__after_atomic_inc()	smp_mb()
+#define smp_mb__before_atomic_dec()	cmm_smp_mb()
+#define smp_mb__after_atomic_dec()	cmm_smp_mb()
+#define smp_mb__before_atomic_inc()	cmm_smp_mb()
+#define smp_mb__after_atomic_inc()	cmm_smp_mb()
 
 #endif //0 /* duplicate with arch_atomic.h */
 

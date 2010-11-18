@@ -199,7 +199,7 @@ void *thr_reader(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		rcu_read_lock();
@@ -247,7 +247,7 @@ void *thr_writer(void *data)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		new = malloc(sizeof(*new));
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	smp_mb();
+	cmm_smp_mb();
 
 	test_go = 1;
 

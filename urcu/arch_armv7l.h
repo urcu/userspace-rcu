@@ -29,7 +29,7 @@
 extern "C" {
 #endif 
 
-#define mb()    asm volatile("dmb":::"memory")
+#define cmm_mb()    asm volatile("dmb":::"memory")
 
 #include <stdlib.h>
 #include <sys/time.h>

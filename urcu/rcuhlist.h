@@ -35,7 +35,7 @@ static inline void hlist_add_head_rcu(struct hlist_node *newp,
 {
 	newp->next = head->next;
 	newp->prev = (struct hlist_node *)head;
-	smp_wmb();
+	cmm_smp_wmb();
 	if (head->next)
 		head->next->prev = newp;
 	head->next = newp;

@@ -167,7 +167,7 @@ void *thr_enqueuer(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		struct wfs_node *node = malloc(sizeof(*node));
@@ -207,7 +207,7 @@ void *thr_dequeuer(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		struct wfs_node *node = wfs_pop_blocking(&s);
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	smp_mb();
+	cmm_smp_mb();
 
 	test_go = 1;
 

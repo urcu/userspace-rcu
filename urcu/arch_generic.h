@@ -32,93 +32,93 @@ extern "C" {
 #define CACHE_LINE_SIZE	64
 #endif
 
-#if !defined(mc) && !defined(rmc) && !defined(wmc)
+#if !defined(cmm_mc) && !defined(cmm_rmc) && !defined(cmm_wmc)
 #define CONFIG_HAVE_MEM_COHERENCY
 /*
- * Architectures with cache coherency must _not_ define mc/rmc/wmc.
+ * Architectures with cache coherency must _not_ define cmm_mc/cmm_rmc/cmm_wmc.
  *
- * For them, mc/rmc/wmc are implemented with a * simple compiler barrier;
- * in addition, we provide defaults for mb (using GCC builtins) as well as
- * rmb and wmb (defaulting to mb).
+ * For them, cmm_mc/cmm_rmc/cmm_wmc are implemented with a * simple compiler barrier;
+ * in addition, we provide defaults for cmm_mb (using GCC builtins) as well as
+ * cmm_rmb and cmm_wmb (defaulting to cmm_mb).
  */
 
-#ifndef mb
-#define mb()    __sync_synchronize()
+#ifndef cmm_mb
+#define cmm_mb()    __sync_synchronize()
 #endif
 
-#ifndef rmb
-#define rmb()    mb()
+#ifndef cmm_rmb
+#define cmm_rmb()	cmm_mb()
 #endif
 
-#ifndef wmb
-#define wmb()    mb()
+#ifndef cmm_wmb
+#define cmm_wmb()	cmm_mb()
 #endif
 
-#define mc()	 barrier()
-#define rmc()	 barrier()
-#define wmc()	 barrier()
+#define cmm_mc()	cmm_barrier()
+#define cmm_rmc()	cmm_barrier()
+#define cmm_wmc()	cmm_barrier()
 #else
 /*
  * Architectures without cache coherency need something like the following:
  *
- * #define mc()		arch_cache_flush() 
- * #define rmc()	arch_cache_flush_read()
- * #define wmc()	arch_cache_flush_write()
+ * #define cmm_mc()		arch_cache_flush() 
+ * #define cmm_rmc()	arch_cache_flush_read()
+ * #define cmm_wmc()	arch_cache_flush_write()
  *
- * Of these, only mc is mandatory.  rmc and wmc default to mc.  mb/rmb/wmb
- * use these definitions by default:
+ * Of these, only cmm_mc is mandatory.  cmm_rmc and cmm_wmc default to cmm_mc.  
+ * cmm_mb/cmm_rmb/cmm_wmb use these definitions by default:
  *
- * #define mb()		mc()
- * #define rmb()	rmc()
- * #define wmb()	wmc()
+ * #define cmm_mb()		cmm_mc()
+ * #define cmm_rmb()	cmm_rmc()
+ * #define cmm_wmb()	cmm_wmc()
  */
 
-#ifndef mb
-#define mb()    mc()
+#ifndef cmm_mb
+#define cmm_mb()	cmm_mc()
 #endif
 
-#ifndef rmb
-#define rmb()    rmc()
+#ifndef cmm_rmb
+#define cmm_rmb()	cmm_rmc()
 #endif
 
-#ifndef wmb
-#define wmb()    wmc()
+#ifndef cmm_wmb
+#define cmm_wmb()	cmm_wmc()
 #endif
 
-#ifndef rmc
-#define rmc()    mc()
+#ifndef cmm_rmc
+#define cmm_rmc()	cmm_mc()
 #endif
 
-#ifndef wmc
-#define wmc()    mc()
+#ifndef cmm_wmc
+#define cmm_wmc()	cmm_mc()
 #endif
 #endif
 
 /* Nop everywhere except on alpha. */
-#ifndef read_barrier_depends
-#define read_barrier_depends()
+#ifndef cmm_read_barrier_depends
+#define cmm_read_barrier_depends()
 #endif
 
 #ifdef CONFIG_RCU_SMP
-#define smp_mb()	mb()
-#define smp_rmb()	rmb()
-#define smp_wmb()	wmb()
-#define smp_mc()	mc()
-#define smp_rmc()	rmc()
-#define smp_wmc()	wmc()
-#define smp_read_barrier_depends()	read_barrier_depends()
+#define cmm_smp_mb()	cmm_mb()
+#define cmm_smp_rmb()	cmm_rmb()
+#define cmm_smp_wmb()	cmm_wmb()
+#define cmm_smp_mc()	cmm_mc()
+#define cmm_smp_rmc()	cmm_rmc()
+#define cmm_smp_wmc()	cmm_wmc()
+#define cmm_smp_read_barrier_depends()	cmm_read_barrier_depends()
 #else
-#define smp_mb()	barrier()
-#define smp_rmb()	barrier()
-#define smp_wmb()	barrier()
-#define smp_mc()	barrier()
-#define smp_rmc()	barrier()
-#define smp_wmc()	barrier()
-#define smp_read_barrier_depends()
+#define cmm_smp_mb()	cmm_barrier()
+#define cmm_smp_rmb()	cmm_barrier()
+#define cmm_smp_wmb()	cmm_barrier()
+#define cmm_smp_mc()	cmm_barrier()
+#define cmm_smp_rmc()	cmm_barrier()
+#define cmm_smp_wmc()	cmm_barrier()
+#define cmm_smp_read_barrier_depends()
 #endif
 
 #ifndef cpu_relax
-#define cpu_relax()	 barrier()
+#define cpu_relax()		cmm_barrier()
 #endif
 
 #ifdef __cplusplus

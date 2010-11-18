@@ -40,9 +40,9 @@ __asm__ __volatile__("ba,pt %%xcc, 1f\n\t"	\
 		     "1:\n"			\
 		     : : : "memory")
 
-#define mb()    membar_safe("#LoadLoad | #LoadStore | #StoreStore | #StoreLoad")
-#define rmb()    membar_safe("#LoadLoad")
-#define wmb()    membar_safe("#StoreStore")
+#define cmm_mb()	membar_safe("#LoadLoad | #LoadStore | #StoreStore | #StoreLoad")
+#define cmm_rmb()	membar_safe("#LoadLoad")
+#define cmm_wmb()	membar_safe("#StoreStore")
 
 typedef unsigned long long cycles_t;
 

@@ -55,7 +55,7 @@ int compat_futex_noasync(int *uaddr, int op, int val,
 	/*
 	 * memory barriers to serialize with the previous uaddr modification.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	ret = pthread_mutex_lock(&compat_futex_lock);
 	assert(!ret);
@@ -100,7 +100,7 @@ int compat_futex_async(int *uaddr, int op, int val,
 	/*
 	 * Ensure previous memory operations on uaddr have completed.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	switch (op) {
 	case FUTEX_WAIT:

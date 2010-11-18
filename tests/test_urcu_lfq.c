@@ -170,7 +170,7 @@ void *thr_enqueuer(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		struct rcu_lfq_node *node = malloc(sizeof(*node));
@@ -223,7 +223,7 @@ void *thr_dequeuer(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		struct rcu_lfq_node *node = rcu_lfq_dequeue(&q,
@@ -380,7 +380,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	smp_mb();
+	cmm_smp_mb();
 
 	test_go = 1;
 

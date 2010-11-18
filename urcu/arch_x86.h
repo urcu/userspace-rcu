@@ -32,17 +32,17 @@ extern "C" {
 #define CACHE_LINE_SIZE	128
 
 #ifdef CONFIG_RCU_HAVE_FENCE
-#define mb()    asm volatile("mfence":::"memory")
-#define rmb()   asm volatile("lfence":::"memory")
-#define wmb()   asm volatile("sfence"::: "memory")
+#define cmm_mb()    asm volatile("mfence":::"memory")
+#define cmm_rmb()   asm volatile("lfence":::"memory")
+#define cmm_wmb()   asm volatile("sfence"::: "memory")
 #else
 /*
- * Some non-Intel clones support out of order store. wmb() ceases to be a
+ * Some non-Intel clones support out of order store. cmm_wmb() ceases to be a
  * nop for these.
  */
-#define mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
+#define cmm_mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
+#define cmm_rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")
+#define cmm_wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
 #endif
 
 #define cpu_relax()	asm volatile("rep; nop" : : : "memory");

@@ -34,7 +34,7 @@ static inline void list_add_rcu(list_t *newp, list_t *head)
 {
 	newp->next = head->next;
 	newp->prev = head;
-	smp_wmb();
+	cmm_smp_wmb();
 	head->next->prev = newp;
 	head->next = newp;
 }

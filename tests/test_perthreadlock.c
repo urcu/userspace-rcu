@@ -234,7 +234,7 @@ void *thr_writer(void *data)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		for (tidx = 0; tidx < nr_readers; tidx++) {
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	err = sscanf(argv[1], "%u", &nr_readers);
 	if (err != 1) {
@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	smp_mb();
+	cmm_smp_mb();
 
 	test_go = 1;
 

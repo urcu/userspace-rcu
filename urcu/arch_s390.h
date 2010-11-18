@@ -37,7 +37,7 @@ extern "C" {
 
 #define CACHE_LINE_SIZE	128
 
-#define mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
+#define cmm_mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
 
 typedef unsigned long long cycles_t;
 

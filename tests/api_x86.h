@@ -312,10 +312,10 @@ __asm__ __volatile__(LOCK_PREFIX "orl %0,%1" \
 : : "r" (mask),"m" (*(addr)) : "memory")
 
 /* Atomic operations are already serializing on x86 */
-#define smp_mb__before_atomic_dec()	barrier()
-#define smp_mb__after_atomic_dec()	barrier()
-#define smp_mb__before_atomic_inc()	barrier()
-#define smp_mb__after_atomic_inc()	barrier()
+#define smp_mb__before_atomic_dec()	cmm_barrier()
+#define smp_mb__after_atomic_dec()	cmm_barrier()
+#define smp_mb__before_atomic_inc()	cmm_barrier()
+#define smp_mb__after_atomic_inc()	cmm_barrier()
 
 #endif //0
 

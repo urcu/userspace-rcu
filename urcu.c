@@ -100,9 +100,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			exit(-1);
 		}
 		if (LOAD_SHARED(rcu_reader.need_mb)) {
-			smp_mb();
+			cmm_smp_mb();
 			_STORE_SHARED(rcu_reader.need_mb, 0);
-			smp_mb();
+			cmm_smp_mb();
 		}
 		poll(NULL,0,10);
 	}
@@ -126,14 +126,14 @@ static void smp_mb_master(int group)
 	if (likely(has_sys_membarrier))
 		membarrier(MEMBARRIER_EXPEDITED);
 	else
-		smp_mb();
+		cmm_smp_mb();
 }
 #endif
 
 #ifdef RCU_MB
 static void smp_mb_master(int group)
 {
-	smp_mb();
+	cmm_smp_mb();
 }
 #endif
 
@@ -143,15 +143,15 @@ static void force_mb_all_readers(void)
 	struct rcu_reader *index;
 
 	/*
-	 * Ask for each threads to execute a smp_mb() so we can consider the
+	 * Ask for each threads to execute a cmm_smp_mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
 	if (list_empty(&registry))
 		return;
 	/*
-	 * pthread_kill has a smp_mb(). But beware, we assume it performs
+	 * pthread_kill has a cmm_smp_mb(). But beware, we assume it performs
 	 * a cache flush on architectures with non-coherent cache. Let's play
-	 * safe and don't assume anything : we use smp_mc() to make sure the
+	 * safe and don't assume anything : we use cmm_smp_mc() to make sure the
 	 * cache flush is enforced.
 	 */
 	list_for_each_entry(index, &registry, node) {
@@ -177,7 +177,7 @@ static void force_mb_all_readers(void)
 			poll(NULL, 0, 1);
 		}
 	}
-	smp_mb();	/* read ->need_mb before ending the barrier */
+	cmm_smp_mb();	/* read ->need_mb before ending the barrier */
 }
 
 static void smp_mb_master(int group)
@@ -213,15 +213,15 @@ void update_counter_and_wait(void)
 	 * while new readers are always accessing data (no progress). Enforce
 	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
 	 */
-	barrier();
+	cmm_barrier();
 
 	/*
 	 *
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for each thread rcu_reader.ctr count to become 0.
@@ -309,14 +309,14 @@ void synchronize_rcu(void)
 	 * accessing data (no progress).  Enforce compiler-order of load
 	 * rcu_reader ctr before store to rcu_gp_ctr.
 	 */
-	barrier();
+	cmm_barrier();
 
 	/*
-	 * Adding a smp_mb() which is _not_ formally required, but makes the
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
 	 * model easier to understand. It does not have a big performance impact
 	 * anyway, given this is the write-side.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -379,13 +379,13 @@ void rcu_init(void)
 static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
 {
 	/*
-	 * Executing this smp_mb() is the only purpose of this signal handler.
-	 * It punctually promotes barrier() into smp_mb() on every thread it is
+	 * Executing this cmm_smp_mb() is the only purpose of this signal handler.
+	 * It punctually promotes cmm_barrier() into cmm_smp_mb() on every thread it is
 	 * executed on.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 	_STORE_SHARED(rcu_reader.need_mb, 0);
-	smp_mb();
+	cmm_smp_mb();
 }
 
 /*

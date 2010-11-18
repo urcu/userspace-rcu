@@ -123,13 +123,13 @@ static unsigned long rcu_defer_num_callbacks(void)
 static void wait_defer(void)
 {
 	uatomic_dec(&defer_thread_futex);
-	smp_mb();	/* Write futex before read queue */
+	cmm_smp_mb();	/* Write futex before read queue */
 	if (rcu_defer_num_callbacks()) {
-		smp_mb();	/* Read queue before write futex */
+		cmm_smp_mb();	/* Read queue before write futex */
 		/* Callbacks are queued, don't wait. */
 		uatomic_set(&defer_thread_futex, 0);
 	} else {
-		smp_rmb();	/* Read queue before read futex */
+		cmm_smp_rmb();	/* Read queue before read futex */
 		if (uatomic_read(&defer_thread_futex) == -1)
 			futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1,
 			      NULL, NULL, 0);
@@ -152,7 +152,7 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 	 */
 
 	for (i = queue->tail; i != head;) {
-		smp_rmb();       /* read head before q[]. */
+		cmm_smp_rmb();       /* read head before q[]. */
 		p = LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		if (unlikely(DQ_IS_FCT_BIT(p))) {
 			DQ_CLEAR_FCT_BIT(p);
@@ -166,7 +166,7 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 		fct = queue->last_fct_out;
 		fct(p);
 	}
-	smp_mb();	/* push tail after having used q[] */
+	cmm_smp_mb();	/* push tail after having used q[] */
 	STORE_SHARED(queue->tail, i);
 }
 
@@ -283,10 +283,10 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 		}
 	}
 	_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
-	smp_wmb();	/* Publish new pointer before head */
+	cmm_smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
 	STORE_SHARED(defer_queue.head, head);
-	smp_mb();	/* Write queue head before read futex */
+	cmm_smp_mb();	/* Write queue head before read futex */
 	/*
 	 * Wake-up any waiting defer thread.
 	 */

@@ -251,10 +251,10 @@ cmpxchg(volatile long *ptr, long oldval, long newval)
 #define atomic_dec_return(v)  (atomic_sub_return(1,v))
 
 /* Atomic operations are already serializing on x86 */
-#define smp_mb__before_atomic_dec()	barrier()
-#define smp_mb__after_atomic_dec()	barrier()
-#define smp_mb__before_atomic_inc()	barrier()
-#define smp_mb__after_atomic_inc()	barrier()
+#define smp_mb__before_atomic_dec()	cmm_barrier()
+#define smp_mb__after_atomic_dec()	cmm_barrier()
+#define smp_mb__before_atomic_inc()	cmm_barrier()
+#define smp_mb__after_atomic_inc()	cmm_barrier()
 
 #endif //0 /* duplicate with arch_atomic.h */
 
