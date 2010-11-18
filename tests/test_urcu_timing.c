@@ -94,8 +94,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -109,7 +109,7 @@ void *thr_reader(void *arg)
 
 	rcu_register_thread();
 
-	time1 = get_cycles();
+	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
 			rcu_read_lock();
@@ -120,7 +120,7 @@ void *thr_reader(void *arg)
 			rcu_read_unlock();
 		}
 	}
-	time2 = get_cycles();
+	time2 = caa_get_cycles();
 
 	rcu_unregister_thread();
 
@@ -145,7 +145,7 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
-			time1 = get_cycles();
+			time1 = caa_get_cycles();
 			new = malloc(sizeof(struct test_array));
 			rcu_copy_mutex_lock();
 			old = test_rcu_pointer;
@@ -161,7 +161,7 @@ void *thr_writer(void *arg)
 				old->a = 0;
 			}
 			free(old);
-			time2 = get_cycles();
+			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
 		}

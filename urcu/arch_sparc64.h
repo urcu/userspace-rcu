@@ -29,7 +29,7 @@
 extern "C" {
 #endif 
 
-#define CACHE_LINE_SIZE	256
+#define CAA_CACHE_LINE_SIZE	256
 
 /*
  * Inspired from the Linux kernel. Workaround Spitfire bug #51.

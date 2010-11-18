@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE	64
+#ifndef CAA_CACHE_LINE_SIZE
+#define CAA_CACHE_LINE_SIZE	64
 #endif
 
 #if !defined(cmm_mc) && !defined(cmm_rmc) && !defined(cmm_wmc)
@@ -117,8 +117,8 @@ extern "C" {
 #define cmm_smp_read_barrier_depends()
 #endif
 
-#ifndef cpu_relax
-#define cpu_relax()		cmm_barrier()
+#ifndef caa_cpu_relax
+#define caa_cpu_relax()		cmm_barrier()
 #endif
 
 #ifdef __cplusplus

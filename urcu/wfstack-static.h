@@ -67,7 +67,7 @@ void _wfs_push(struct wfs_stack *s, struct wfs_node *node)
 	 * At this point, dequeuers see a NULL node->next, they should busy-wait
 	 * until node->next is set to old_head.
 	 */
-	STORE_SHARED(node->next, old_head);
+	CAA_STORE_SHARED(node->next, old_head);
 }
 
 /*
@@ -80,18 +80,18 @@ ___wfs_pop_blocking(struct wfs_stack *s)
 	int attempt = 0;
 
 retry:
-	head = LOAD_SHARED(s->head);
+	head = CAA_LOAD_SHARED(s->head);
 	if (head == WF_STACK_END)
 		return NULL;
 	/*
 	 * Adaptative busy-looping waiting for push to complete.
 	 */
-	while ((next = LOAD_SHARED(head->next)) == NULL) {
+	while ((next = CAA_LOAD_SHARED(head->next)) == NULL) {
 		if (++attempt >= WFS_ADAPT_ATTEMPTS) {
 			poll(NULL, 0, WFS_WAIT);	/* Wait for 10ms */
 			attempt = 0;
 		} else
-			cpu_relax();
+			caa_cpu_relax();
 	}
 	if (uatomic_cmpxchg(&s->head, head, next) == head)
 		return head;

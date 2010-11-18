@@ -140,7 +140,7 @@ struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	long ctr;
 	/* Data used for registry */
-	struct list_head node __attribute__((aligned(CACHE_LINE_SIZE)));
+	struct list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
 	int alloc;	/* registry entry allocated */
 };
@@ -162,7 +162,7 @@ static inline int rcu_old_gp_ongoing(long *value)
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = LOAD_SHARED(*value);
+	v = CAA_LOAD_SHARED(*value);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
@@ -182,14 +182,14 @@ static inline void _rcu_read_lock(void)
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_STORE_SHARED(rcu_reader->ctr, _LOAD_SHARED(rcu_gp_ctr));
+		_CAA_STORE_SHARED(rcu_reader->ctr, _CAA_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer.
 		 */
 		cmm_smp_mb();
 	} else {
-		_STORE_SHARED(rcu_reader->ctr, tmp + RCU_GP_COUNT);
+		_CAA_STORE_SHARED(rcu_reader->ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -199,7 +199,7 @@ static inline void _rcu_read_unlock(void)
 	 * Finish using rcu before decrementing the pointer.
 	 */
 	cmm_smp_mb();
-	_STORE_SHARED(rcu_reader->ctr, rcu_reader->ctr - RCU_GP_COUNT);
+	_CAA_STORE_SHARED(rcu_reader->ctr, rcu_reader->ctr - RCU_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 

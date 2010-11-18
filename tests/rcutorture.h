@@ -77,7 +77,7 @@ char argsbuf[64];
 #define GOFLAG_RUN  1
 #define GOFLAG_STOP 2
 
-int goflag __attribute__((__aligned__(CACHE_LINE_SIZE))) = GOFLAG_INIT;
+int goflag __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) = GOFLAG_INIT;
 
 #define RCU_READ_RUN 1000
 

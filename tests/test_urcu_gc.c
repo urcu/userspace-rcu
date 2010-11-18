@@ -92,7 +92,7 @@ static unsigned long wduration;
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 static int verbose_mode;
@@ -164,7 +164,7 @@ static unsigned long long __thread nr_writes;
 static unsigned long long __thread nr_reads;
 
 static
-unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_writes;
+unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;
@@ -419,9 +419,9 @@ int main(int argc, char **argv)
 	tot_nr_writes = malloc(sizeof(*tot_nr_writes) * nr_writers);
 	pending_reclaims = malloc(sizeof(*pending_reclaims) * nr_writers);
 	if (reclaim_batch * sizeof(*pending_reclaims[i].queue)
-			< CACHE_LINE_SIZE)
+			< CAA_CACHE_LINE_SIZE)
 		for (i = 0; i < nr_writers; i++)
-			pending_reclaims[i].queue = calloc(1, CACHE_LINE_SIZE);
+			pending_reclaims[i].queue = calloc(1, CAA_CACHE_LINE_SIZE);
 	else
 		for (i = 0; i < nr_writers; i++)
 			pending_reclaims[i].queue = calloc(reclaim_batch,

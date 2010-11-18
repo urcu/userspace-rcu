@@ -77,7 +77,7 @@ static unsigned long wdelay;
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 static int verbose_mode;

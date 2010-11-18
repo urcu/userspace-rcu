@@ -76,7 +76,7 @@
  * Machine parameters.
  */
 
-/* #define CACHE_LINE_SIZE 64 */
+/* #define CAA_CACHE_LINE_SIZE 64 */
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(1 << 6)))
 
@@ -356,9 +356,9 @@ __asm__ __volatile__(LOCK_PREFIX "orl %0,%1" \
  * Default machine parameters.
  */
 
-#ifndef CACHE_LINE_SIZE
-/* #define CACHE_LINE_SIZE 128 */
-#endif /* #ifndef CACHE_LINE_SIZE */
+#ifndef CAA_CACHE_LINE_SIZE
+/* #define CAA_CACHE_LINE_SIZE 128 */
+#endif /* #ifndef CAA_CACHE_LINE_SIZE */
 
 /*
  * Exclusive locking primitives.
@@ -558,7 +558,7 @@ long long get_microseconds(void)
 #define DEFINE_PER_THREAD(type, name) \
 	struct { \
 		__typeof__(type) v \
-			__attribute__((__aligned__(CACHE_LINE_SIZE))); \
+			__attribute__((__aligned__(CAA_CACHE_LINE_SIZE))); \
 	} __per_thread_##name[NR_THREADS];
 #define DECLARE_PER_THREAD(type, name) extern DEFINE_PER_THREAD(type, name)
 
@@ -592,7 +592,7 @@ long long get_microseconds(void)
 #define DEFINE_PER_CPU(type, name) \
 	struct { \
 		__typeof__(type) v \
-			__attribute__((__aligned__(CACHE_LINE_SIZE))); \
+			__attribute__((__aligned__(CAA_CACHE_LINE_SIZE))); \
 	} __per_cpu_##name[NR_CPUS]
 #define DECLARE_PER_CPU(type, name) extern DEFINE_PER_CPU(type, name)
 
@@ -1034,7 +1034,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  * @member:	the name of the list_struct within the struct.
  */
 #define list_entry(ptr, type, member) \
-	container_of(ptr, type, member)
+	caa_container_of(ptr, type, member)
 
 /**
  * list_first_entry - get the first element from a list
@@ -1336,7 +1336,7 @@ static inline void hlist_move_list(struct hlist_head *old,
 	old->first = NULL;
 }
 
-#define hlist_entry(ptr, type, member) container_of(ptr,type,member)
+#define hlist_entry(ptr, type, member) caa_container_of(ptr,type,member)
 
 #define hlist_for_each(pos, head) \
 	for (pos = (head)->first; pos && ({ prefetch(pos->next); 1; }); \

@@ -75,8 +75,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -87,7 +87,7 @@ void *thr_reader(void *arg)
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	time1 = get_cycles();
+	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
 			pthread_rwlock_rdlock(&lock);
@@ -95,7 +95,7 @@ void *thr_reader(void *arg)
 			pthread_rwlock_unlock(&lock);
 		}
 	}
-	time2 = get_cycles();
+	time2 = caa_get_cycles();
 
 	reader_time[(unsigned long)arg] = time2 - time1;
 
@@ -117,11 +117,11 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
-			time1 = get_cycles();
+			time1 = caa_get_cycles();
 			pthread_rwlock_wrlock(&lock);
 			test_array.a = 8;
 			pthread_rwlock_unlock(&lock);
-			time2 = get_cycles();
+			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
 		}

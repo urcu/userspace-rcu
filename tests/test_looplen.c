@@ -61,7 +61,7 @@ static inline pid_t gettid(void)
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 #define LOOPS 1048576
@@ -75,9 +75,9 @@ int main(int argc, char **argv)
 	double cpl;
 
 	for (i = 0; i < TESTS; i++) {
-		time1 = get_cycles();
+		time1 = caa_get_cycles();
 		loop_sleep(LOOPS);
-		time2 = get_cycles();
+		time2 = caa_get_cycles();
 		time_tot += time2 - time1;
 	}
 	cpl = ((double)time_tot) / (double)TESTS / (double)LOOPS;

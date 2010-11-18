@@ -84,7 +84,7 @@ static unsigned long wduration;
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 static int verbose_mode;
@@ -156,7 +156,7 @@ static unsigned long long __thread nr_writes;
 static unsigned long long __thread nr_reads;
 
 static
-unsigned long long __attribute__((aligned(CACHE_LINE_SIZE))) *tot_nr_writes;
+unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;

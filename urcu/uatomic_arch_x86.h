@@ -39,7 +39,7 @@ struct __uatomic_dummy {
 };
 #define __hp(x)	((struct __uatomic_dummy *)(x))
 
-#define _uatomic_set(addr, v)	STORE_SHARED(*(addr), (v))
+#define _uatomic_set(addr, v)	CAA_STORE_SHARED(*(addr), (v))
 
 /* cmpxchg */
 

@@ -79,7 +79,7 @@ void _wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
 	 * that the queue is being appended to. The following store will append
 	 * "node" to the queue from a dequeuer perspective.
 	 */
-	STORE_SHARED(*old_tail, node);
+	CAA_STORE_SHARED(*old_tail, node);
 }
 
 /*
@@ -99,19 +99,19 @@ ___wfq_dequeue_blocking(struct wfq_queue *q)
 	/*
 	 * Queue is empty if it only contains the dummy node.
 	 */
-	if (q->head == &q->dummy && LOAD_SHARED(q->tail) == &q->dummy.next)
+	if (q->head == &q->dummy && CAA_LOAD_SHARED(q->tail) == &q->dummy.next)
 		return NULL;
 	node = q->head;
 
 	/*
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
 	 */
-	while ((next = LOAD_SHARED(node->next)) == NULL) {
+	while ((next = CAA_LOAD_SHARED(node->next)) == NULL) {
 		if (++attempt >= WFQ_ADAPT_ATTEMPTS) {
 			poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
 			attempt = 0;
 		} else
-			cpu_relax();
+			caa_cpu_relax();
 	}
 	/*
 	 * Move queue head forward.

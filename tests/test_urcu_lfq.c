@@ -77,7 +77,7 @@ static unsigned long wdelay;
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 static int verbose_mode;
@@ -202,7 +202,7 @@ fail:
 
 static void rcu_release_node(struct urcu_ref *ref)
 {
-	struct rcu_lfq_node *node = container_of(ref, struct rcu_lfq_node, ref);
+	struct rcu_lfq_node *node = caa_container_of(ref, struct rcu_lfq_node, ref);
 	defer_rcu(free, node);
 	//synchronize_rcu();
 	//free(node);
@@ -255,7 +255,7 @@ void *thr_dequeuer(void *_count)
 
 static void release_node(struct urcu_ref *ref)
 {
-	struct rcu_lfq_node *node = container_of(ref, struct rcu_lfq_node, ref);
+	struct rcu_lfq_node *node = caa_container_of(ref, struct rcu_lfq_node, ref);
 	free(node);
 }
 
