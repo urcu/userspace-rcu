@@ -47,16 +47,16 @@ extern "C" {
 #define WFQ_ADAPT_ATTEMPTS		10	/* Retry if being set */
 #define WFQ_WAIT			10	/* Wait 10 ms if being set */
 
-void _wfq_node_init(struct wfq_node *node)
+void _cds_wfq_node_init(struct cds_wfq_node *node)
 {
 	node->next = NULL;
 }
 
-void _wfq_init(struct wfq_queue *q)
+void _cds_wfq_init(struct cds_wfq_queue *q)
 {
 	int ret;
 
-	_wfq_node_init(&q->dummy);
+	_cds_wfq_node_init(&q->dummy);
 	/* Set queue head and tail */
 	q->head = &q->dummy;
 	q->tail = &q->dummy.next;
@@ -64,9 +64,9 @@ void _wfq_init(struct wfq_queue *q)
 	assert(!ret);
 }
 
-void _wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
+void _cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
 {
-	struct wfq_node **old_tail;
+	struct cds_wfq_node **old_tail;
 
 	/*
 	 * uatomic_xchg() implicit memory barrier orders earlier stores to data
@@ -90,10 +90,10 @@ void _wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
  * thread to be scheduled. The queue appears empty until tail->next is set by
  * enqueue.
  */
-struct wfq_node *
-___wfq_dequeue_blocking(struct wfq_queue *q)
+struct cds_wfq_node *
+___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
-	struct wfq_node *node, *next;
+	struct cds_wfq_node *node, *next;
 	int attempt = 0;
 
 	/*
@@ -121,22 +121,22 @@ ___wfq_dequeue_blocking(struct wfq_queue *q)
 	 * Requeue dummy node if we just dequeued it.
 	 */
 	if (node == &q->dummy) {
-		_wfq_node_init(node);
-		_wfq_enqueue(q, node);
-		return ___wfq_dequeue_blocking(q);
+		_cds_wfq_node_init(node);
+		_cds_wfq_enqueue(q, node);
+		return ___cds_wfq_dequeue_blocking(q);
 	}
 	return node;
 }
 
-struct wfq_node *
-_wfq_dequeue_blocking(struct wfq_queue *q)
+struct cds_wfq_node *
+_cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
-	struct wfq_node *retnode;
+	struct cds_wfq_node *retnode;
 	int ret;
 
 	ret = pthread_mutex_lock(&q->lock);
 	assert(!ret);
-	retnode = ___wfq_dequeue_blocking(q);
+	retnode = ___cds_wfq_dequeue_blocking(q);
 	ret = pthread_mutex_unlock(&q->lock);
 	assert(!ret);
 	return retnode;

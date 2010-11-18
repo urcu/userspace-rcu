@@ -28,27 +28,27 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void wfq_node_init(struct wfq_node *node)
+void cds_wfq_node_init(struct cds_wfq_node *node)
 {
-	_wfq_node_init(node);
+	_cds_wfq_node_init(node);
 }
 
-void wfq_init(struct wfq_queue *q)
+void cds_wfq_init(struct cds_wfq_queue *q)
 {
-	_wfq_init(q);
+	_cds_wfq_init(q);
 }
 
-void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node)
+void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
 {
-	_wfq_enqueue(q, node);
+	_cds_wfq_enqueue(q, node);
 }
 
-struct wfq_node *__wfq_dequeue_blocking(struct wfq_queue *q)
+struct cds_wfq_node *__cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
-	return ___wfq_dequeue_blocking(q);
+	return ___cds_wfq_dequeue_blocking(q);
 }
 
-struct wfq_node *wfq_dequeue_blocking(struct wfq_queue *q)
+struct cds_wfq_node *cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
-	return _wfq_dequeue_blocking(q);
+	return _cds_wfq_dequeue_blocking(q);
 }

@@ -66,7 +66,7 @@ long rcu_gp_ctr = RCU_GP_COUNT;
  */
 struct rcu_reader __thread *rcu_reader;
 
-static LIST_HEAD(registry);
+static CDS_LIST_HEAD(registry);
 
 struct registry_arena {
 	void *p;
@@ -118,7 +118,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 
 void update_counter_and_wait(void)
 {
-	LIST_HEAD(qsreaders);
+	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
@@ -144,12 +144,12 @@ void update_counter_and_wait(void)
 	 */
 	for (;;) {
 		wait_loops++;
-		list_for_each_entry_safe(index, tmp, &registry, node) {
+		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_old_gp_ongoing(&index->ctr))
-				list_move(&index->node, &qsreaders);
+				cds_list_move(&index->node, &qsreaders);
 		}
 
-		if (list_empty(&registry)) {
+		if (cds_list_empty(&registry)) {
 			break;
 		} else {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
@@ -159,7 +159,7 @@ void update_counter_and_wait(void)
 		}
 	}
 	/* put back the reader list in the registry */
-	list_splice(&qsreaders, &registry);
+	cds_list_splice(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
@@ -174,7 +174,7 @@ void synchronize_rcu(void)
 
 	mutex_lock(&rcu_gp_lock);
 
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		goto out;
 
 	/* All threads should read qparity before accessing data structure
@@ -279,7 +279,7 @@ static void add_thread(void)
 	/* Add to registry */
 	rcu_reader_reg->tid = pthread_self();
 	assert(rcu_reader_reg->ctr == 0);
-	list_add(&rcu_reader_reg->node, &registry);
+	cds_list_add(&rcu_reader_reg->node, &registry);
 	rcu_reader = rcu_reader_reg;
 }
 
@@ -299,7 +299,7 @@ static void rcu_gc_registry(void)
 		ret = pthread_kill(tid, 0);
 		assert(ret != EINVAL);
 		if (ret == ESRCH) {
-			list_del(&rcu_reader_reg->node);
+			cds_list_del(&rcu_reader_reg->node);
 			rcu_reader_reg->ctr = 0;
 			rcu_reader_reg->alloc = 0;
 			registry_arena.used -= sizeof(struct rcu_reader);

@@ -31,22 +31,22 @@
  */
 
 
-void rcu_lfs_node_init(struct rcu_lfs_node *node)
+void cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node)
 {
-	_rcu_lfs_node_init(node);
+	_cds_lfs_node_init_rcu(node);
 }
 
-void rcu_lfs_init(struct rcu_lfs_stack *s)
+void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 {
-	_rcu_lfs_init(s);
+	_cds_lfs_init_rcu(s);
 }
 
-void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
+void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
 {
-	_rcu_lfs_push(s, node);
+	_cds_lfs_push_rcu(s, node);
 }
 
-struct rcu_lfs_node *rcu_lfs_pop(struct rcu_lfs_stack *s)
+struct cds_lfs_node_rcu *cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)
 {
-	return _rcu_lfs_pop(s);
+	return _cds_lfs_pop_rcu(s);
 }

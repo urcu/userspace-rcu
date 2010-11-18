@@ -135,7 +135,7 @@ struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	unsigned long ctr;
 	/* Data used for registry */
-	struct list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
 };
 

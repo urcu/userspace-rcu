@@ -98,7 +98,7 @@ struct defer_queue {
 	void **q;
 	/* registry information */
 	unsigned long last_head;
-	struct list_head list;	/* list of thread queues */
+	struct cds_list_head list;	/* list of thread queues */
 };
 
 #ifdef __cplusplus 

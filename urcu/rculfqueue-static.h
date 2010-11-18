@@ -47,21 +47,21 @@ extern "C" {
 
 #define URCU_LFQ_PERMANENT_REF		128
 
-void _rcu_lfq_node_init(struct rcu_lfq_node *node)
+void _cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node)
 {
 	node->next = NULL;
 	urcu_ref_init(&node->ref);
 }
 
-void _rcu_lfq_init(struct rcu_lfq_queue *q)
+void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q)
 {
-	_rcu_lfq_node_init(&q->init);
+	_cds_lfq_node_init_rcu(&q->init);
 	/* Make sure the initial node is never freed. */
 	urcu_ref_set(&q->init.ref, URCU_LFQ_PERMANENT_REF);
 	q->head = q->tail = &q->init;
 }
 
-void _rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
+void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)
 {
 	urcu_ref_get(&node->ref);
 
@@ -71,7 +71,7 @@ void _rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
 	 */
 
 	for (;;) {
-		struct rcu_lfq_node *tail, *next;
+		struct cds_lfq_node_rcu *tail, *next;
 
 		rcu_read_lock();
 		tail = rcu_dereference(q->tail);
@@ -105,17 +105,17 @@ void _rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
  * The entry returned by dequeue must be taken care of by doing a urcu_ref_put,
  * which calls the release primitive when the reference count drops to zero. A
  * grace period must be waited after execution of the release callback before
- * performing the actual memory reclamation or modifying the rcu_lfq_node
+ * performing the actual memory reclamation or modifying the cds_lfq_node_rcu
  * structure.
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed (after the refcount reached 0).
  */
-struct rcu_lfq_node *
-_rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
+struct cds_lfq_node_rcu *
+_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q, void (*release)(struct urcu_ref *))
 {
 	for (;;) {
-		struct rcu_lfq_node *head, *next;
+		struct cds_lfq_node_rcu *head, *next;
 
 		rcu_read_lock();
 		head = rcu_dereference(q->head);

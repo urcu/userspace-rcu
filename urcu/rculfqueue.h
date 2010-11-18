@@ -40,43 +40,43 @@ extern "C" {
  * which point their reference count will be decremented.
  */
 
-struct rcu_lfq_node {
-	struct rcu_lfq_node *next;
+struct cds_lfq_node_rcu {
+	struct cds_lfq_node_rcu *next;
 	struct urcu_ref ref;
 };
 
-struct rcu_lfq_queue {
-	struct rcu_lfq_node *head, *tail;
-	struct rcu_lfq_node init;	/* Dummy initialization node */
+struct cds_lfq_queue_rcu {
+	struct cds_lfq_node_rcu *head, *tail;
+	struct cds_lfq_node_rcu init;	/* Dummy initialization node */
 };
 
 #ifdef _LGPL_SOURCE
 
 #include <urcu/rculfqueue-static.h>
 
-#define rcu_lfq_node_init	_rcu_lfq_node_init
-#define rcu_lfq_init		_rcu_lfq_init
-#define rcu_lfq_enqueue		_rcu_lfq_enqueue
-#define rcu_lfq_dequeue		_rcu_lfq_dequeue
+#define cds_lfq_node_init_rcu	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu		_cds_lfq_init_rcu
+#define cds_lfq_enqueue_rcu		_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu		_cds_lfq_dequeue_rcu
 
 #else /* !_LGPL_SOURCE */
 
-extern void rcu_lfq_node_init(struct rcu_lfq_node *node);
-extern void rcu_lfq_init(struct rcu_lfq_queue *q);
-extern void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node);
+extern void cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node);
+extern void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q);
+extern void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node);
 
 /*
  * The entry returned by dequeue must be taken care of by doing a urcu_ref_put,
  * which calls the release primitive when the reference count drops to zero. A
  * grace period must be waited after execution of the release callback before
- * performing the actual memory reclamation or modifying the rcu_lfq_node
+ * performing the actual memory reclamation or modifying the cds_lfq_node_rcu
  * structure.
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed (after the refcount reached 0).
  */
-extern struct rcu_lfq_node *
-rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *));
+extern struct cds_lfq_node_rcu *
+cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q, void (*release)(struct urcu_ref *));
 
 #endif /* !_LGPL_SOURCE */
 

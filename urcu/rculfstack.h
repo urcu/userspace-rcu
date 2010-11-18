@@ -27,35 +27,35 @@
 extern "C" {
 #endif
 
-struct rcu_lfs_node {
-	struct rcu_lfs_node *next;
+struct cds_lfs_node_rcu {
+	struct cds_lfs_node_rcu *next;
 };
 
-struct rcu_lfs_stack {
-	struct rcu_lfs_node *head;
+struct cds_lfs_stack_rcu {
+	struct cds_lfs_node_rcu *head;
 };
 
 #ifdef _LGPL_SOURCE
 
 #include <urcu/rculfstack-static.h>
 
-#define rcu_lfs_node_init	_rcu_lfs_node_init
-#define rcu_lfs_init		_rcu_lfs_init
-#define rcu_lfs_push		_rcu_lfs_push
-#define rcu_lfs_pop		_rcu_lfs_pop
+#define cds_lfs_node_init_rcu	_cds_lfs_node_init_rcu
+#define cds_lfs_init_rcu		_cds_lfs_init_rcu
+#define cds_lfs_push_rcu		_cds_lfs_push_rcu
+#define cds_lfs_pop_rcu		_cds_lfs_pop_rcu
 
 #else /* !_LGPL_SOURCE */
 
-extern void rcu_lfs_node_init(struct rcu_lfs_node *node);
-extern void rcu_lfs_init(struct rcu_lfs_stack *s);
-extern void rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node);
+extern void cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node);
+extern void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s);
+extern void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node);
 
 /*
  * The caller must wait for a grace period to pass before freeing the returned
- * node or modifying the rcu_lfs_node structure.
+ * node or modifying the cds_lfs_node_rcu structure.
  * Returns NULL if stack is empty.
  */
-extern struct rcu_lfs_node *rcu_lfs_pop(struct rcu_lfs_stack *s);
+extern struct cds_lfs_node_rcu *cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s);
 
 #endif /* !_LGPL_SOURCE */
 

@@ -59,7 +59,7 @@ unsigned int yield_active;
 unsigned int __thread rand_yield;
 #endif
 
-static LIST_HEAD(registry);
+static CDS_LIST_HEAD(registry);
 
 static void mutex_lock(pthread_mutex_t *mutex)
 {
@@ -108,7 +108,7 @@ static void wait_gp(void)
 
 static void update_counter_and_wait(void)
 {
-	LIST_HEAD(qsreaders);
+	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
@@ -146,12 +146,12 @@ static void update_counter_and_wait(void)
 			cmm_smp_mb();
 		}
 
-		list_for_each_entry_safe(index, tmp, &registry, node) {
+		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
-				list_move(&index->node, &qsreaders);
+				cds_list_move(&index->node, &qsreaders);
 		}
 
-		if (list_empty(&registry)) {
+		if (cds_list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				cmm_smp_mb();
@@ -171,7 +171,7 @@ static void update_counter_and_wait(void)
 		}
 	}
 	/* put back the reader list in the registry */
-	list_splice(&qsreaders, &registry);
+	cds_list_splice(&qsreaders, &registry);
 }
 
 /*
@@ -202,7 +202,7 @@ void synchronize_rcu(void)
 
 	mutex_lock(&rcu_gp_lock);
 
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		goto out;
 
 	/*
@@ -258,7 +258,7 @@ void synchronize_rcu(void)
 		CAA_STORE_SHARED(rcu_reader.ctr, 0);
 
 	mutex_lock(&rcu_gp_lock);
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		goto out;
 	update_counter_and_wait();
 out:
@@ -305,7 +305,7 @@ void rcu_register_thread(void)
 	assert(rcu_reader.ctr == 0);
 
 	mutex_lock(&rcu_gp_lock);
-	list_add(&rcu_reader.node, &registry);
+	cds_list_add(&rcu_reader.node, &registry);
 	mutex_unlock(&rcu_gp_lock);
 	_rcu_thread_online();
 }
@@ -318,11 +318,11 @@ void rcu_unregister_thread(void)
 	 */
 	_rcu_thread_offline();
 	mutex_lock(&rcu_gp_lock);
-	list_del(&rcu_reader.node);
+	cds_list_del(&rcu_reader.node);
 	mutex_unlock(&rcu_gp_lock);
 }
 
 void rcu_exit(void)
 {
-	assert(list_empty(&registry));
+	assert(cds_list_empty(&registry));
 }

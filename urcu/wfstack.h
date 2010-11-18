@@ -31,12 +31,12 @@
 extern "C" {
 #endif
 
-struct wfs_node {
-	struct wfs_node *next;
+struct cds_wfs_node {
+	struct cds_wfs_node *next;
 };
 
-struct wfs_stack {
-	struct wfs_node *head;
+struct cds_wfs_stack {
+	struct cds_wfs_node *head;
 	pthread_mutex_t lock;
 };
 
@@ -44,20 +44,20 @@ struct wfs_stack {
 
 #include <urcu/wfstack-static.h>
 
-#define wfs_node_init		_wfs_node_init
-#define wfs_init		_wfs_init
-#define wfs_push		_wfs_push
-#define __wfs_pop_blocking	___wfs_pop_blocking
-#define wfs_pop_blocking	_wfs_pop_blocking
+#define cds_wfs_node_init		_cds_wfs_node_init
+#define cds_wfs_init		_cds_wfs_init
+#define cds_wfs_push		_cds_wfs_push
+#define __cds_wfs_pop_blocking	___cds_wfs_pop_blocking
+#define cds_wfs_pop_blocking	_cds_wfs_pop_blocking
 
 #else /* !_LGPL_SOURCE */
 
-extern void wfs_node_init(struct wfs_node *node);
-extern void wfs_init(struct wfs_stack *s);
-extern void wfs_push(struct wfs_stack *s, struct wfs_node *node);
-/* __wfs_pop_blocking: caller ensures mutual exclusion between pops */
-extern struct wfs_node *__wfs_pop_blocking(struct wfs_stack *s);
-extern struct wfs_node *wfs_pop_blocking(struct wfs_stack *s);
+extern void cds_wfs_node_init(struct cds_wfs_node *node);
+extern void cds_wfs_init(struct cds_wfs_stack *s);
+extern void cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node);
+/* __cds_wfs_pop_blocking: caller ensures mutual exclusion between pops */
+extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
+extern struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s);
 
 #endif /* !_LGPL_SOURCE */
 

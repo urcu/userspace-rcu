@@ -35,27 +35,27 @@
 extern "C" {
 #endif
 
-#define WF_STACK_END			((void *)0x1UL)
-#define WFS_ADAPT_ATTEMPTS		10	/* Retry if being set */
-#define WFS_WAIT			10	/* Wait 10 ms if being set */
+#define CDS_WF_STACK_END			((void *)0x1UL)
+#define CDS_WFS_ADAPT_ATTEMPTS		10	/* Retry if being set */
+#define CDS_WFS_WAIT			10	/* Wait 10 ms if being set */
 
-void _wfs_node_init(struct wfs_node *node)
+void _cds_wfs_node_init(struct cds_wfs_node *node)
 {
 	node->next = NULL;
 }
 
-void _wfs_init(struct wfs_stack *s)
+void _cds_wfs_init(struct cds_wfs_stack *s)
 {
 	int ret;
 
-	s->head = WF_STACK_END;
+	s->head = CDS_WF_STACK_END;
 	ret = pthread_mutex_init(&s->lock, NULL);
 	assert(!ret);
 }
 
-void _wfs_push(struct wfs_stack *s, struct wfs_node *node)
+void _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
-	struct wfs_node *old_head;
+	struct cds_wfs_node *old_head;
 
 	assert(node->next == NULL);
 	/*
@@ -73,22 +73,22 @@ void _wfs_push(struct wfs_stack *s, struct wfs_node *node)
 /*
  * Returns NULL if stack is empty.
  */
-struct wfs_node *
-___wfs_pop_blocking(struct wfs_stack *s)
+struct cds_wfs_node *
+___cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	struct wfs_node *head, *next;
+	struct cds_wfs_node *head, *next;
 	int attempt = 0;
 
 retry:
 	head = CAA_LOAD_SHARED(s->head);
-	if (head == WF_STACK_END)
+	if (head == CDS_WF_STACK_END)
 		return NULL;
 	/*
 	 * Adaptative busy-looping waiting for push to complete.
 	 */
 	while ((next = CAA_LOAD_SHARED(head->next)) == NULL) {
-		if (++attempt >= WFS_ADAPT_ATTEMPTS) {
-			poll(NULL, 0, WFS_WAIT);	/* Wait for 10ms */
+		if (++attempt >= CDS_WFS_ADAPT_ATTEMPTS) {
+			poll(NULL, 0, CDS_WFS_WAIT);	/* Wait for 10ms */
 			attempt = 0;
 		} else
 			caa_cpu_relax();
@@ -99,15 +99,15 @@ retry:
 		goto retry;		/* Concurrent modification. Retry. */
 }
 
-struct wfs_node *
-_wfs_pop_blocking(struct wfs_stack *s)
+struct cds_wfs_node *
+_cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	struct wfs_node *retnode;
+	struct cds_wfs_node *retnode;
 	int ret;
 
 	ret = pthread_mutex_lock(&s->lock);
 	assert(!ret);
-	retnode = ___wfs_pop_blocking(s);
+	retnode = ___cds_wfs_pop_blocking(s);
 	ret = pthread_mutex_unlock(&s->lock);
 	assert(!ret);
 	return retnode;

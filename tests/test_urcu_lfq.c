@@ -154,7 +154,7 @@ static unsigned long long __thread nr_successful_enqueues;
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct rcu_lfq_queue q;
+static struct cds_lfq_queue_rcu q;
 
 void *thr_enqueuer(void *_count)
 {
@@ -173,11 +173,11 @@ void *thr_enqueuer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		struct rcu_lfq_node *node = malloc(sizeof(*node));
+		struct cds_lfq_node_rcu *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		rcu_lfq_node_init(node);
-		rcu_lfq_enqueue(&q, node);
+		cds_lfq_node_init_rcu(node);
+		cds_lfq_enqueue_rcu(&q, node);
 		nr_successful_enqueues++;
 
 		if (unlikely(wdelay))
@@ -202,7 +202,7 @@ fail:
 
 static void rcu_release_node(struct urcu_ref *ref)
 {
-	struct rcu_lfq_node *node = caa_container_of(ref, struct rcu_lfq_node, ref);
+	struct cds_lfq_node_rcu *node = caa_container_of(ref, struct cds_lfq_node_rcu, ref);
 	defer_rcu(free, node);
 	//synchronize_rcu();
 	//free(node);
@@ -226,7 +226,7 @@ void *thr_dequeuer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		struct rcu_lfq_node *node = rcu_lfq_dequeue(&q,
+		struct cds_lfq_node_rcu *node = cds_lfq_dequeue_rcu(&q,
 							    rcu_release_node);
 
 		if (node) {
@@ -255,16 +255,16 @@ void *thr_dequeuer(void *_count)
 
 static void release_node(struct urcu_ref *ref)
 {
-	struct rcu_lfq_node *node = caa_container_of(ref, struct rcu_lfq_node, ref);
+	struct cds_lfq_node_rcu *node = caa_container_of(ref, struct cds_lfq_node_rcu, ref);
 	free(node);
 }
 
-void test_end(struct rcu_lfq_queue *q, unsigned long long *nr_dequeues)
+void test_end(struct cds_lfq_queue_rcu *q, unsigned long long *nr_dequeues)
 {
-	struct rcu_lfq_node *node;
+	struct cds_lfq_node_rcu *node;
 
 	do {
-		node = rcu_lfq_dequeue(q, release_node);
+		node = cds_lfq_dequeue_rcu(q, release_node);
 		if (node) {
 			urcu_ref_put(&node->ref, release_node);
 			(*nr_dequeues)++;
@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
-	rcu_lfq_init(&q);
+	cds_lfq_init_rcu(&q);
 
 	next_aff = 0;
 

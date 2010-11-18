@@ -33,21 +33,21 @@
 extern "C" {
 #endif
 
-void _rcu_lfs_node_init(struct rcu_lfs_node *node)
+void _cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node)
 {
 }
 
-void _rcu_lfs_init(struct rcu_lfs_stack *s)
+void _cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 {
 	s->head = NULL;
 }
 
-void _rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
+void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
 {
-	struct rcu_lfs_node *head = NULL;
+	struct cds_lfs_node_rcu *head = NULL;
 
 	for (;;) {
-		struct rcu_lfs_node *old_head = head;
+		struct cds_lfs_node_rcu *old_head = head;
 
 		node->next = head;
 		/*
@@ -62,19 +62,19 @@ void _rcu_lfs_push(struct rcu_lfs_stack *s, struct rcu_lfs_node *node)
 
 /*
  * The caller must wait for a grace period to pass before freeing the returned
- * node or modifying the rcu_lfs_node structure.
+ * node or modifying the cds_lfs_node_rcu structure.
  * Returns NULL if stack is empty.
  */
-struct rcu_lfs_node *
-_rcu_lfs_pop(struct rcu_lfs_stack *s)
+struct cds_lfs_node_rcu *
+_cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)
 {
 	for (;;) {
-		struct rcu_lfs_node *head;
+		struct cds_lfs_node_rcu *head;
 
 		rcu_read_lock();
 		head = rcu_dereference(s->head);
 		if (head) {
-			struct rcu_lfs_node *next = rcu_dereference(head->next);
+			struct cds_lfs_node_rcu *next = rcu_dereference(head->next);
 
 			if (uatomic_cmpxchg(&s->head, head, next) == head) {
 				rcu_read_unlock();

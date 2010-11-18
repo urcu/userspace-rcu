@@ -30,7 +30,7 @@
 
 /* Add new element at the head of the list.
  */
-static inline void list_add_rcu(list_t *newp, list_t *head)
+static inline void cds_list_add_rcu(list_t *newp, list_t *head)
 {
 	newp->next = head->next;
 	newp->prev = head;
@@ -41,7 +41,7 @@ static inline void list_add_rcu(list_t *newp, list_t *head)
 
 /* replace an old entry atomically.
  */
-static inline void list_replace_rcu(list_t *old, list_t *_new)
+static inline void cds_list_replace_rcu(list_t *old, list_t *_new)
 {
 	_new->next = old->next;
 	_new->prev = old->prev;
@@ -50,7 +50,7 @@ static inline void list_replace_rcu(list_t *old, list_t *_new)
 }
 
 /* Remove element from list. */
-static inline void list_del_rcu(list_t *elem)
+static inline void cds_list_del_rcu(list_t *elem)
 {
 	elem->next->prev = elem->prev;
 	elem->prev->next = elem->next;
@@ -62,16 +62,16 @@ static inline void list_del_rcu(list_t *elem)
  */
 
 /* Iterate forward over the elements of the list.  */
-#define list_for_each_rcu(pos, head) \
+#define cds_list_for_each_rcu(pos, head) \
   for (pos = rcu_dereference((head)->next); pos != (head); \
        pos = rcu_dereference(pos->next))
 
 
 /* Iterate through elements of the list.
  */
-#define list_for_each_entry_rcu(pos, head, member)				\
-	for (pos = list_entry(rcu_dereference((head)->next), typeof(*pos), member);	\
+#define cds_list_for_each_entry_rcu(pos, head, member)				\
+	for (pos = cds_list_entry(rcu_dereference((head)->next), typeof(*pos), member);	\
 	     &pos->member != (head);					\
-	     pos = list_entry(rcu_dereference(pos->member.next), typeof(*pos), member))
+	     pos = cds_list_entry(rcu_dereference(pos->member.next), typeof(*pos), member))
 
 #endif	/* _URCU_RCULIST_H */

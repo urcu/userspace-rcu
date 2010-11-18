@@ -30,11 +30,11 @@
 
 /* Add new element at the head of the list.
  */
-static inline void hlist_add_head_rcu(struct hlist_node *newp,
-				      struct hlist_head *head)
+static inline void cds_hlist_add_head_rcu(struct cds_hlist_node *newp,
+				      struct cds_hlist_head *head)
 {
 	newp->next = head->next;
-	newp->prev = (struct hlist_node *)head;
+	newp->prev = (struct cds_hlist_node *)head;
 	cmm_smp_wmb();
 	if (head->next)
 		head->next->prev = newp;
@@ -42,7 +42,7 @@ static inline void hlist_add_head_rcu(struct hlist_node *newp,
 }
 
 /* Remove element from list. */
-static inline void hlist_del_rcu(struct hlist_node *elem)
+static inline void cds_hlist_del_rcu(struct cds_hlist_node *elem)
 {
 	if (elem->next)
 		elem->next->prev = elem->prev;
@@ -54,11 +54,11 @@ static inline void hlist_del_rcu(struct hlist_node *elem)
  * This must be done while rcu_read_lock() is held.
  */
 
-#define hlist_for_each_entry_rcu(entry, pos, head, member)		\
+#define cds_hlist_for_each_entry_rcu(entry, pos, head, member)		\
 	for (pos = rcu_dereference((head)->next),			\
-		     entry = hlist_entry(pos, typeof(*entry), member);	\
+		     entry = cds_hlist_entry(pos, typeof(*entry), member);	\
 	     pos != NULL;						\
 	     pos = rcu_dereference(pos->next),				\
-		     entry = hlist_entry(pos, typeof(*entry), member))
+		     entry = cds_hlist_entry(pos, typeof(*entry), member))
 
 #endif	/* _URCU_RCUHLIST_H */

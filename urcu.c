@@ -80,7 +80,7 @@ unsigned int yield_active;
 unsigned int __thread rand_yield;
 #endif
 
-static LIST_HEAD(registry);
+static CDS_LIST_HEAD(registry);
 
 static void mutex_lock(pthread_mutex_t *mutex)
 {
@@ -146,7 +146,7 @@ static void force_mb_all_readers(void)
 	 * Ask for each threads to execute a cmm_smp_mb() so we can consider the
 	 * compiler barriers around rcu read lock as real memory barriers.
 	 */
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		return;
 	/*
 	 * pthread_kill has a cmm_smp_mb(). But beware, we assume it performs
@@ -154,7 +154,7 @@ static void force_mb_all_readers(void)
 	 * safe and don't assume anything : we use cmm_smp_mc() to make sure the
 	 * cache flush is enforced.
 	 */
-	list_for_each_entry(index, &registry, node) {
+	cds_list_for_each_entry(index, &registry, node) {
 		CAA_STORE_SHARED(index->need_mb, 1);
 		pthread_kill(index->tid, SIGRCU);
 	}
@@ -171,7 +171,7 @@ static void force_mb_all_readers(void)
 	 * relevant bug report.  For Linux kernels, we recommend getting
 	 * the Linux Test Project (LTP).
 	 */
-	list_for_each_entry(index, &registry, node) {
+	cds_list_for_each_entry(index, &registry, node) {
 		while (CAA_LOAD_SHARED(index->need_mb)) {
 			pthread_kill(index->tid, SIGRCU);
 			poll(NULL, 0, 1);
@@ -200,7 +200,7 @@ static void wait_gp(void)
 
 void update_counter_and_wait(void)
 {
-	LIST_HEAD(qsreaders);
+	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
@@ -234,13 +234,13 @@ void update_counter_and_wait(void)
 			smp_mb_master(RCU_MB_GROUP);
 		}
 
-		list_for_each_entry_safe(index, tmp, &registry, node) {
+		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
-				list_move(&index->node, &qsreaders);
+				cds_list_move(&index->node, &qsreaders);
 		}
 
 #ifndef HAS_INCOHERENT_CACHES
-		if (list_empty(&registry)) {
+		if (cds_list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
@@ -258,7 +258,7 @@ void update_counter_and_wait(void)
 		 * BUSY-LOOP. Force the reader thread to commit its
 		 * rcu_reader.ctr update to memory if we wait for too long.
 		 */
-		if (list_empty(&registry)) {
+		if (cds_list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
@@ -281,14 +281,14 @@ void update_counter_and_wait(void)
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
 	/* put back the reader list in the registry */
-	list_splice(&qsreaders, &registry);
+	cds_list_splice(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
 {
 	mutex_lock(&rcu_gp_lock);
 
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		goto out;
 
 	/* All threads should read qparity before accessing data structure
@@ -353,14 +353,14 @@ void rcu_register_thread(void)
 
 	mutex_lock(&rcu_gp_lock);
 	rcu_init();	/* In case gcc does not support constructor attribute */
-	list_add(&rcu_reader.node, &registry);
+	cds_list_add(&rcu_reader.node, &registry);
 	mutex_unlock(&rcu_gp_lock);
 }
 
 void rcu_unregister_thread(void)
 {
 	mutex_lock(&rcu_gp_lock);
-	list_del(&rcu_reader.node);
+	cds_list_del(&rcu_reader.node);
 	mutex_unlock(&rcu_gp_lock);
 }
 
@@ -426,6 +426,6 @@ void rcu_exit(void)
 		exit(-1);
 	}
 	assert(act.sa_sigaction == sigrcu_handler);
-	assert(list_empty(&registry));
+	assert(cds_list_empty(&registry));
 }
 #endif /* #ifdef RCU_SIGNAL */

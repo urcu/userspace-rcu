@@ -40,13 +40,13 @@ extern "C" {
  * Paul E. McKenney.
  */
 
-struct wfq_node {
-	struct wfq_node *next;
+struct cds_wfq_node {
+	struct cds_wfq_node *next;
 };
 
-struct wfq_queue {
-	struct wfq_node *head, **tail;
-	struct wfq_node dummy;	/* Dummy node */
+struct cds_wfq_queue {
+	struct cds_wfq_node *head, **tail;
+	struct cds_wfq_node dummy;	/* Dummy node */
 	pthread_mutex_t lock;
 };
 
@@ -54,20 +54,20 @@ struct wfq_queue {
 
 #include <urcu/wfqueue-static.h>
 
-#define wfq_node_init		_wfq_node_init
-#define wfq_init		_wfq_init
-#define wfq_enqueue		_wfq_enqueue
-#define __wfq_dequeue_blocking	___wfq_dequeue_blocking
-#define wfq_dequeue_blocking	_wfq_dequeue_blocking
+#define cds_wfq_node_init		_cds_wfq_node_init
+#define cds_wfq_init		_cds_wfq_init
+#define cds_wfq_enqueue		_cds_wfq_enqueue
+#define __cds_wfq_dequeue_blocking	___cds_wfq_dequeue_blocking
+#define cds_wfq_dequeue_blocking	_cds_wfq_dequeue_blocking
 
 #else /* !_LGPL_SOURCE */
 
-extern void wfq_node_init(struct wfq_node *node);
-extern void wfq_init(struct wfq_queue *q);
-extern void wfq_enqueue(struct wfq_queue *q, struct wfq_node *node);
-/* __wfq_dequeue_blocking: caller ensures mutual exclusion between dequeues */
-extern struct wfq_node *__wfq_dequeue_blocking(struct wfq_queue *q);
-extern struct wfq_node *wfq_dequeue_blocking(struct wfq_queue *q);
+extern void cds_wfq_node_init(struct cds_wfq_node *node);
+extern void cds_wfq_init(struct cds_wfq_queue *q);
+extern void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node);
+/* __cds_wfq_dequeue_blocking: caller ensures mutual exclusion between dequeues */
+extern struct cds_wfq_node *__cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
+extern struct cds_wfq_node *cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
 
 #endif /* !_LGPL_SOURCE */
 

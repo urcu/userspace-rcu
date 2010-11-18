@@ -54,7 +54,7 @@ static int defer_thread_futex;
  * the reclamation tread.
  */
 static struct defer_queue __thread defer_queue;
-static LIST_HEAD(registry);
+static CDS_LIST_HEAD(registry);
 static pthread_t tid_defer;
 
 static void mutex_lock(pthread_mutex_t *mutex)
@@ -109,7 +109,7 @@ static unsigned long rcu_defer_num_callbacks(void)
 	struct defer_queue *index;
 
 	mutex_lock(&rcu_defer_mutex);
-	list_for_each_entry(index, &registry, list) {
+	cds_list_for_each_entry(index, &registry, list) {
 		head = CAA_LOAD_SHARED(index->head);
 		num_items += head - index->tail;
 	}
@@ -207,11 +207,11 @@ void rcu_defer_barrier(void)
 	struct defer_queue *index;
 	unsigned long num_items = 0;
 
-	if (list_empty(&registry))
+	if (cds_list_empty(&registry))
 		return;
 
 	mutex_lock(&rcu_defer_mutex);
-	list_for_each_entry(index, &registry, list) {
+	cds_list_for_each_entry(index, &registry, list) {
 		index->last_head = CAA_LOAD_SHARED(index->head);
 		num_items += index->last_head - index->tail;
 	}
@@ -223,7 +223,7 @@ void rcu_defer_barrier(void)
 		goto end;
 	}
 	synchronize_rcu();
-	list_for_each_entry(index, &registry, list)
+	cds_list_for_each_entry(index, &registry, list)
 		rcu_defer_barrier_queue(index, index->last_head);
 end:
 	mutex_unlock(&rcu_defer_mutex);
@@ -349,8 +349,8 @@ void rcu_defer_register_thread(void)
 
 	mutex_lock(&defer_thread_mutex);
 	mutex_lock(&rcu_defer_mutex);
-	was_empty = list_empty(&registry);
-	list_add(&defer_queue.list, &registry);
+	was_empty = cds_list_empty(&registry);
+	cds_list_add(&defer_queue.list, &registry);
 	mutex_unlock(&rcu_defer_mutex);
 
 	if (was_empty)
@@ -364,11 +364,11 @@ void rcu_defer_unregister_thread(void)
 
 	mutex_lock(&defer_thread_mutex);
 	mutex_lock(&rcu_defer_mutex);
-	list_del(&defer_queue.list);
+	cds_list_del(&defer_queue.list);
 	_rcu_defer_barrier_thread();
 	free(defer_queue.q);
 	defer_queue.q = NULL;
-	is_empty = list_empty(&registry);
+	is_empty = cds_list_empty(&registry);
 	mutex_unlock(&rcu_defer_mutex);
 
 	if (is_empty)
@@ -378,5 +378,5 @@ void rcu_defer_unregister_thread(void)
 
 void rcu_defer_exit(void)
 {
-	assert(list_empty(&registry));
+	assert(cds_list_empty(&registry));
 }

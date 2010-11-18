@@ -28,27 +28,27 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void wfs_node_init(struct wfs_node *node)
+void cds_wfs_node_init(struct cds_wfs_node *node)
 {
-	_wfs_node_init(node);
+	_cds_wfs_node_init(node);
 }
 
-void wfs_init(struct wfs_stack *s)
+void cds_wfs_init(struct cds_wfs_stack *s)
 {
-	_wfs_init(s);
+	_cds_wfs_init(s);
 }
 
-void wfs_push(struct wfs_stack *s, struct wfs_node *node)
+void cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
-	_wfs_push(s, node);
+	_cds_wfs_push(s, node);
 }
 
-struct wfs_node *__wfs_pop_blocking(struct wfs_stack *s)
+struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	return ___wfs_pop_blocking(s);
+	return ___cds_wfs_pop_blocking(s);
 }
 
-struct wfs_node *wfs_pop_blocking(struct wfs_stack *s)
+struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	return _wfs_pop_blocking(s);
+	return _cds_wfs_pop_blocking(s);
 }

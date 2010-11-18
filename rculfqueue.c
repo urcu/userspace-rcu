@@ -30,23 +30,23 @@
  * library wrappers to be used by non-LGPL compatible source code.
  */
 
-void rcu_lfq_node_init(struct rcu_lfq_node *node)
+void cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node)
 {
-	_rcu_lfq_node_init(node);
+	_cds_lfq_node_init_rcu(node);
 }
 
-void rcu_lfq_init(struct rcu_lfq_queue *q)
+void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q)
 {
-	_rcu_lfq_init(q);
+	_cds_lfq_init_rcu(q);
 }
 
-void rcu_lfq_enqueue(struct rcu_lfq_queue *q, struct rcu_lfq_node *node)
+void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)
 {
-	_rcu_lfq_enqueue(q, node);
+	_cds_lfq_enqueue_rcu(q, node);
 }
 
-struct rcu_lfq_node *
-rcu_lfq_dequeue(struct rcu_lfq_queue *q, void (*release)(struct urcu_ref *))
+struct cds_lfq_node_rcu *
+cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q, void (*release)(struct urcu_ref *))
 {
-	return _rcu_lfq_dequeue(q, release);
+	return _cds_lfq_dequeue_rcu(q, release);
 }
