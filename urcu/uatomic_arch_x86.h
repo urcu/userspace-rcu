@@ -81,7 +81,7 @@ unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 			: "memory");
 		return result;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long result = old;
@@ -143,7 +143,7 @@ unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 			: "memory");
 		return result;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long result;
@@ -206,7 +206,7 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 			: "memory");
 		return result + (unsigned int)val;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long result = val;
@@ -264,7 +264,7 @@ void __uatomic_add(void *addr, unsigned long val, int len)
 			: "memory");
 		return;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -319,7 +319,7 @@ void __uatomic_inc(void *addr, int len)
 			: "memory");
 		return;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -372,7 +372,7 @@ void __uatomic_dec(void *addr, int len)
 			: "memory");
 		return;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -392,7 +392,7 @@ void __uatomic_dec(void *addr, int len)
 
 #define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
 
-#if ((BITS_PER_LONG != 64) && defined(CONFIG_RCU_COMPAT_ARCH))
+#if ((CAA_CAA_BITS_PER_LONG != 64) && defined(CONFIG_RCU_COMPAT_ARCH))
 extern int __rcu_cas_avail;
 extern int __rcu_cas_init(void);
 

@@ -84,7 +84,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "memory", "cc");
 		return old_val;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long old_val;
@@ -127,7 +127,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			: "memory", "cc");
 		return old_val;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		__asm__ __volatile__(

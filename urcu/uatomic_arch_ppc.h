@@ -64,7 +64,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 		return result;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long result;
@@ -119,7 +119,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 
 		return old_val;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long old_val;
@@ -178,7 +178,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 
 		return result;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		unsigned long result;

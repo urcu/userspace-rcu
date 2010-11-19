@@ -112,13 +112,13 @@ static void update_counter_and_wait(void)
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-#if (BITS_PER_LONG < 64)
+#if (CAA_BITS_PER_LONG < 64)
 	/* Switch parity: 0 -> 1, 1 -> 0 */
 	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
-#else	/* !(BITS_PER_LONG < 64) */
+#else	/* !(CAA_BITS_PER_LONG < 64) */
 	/* Increment current G.P. */
 	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
-#endif	/* !(BITS_PER_LONG < 64) */
+#endif	/* !(CAA_BITS_PER_LONG < 64) */
 
 	/*
 	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
@@ -179,7 +179,7 @@ static void update_counter_and_wait(void)
  * long-size to ensure we do not encounter an overflow bug.
  */
 
-#if (BITS_PER_LONG < 64)
+#if (CAA_BITS_PER_LONG < 64)
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
@@ -241,7 +241,7 @@ out:
 		_CAA_STORE_SHARED(rcu_reader.ctr, CAA_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
-#else /* !(BITS_PER_LONG < 64) */
+#else /* !(CAA_BITS_PER_LONG < 64) */
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
@@ -268,7 +268,7 @@ out:
 		_CAA_STORE_SHARED(rcu_reader.ctr, CAA_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
-#endif  /* !(BITS_PER_LONG < 64) */
+#endif  /* !(CAA_BITS_PER_LONG < 64) */
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.

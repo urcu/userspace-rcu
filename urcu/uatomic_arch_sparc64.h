@@ -46,7 +46,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 
 		return _new;
 	}
-#if (BITS_PER_LONG == 64)
+#if (CAA_BITS_PER_LONG == 64)
 	case 8:
 	{
 		__asm__ __volatile__ (
