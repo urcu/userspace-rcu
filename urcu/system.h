@@ -24,7 +24,7 @@
 /*
  * Identify a shared load. A cmm_smp_rmc() or cmm_smp_mc() should come before the load.
  */
-#define _CMM_LOAD_SHARED(p)	       CAA_ACCESS_ONCE(p)
+#define _CMM_LOAD_SHARED(p)	       CMM_ACCESS_ONCE(p)
 
 /*
  * Load a data from shared memory, doing a cache flush if required.
@@ -38,7 +38,7 @@
 /*
  * Identify a shared store. A cmm_smp_wmc() or cmm_smp_mc() should follow the store.
  */
-#define _CMM_STORE_SHARED(x, v)	({ CAA_ACCESS_ONCE(x) = (v); })
+#define _CMM_STORE_SHARED(x, v)	({ CMM_ACCESS_ONCE(x) = (v); })
 
 /*
  * Store v into x, where x is located in shared memory. Performs the required
