@@ -36,7 +36,7 @@ extern "C" {
 
 typedef unsigned long long cycles_t;
 
-static inline cycles_t get_cycles (void)
+static inline cycles_t caa_get_cycles (void)
 {
 	cycles_t thetime;
 	struct timeval tv;

@@ -46,7 +46,7 @@ __asm__ __volatile__("ba,pt %%xcc, 1f\n\t"	\
 
 typedef unsigned long long cycles_t;
 
-static inline cycles_t get_cycles (void)
+static inline cycles_t caa_get_cycles (void)
 {
 	return 0;	/* unimplemented */
 }
