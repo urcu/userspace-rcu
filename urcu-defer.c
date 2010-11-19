@@ -110,7 +110,7 @@ static unsigned long rcu_defer_num_callbacks(void)
 
 	mutex_lock(&rcu_defer_mutex);
 	cds_list_for_each_entry(index, &registry, list) {
-		head = CAA_LOAD_SHARED(index->head);
+		head = CMM_LOAD_SHARED(index->head);
 		num_items += head - index->tail;
 	}
 	mutex_unlock(&rcu_defer_mutex);
@@ -153,21 +153,21 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 
 	for (i = queue->tail; i != head;) {
 		cmm_smp_rmb();       /* read head before q[]. */
-		p = CAA_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+		p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		if (unlikely(DQ_IS_FCT_BIT(p))) {
 			DQ_CLEAR_FCT_BIT(p);
 			queue->last_fct_out = p;
-			p = CAA_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		} else if (unlikely(p == DQ_FCT_MARK)) {
-			p = CAA_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 			queue->last_fct_out = p;
-			p = CAA_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 		}
 		fct = queue->last_fct_out;
 		fct(p);
 	}
 	cmm_smp_mb();	/* push tail after having used q[] */
-	CAA_STORE_SHARED(queue->tail, i);
+	CMM_STORE_SHARED(queue->tail, i);
 }
 
 static void _rcu_defer_barrier_thread(void)
@@ -212,7 +212,7 @@ void rcu_defer_barrier(void)
 
 	mutex_lock(&rcu_defer_mutex);
 	cds_list_for_each_entry(index, &registry, list) {
-		index->last_head = CAA_LOAD_SHARED(index->head);
+		index->last_head = CMM_LOAD_SHARED(index->head);
 		num_items += index->last_head - index->tail;
 	}
 	if (likely(!num_items)) {
@@ -241,7 +241,7 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * thread.
 	 */
 	head = defer_queue.head;
-	tail = CAA_LOAD_SHARED(defer_queue.tail);
+	tail = CMM_LOAD_SHARED(defer_queue.tail);
 
 	/*
 	 * If queue is full, or reached threshold. Empty queue ourself.
@@ -250,7 +250,7 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
 		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
-		assert(head - CAA_LOAD_SHARED(defer_queue.tail) == 0);
+		assert(head - CMM_LOAD_SHARED(defer_queue.tail) == 0);
 	}
 
 	if (unlikely(defer_queue.last_fct_in != fct)) {
@@ -261,13 +261,13 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 			 * marker, write DQ_FCT_MARK followed by the function
 			 * pointer.
 			 */
-			_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      DQ_FCT_MARK);
-			_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		} else {
 			DQ_SET_FCT_BIT(fct);
-			_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		}
 	} else {
@@ -276,16 +276,16 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 			 * If the data to encode is not aligned or the marker,
 			 * write DQ_FCT_MARK followed by the function pointer.
 			 */
-			_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      DQ_FCT_MARK);
-			_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		}
 	}
-	_CAA_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
+	_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
 	cmm_smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
-	CAA_STORE_SHARED(defer_queue.head, head);
+	CMM_STORE_SHARED(defer_queue.head, head);
 	cmm_smp_mb();	/* Write queue head before read futex */
 	/*
 	 * Wake-up any waiting defer thread.

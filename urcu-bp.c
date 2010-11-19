@@ -123,13 +123,13 @@ void update_counter_and_wait(void)
 	struct rcu_reader *index, *tmp;
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
 
 	/*
 	 * Must commit qparity update to memory before waiting for other parity
 	 * quiescent state. Failure to do so could result in the writer waiting
 	 * forever while new readers are always accessing data (no progress).
-	 * Ensured by CAA_STORE_SHARED and CAA_LOAD_SHARED.
+	 * Ensured by CMM_STORE_SHARED and CMM_LOAD_SHARED.
 	 */
 
 	/*

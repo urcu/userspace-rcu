@@ -159,7 +159,7 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 {
 	unsigned long v;
 
-	v = CAA_LOAD_SHARED(*ctr);
+	v = CMM_LOAD_SHARED(*ctr);
 	return v && (v != rcu_gp_ctr);
 }
 
@@ -175,7 +175,7 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	cmm_smp_mb();
-	_CAA_STORE_SHARED(rcu_reader.ctr, _CAA_LOAD_SHARED(rcu_gp_ctr));
+	_CMM_STORE_SHARED(rcu_reader.ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
 	cmm_smp_mb();
@@ -184,7 +184,7 @@ static inline void _rcu_quiescent_state(void)
 static inline void _rcu_thread_offline(void)
 {
 	cmm_smp_mb();
-	CAA_STORE_SHARED(rcu_reader.ctr, 0);
+	CMM_STORE_SHARED(rcu_reader.ctr, 0);
 	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
 	wake_up_gp();
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
@@ -193,7 +193,7 @@ static inline void _rcu_thread_offline(void)
 static inline void _rcu_thread_online(void)
 {
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	_CAA_STORE_SHARED(rcu_reader.ctr, CAA_LOAD_SHARED(rcu_gp_ctr));
+	_CMM_STORE_SHARED(rcu_reader.ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
 

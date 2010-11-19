@@ -250,7 +250,7 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = CAA_LOAD_SHARED(*ctr);
+	v = CMM_LOAD_SHARED(*ctr);
 	return (v & RCU_GP_CTR_NEST_MASK) &&
 		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
@@ -266,14 +266,14 @@ static inline void _rcu_read_lock(void)
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
 	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CAA_STORE_SHARED(rcu_reader.ctr, _CAA_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(rcu_reader.ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer. See smp_mb_master().
 		 */
 		smp_mb_slave(RCU_MB_GROUP);
 	} else {
-		_CAA_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
+		_CMM_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -288,12 +288,12 @@ static inline void _rcu_read_unlock(void)
 	 */
 	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		smp_mb_slave(RCU_MB_GROUP);
-		_CAA_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
+		_CMM_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 		/* write rcu_reader.ctr before read futex */
 		smp_mb_slave(RCU_MB_GROUP);
 		wake_up_gp();
 	} else {
-		_CAA_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
+		_CMM_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 	}
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }

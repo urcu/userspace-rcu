@@ -28,16 +28,16 @@
 /*
  * Instruct the compiler to perform only a single access to a variable
  * (prohibits merging and refetching). The compiler is also forbidden to reorder
- * successive instances of CAA_ACCESS_ONCE(), but only when the compiler is aware of
+ * successive instances of CMM_ACCESS_ONCE(), but only when the compiler is aware of
  * particular ordering. Compiler ordering can be ensured, for example, by
- * putting two CAA_ACCESS_ONCE() in separate C statements.
+ * putting two CMM_ACCESS_ONCE() in separate C statements.
  *
  * This macro does absolutely -nothing- to prevent the CPU from reordering,
  * merging, or refetching absolutely anything at any time.  Its main intended
  * use is to mediate communication between process-level code and irq/NMI
  * handlers, all running on the same CPU.
  */
-#define CAA_ACCESS_ONCE(x)	(*(volatile typeof(x) *)&(x))
+#define CMM_ACCESS_ONCE(x)	(*(volatile typeof(x) *)&(x))
 
 #ifndef max
 #define max(a,b) ((a)>(b)?(a):(b))

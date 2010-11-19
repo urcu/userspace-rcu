@@ -29,11 +29,11 @@ extern "C" {
 #endif
 
 #ifndef uatomic_set
-#define uatomic_set(addr, v)	CAA_STORE_SHARED(*(addr), (v))
+#define uatomic_set(addr, v)	CMM_STORE_SHARED(*(addr), (v))
 #endif
 
 #ifndef uatomic_read
-#define uatomic_read(addr)	CAA_LOAD_SHARED(*(addr))
+#define uatomic_read(addr)	CMM_LOAD_SHARED(*(addr))
 #endif
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR

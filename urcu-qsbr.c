@@ -114,10 +114,10 @@ static void update_counter_and_wait(void)
 
 #if (CAA_BITS_PER_LONG < 64)
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
 #else	/* !(CAA_BITS_PER_LONG < 64) */
 	/* Increment current G.P. */
-	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
 #endif	/* !(CAA_BITS_PER_LONG < 64) */
 
 	/*
@@ -198,7 +198,7 @@ void synchronize_rcu(void)
 	 * threads registered as readers.
 	 */
 	if (was_online)
-		CAA_STORE_SHARED(rcu_reader.ctr, 0);
+		CMM_STORE_SHARED(rcu_reader.ctr, 0);
 
 	mutex_lock(&rcu_gp_lock);
 
@@ -238,7 +238,7 @@ out:
 	 * freed.
 	 */
 	if (was_online)
-		_CAA_STORE_SHARED(rcu_reader.ctr, CAA_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(rcu_reader.ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
 #else /* !(CAA_BITS_PER_LONG < 64) */
@@ -255,7 +255,7 @@ void synchronize_rcu(void)
 	 */
 	cmm_smp_mb();
 	if (was_online)
-		CAA_STORE_SHARED(rcu_reader.ctr, 0);
+		CMM_STORE_SHARED(rcu_reader.ctr, 0);
 
 	mutex_lock(&rcu_gp_lock);
 	if (cds_list_empty(&registry))
@@ -265,7 +265,7 @@ out:
 	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)
-		_CAA_STORE_SHARED(rcu_reader.ctr, CAA_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(rcu_reader.ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
 #endif  /* !(CAA_BITS_PER_LONG < 64) */

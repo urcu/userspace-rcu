@@ -99,9 +99,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (CAA_LOAD_SHARED(rcu_reader.need_mb)) {
+		if (CMM_LOAD_SHARED(rcu_reader.need_mb)) {
 			cmm_smp_mb();
-			_CAA_STORE_SHARED(rcu_reader.need_mb, 0);
+			_CMM_STORE_SHARED(rcu_reader.need_mb, 0);
 			cmm_smp_mb();
 		}
 		poll(NULL,0,10);
@@ -155,7 +155,7 @@ static void force_mb_all_readers(void)
 	 * cache flush is enforced.
 	 */
 	cds_list_for_each_entry(index, &registry, node) {
-		CAA_STORE_SHARED(index->need_mb, 1);
+		CMM_STORE_SHARED(index->need_mb, 1);
 		pthread_kill(index->tid, SIGRCU);
 	}
 	/*
@@ -172,7 +172,7 @@ static void force_mb_all_readers(void)
 	 * the Linux Test Project (LTP).
 	 */
 	cds_list_for_each_entry(index, &registry, node) {
-		while (CAA_LOAD_SHARED(index->need_mb)) {
+		while (CMM_LOAD_SHARED(index->need_mb)) {
 			pthread_kill(index->tid, SIGRCU);
 			poll(NULL, 0, 1);
 		}
@@ -205,7 +205,7 @@ void update_counter_and_wait(void)
 	struct rcu_reader *index, *tmp;
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CAA_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
 
 	/*
 	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
@@ -384,7 +384,7 @@ static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
 	 * executed on.
 	 */
 	cmm_smp_mb();
-	_CAA_STORE_SHARED(rcu_reader.need_mb, 0);
+	_CMM_STORE_SHARED(rcu_reader.need_mb, 0);
 	cmm_smp_mb();
 }
 
