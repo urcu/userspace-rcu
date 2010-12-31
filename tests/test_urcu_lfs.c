@@ -203,6 +203,7 @@ fail:
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
+	int ret;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"dequeuer", pthread_self(), (unsigned long)gettid());
