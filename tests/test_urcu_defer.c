@@ -236,13 +236,18 @@ void *thr_writer(void *data)
 {
 	unsigned long wtidx = (unsigned long)data;
 	struct test_array *new, *old = NULL;
+	int ret;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 
 	set_affinity();
 
-	rcu_defer_register_thread();
+	ret = rcu_defer_register_thread();
+	if (ret) {
+		printf("Error in rcu_defer_register_thread\n");
+		exit(-1);
+	}
 
 	while (!test_go)
 	{

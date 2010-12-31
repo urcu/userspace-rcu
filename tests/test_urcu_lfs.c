@@ -209,7 +209,11 @@ void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
-	rcu_defer_register_thread();
+	ret = rcu_defer_register_thread();
+	if (ret) {
+		printf("Error in rcu_defer_register_thread\n");
+		exit(-1);
+	}
 	rcu_register_thread();
 
 	while (!test_go)
