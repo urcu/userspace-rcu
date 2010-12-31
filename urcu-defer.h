@@ -63,7 +63,7 @@ extern void defer_rcu(void (*fct)(void *p), void *p);
 /*
  * Thread registration for reclamation.
  */
-extern void rcu_defer_register_thread(void);
+extern int rcu_defer_register_thread(void);
 extern void rcu_defer_unregister_thread(void);
 extern void rcu_defer_barrier(void);
 extern void rcu_defer_barrier_thread(void);

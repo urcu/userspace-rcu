@@ -339,13 +339,15 @@ static void stop_defer_thread(void)
 	assert(!ret);
 }
 
-void rcu_defer_register_thread(void)
+int rcu_defer_register_thread(void)
 {
 	int was_empty;
 
 	assert(defer_queue.last_head == 0);
 	assert(defer_queue.q == NULL);
 	defer_queue.q = malloc(sizeof(void *) * DEFER_QUEUE_SIZE);
+	if (!defer_queue.q)
+		return -ENOMEM;
 
 	mutex_lock(&defer_thread_mutex);
 	mutex_lock(&rcu_defer_mutex);
@@ -356,6 +358,7 @@ void rcu_defer_register_thread(void)
 	if (was_empty)
 		start_defer_thread();
 	mutex_unlock(&defer_thread_mutex);
+	return 0;
 }
 
 void rcu_defer_unregister_thread(void)
