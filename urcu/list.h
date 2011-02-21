@@ -17,8 +17,8 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#ifndef _LIST_H
-#define _LIST_H	1
+#ifndef _CDS_LIST_H
+#define _CDS_LIST_H	1
 
 /* The definitions of this file are adopted from those which can be
    found in the Linux kernel headers to enable people familiar with
@@ -26,16 +26,16 @@
 
 
 /* Basic type for the double-link list.  */
-typedef struct cds_list_head
+struct cds_list_head
 {
   struct cds_list_head *next;
   struct cds_list_head *prev;
-} list_t;
+};
 
 
 /* Define a variable with the head and tail of the list.  */
 #define CDS_LIST_HEAD(name) \
-  list_t name = { &(name), &(name) }
+  struct cds_list_head name = { &(name), &(name) }
 
 /* Initialize a new list head.  */
 #define CDS_INIT_LIST_HEAD(ptr) \
@@ -45,7 +45,7 @@ typedef struct cds_list_head
 
 /* Add new element at the head of the list.  */
 static inline void
-cds_list_add (list_t *newp, list_t *head)
+cds_list_add (struct cds_list_head *newp, struct cds_list_head *head)
 {
   head->next->prev = newp;
   newp->next = head->next;
@@ -56,7 +56,7 @@ cds_list_add (list_t *newp, list_t *head)
 
 /* Add new element at the tail of the list.  */
 static inline void
-cds_list_add_tail (list_t *newp, list_t *head)
+cds_list_add_tail (struct cds_list_head *newp, struct cds_list_head *head)
 {
   head->prev->next = newp;
   newp->next = head;
@@ -67,7 +67,7 @@ cds_list_add_tail (list_t *newp, list_t *head)
 
 /* Remove element from list.  */
 static inline void
-__cds_list_del (list_t *prev, list_t *next)
+__cds_list_del (struct cds_list_head *prev, struct cds_list_head *next)
 {
   next->prev = prev;
   prev->next = next;
@@ -75,14 +75,14 @@ __cds_list_del (list_t *prev, list_t *next)
 
 /* Remove element from list.  */
 static inline void
-cds_list_del (list_t *elem)
+cds_list_del (struct cds_list_head *elem)
 {
   __cds_list_del (elem->prev, elem->next);
 }
 
 /* delete from list, add to another list as head */
 static inline void
-cds_list_move (list_t *elem, list_t *head)
+cds_list_move (struct cds_list_head *elem, struct cds_list_head *head)
 {
   __cds_list_del (elem->prev, elem->next);
   cds_list_add (elem, head);
@@ -91,7 +91,7 @@ cds_list_move (list_t *elem, list_t *head)
 /* replace an old entry.
  */
 static inline void
-cds_list_replace(list_t *old, list_t *_new)
+cds_list_replace(struct cds_list_head *old, struct cds_list_head *_new)
 {
 	_new->next = old->next;
 	_new->prev = old->prev;
@@ -101,7 +101,7 @@ cds_list_replace(list_t *old, list_t *_new)
 
 /* Join two lists.  */
 static inline void
-cds_list_splice (list_t *add, list_t *head)
+cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
 {
   /* Do nothing if the list which gets added is empty.  */
   if (add != add->next)
@@ -153,18 +153,18 @@ cds_list_splice (list_t *add, list_t *head)
 	     &pos->member != (head);					\
 	     pos = p, p = cds_list_entry(pos->member.next, typeof(*pos), member))
 
-static inline int cds_list_empty(list_t *head)
+static inline int cds_list_empty(struct cds_list_head *head)
 {
 	return head == head->next;
 }
 
-static inline void cds_list_replace_init(list_t *old,
-				     list_t *_new)
+static inline void cds_list_replace_init(struct cds_list_head *old,
+				     struct cds_list_head *_new)
 {
-	list_t *head = old->next;
+	struct cds_list_head *head = old->next;
 	cds_list_del(old);
 	cds_list_add_tail(_new, head);
 	CDS_INIT_LIST_HEAD(old);
 }
 
-#endif	/* list.h */
+#endif	/* _CDS_LIST_H */
