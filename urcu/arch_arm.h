@@ -29,7 +29,9 @@
 extern "C" {
 #endif 
 
+#ifdef CONFIG_ARM_HAVE_DMB
 #define cmm_mb()    asm volatile("dmb":::"memory")
+#endif /* CONFIG_ARM_HAVE_DMB */
 
 #include <stdlib.h>
 #include <sys/time.h>

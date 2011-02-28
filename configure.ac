@@ -20,6 +20,7 @@ AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory f
 AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
 AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks
 cmpxchg instruction.])
+AH_TEMPLATE([CONFIG_ARM_HAVE_DMB], [Use the dmb instruction is available for use on ARM.])
 
 # Checks for programs.
 AC_PROG_CC
@@ -55,6 +56,25 @@ case $host_cpu in
 	arm*) ARCHTYPE="arm" ;;
 	*) ARCHTYPE="unknown";;
 esac
+
+if test "x$ARCHTYPE" = "xarm" ; then
+AC_MSG_CHECKING([checking for dmb instruction])
+AC_TRY_COMPILE(
+[
+],
+[
+asm volatile("dmb":::"memory");
+],
+[
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([CONFIG_ARM_HAVE_DMB], [1])
+]
+,
+[
+	AC_MSG_RESULT([no])
+]
+)
+fi
 
 UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
 ARCHSRC=urcu/arch_$ARCHTYPE.h
