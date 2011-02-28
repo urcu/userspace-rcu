@@ -1,8 +1,8 @@
-#ifndef _URCU_ARCH_UATOMIC_ARMV7L_H
-#define _URCU_ARCH_UATOMIC_ARMV7L_H
+#ifndef _URCU_ARCH_UATOMIC_ARM_H
+#define _URCU_ARCH_UATOMIC_ARM_H
 
 /* 
- * Atomics for ARMv7.  This approach is usable on kernels back to 2.6.15.
+ * Atomics for ARM.  This approach is usable on kernels back to 2.6.15.
  *
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
  * Copyright (c) 1996-1999 by Silicon Graphics.  All rights reserved.
@@ -47,4 +47,4 @@ extern "C" {
 
 #include <urcu/uatomic_generic.h>
 
-#endif /* _URCU_ARCH_UATOMIC_ARMV7L_H */
+#endif /* _URCU_ARCH_UATOMIC_ARM_H */
