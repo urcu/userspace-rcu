@@ -52,7 +52,7 @@ case $host_cpu in
 	sparc64) ARCHTYPE="sparc64" ;;
 	alpha*) ARCHTYPE="alpha" ;;
 	ia64) ARCHTYPE="gcc" ;;
-	armv7l) ARCHTYPE="armv7l" ;;
+	arm*) ARCHTYPE="arm" ;;
 	*) ARCHTYPE="unknown";;
 esac
 
