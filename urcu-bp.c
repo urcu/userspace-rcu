@@ -95,11 +95,6 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (rcu_reader.need_mb) {
-			cmm_smp_mb();
-			rcu_reader.need_mb = 0;
-			cmm_smp_mb();
-		}
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
