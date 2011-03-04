@@ -76,6 +76,9 @@ struct registry_arena {
 
 static struct registry_arena registry_arena;
 
+/* Saved fork signal mask, protected by rcu_gp_lock */
+static sigset_t saved_fork_signal_mask;
+
 static void rcu_gc_registry(void);
 
 static void mutex_lock(pthread_mutex_t *mutex)
@@ -330,4 +333,45 @@ end:
 void rcu_bp_exit()
 {
 	munmap(registry_arena.p, registry_arena.len);
+}
+
+/*
+ * Holding the rcu_gp_lock across fork will make sure we fork() don't race with
+ * a concurrent thread executing with this same lock held. This ensures that the
+ * registry is in a coherent state in the child.
+ */
+void rcu_bp_before_fork(void)
+{
+	sigset_t newmask, oldmask;
+	int ret;
+
+	ret = sigemptyset(&newmask);
+	assert(!ret);
+	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
+	assert(!ret);
+	mutex_lock(&rcu_gp_lock);
+	saved_fork_signal_mask = oldmask;
+}
+
+void rcu_bp_after_fork_parent(void)
+{
+	sigset_t oldmask;
+	int ret;
+
+	oldmask = saved_fork_signal_mask;
+	mutex_unlock(&rcu_gp_lock);
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	assert(!ret);
+}
+
+void rcu_bp_after_fork_child(void)
+{
+	sigset_t oldmask;
+	int ret;
+
+	rcu_gc_registry();
+	oldmask = saved_fork_signal_mask;
+	mutex_unlock(&rcu_gp_lock);
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	assert(!ret);
 }

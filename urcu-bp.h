@@ -87,6 +87,16 @@ extern void rcu_read_unlock(void);
 extern void synchronize_rcu(void);
 
 /*
+ * rcu_bp_before_fork, rcu_bp_after_fork_parent and rcu_bp_after_fork_child
+ * should be called around fork() system calls when the child process is not
+ * expected to immediately perform an exec(). For pthread users, see
+ * pthread_atfork(3).
+ */
+extern void rcu_bp_before_fork(void);
+extern void rcu_bp_after_fork_parent(void);
+extern void rcu_bp_after_fork_child(void);
+
+/*
  * In the bulletproof version, the following functions are no-ops.
  */
 static inline void rcu_register_thread(void)

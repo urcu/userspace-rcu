@@ -201,6 +201,6 @@ Interaction with fork()
 	threads) should be released before a fork() is performed, except for the
 	rather common scenario where fork() is immediately followed by exec() in
 	the child process. The only implementation not subject to that rule is
-	liburcu-bp, which is designed to handle this case by requiring a call to
-	synchronize_rcu() following the fork() in the child before any new
-	thread is created.
+	liburcu-bp, which is designed to handle fork() by calling
+	rcu_bp_before_fork, rcu_bp_after_fork_parent and
+	rcu_bp_after_fork_child.
