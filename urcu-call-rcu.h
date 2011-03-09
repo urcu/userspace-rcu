@@ -46,6 +46,8 @@ struct call_rcu_data;
 
 #define URCU_CALL_RCU_RT	0x1
 #define URCU_CALL_RCU_RUNNING	0x2
+#define URCU_CALL_RCU_STOP	0x4
+#define URCU_CALL_RCU_STOPPED	0x8
 
 /*
  * The rcu_head data structure is placed in the structure to be freed
@@ -71,6 +73,9 @@ void set_thread_call_rcu_data(struct call_rcu_data *crdp);
 int create_all_cpu_call_rcu_data(unsigned long flags);
 void call_rcu(struct rcu_head *head,
 	      void (*func)(struct rcu_head *head));
+void call_rcu_data_free(struct call_rcu_data *crdp);
+void free_all_cpu_call_rcu_data(void);
+void call_rcu_after_fork_child(void);
 
 #ifdef __cplusplus 
 }

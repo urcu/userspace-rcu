@@ -119,6 +119,7 @@ int goflag __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) = GOFLAG_INIT;
 
 void *rcu_read_perf_test(void *arg)
 {
+	struct call_rcu_data *crdp;
 	int i;
 	int me = (long)arg;
 	long long n_reads_local = 0;
@@ -141,6 +142,9 @@ void *rcu_read_perf_test(void *arg)
 	}
 	__get_thread_var(n_reads_pt) += n_reads_local;
 	put_thread_offline();
+	crdp = get_thread_call_rcu_data();
+	set_thread_call_rcu_data(NULL);
+	call_rcu_data_free(crdp);
 	rcu_unregister_thread();
 
 	return (NULL);
@@ -204,6 +208,10 @@ void perftestrun(int nthreads, int nreaders, int nupdaters)
 	        (double)n_reads),
 	       ((duration * 1000*1000*1000.*(double)nupdaters) /
 	        (double)n_updates));
+	if (get_cpu_call_rcu_data(0)) {
+		fprintf(stderr, "Deallocating per-CPU call_rcu threads.\n");
+		free_all_cpu_call_rcu_data();
+	}
 	exit(0);
 }
 
@@ -436,6 +444,10 @@ void stresstest(int nreaders)
 		printf(" %lld", sum);
 	}
 	printf("\n");
+	if (get_cpu_call_rcu_data(0)) {
+		fprintf(stderr, "Deallocating per-CPU call_rcu threads.\n");
+		free_all_cpu_call_rcu_data();
+	}
 	exit(0);
 }
 
