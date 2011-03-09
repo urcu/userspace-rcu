@@ -1,8 +1,8 @@
-#ifndef _URCU_BATCH_H
-#define _URCU_BATCH_H
+#ifndef _URCU_CALL_RCU_H
+#define _URCU_CALL_RCU_H
 
 /*
- * urcu-defer.h
+ * urcu-call-rcu.h
  *
  * Userspace RCU header - deferred execution
  *
@@ -32,36 +32,49 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#include <urcu/wfqueue.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * Note: the defer_rcu() API is currently EXPERIMENTAL. It may change in the
- * future.
- * 
- * Important !
- *
- * Each thread queuing memory reclamation must be registered with
- * rcu_defer_register_thread(). rcu_defer_unregister_thread() should be
- * called before the thread exits.
- *
- * *NEVER* use defer_rcu() within a RCU read-side critical section, because this
- * primitive need to call synchronize_rcu() if the thread queue is full.
- */
+/* Note that struct call_rcu_data is opaque to callers. */
 
-extern void defer_rcu(void (*fct)(void *p), void *p);
+struct call_rcu_data;
+
+/* Flag values. */
+
+#define URCU_CALL_RCU_RT	0x1
+#define URCU_CALL_RCU_RUNNING	0x2
 
 /*
- * Thread registration for reclamation.
+ * The rcu_head data structure is placed in the structure to be freed
+ * via call_rcu().
  */
-extern int rcu_defer_register_thread(void);
-extern void rcu_defer_unregister_thread(void);
-extern void rcu_defer_barrier(void);
-extern void rcu_defer_barrier_thread(void);
+
+struct rcu_head {
+	struct cds_wfq_node next;
+	void (*func)(struct rcu_head *head);
+};
+
+/*
+ * Exported functions
+ */
+void call_rcu_data_init(struct call_rcu_data **crdpp, unsigned long flags);
+struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
+pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
+struct call_rcu_data *create_call_rcu_data(unsigned long flags);
+int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
+struct call_rcu_data *get_default_call_rcu_data(void);
+struct call_rcu_data *get_call_rcu_data(void);
+struct call_rcu_data *get_thread_call_rcu_data(void);
+void set_thread_call_rcu_data(struct call_rcu_data *crdp);
+int create_all_cpu_call_rcu_data(unsigned long flags);
+void call_rcu(struct rcu_head *head,
+	      void (*func)(struct rcu_head *head));
 
 #ifdef __cplusplus 
 }
 #endif
 
-#endif /* _URCU_BATCH_H */
+#endif /* _URCU_CALL_RCU_H */

@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 #include <assert.h>
+#include <poll.h>
 #include <urcu/compiler.h>
 #include <urcu/uatomic_arch.h>
 
@@ -47,12 +48,12 @@ extern "C" {
 #define WFQ_ADAPT_ATTEMPTS		10	/* Retry if being set */
 #define WFQ_WAIT			10	/* Wait 10 ms if being set */
 
-void _cds_wfq_node_init(struct cds_wfq_node *node)
+static inline void _cds_wfq_node_init(struct cds_wfq_node *node)
 {
 	node->next = NULL;
 }
 
-void _cds_wfq_init(struct cds_wfq_queue *q)
+static inline void _cds_wfq_init(struct cds_wfq_queue *q)
 {
 	int ret;
 
@@ -64,7 +65,8 @@ void _cds_wfq_init(struct cds_wfq_queue *q)
 	assert(!ret);
 }
 
-void _cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
+static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
+				    struct cds_wfq_node *node)
 {
 	struct cds_wfq_node **old_tail;
 
@@ -90,7 +92,7 @@ void _cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
  * thread to be scheduled. The queue appears empty until tail->next is set by
  * enqueue.
  */
-struct cds_wfq_node *
+static inline struct cds_wfq_node *
 ___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
 	struct cds_wfq_node *node, *next;
@@ -128,7 +130,7 @@ ___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 	return node;
 }
 
-struct cds_wfq_node *
+static inline struct cds_wfq_node *
 _cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 {
 	struct cds_wfq_node *retnode;

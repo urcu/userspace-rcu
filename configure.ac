@@ -35,7 +35,7 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
-AC_CHECK_FUNCS([bzero gettimeofday munmap strtoul])
+AC_CHECK_FUNCS([bzero gettimeofday munmap sched_getcpu strtoul sysconf])
 
 # Find arch type
 case $host_cpu in

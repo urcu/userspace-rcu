@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 #include <assert.h>
+#include <poll.h>
 #include <urcu/compiler.h>
 #include <urcu/uatomic_arch.h>
 
