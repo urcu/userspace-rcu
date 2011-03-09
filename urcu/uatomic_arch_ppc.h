@@ -133,7 +133,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			"bne- 1b\n"	 	/* retry if lost reservation */
 			"isync\n"
 		"2:\n"
-				: "=&r"(old_val),
+				: "=&r"(old_val)
 				: "r"(addr), "r"((unsigned long)_new),
 				  "r"((unsigned long)old)
 				: "memory", "cc");
