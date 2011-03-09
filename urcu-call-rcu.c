@@ -36,6 +36,7 @@
 #include "urcu/wfqueue.h"
 #include "urcu-call-rcu.h"
 #include "urcu-pointer.h"
+#include "urcu/list.h"
 
 /* Data structure that identifies a call_rcu thread. */
 
@@ -46,7 +47,15 @@ struct call_rcu_data {
 	pthread_cond_t cond;
 	unsigned long qlen;
 	pthread_t tid;
+	struct cds_list_head list;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+
+/*
+ * List of all call_rcu_data structures to keep valgrind happy.
+ * Protected by call_rcu_mutex.
+ */
+
+CDS_LIST_HEAD(call_rcu_data_list);
 
 /* Link a thread using call_rcu() to its call_rcu thread. */
 
@@ -197,10 +206,12 @@ static void *call_rcu_thread(void *arg)
 
 /*
  * Create both a call_rcu thread and the corresponding call_rcu_data
- * structure, linking the structure in as specified.
+ * structure, linking the structure in as specified.  Caller must hold
+ * call_rcu_mutex.
  */
 
-void call_rcu_data_init(struct call_rcu_data **crdpp, unsigned long flags)
+static void call_rcu_data_init(struct call_rcu_data **crdpp,
+			       unsigned long flags)
 {
 	struct call_rcu_data *crdp;
 
@@ -221,6 +232,7 @@ void call_rcu_data_init(struct call_rcu_data **crdpp, unsigned long flags)
 		exit(-1);
 	}
 	crdp->flags = flags | URCU_CALL_RCU_RUNNING;
+	cds_list_add(&crdp->list, &call_rcu_data_list);
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
 	*crdpp = crdp;
 	if (pthread_create(&crdp->tid, NULL, call_rcu_thread, crdp) != 0) {
@@ -265,11 +277,21 @@ pthread_t get_call_rcu_thread(struct call_rcu_data *crdp)
  * Create a call_rcu_data structure (with thread) and return a pointer.
  */
 
-struct call_rcu_data *create_call_rcu_data(unsigned long flags)
+static struct call_rcu_data *__create_call_rcu_data(unsigned long flags)
 {
 	struct call_rcu_data *crdp;
 
 	call_rcu_data_init(&crdp, flags);
+	return crdp;
+}
+
+struct call_rcu_data *create_call_rcu_data(unsigned long flags)
+{
+	struct call_rcu_data *crdp;
+
+	call_rcu_lock(&call_rcu_mutex);
+	crdp = __create_call_rcu_data(flags);
+	call_rcu_unlock(&call_rcu_mutex);
 	return crdp;
 }
 
@@ -399,7 +421,7 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 			call_rcu_unlock(&call_rcu_mutex);
 			continue;
 		}
-		crdp = create_call_rcu_data(flags);
+		crdp = __create_call_rcu_data(flags);
 		if (crdp == NULL) {
 			call_rcu_unlock(&call_rcu_mutex);
 			errno = ENOMEM;

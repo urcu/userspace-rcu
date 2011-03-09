@@ -60,7 +60,6 @@ struct rcu_head {
 /*
  * Exported functions
  */
-void call_rcu_data_init(struct call_rcu_data **crdpp, unsigned long flags);
 struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
 pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
 struct call_rcu_data *create_call_rcu_data(unsigned long flags);
