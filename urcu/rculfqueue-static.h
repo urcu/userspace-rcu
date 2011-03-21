@@ -86,7 +86,7 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *
 			 * Now move tail (another enqueue might beat
 			 * us to it, that's fine).
 			 */
-			uatomic_cmpxchg(&q->tail, tail, node);
+			(void) uatomic_cmpxchg(&q->tail, tail, node);
 			rcu_read_unlock();
 			return;
 		} else {
@@ -94,7 +94,7 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *
 			 * Failure to append to current tail. Help moving tail
 			 * further and retry.
 			 */
-			uatomic_cmpxchg(&q->tail, tail, next);
+			(void) uatomic_cmpxchg(&q->tail, tail, next);
 			rcu_read_unlock();
 			continue;
 		}
