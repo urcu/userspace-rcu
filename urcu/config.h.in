@@ -1,4 +1,4 @@
-/* urcu/config.h.in. Manually generatad for control over the contained defs. */
+/* urcu/config.h.in. Manually generated for control over the contained defs. */
 
 /* Defined when on a system that has memory fence instructions. */
 #undef CONFIG_RCU_HAVE_FENCE
@@ -13,3 +13,6 @@
 
 /* Compatibility mode for i386 which lacks cmpxchg instruction. */
 #undef CONFIG_RCU_COMPAT_ARCH
+
+/* Use the dmb instruction is available for use on ARM. */
+#undef CONFIG_RCU_ARM_HAVE_DMB

@@ -29,11 +29,11 @@
 extern "C" {
 #endif 
 
-#ifdef CONFIG_ARM_HAVE_DMB
+#ifdef CONFIG_RCU_ARM_HAVE_DMB
 #define cmm_mb()	asm volatile("dmb":::"memory")
 #define cmm_rmb()	asm volatile("dmb":::"memory")
 #define cmm_wmb()	asm volatile("dmb":::"memory")
-#endif /* CONFIG_ARM_HAVE_DMB */
+#endif /* CONFIG_RCU_ARM_HAVE_DMB */
 
 #include <stdlib.h>
 #include <sys/time.h>

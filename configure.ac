@@ -20,7 +20,7 @@ AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory f
 AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
 AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks
 cmpxchg instruction.])
-AH_TEMPLATE([CONFIG_ARM_HAVE_DMB], [Use the dmb instruction is available for use on ARM.])
+AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction is available for use on ARM.])
 
 # Checks for programs.
 AC_PROG_CC
@@ -67,7 +67,7 @@ asm volatile("dmb":::"memory");
 ],
 [
 	AC_MSG_RESULT([yes])
-	AC_DEFINE([CONFIG_ARM_HAVE_DMB], [1])
+	AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
 ]
 ,
 [
