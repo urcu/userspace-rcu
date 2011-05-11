@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
-	test_array = malloc(sizeof(*test_array) * ARRAY_SIZE);
+	test_array = calloc(1, sizeof(*test_array) * ARRAY_SIZE);
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
