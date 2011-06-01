@@ -52,3 +52,6 @@ libwfqueue_la_SOURCES = wfqueue.c $(COMPAT)
 libwfstack_la_SOURCES = wfstack.c $(COMPAT)
 librculfqueue_la_SOURCES = rculfqueue.c $(COMPAT)
 librculfstack_la_SOURCES = rculfstack.c $(COMPAT)
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = liburcu.pc liburcu-bp.pc

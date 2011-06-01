@@ -87,3 +87,8 @@ Makefile
 /autom4te.cache/
 config.h
 stamp-h2
+liburcu.pc
+liburcu-bp.pc
+liburcu-qsbr.pc
+liburcu-mb.pc
+liburcu-signal.pc

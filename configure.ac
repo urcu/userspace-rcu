@@ -241,5 +241,10 @@ AC_CONFIG_LINKS([
 AC_CONFIG_FILES([
 	Makefile
 	tests/Makefile
+	liburcu.pc
+	liburcu-bp.pc
+	liburcu-qsbr.pc
+	liburcu-mb.pc
+	liburcu-signal.pc
 ])
 AC_OUTPUT
