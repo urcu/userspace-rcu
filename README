@@ -139,6 +139,22 @@ Usage of liburcu-defer
 	* Its API is currently experimental. It may change in future library
 	  releases.
 
+Usage of urcu-call-rcu
+
+	* Follow instructions for either liburcu, liburcu-qsbr,
+	  liburcu-mb, liburcu-signal, or liburcu-bp above.
+	  The urcu-call-rcu functionality is provided for each of
+	  these library modules.
+	* Provides the call_rcu() primitive to enqueue delayed callbacks
+	  in a manner similar to defer_rcu(), but without ever delaying
+	  for a grace period.  On the other hand, call_rcu()'s best-case
+	  overhead is not quite as good as that of defer_rcu().
+	* Provides call_rcu() to allow asynchronous handling of RCU
+	  grace periods.  A number of additional functions are provided
+	  to manage the helper threads used by call_rcu(), but reasonable
+	  defaults are used if these additional functions are not invoked.
+	  See API.txt for more details.
+
 Being careful with signals
 
 	The liburcu library uses signals internally. The signal handler is
