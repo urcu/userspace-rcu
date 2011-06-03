@@ -204,3 +204,7 @@ Interaction with fork()
 	liburcu-bp, which is designed to handle fork() by calling
 	rcu_bp_before_fork, rcu_bp_after_fork_parent and
 	rcu_bp_after_fork_child.
+
+	Applications that use call_rcu() are required to invoke
+	call_rcu_after_fork_child() from the child process after a
+	successful fork() system call that is not followed by exec().

@@ -566,12 +566,36 @@ void free_all_cpu_call_rcu_data(void)
 }
 
 /*
+ * Acquire the call_rcu_mutex in order to ensure that the child sees
+ * all of the call_rcu() data structures in a consistent state.
+ * Suitable for pthread_atfork() and friends.
+ */
+void call_rcu_before_fork(void)
+{
+	call_rcu_lock(&call_rcu_mutex);
+}
+
+/*
+ * Clean up call_rcu data structures in the parent of a successful fork()
+ * that is not followed by exec() in the child.  Suitable for
+ * pthread_atfork() and friends.
+ */
+void call_rcu_after_fork_parent(void)
+{
+	call_rcu_unlock(&call_rcu_mutex);
+}
+
+/*
  * Clean up call_rcu data structures in the child of a successful fork()
- * that is not followed by exec().
+ * that is not followed by exec().  Suitable for pthread_atfork() and
+ * friends.
  */
 void call_rcu_after_fork_child(void)
 {
 	struct call_rcu_data *crdp;
+
+	/* Release the mutex. */
+	call_rcu_unlock(&call_rcu_mutex);
 
 	/*
 	 * Allocate a new default call_rcu_data structure in order
