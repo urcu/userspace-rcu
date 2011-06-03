@@ -434,3 +434,4 @@ void rcu_exit(void)
 #endif /* #ifdef RCU_SIGNAL */
 
 #include "urcu-call-rcu-impl.h"
+#include "urcu-defer-impl.h"

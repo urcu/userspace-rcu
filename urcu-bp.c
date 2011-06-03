@@ -379,3 +379,4 @@ void rcu_bp_after_fork_child(void)
 }
 
 #include "urcu-call-rcu-impl.h"
+#include "urcu-defer-impl.h"

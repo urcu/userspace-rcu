@@ -1,9 +1,16 @@
+#ifndef _URCU_DEFER_IMPL_H
+#define _URCU_DEFER_IMPL_H
+
 /*
- * urcu-defer.c
+ * urcu-defer-impl.h
  *
- * Userspace RCU library - batch memory reclamation
+ * Userspace RCU header - memory reclamation.
+ *
+ * TO BE INCLUDED ONLY FROM URCU LIBRARY CODE. See urcu-defer.h for linking
+ * dynamically with the userspace rcu reclamation library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,13 +25,15 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <signal.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
@@ -33,7 +42,72 @@
 #include <unistd.h>
 
 #include "urcu/urcu-futex.h"
-#include "urcu-defer-static.h"
+
+#include <urcu/compiler.h>
+#include <urcu/arch.h>
+#include <urcu/uatomic_arch.h>
+#include <urcu/list.h>
+#include <urcu/system.h>
+
+/*
+ * Number of entries in the per-thread defer queue. Must be power of 2.
+ */
+#define DEFER_QUEUE_SIZE	(1 << 12)
+#define DEFER_QUEUE_MASK	(DEFER_QUEUE_SIZE - 1)
+
+/*
+ * Typically, data is aligned at least on the architecture size.
+ * Use lowest bit to indicate that the current callback is changing.
+ * Assumes that (void *)-2L is not used often. Used to encode non-aligned
+ * functions and non-aligned data using extra space.
+ * We encode the (void *)-2L fct as: -2L, fct, data.
+ * We encode the (void *)-2L data as: -2L, fct, data.
+ * Here, DQ_FCT_MARK == ~DQ_FCT_BIT. Required for the test order.
+ */
+#define DQ_FCT_BIT		(1 << 0)
+#define DQ_IS_FCT_BIT(x)	((unsigned long)(x) & DQ_FCT_BIT)
+#define DQ_SET_FCT_BIT(x)	\
+	(x = (void *)((unsigned long)(x) | DQ_FCT_BIT))
+#define DQ_CLEAR_FCT_BIT(x)	\
+	(x = (void *)((unsigned long)(x) & ~DQ_FCT_BIT))
+#define DQ_FCT_MARK		((void *)(~DQ_FCT_BIT))
+
+/*
+ * This code section can only be included in LGPL 2.1 compatible source code.
+ * See below for the function call wrappers which can be used in code meant to
+ * be only linked with the Userspace RCU library. This comes with a small
+ * performance degradation on the read-side due to the added function calls.
+ * This is required to permit relinking with newer versions of the library.
+ */
+
+#ifdef DEBUG_RCU
+#define rcu_assert(args...)	assert(args)
+#else
+#define rcu_assert(args...)
+#endif
+
+/*
+ * defer queue.
+ * Contains pointers. Encoded to save space when same callback is often used.
+ * When looking up the next item:
+ * - if DQ_FCT_BIT is set, set the current callback to DQ_CLEAR_FCT_BIT(ptr)
+ *   - next element contains pointer to data.
+ * - else if item == DQ_FCT_MARK
+ *   - set the current callback to next element ptr
+ *   - following next element contains pointer to data.
+ * - else current element contains data
+ */
+struct defer_queue {
+	unsigned long head;	/* add element at head */
+	void *last_fct_in;	/* last fct pointer encoded */
+	unsigned long tail;	/* next element to remove at tail */
+	void *last_fct_out;	/* last fct pointer encoded */
+	void **q;
+	/* registry information */
+	unsigned long last_head;
+	struct cds_list_head list;	/* list of thread queues */
+};
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-defer.h"
 
@@ -54,10 +128,10 @@ static int defer_thread_futex;
  * the reclamation tread.
  */
 static struct defer_queue __thread defer_queue;
-static CDS_LIST_HEAD(registry);
+static CDS_LIST_HEAD(registry_defer);
 static pthread_t tid_defer;
 
-static void mutex_lock(pthread_mutex_t *mutex)
+static void mutex_lock_defer(pthread_mutex_t *mutex)
 {
 	int ret;
 
@@ -80,17 +154,6 @@ static void mutex_lock(pthread_mutex_t *mutex)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void mutex_unlock(pthread_mutex_t *mutex)
-{
-	int ret;
-
-	ret = pthread_mutex_unlock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
-}
-
 /*
  * Wake-up any waiting defer thread. Called from many concurrent threads.
  */
@@ -108,8 +171,8 @@ static unsigned long rcu_defer_num_callbacks(void)
 	unsigned long num_items = 0, head;
 	struct defer_queue *index;
 
-	mutex_lock(&rcu_defer_mutex);
-	cds_list_for_each_entry(index, &registry, list) {
+	mutex_lock_defer(&rcu_defer_mutex);
+	cds_list_for_each_entry(index, &registry_defer, list) {
 		head = CMM_LOAD_SHARED(index->head);
 		num_items += head - index->tail;
 	}
@@ -184,7 +247,7 @@ static void _rcu_defer_barrier_thread(void)
 
 void rcu_defer_barrier_thread(void)
 {
-	mutex_lock(&rcu_defer_mutex);
+	mutex_lock_defer(&rcu_defer_mutex);
 	_rcu_defer_barrier_thread();
 	mutex_unlock(&rcu_defer_mutex);
 }
@@ -207,11 +270,11 @@ void rcu_defer_barrier(void)
 	struct defer_queue *index;
 	unsigned long num_items = 0;
 
-	if (cds_list_empty(&registry))
+	if (cds_list_empty(&registry_defer))
 		return;
 
-	mutex_lock(&rcu_defer_mutex);
-	cds_list_for_each_entry(index, &registry, list) {
+	mutex_lock_defer(&rcu_defer_mutex);
+	cds_list_for_each_entry(index, &registry_defer, list) {
 		index->last_head = CMM_LOAD_SHARED(index->head);
 		num_items += index->last_head - index->tail;
 	}
@@ -223,7 +286,7 @@ void rcu_defer_barrier(void)
 		goto end;
 	}
 	synchronize_rcu();
-	cds_list_for_each_entry(index, &registry, list)
+	cds_list_for_each_entry(index, &registry_defer, list)
 		rcu_defer_barrier_queue(index, index->last_head);
 end:
 	mutex_unlock(&rcu_defer_mutex);
@@ -349,10 +412,10 @@ int rcu_defer_register_thread(void)
 	if (!defer_queue.q)
 		return -ENOMEM;
 
-	mutex_lock(&defer_thread_mutex);
-	mutex_lock(&rcu_defer_mutex);
-	was_empty = cds_list_empty(&registry);
-	cds_list_add(&defer_queue.list, &registry);
+	mutex_lock_defer(&defer_thread_mutex);
+	mutex_lock_defer(&rcu_defer_mutex);
+	was_empty = cds_list_empty(&registry_defer);
+	cds_list_add(&defer_queue.list, &registry_defer);
 	mutex_unlock(&rcu_defer_mutex);
 
 	if (was_empty)
@@ -365,13 +428,13 @@ void rcu_defer_unregister_thread(void)
 {
 	int is_empty;
 
-	mutex_lock(&defer_thread_mutex);
-	mutex_lock(&rcu_defer_mutex);
+	mutex_lock_defer(&defer_thread_mutex);
+	mutex_lock_defer(&rcu_defer_mutex);
 	cds_list_del(&defer_queue.list);
 	_rcu_defer_barrier_thread();
 	free(defer_queue.q);
 	defer_queue.q = NULL;
-	is_empty = cds_list_empty(&registry);
+	is_empty = cds_list_empty(&registry_defer);
 	mutex_unlock(&rcu_defer_mutex);
 
 	if (is_empty)
@@ -381,5 +444,7 @@ void rcu_defer_unregister_thread(void)
 
 void rcu_defer_exit(void)
 {
-	assert(cds_list_empty(&registry));
+	assert(cds_list_empty(&registry_defer));
 }
+
+#endif /* _URCU_DEFER_IMPL_H */

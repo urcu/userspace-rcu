@@ -34,6 +34,10 @@
 
 /* Mapping macros to allow multiple flavors in a single binary. */
 
+#if !defined(RCU_MEMBARRIER) && !defined(RCU_SIGNAL) && !defined(RCU_MB)
+#define RCU_MB
+#endif
+
 #ifdef RCU_MEMBARRIER
 
 #define rcu_read_lock			rcu_read_lock_memb
@@ -59,6 +63,12 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_memb
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_memb
 #define call_rcu			call_rcu_memb
+
+#define defer_rcu			defer_rcu_memb
+#define rcu_defer_register_thread	rcu_defer_register_thread_memb
+#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_memb
+#define rcu_defer_barrier		rcu_defer_barrier_memb
+#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_memb
 
 #elif defined(RCU_SIGNAL)
 
@@ -86,6 +96,12 @@
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_sig
 #define call_rcu			call_rcu_sig
 
+#define defer_rcu			defer_rcu_sig
+#define rcu_defer_register_thread	rcu_defer_register_thread_sig
+#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_sig
+#define rcu_defer_barrier		rcu_defer_barrier_sig
+#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_sig
+
 #elif defined(RCU_MB)
 
 #define rcu_read_lock			rcu_read_lock_mb
@@ -111,6 +127,16 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_mb
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_mb
 #define call_rcu			call_rcu_mb
+
+#define defer_rcu			defer_rcu_mb
+#define rcu_defer_register_thread	rcu_defer_register_thread_mb
+#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_mb
+#define rcu_defer_barrier		rcu_defer_barrier_mb
+#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_mb
+
+#else
+
+#error "Undefined selection"
 
 #endif
 

@@ -60,4 +60,10 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_qsbr
 #define call_rcu			call_rcu_qsbr
 
+#define defer_rcu			defer_rcu_qsbr
+#define rcu_defer_register_thread	rcu_defer_register_thread_qsbr
+#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_qsbr
+#define	rcu_defer_barrier		rcu_defer_barrier_qsbr
+#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_qsbr
+
 #endif /* _URCU_QSBR_MAP_H */

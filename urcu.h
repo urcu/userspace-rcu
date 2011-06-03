@@ -111,5 +111,6 @@ extern void rcu_init(void);
 #endif
 
 #include "urcu-call-rcu.h"
+#include "urcu-defer.h"
 
 #endif /* _URCU_H */

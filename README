@@ -124,16 +124,15 @@ Writing
 
 Usage of liburcu-defer
 
-	* #include <urcu-defer.h>
-	* Link with "-lurcu-defer", and also with one of the urcu library
-	  (either urcu, urcu-bp, urcu-mb or urcu-qsbr).
+	* Follow instructions for either liburcu, liburcu-qsbr,
+	  liburcu-mb, liburcu-signal, or liburcu-bp above.
+	  The liburcu-defer functionality is pulled into each of
+	  those library modules.
 	* Provides defer_rcu() primitive to enqueue delayed callbacks. Queued
 	  callbacks are executed in batch periodically after a grace period.
 	  Do _not_ use defer_rcu() within a read-side critical section, because
 	  it may call synchronize_rcu() if the thread queue is full.
-	* Provides defer_rcu_ratelimit() primitive, which acts just like
-	  defer_rcu(), but takes an additional rate limiter callback forcing
-	  synchronized callback execution of the limiter returns non-zero.
+	  This can lead to deadlock or worse.
 	* Requires that rcu_defer_barrier() must be called in library destructor
 	  if a library queues callbacks and is expected to be unloaded with
 	  dlclose().

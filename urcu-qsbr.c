@@ -334,3 +334,4 @@ void rcu_exit(void)
 }
 
 #include "urcu-call-rcu-impl.h"
+#include "urcu-defer-impl.h"

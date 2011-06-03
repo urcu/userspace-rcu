@@ -58,4 +58,10 @@
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_bp
 #define call_rcu			call_rcu_bp
 
+#define defer_rcu			defer_rcu_bp
+#define rcu_defer_register_thread	rcu_defer_register_thread_bp
+#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_bp
+#define rcu_defer_barrier		rcu_defer_barrier_bp
+#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
+
 #endif /* _URCU_BP_MAP_H */
