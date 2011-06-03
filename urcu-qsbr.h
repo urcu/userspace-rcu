@@ -67,12 +67,12 @@ extern "C" {
  * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread()
  * FOR EACH THREAD WITH READ-SIDE CRITICAL SECTION.
  */
-#define rcu_read_lock_qsbr()		_rcu_read_lock()
-#define rcu_read_unlock_qsbr()		_rcu_read_unlock()
+#define rcu_read_lock_qsbr		_rcu_read_lock
+#define rcu_read_unlock_qsbr		_rcu_read_unlock
 
-#define rcu_quiescent_state_qsbr()	_rcu_quiescent_state()
-#define rcu_thread_offline_qsbr()	_rcu_thread_offline()
-#define rcu_thread_online_qsbr()	_rcu_thread_online()
+#define rcu_quiescent_state_qsbr	_rcu_quiescent_state
+#define rcu_thread_offline_qsbr		_rcu_thread_offline
+#define rcu_thread_online_qsbr		_rcu_thread_online
 
 #else /* !_LGPL_SOURCE */
 

@@ -71,14 +71,14 @@ extern "C" {
  * READ-SIDE CRITICAL SECTION.
  */
 #ifdef RCU_MEMBARRIER
-#define rcu_read_lock_memb()		_rcu_read_lock()
-#define rcu_read_unlock_memb()		_rcu_read_unlock()
+#define rcu_read_lock_memb		_rcu_read_lock
+#define rcu_read_unlock_memb		_rcu_read_unlock
 #elif defined(RCU_SIGNAL)
-#define rcu_read_lock_sig()		_rcu_read_lock()
-#define rcu_read_unlock_sig()		_rcu_read_unlock()
+#define rcu_read_lock_sig		_rcu_read_lock
+#define rcu_read_unlock_sig		_rcu_read_unlock
 #elif defined(RCU_MB)
-#define rcu_read_lock_mb()		_rcu_read_lock()
-#define rcu_read_unlock_mb()		_rcu_read_unlock()
+#define rcu_read_lock_mb		_rcu_read_lock
+#define rcu_read_unlock_mb		_rcu_read_unlock
 #endif
 
 #else /* !_LGPL_SOURCE */

@@ -71,8 +71,8 @@ extern "C" {
  *
  * Mark the beginning and end of a read-side critical section.
  */
-#define rcu_read_lock_bp()		_rcu_read_lock()
-#define rcu_read_unlock_bp()		_rcu_read_unlock()
+#define rcu_read_lock_bp		_rcu_read_lock
+#define rcu_read_unlock_bp		_rcu_read_unlock
 
 #else /* !_LGPL_SOURCE */
 

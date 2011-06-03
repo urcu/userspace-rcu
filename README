@@ -205,6 +205,9 @@ Interaction with fork()
 	rcu_bp_before_fork, rcu_bp_after_fork_parent and
 	rcu_bp_after_fork_child.
 
-	Applications that use call_rcu() are required to invoke
-	call_rcu_after_fork_child() from the child process after a
-	successful fork() system call that is not followed by exec().
+	Applications that use call_rcu() and that fork() without
+	doing an immediate exec() must take special action.  The parent
+	must invoke call_rcu_before_fork() before the fork() and
+	call_rcu_after_fork_parent() after the fork().  The child
+	process must invoke call_rcu_after_fork_child().
+	These three APIs are suitable for passing to pthread_atfork().
