@@ -69,8 +69,6 @@ static pthread_mutex_t call_rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct call_rcu_data *default_call_rcu_data;
 
-extern void synchronize_rcu(void);
-
 /*
  * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
  * available, then we can have call_rcu threads assigned to individual

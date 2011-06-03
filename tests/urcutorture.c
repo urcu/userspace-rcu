@@ -8,22 +8,19 @@
 #include "api.h"
 #define _LGPL_SOURCE
 
-#ifdef TORTURE_RCU_MEMBARRIER
-#define RCU_MEMBARRIER
+#ifdef RCU_MEMBARRIER
 #include <urcu.h>
 #endif
-#ifdef TORTURE_URCU_SIGNAL
-#define RCU_SIGNAL
+#ifdef RCU_SIGNAL
 #include <urcu.h>
 #endif
-#ifdef TORTURE_URCU_MB
-#define RCU_MB
+#ifdef RCU_MB
 #include <urcu.h>
 #endif
-#ifdef TORTURE_QSBR
+#ifdef RCU_QSBR
 #include <urcu-qsbr.h>
 #endif
-#ifdef TORTURE_URCU_BP
+#ifdef RCU_BP
 #include <urcu-bp.h>
 #endif
 

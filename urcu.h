@@ -43,12 +43,14 @@
 extern "C" {
 #endif 
 
+#include "urcu-map.h"
+
 /*
  * Important !
  *
  * Each thread containing read-side critical sections must be registered
- * with rcu_register_thread() before calling rcu_read_lock().
- * rcu_unregister_thread() should be called before the thread exits.
+ * with rcu_register_thread_mb() before calling rcu_read_lock_mb().
+ * rcu_unregister_thread_mb() should be called before the thread exits.
  */
 
 #ifdef _LGPL_SOURCE
@@ -68,8 +70,16 @@ extern "C" {
  * DON'T FORGET TO USE RCU_REGISTER/UNREGISTER_THREAD() FOR EACH THREAD WITH
  * READ-SIDE CRITICAL SECTION.
  */
-#define rcu_read_lock()		_rcu_read_lock()
-#define rcu_read_unlock()	_rcu_read_unlock()
+#ifdef RCU_MEMBARRIER
+#define rcu_read_lock_memb()		_rcu_read_lock()
+#define rcu_read_unlock_memb()		_rcu_read_unlock()
+#elif defined(RCU_SIGNAL)
+#define rcu_read_lock_sig()		_rcu_read_lock()
+#define rcu_read_unlock_sig()		_rcu_read_unlock()
+#elif defined(RCU_MB)
+#define rcu_read_lock_mb()		_rcu_read_lock()
+#define rcu_read_unlock_mb()		_rcu_read_unlock()
+#endif
 
 #else /* !_LGPL_SOURCE */
 
@@ -99,5 +109,7 @@ extern void rcu_init(void);
 #ifdef __cplusplus 
 }
 #endif
+
+#include "urcu-call-rcu.h"
 
 #endif /* _URCU_H */

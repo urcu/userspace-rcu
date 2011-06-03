@@ -40,6 +40,8 @@
 extern "C" {
 #endif 
 
+#include "urcu-qsbr-map.h"
+
 /*
  * Important !
  *
@@ -62,15 +64,15 @@ extern "C" {
  * rcu_read_unlock()
  *
  * Mark the beginning and end of a read-side critical section.
- * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread() FOR EACH
- * THREAD WITH READ-SIDE CRITICAL SECTION.
+ * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread()
+ * FOR EACH THREAD WITH READ-SIDE CRITICAL SECTION.
  */
-#define rcu_read_lock()		_rcu_read_lock()
-#define rcu_read_unlock()	_rcu_read_unlock()
+#define rcu_read_lock_qsbr()		_rcu_read_lock()
+#define rcu_read_unlock_qsbr()		_rcu_read_unlock()
 
-#define rcu_quiescent_state()	_rcu_quiescent_state()
-#define rcu_thread_offline()	_rcu_thread_offline()
-#define rcu_thread_online()	_rcu_thread_online()
+#define rcu_quiescent_state_qsbr()	_rcu_quiescent_state()
+#define rcu_thread_offline_qsbr()	_rcu_thread_offline()
+#define rcu_thread_online_qsbr()	_rcu_thread_online()
 
 #else /* !_LGPL_SOURCE */
 
@@ -121,5 +123,7 @@ extern void rcu_unregister_thread(void);
 #ifdef __cplusplus 
 }
 #endif
+
+#include "urcu-call-rcu.h"
 
 #endif /* _URCU_QSBR_H */

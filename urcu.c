@@ -33,6 +33,8 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu-map.h"
+
 #include "urcu-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
@@ -428,4 +430,7 @@ void rcu_exit(void)
 	assert(act.sa_sigaction == sigrcu_handler);
 	assert(cds_list_empty(&registry));
 }
+
 #endif /* #ifdef RCU_SIGNAL */
+
+#include "urcu-call-rcu-impl.h"

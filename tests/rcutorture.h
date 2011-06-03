@@ -66,7 +66,6 @@
  */
 
 #include <stdlib.h>
-#include "../urcu-call-rcu.h"
 
 DEFINE_PER_THREAD(long long, n_reads_pt);
 DEFINE_PER_THREAD(long long, n_updates_pt);
