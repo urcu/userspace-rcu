@@ -64,7 +64,8 @@ struct rcu_head {
  */
 struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
 pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
-struct call_rcu_data *create_call_rcu_data(unsigned long flags);
+struct call_rcu_data *create_call_rcu_data(unsigned long flags,
+					   int cpu_affinity);
 int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
 struct call_rcu_data *get_default_call_rcu_data(void);
 struct call_rcu_data *get_call_rcu_data(void);

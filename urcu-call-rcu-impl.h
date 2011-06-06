@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -31,6 +32,7 @@
 #include <sys/time.h>
 #include <syscall.h>
 #include <unistd.h>
+#include <sched.h>
 
 #include "config.h"
 #include "urcu/wfqueue.h"
@@ -47,6 +49,7 @@ struct call_rcu_data {
 	pthread_cond_t cond;
 	unsigned long qlen;
 	pthread_t tid;
+	int cpu_affinity;
 	struct cds_list_head list;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
@@ -146,6 +149,31 @@ static void call_rcu_unlock(pthread_mutex_t *pmp)
 	}
 }
 
+#if HAVE_SCHED_SETAFFINITY
+static
+int set_thread_cpu_affinity(struct call_rcu_data *crdp)
+{
+	cpu_set_t mask;
+
+	if (crdp->cpu_affinity < 0)
+		return 0;
+
+	CPU_ZERO(&mask);
+	CPU_SET(crdp->cpu_affinity, &mask);
+#if SCHED_SETAFFINITY_ARGS == 2
+	return sched_setaffinity(0, &mask);
+#else
+	return sched_setaffinity(0, sizeof(mask), &mask);
+#endif
+}
+#else
+static
+int set_thread_cpu_affinity(struct call_rcu_data *crdp)
+{
+	return 0;
+}
+#endif
+
 /* This is the code run by each call_rcu thread. */
 
 static void *call_rcu_thread(void *arg)
@@ -155,6 +183,11 @@ static void *call_rcu_thread(void *arg)
 	struct cds_wfq_node **cbs_tail;
 	struct call_rcu_data *crdp = (struct call_rcu_data *)arg;
 	struct rcu_head *rhp;
+
+	if (set_thread_cpu_affinity(crdp) != 0) {
+		perror("pthread_setaffinity_np");
+		exit(-1);
+	}
 
 	thread_call_rcu_data = crdp;
 	for (;;) {
@@ -214,7 +247,8 @@ static void *call_rcu_thread(void *arg)
  */
 
 static void call_rcu_data_init(struct call_rcu_data **crdpp,
-			       unsigned long flags)
+			       unsigned long flags,
+			       int cpu_affinity)
 {
 	struct call_rcu_data *crdp;
 
@@ -236,6 +270,7 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 	}
 	crdp->flags = flags | URCU_CALL_RCU_RUNNING;
 	cds_list_add(&crdp->list, &call_rcu_data_list);
+	crdp->cpu_affinity = cpu_affinity;
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
 	*crdpp = crdp;
 	if (pthread_create(&crdp->tid, NULL, call_rcu_thread, crdp) != 0) {
@@ -280,20 +315,22 @@ pthread_t get_call_rcu_thread(struct call_rcu_data *crdp)
  * Create a call_rcu_data structure (with thread) and return a pointer.
  */
 
-static struct call_rcu_data *__create_call_rcu_data(unsigned long flags)
+static struct call_rcu_data *__create_call_rcu_data(unsigned long flags,
+						    int cpu_affinity)
 {
 	struct call_rcu_data *crdp;
 
-	call_rcu_data_init(&crdp, flags);
+	call_rcu_data_init(&crdp, flags, cpu_affinity);
 	return crdp;
 }
 
-struct call_rcu_data *create_call_rcu_data(unsigned long flags)
+struct call_rcu_data *create_call_rcu_data(unsigned long flags,
+					   int cpu_affinity)
 {
 	struct call_rcu_data *crdp;
 
 	call_rcu_lock(&call_rcu_mutex);
-	crdp = __create_call_rcu_data(flags);
+	crdp = __create_call_rcu_data(flags, cpu_affinity);
 	call_rcu_unlock(&call_rcu_mutex);
 	return crdp;
 }
@@ -346,7 +383,7 @@ struct call_rcu_data *get_default_call_rcu_data(void)
 		call_rcu_unlock(&call_rcu_mutex);
 		return default_call_rcu_data;
 	}
-	call_rcu_data_init(&default_call_rcu_data, 0);
+	call_rcu_data_init(&default_call_rcu_data, 0, -1);
 	call_rcu_unlock(&call_rcu_mutex);
 	return default_call_rcu_data;
 }
@@ -434,7 +471,7 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 			call_rcu_unlock(&call_rcu_mutex);
 			continue;
 		}
-		crdp = __create_call_rcu_data(flags);
+		crdp = __create_call_rcu_data(flags, i);
 		if (crdp == NULL) {
 			call_rcu_unlock(&call_rcu_mutex);
 			errno = ENOMEM;

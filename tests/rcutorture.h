@@ -156,7 +156,7 @@ void *rcu_update_perf_test(void *arg)
 	if ((random() & 0xf00) == 0) {
 		struct call_rcu_data *crdp;
 
-		crdp = create_call_rcu_data(0);
+		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
 			fprintf(stderr,
 				"Using per-thread call_rcu() worker.\n");
@@ -385,7 +385,7 @@ void *rcu_fake_update_stress_test(void *arg)
 	if ((random() & 0xf00) == 0) {
 		struct call_rcu_data *crdp;
 
-		crdp = create_call_rcu_data(0);
+		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
 			fprintf(stderr,
 				"Using per-thread call_rcu() worker.\n");

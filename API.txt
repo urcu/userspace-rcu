@@ -59,12 +59,15 @@ void call_rcu(struct rcu_head *head,
 
 		call_rcu(&p->rcu, func);
 
-struct call_rcu_data *create_call_rcu_data(unsigned long flags);
+struct call_rcu_data *create_call_rcu_data(unsigned long flags,
+					   int cpu_affinity);
 
 	Returns a handle that can be passed to the following
 	primitives.  The "flags" argument can be zero, or can be
 	URCU_CALL_RCU_RT if the worker threads associated with the
-	new helper thread are to get real-time response.
+	new helper thread are to get real-time response. The argument
+	"cpu_affinity" specifies a cpu on which the call_rcu thread should
+	be affined to. It is ignored if negative.
 
 struct call_rcu_data *get_default_call_rcu_data(void);
 

@@ -24,6 +24,7 @@
  */
 
 #define _BSD_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>

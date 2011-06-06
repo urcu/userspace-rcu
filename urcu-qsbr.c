@@ -23,6 +23,7 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
