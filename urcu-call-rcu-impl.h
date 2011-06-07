@@ -39,6 +39,7 @@
 #include "urcu-call-rcu.h"
 #include "urcu-pointer.h"
 #include "urcu/list.h"
+#include "urcu/urcu-futex.h"
 
 /* Data structure that identifies a call_rcu thread. */
 
@@ -46,7 +47,7 @@ struct call_rcu_data {
 	struct cds_wfq_queue cbs;
 	unsigned long flags;
 	pthread_mutex_t mtx;
-	pthread_cond_t cond;
+	int futex;
 	unsigned long qlen;
 	pthread_t tid;
 	int cpu_affinity;
@@ -87,6 +88,26 @@ static struct call_rcu_data *default_call_rcu_data;
 
 static struct call_rcu_data **per_cpu_call_rcu_data;
 static long maxcpus;
+
+static void call_rcu_wait(struct call_rcu_data *crdp)
+{
+	/* Read call_rcu list before read futex */
+	cmm_smp_mb();
+	if (uatomic_read(&crdp->futex) == -1)
+		futex_async(&crdp->futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
+}
+
+static void call_rcu_wake_up(struct call_rcu_data *crdp)
+{
+	/* Write to call_rcu list before reading/writing futex */
+	cmm_smp_mb();
+	if (unlikely(uatomic_read(&crdp->futex) == -1)) {
+		uatomic_set(&crdp->futex, 0);
+		futex_async(&crdp->futex, FUTEX_WAKE, 1,
+		      NULL, NULL, 0);
+	}
+}
 
 /* Allocate the array if it has not already been allocated. */
 
@@ -219,19 +240,9 @@ static void *call_rcu_thread(void *arg)
 		if (crdp->flags & URCU_CALL_RCU_RT)
 			poll(NULL, 0, 10);
 		else {
-			call_rcu_lock(&crdp->mtx);
-			_CMM_STORE_SHARED(crdp->flags,
-				     crdp->flags & ~URCU_CALL_RCU_RUNNING);
-			if (&crdp->cbs.head ==
-			    _CMM_LOAD_SHARED(crdp->cbs.tail) &&
-			    pthread_cond_wait(&crdp->cond, &crdp->mtx) != 0) {
-				perror("pthread_cond_wait");
-				exit(-1);
-			}
-			_CMM_STORE_SHARED(crdp->flags,
-				     crdp->flags | URCU_CALL_RCU_RUNNING);
+			if (&crdp->cbs.head == _CMM_LOAD_SHARED(crdp->cbs.tail))
+				call_rcu_wait(crdp);
 			poll(NULL, 0, 10);
-			call_rcu_unlock(&crdp->mtx);
 		}
 	}
 	call_rcu_lock(&crdp->mtx);
@@ -264,11 +275,8 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 		perror("pthread_mutex_init");
 		exit(-1);
 	}
-	if (pthread_cond_init(&crdp->cond, NULL) != 0) {
-		perror("pthread_cond_init");
-		exit(-1);
-	}
-	crdp->flags = flags | URCU_CALL_RCU_RUNNING;
+	crdp->futex = 0;
+	crdp->flags = flags;
 	cds_list_add(&crdp->list, &call_rcu_data_list);
 	crdp->cpu_affinity = cpu_affinity;
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
@@ -492,16 +500,8 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
  */
 static void wake_call_rcu_thread(struct call_rcu_data *crdp)
 {
-	if (!(_CMM_LOAD_SHARED(crdp->flags) & URCU_CALL_RCU_RT)) {
-		call_rcu_lock(&crdp->mtx);
-		if (!(_CMM_LOAD_SHARED(crdp->flags) & URCU_CALL_RCU_RUNNING)) {
-			if (pthread_cond_signal(&crdp->cond) != 0) {
-				perror("pthread_cond_signal");
-				exit(-1);
-			}
-		}
-		call_rcu_unlock(&crdp->mtx);
-	}
+	if (!(_CMM_LOAD_SHARED(crdp->flags) & URCU_CALL_RCU_RT))
+		call_rcu_wake_up(crdp);
 }
 
 /*
