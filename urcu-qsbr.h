@@ -95,7 +95,7 @@ static inline void rcu_read_lock(void)
 {
 }
 
-static inline void rcu_read_lock(void)
+static inline void rcu_read_unlock(void)
 {
 }
 
