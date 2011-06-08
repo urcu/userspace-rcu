@@ -428,8 +428,8 @@ extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 						(unsigned long)(_new), 	       \
 						sizeof(*(addr))))
 
-extern unsigned long _compat_uatomic_xchg(void *addr,
-					  unsigned long _new, int len);
+extern unsigned long _compat_uatomic_add_return(void *addr,
+						unsigned long _new, int len);
 #define compat_uatomic_add_return(addr, v)				       \
 	((__typeof__(*(addr))) _compat_uatomic_add_return((addr),	       \
 						(unsigned long)(v), 	       \
