@@ -48,7 +48,7 @@ struct call_rcu_data {
 	unsigned long flags;
 	pthread_mutex_t mtx;
 	int futex;
-	unsigned long qlen;
+	unsigned long qlen; /* maintained for debugging. */
 	pthread_t tid;
 	int cpu_affinity;
 	struct cds_list_head list;
