@@ -80,6 +80,14 @@ cds_list_del (struct cds_list_head *elem)
   __cds_list_del (elem->prev, elem->next);
 }
 
+/* Remove element from list, initializing the element's list pointers. */
+static inline void
+cds_list_del_init (struct cds_list_head *elem)
+{
+	cds_list_del(elem);
+	CDS_INIT_LIST_HEAD(elem);
+}
+
 /* delete from list, add to another list as head */
 static inline void
 cds_list_move (struct cds_list_head *elem, struct cds_list_head *head)
