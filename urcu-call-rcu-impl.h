@@ -212,6 +212,11 @@ static void *call_rcu_thread(void *arg)
 
 	thread_call_rcu_data = crdp;
 	for (;;) {
+		if (!(crdp->flags & URCU_CALL_RCU_RT)) {
+			uatomic_dec(&crdp->futex);
+			/* Decrement futex before reading call_rcu list */
+			cmm_smp_mb();
+		}
 		if (&crdp->cbs.head != _CMM_LOAD_SHARED(crdp->cbs.tail)) {
 			while ((cbs = _CMM_LOAD_SHARED(crdp->cbs.head)) == NULL)
 				poll(NULL, 0, 1);
@@ -235,15 +240,21 @@ static void *call_rcu_thread(void *arg)
 			} while (cbs != NULL);
 			uatomic_sub(&crdp->qlen, cbcount);
 		}
-		if (crdp->flags & URCU_CALL_RCU_STOP)
+		if (crdp->flags & URCU_CALL_RCU_STOP) {
+			if (!(crdp->flags & URCU_CALL_RCU_RT)) {
+				/*
+				 * Read call_rcu list before write futex.
+				 */
+				cmm_smp_mb();
+				uatomic_set(&crdp->futex, 0);
+			}
 			break;
-		if (crdp->flags & URCU_CALL_RCU_RT)
-			poll(NULL, 0, 10);
-		else {
+		}
+		if (!(crdp->flags & URCU_CALL_RCU_RT)) {
 			if (&crdp->cbs.head == _CMM_LOAD_SHARED(crdp->cbs.tail))
 				call_rcu_wait(crdp);
-			poll(NULL, 0, 10);
 		}
+		poll(NULL, 0, 10);
 	}
 	call_rcu_lock(&crdp->mtx);
 	crdp->flags |= URCU_CALL_RCU_STOPPED;
