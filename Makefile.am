@@ -34,19 +34,26 @@ lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la liburcu-mb.la liburcu-signal.la \
 		  libwfqueue.la libwfstack.la librculfqueue.la librculfstack.la
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_la_CFLAGS = -lwfqueue
+liburcu_la_LIBADD = -lwfqueue
+liburcu_la_DEPENDENCIES = libwfqueue.la
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
-liburcu_qsbr_la_CFLAGS = -lwfqueue
+liburcu_qsbr_la_LIBADD = -lwfqueue
+liburcu_qsbr_la_DEPENDENCIES = libwfqueue.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_mb_la_CFLAGS = -DRCU_MB -lwfqueue
+liburcu_mb_la_CFLAGS = -DRCU_MB
+liburcu_mb_la_LIBADD = -lwfqueue
+liburcu_mb_la_DEPENDENCIES = libwfqueue.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_signal_la_CFLAGS = -DRCU_SIGNAL -lwfqueue
+liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
+liburcu_signal_la_LIBADD = -lwfqueue
+liburcu_signal_la_DEPENDENCIES = libwfqueue.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_CFLAGS = -lwfqueue
+liburcu_bp_la_DEPENDENCIES = libwfqueue.la
 
 libwfqueue_la_SOURCES = wfqueue.c $(COMPAT)
 libwfstack_la_SOURCES = wfstack.c $(COMPAT)
