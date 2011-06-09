@@ -61,4 +61,5 @@ librculfqueue_la_SOURCES = rculfqueue.c $(COMPAT)
 librculfstack_la_SOURCES = rculfstack.c $(COMPAT)
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = liburcu.pc liburcu-bp.pc
+pkgconfig_DATA = liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
+	liburcu-signal.pc liburcu-mb.pc 
