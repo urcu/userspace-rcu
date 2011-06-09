@@ -253,6 +253,8 @@ static void *call_rcu_thread(void *arg)
 				 * call_rcu list.
 				 */
 				cmm_smp_mb();
+			} else {
+				poll(NULL, 0, 10);
 			}
 		} else {
 			poll(NULL, 0, 10);
