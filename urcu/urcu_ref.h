@@ -33,14 +33,15 @@ static inline void urcu_ref_init(struct urcu_ref *ref)
 
 static inline void urcu_ref_get(struct urcu_ref *ref)
 {
-	long res = uatomic_add_return(&ref->refcount, 1);
-	assert(res != 0);
+	uatomic_add(&ref->refcount, 1);
 }
 
 static inline void urcu_ref_put(struct urcu_ref *ref,
 				void (*release)(struct urcu_ref *))
 {
-	if (!uatomic_sub_return(&ref->refcount, 1))
+	long res = uatomic_sub_return(&ref->refcount, 1);
+	assert (res >= 0);
+	if (res == 0)
 		release(ref);
 }
 
