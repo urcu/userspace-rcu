@@ -33,8 +33,10 @@ do {						\
 	assert(uatomic_read(ptr) == 23);		\
 	uatomic_dec(ptr);			\
 	assert(uatomic_read(ptr) == 22);		\
-	v = uatomic_add_return(ptr, 100);	\
-	assert(v == 122);			\
+	v = uatomic_add_return(ptr, 74);	\
+	assert(v == 96);			\
+	assert(uatomic_read(ptr) == 96);	\
+	uatomic_or(ptr, 58);			\
 	assert(uatomic_read(ptr) == 122);	\
 	v = uatomic_sub_return(ptr, 1);		\
 	assert(v == 121);			\
