@@ -41,6 +41,8 @@ do {						\
 	v = uatomic_sub_return(ptr, 1);		\
 	assert(v == 121);			\
 	assert(uatomic_read(ptr) == 121);	\
+	uatomic_and(ptr, 129);			\
+	assert(uatomic_read(ptr) == 1);		\
 } while (0)
 
 int main(int argc, char **argv)

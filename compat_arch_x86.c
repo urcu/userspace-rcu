@@ -226,6 +226,31 @@ void _compat_uatomic_or(void *addr, unsigned long v, int len)
 	mutex_lock_signal_restore(&compat_mutex, &mask);
 }
 
+void _compat_uatomic_and(void *addr, unsigned long v, int len)
+{
+	sigset_t mask;
+
+	mutex_lock_signal_save(&compat_mutex, &mask);
+	switch (len) {
+	case 1:
+		*(unsigned char *)addr &= (unsigned char)v;
+		break;
+	case 2:
+		*(unsigned short *)addr &= (unsigned short)v;
+		break;
+	case 4:
+		*(unsigned int *)addr &= (unsigned int)v;
+		break;
+	default:
+		/*
+		 * generate an illegal instruction. Cannot catch this with
+		 * linker tricks when optimizations are disabled.
+		 */
+		__asm__ __volatile__("ud2");
+	}
+	mutex_lock_signal_restore(&compat_mutex, &mask);
+}
+
 unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
 {
 	sigset_t mask;

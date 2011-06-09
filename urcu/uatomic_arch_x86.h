@@ -231,6 +231,60 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 						  (unsigned long)(v),	\
 						  sizeof(*(addr))))
 
+/* uatomic_and */
+
+static inline __attribute__((always_inline))
+void __uatomic_and(void *addr, unsigned long val, int len)
+{
+	switch (len) {
+	case 1:
+	{
+		__asm__ __volatile__(
+		"lock; andb %1, %0"
+			: "=m"(*__hp(addr))
+			: "iq" ((unsigned char)val)
+			: "memory");
+		return;
+	}
+	case 2:
+	{
+		__asm__ __volatile__(
+		"lock; andw %1, %0"
+			: "=m"(*__hp(addr))
+			: "ir" ((unsigned short)val)
+			: "memory");
+		return;
+	}
+	case 4:
+	{
+		__asm__ __volatile__(
+		"lock; andl %1, %0"
+			: "=m"(*__hp(addr))
+			: "ir" ((unsigned int)val)
+			: "memory");
+		return;
+	}
+#if (CAA_BITS_PER_LONG == 64)
+	case 8:
+	{
+		__asm__ __volatile__(
+		"lock; andq %1, %0"
+			: "=m"(*__hp(addr))
+			: "er" ((unsigned long)val)
+			: "memory");
+		return;
+	}
+#endif
+	}
+	/* generate an illegal instruction. Cannot catch this with linker tricks
+	 * when optimizations are disabled. */
+	__asm__ __volatile__("ud2");
+	return;
+}
+
+#define _uatomic_and(addr, v)						   \
+	(__uatomic_and((addr), (unsigned long)(v), sizeof(*(addr))))
+
 /* uatomic_or */
 
 static inline __attribute__((always_inline))
@@ -482,6 +536,13 @@ extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 						(unsigned long)(_new), 	       \
 						sizeof(*(addr))))
 
+extern unsigned long _compat_uatomic_and(void *addr,
+				         unsigned long _new, int len);
+#define compat_uatomic_and(addr, v)				       \
+	((__typeof__(*(addr))) _compat_uatomic_and((addr),	       \
+						   (unsigned long)(v), \
+						   sizeof(*(addr))))
+
 extern unsigned long _compat_uatomic_or(void *addr,
 				        unsigned long _new, int len);
 #define compat_uatomic_or(addr, v)				       \
@@ -515,6 +576,8 @@ extern unsigned long _compat_uatomic_add_return(void *addr,
 		UATOMIC_COMPAT(cmpxchg(addr, old, _new))
 #define uatomic_xchg(addr, v)			\
 		UATOMIC_COMPAT(xchg(addr, v))
+#define uatomic_and(addr, v)		\
+		UATOMIC_COMPAT(and(addr, v))
 #define uatomic_or(addr, v)		\
 		UATOMIC_COMPAT(or(addr, v))
 #define uatomic_add_return(addr, v)		\
