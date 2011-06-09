@@ -34,13 +34,6 @@ extern "C" {
 /* xchg */
 #define uatomic_xchg(addr, v) __sync_lock_test_and_set(addr, v)
 
-/* cmpxchg */
-#define uatomic_cmpxchg(addr, old, _new) \
-	__sync_val_compare_and_swap(addr, old, _new)
-
-/* uatomic_add_return */
-#define uatomic_add_return(addr, v) __sync_add_and_fetch(addr, v)
-
 #ifdef __cplusplus 
 }
 #endif
