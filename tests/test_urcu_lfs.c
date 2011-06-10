@@ -62,7 +62,7 @@ static inline pid_t gettid(void)
 #define _LGPL_SOURCE
 #endif
 #include <urcu.h>
-#include <urcu/rculfstack.h>
+#include <urcu/cds.h>
 #include <urcu-defer.h>
 
 static volatile int test_go, test_stop;
