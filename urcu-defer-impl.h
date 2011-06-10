@@ -41,7 +41,7 @@
 #include <syscall.h>
 #include <unistd.h>
 
-#include "urcu/urcu-futex.h"
+#include "urcu/futex.h"
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>

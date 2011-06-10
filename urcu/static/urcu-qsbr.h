@@ -41,7 +41,7 @@
 #include <urcu/system.h>
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
-#include <urcu/urcu-futex.h>
+#include <urcu/futex.h>
 
 #ifdef __cplusplus
 extern "C" {

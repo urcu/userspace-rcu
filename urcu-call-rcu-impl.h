@@ -39,7 +39,7 @@
 #include "urcu-call-rcu.h"
 #include "urcu-pointer.h"
 #include "urcu/list.h"
-#include "urcu/urcu-futex.h"
+#include "urcu/futex.h"
 
 /* Data structure that identifies a call_rcu thread. */
 

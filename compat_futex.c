@@ -28,7 +28,7 @@
 #include <poll.h>
 
 #include <urcu/arch.h>
-#include <urcu/urcu-futex.h>
+#include <urcu/futex.h>
 
 static pthread_mutex_t compat_futex_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t compat_futex_cond = PTHREAD_COND_INITIALIZER;
