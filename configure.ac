@@ -246,6 +246,7 @@ AC_CONFIG_LINKS([
 AC_CONFIG_FILES([
 	Makefile
 	tests/Makefile
+	liburcu-cds.pc
 	liburcu.pc
 	liburcu-bp.pc
 	liburcu-qsbr.pc

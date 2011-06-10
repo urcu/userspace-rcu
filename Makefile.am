@@ -54,5 +54,5 @@ liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-cds.la
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
-	liburcu-signal.pc liburcu-mb.pc 
+pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
+	liburcu-signal.pc liburcu-mb.pc
