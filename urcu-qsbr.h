@@ -40,7 +40,7 @@
 extern "C" {
 #endif 
 
-#include "urcu-qsbr-map.h"
+#include "urcu/map/urcu-qsbr.h"
 
 /*
  * Important !

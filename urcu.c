@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "urcu-map.h"
+#include "urcu/map/urcu.h"
 
 #include "urcu-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */

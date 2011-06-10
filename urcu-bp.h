@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-#include "urcu-bp-map.h"
+#include "urcu/map/urcu-bp.h"
 
 /*
  * Important !

@@ -33,7 +33,7 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "urcu-qsbr-map.h"
+#include "urcu/map/urcu-qsbr.h"
 
 #define BUILD_QSBR_LIB
 #include "urcu-qsbr-static.h"

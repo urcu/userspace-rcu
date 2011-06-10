@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include "urcu-bp-map.h"
+#include "urcu/map/urcu-bp.h"
 
 #include "urcu-bp-static.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
