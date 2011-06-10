@@ -59,7 +59,7 @@ struct cds_lfq_queue_rcu {
 
 #include <urcu/rculfqueue-static.h>
 
-#define cds_lfq_node_init_rcu	_cds_lfq_node_init_rcu
+#define cds_lfq_node_init_rcu		_cds_lfq_node_init_rcu
 #define cds_lfq_init_rcu		_cds_lfq_init_rcu
 #define cds_lfq_enqueue_rcu		_cds_lfq_enqueue_rcu
 #define cds_lfq_dequeue_rcu		_cds_lfq_dequeue_rcu
@@ -80,15 +80,14 @@ extern void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
  * Should be called under rcu read lock critical section.
  *
  * The entry returned by dequeue must be taken care of by doing a
- * urcu_delayed_ref_put, which calls the release primitive after the
- * reference count drops to zero _and_ a following grace period passes.
+ * sequence of urcu_ref_put which release handler should do a call_rcu.
  *
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed (after the refcount reached 0).
  */
-extern struct cds_lfq_node_rcu *
-cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q);
+extern
+struct cds_lfq_node_rcu *cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q);
 
 #endif /* !_LGPL_SOURCE */
 

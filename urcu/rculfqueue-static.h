@@ -109,14 +109,13 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
  * Should be called under rcu read lock critical section.
  *
  * The entry returned by dequeue must be taken care of by doing a
- * urcu_ref_put after a grace period passes.
+ * sequence of urcu_ref_put which release handler should do a call_rcu.
  *
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed.
  */
-struct cds_lfq_node_rcu *
-_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
+struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 {
 	for (;;) {
 		struct cds_lfq_node_rcu *head, *next;
