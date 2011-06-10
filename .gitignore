@@ -12,7 +12,7 @@ urcutorture-yield
 urcu-yield.o
 tests/api.h
 urcu/arch.h
-urcu/uatomic_arch.h
+urcu/uatomic.h
 liburcu-defer.so
 liburcu-mb.so
 liburcu-qsbr.so
