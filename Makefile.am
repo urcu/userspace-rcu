@@ -12,7 +12,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/wfqueue.h urcu/rculfstack.h urcu/rculfqueue.h \
 		urcu/wfqueue-static.h urcu/wfstack-static.h \
 		urcu/rculfqueue-static.h urcu/rculfstack-static.h \
-		urcu/urcu_ref.h
+		urcu/urcu_ref.h urcu/map/*.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic_arch.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch_*.h $(top_srcdir)/urcu/uatomic_arch_*.h \
