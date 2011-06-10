@@ -36,7 +36,7 @@ extern "C" {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu-pointer-static.h>
+#include <urcu/static/urcu-pointer.h>
 
 /*
  * rcu_dereference(ptr)

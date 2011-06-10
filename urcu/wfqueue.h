@@ -52,7 +52,7 @@ struct cds_wfq_queue {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu/wfqueue-static.h>
+#include <urcu/static/wfqueue.h>
 
 #define cds_wfq_node_init		_cds_wfq_node_init
 #define cds_wfq_init		_cds_wfq_init

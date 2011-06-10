@@ -37,7 +37,7 @@
 
 #include "urcu/map/urcu-bp.h"
 
-#include "urcu-bp-static.h"
+#include "urcu/static/urcu-bp.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-bp.h"
 

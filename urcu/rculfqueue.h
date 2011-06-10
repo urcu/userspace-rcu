@@ -57,7 +57,7 @@ struct cds_lfq_queue_rcu {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu/rculfqueue-static.h>
+#include <urcu/static/rculfqueue.h>
 
 #define cds_lfq_node_init_rcu		_cds_lfq_node_init_rcu
 #define cds_lfq_init_rcu		_cds_lfq_init_rcu

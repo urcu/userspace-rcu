@@ -22,7 +22,7 @@
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu/wfqueue.h"
-#include "urcu/wfqueue-static.h"
+#include "urcu/static/wfqueue.h"
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.

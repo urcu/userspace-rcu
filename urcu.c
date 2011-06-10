@@ -36,7 +36,7 @@
 
 #include "urcu/map/urcu.h"
 
-#include "urcu-static.h"
+#include "urcu/static/urcu.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu.h"
 

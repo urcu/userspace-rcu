@@ -36,7 +36,7 @@
 #include "urcu/map/urcu-qsbr.h"
 
 #define BUILD_QSBR_LIB
-#include "urcu-qsbr-static.h"
+#include "urcu/static/urcu-qsbr.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-qsbr.h"
 

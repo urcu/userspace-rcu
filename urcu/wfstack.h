@@ -42,7 +42,7 @@ struct cds_wfs_stack {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu/wfstack-static.h>
+#include <urcu/static/wfstack.h>
 
 #define cds_wfs_node_init		_cds_wfs_node_init
 #define cds_wfs_init		_cds_wfs_init

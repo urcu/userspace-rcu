@@ -26,7 +26,7 @@
 
 #include <urcu/uatomic_arch.h>
 
-#include "urcu-pointer-static.h"
+#include "urcu/static/urcu-pointer.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-pointer.h"
 

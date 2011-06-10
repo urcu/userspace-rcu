@@ -37,7 +37,7 @@ struct cds_lfs_stack_rcu {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu/rculfstack-static.h>
+#include <urcu/static/rculfstack.h>
 
 #define cds_lfs_node_init_rcu	_cds_lfs_node_init_rcu
 #define cds_lfs_init_rcu		_cds_lfs_init_rcu
