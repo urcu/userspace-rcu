@@ -26,7 +26,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <urcu/urcu_ref.h>
+#include <urcu/ref.h>
 #include <urcu/uatomic.h>
 #include <assert.h>
 /* A urcu implementation header should be already included. */
