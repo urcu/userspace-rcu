@@ -47,7 +47,7 @@
 extern "C" {
 #endif
 
-#include "urcu/map/urcu-bp.h"
+#include <urcu/map/urcu-bp.h>
 
 /*
  * Important !
@@ -118,7 +118,7 @@ static inline void rcu_init(void)
 }
 #endif
 
-#include "urcu-call-rcu.h"
-#include "urcu-defer.h"
+#include <urcu-call-rcu.h>
+#include <urcu-defer.h>
 
 #endif /* _URCU_BP_H */

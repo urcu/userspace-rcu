@@ -41,7 +41,7 @@
 extern "C" {
 #endif 
 
-#include "urcu/map/urcu-qsbr.h"
+#include <urcu/map/urcu-qsbr.h>
 
 /*
  * Important !
@@ -125,7 +125,7 @@ extern void rcu_unregister_thread(void);
 }
 #endif
 
-#include "urcu-call-rcu.h"
-#include "urcu-defer.h"
+#include <urcu-call-rcu.h>
+#include <urcu-defer.h>
 
 #endif /* _URCU_QSBR_H */
