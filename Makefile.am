@@ -29,36 +29,33 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la liburcu-mb.la liburcu-signal.la \
-		  liburcu-bp.la \
-		  libwfqueue.la libwfstack.la librculfqueue.la librculfstack.la
+lib_LTLIBRARIES = liburcu-cds.la liburcu.la liburcu-qsbr.la \
+		liburcu-mb.la liburcu-signal.la liburcu-bp.la
+
+liburcu_cds_la_SOURCES = wfqueue.c wfstack.c rculfqueue.c rculfstack.c \
+			$(COMPAT)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_la_LIBADD = -lwfqueue
-liburcu_la_DEPENDENCIES = libwfqueue.la
+liburcu_la_LIBADD = -lurcu-cds
+liburcu_la_DEPENDENCIES = liburcu-cds.la
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
-liburcu_qsbr_la_LIBADD = -lwfqueue
-liburcu_qsbr_la_DEPENDENCIES = libwfqueue.la
+liburcu_qsbr_la_LIBADD = -lurcu-cds
+liburcu_qsbr_la_DEPENDENCIES = liburcu-cds.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
-liburcu_mb_la_LIBADD = -lwfqueue
-liburcu_mb_la_DEPENDENCIES = libwfqueue.la
+liburcu_mb_la_LIBADD = -lurcu-cds
+liburcu_mb_la_DEPENDENCIES = liburcu-cds.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
-liburcu_signal_la_LIBADD = -lwfqueue
-liburcu_signal_la_DEPENDENCIES = libwfqueue.la
+liburcu_signal_la_LIBADD = -lurcu-cds
+liburcu_signal_la_DEPENDENCIES = liburcu-cds.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
-liburcu_bp_la_CFLAGS = -lwfqueue
-liburcu_bp_la_DEPENDENCIES = libwfqueue.la
-
-libwfqueue_la_SOURCES = wfqueue.c $(COMPAT)
-libwfstack_la_SOURCES = wfstack.c $(COMPAT)
-librculfqueue_la_SOURCES = rculfqueue.c $(COMPAT)
-librculfstack_la_SOURCES = rculfstack.c $(COMPAT)
+liburcu_bp_la_LIBADD = -lurcu-cds
+liburcu_bp_la_DEPENDENCIES = liburcu-cds.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \

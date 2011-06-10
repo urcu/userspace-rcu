@@ -42,10 +42,7 @@ URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
 URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
 URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
-WFQUEUE_LIB=$(top_builddir)/libwfqueue.la
-WFSTACK_LIB=$(top_builddir)/libwfstack.la
-RCULFQUEUE_LIB=$(top_builddir)/librculfqueue.la
-RCULFSTACK_LIB=$(top_builddir)/librculfstack.la
+URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
 EXTRA_DIST = $(top_srcdir)/tests/api_*.h
 
@@ -95,23 +92,23 @@ test_perthreadlock_SOURCES = test_perthreadlock.c $(URCU_SIGNAL)
 
 rcutorture_urcu_SOURCES = urcutorture.c
 rcutorture_urcu_CFLAGS = -DRCU_MEMBARRIER $(AM_CFLAGS)
-rcutorture_urcu_LDADD = $(URCU) $(WFQUEUE_LIB)
+rcutorture_urcu_LDADD = $(URCU) $(URCU_CDS_LIB)
 
 rcutorture_urcu_mb_SOURCES = urcutorture.c
 rcutorture_urcu_mb_CFLAGS = -DRCU_MB $(AM_CFLAGS)
-rcutorture_urcu_mb_LDADD = $(URCU_MB_LIB) $(WFQUEUE_LIB)
+rcutorture_urcu_mb_LDADD = $(URCU_MB_LIB) $(URCU_CDS_LIB)
 
 rcutorture_qsbr_SOURCES = urcutorture.c
 rcutorture_qsbr_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
-rcutorture_qsbr_LDADD = $(URCU_QSBR_LIB) $(WFQUEUE_LIB)
+rcutorture_qsbr_LDADD = $(URCU_QSBR_LIB) $(URCU_CDS_LIB)
 
 rcutorture_urcu_signal_SOURCES = urcutorture.c
 rcutorture_urcu_signal_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
-rcutorture_urcu_signal_LDADD = $(URCU_SIGNAL_LIB) $(WFQUEUE_LIB)
+rcutorture_urcu_signal_LDADD = $(URCU_SIGNAL_LIB) $(URCU_CDS_LIB)
 
 rcutorture_urcu_bp_SOURCES = urcutorture.c
 rcutorture_urcu_bp_CFLAGS = -DRCU_BP $(AM_CFLAGS)
-rcutorture_urcu_bp_LDADD = $(URCU_BP_LIB) $(WFQUEUE_LIB)
+rcutorture_urcu_bp_LDADD = $(URCU_BP_LIB) $(URCU_CDS_LIB)
 
 test_mutex_SOURCES = test_mutex.c $(URCU)
 
@@ -158,25 +155,25 @@ test_urcu_bp_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_lfq_SOURCES = test_urcu_lfq.c $(URCU_DEFER)
-test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c $(URCU_DEFER)
+test_urcu_lfq_SOURCES = test_urcu_lfq.c
+test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_lfq_dynlink_LDADD = $(RCULFQUEUE_LIB)
+test_urcu_lfq_dynlink_LDADD = $(URCU_CDS_LIB)
 
 test_urcu_wfq_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_dynlink_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_wfq_dynlink_LDADD = $(WFQUEUE_LIB)
+test_urcu_wfq_dynlink_LDADD = $(URCU_CDS_LIB)
 
 test_urcu_lfs_SOURCES = test_urcu_lfs.c $(URCU_DEFER)
 test_urcu_lfs_dynlink_SOURCES = test_urcu_lfs.c $(URCU_DEFER)
 test_urcu_lfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_lfs_dynlink_LDADD = $(RCULFSTACK_LIB)
+test_urcu_lfs_dynlink_LDADD = $(URCU_CDS_LIB)
 
 test_urcu_wfs_SOURCES = test_urcu_wfs.c
 test_urcu_wfs_dynlink_SOURCES = test_urcu_wfs.c
 test_urcu_wfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_wfs_dynlink_LDADD = $(WFSTACK_LIB)
+test_urcu_wfs_dynlink_LDADD = $(URCU_CDS_LIB)
 
 urcutorture.c: api.h
 
