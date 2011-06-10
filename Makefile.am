@@ -1,6 +1,8 @@
 INCLUDES = -I$(top_builddir)/urcu
 
-AM_LDFLAGS=-lpthread
+#Add the -version-info directly here since we are only building
+# library that use the version-info
+AM_LDFLAGS=-lpthread -version-info $(URCU_LIBRARY_VERSION)
 AM_CFLAGS=-Wall
 
 SUBDIRS = . tests
@@ -33,34 +35,28 @@ lib_LTLIBRARIES = liburcu-cds.la liburcu.la liburcu-qsbr.la \
 
 liburcu_cds_la_SOURCES = wfqueue.c wfstack.c rculfqueue.c rculfstack.c \
 			$(COMPAT)
-liburcu_cds_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_la_LIBADD = -lurcu-cds
 liburcu_la_DEPENDENCIES = liburcu-cds.la
-liburcu_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 liburcu_qsbr_la_LIBADD = -lurcu-cds
 liburcu_qsbr_la_DEPENDENCIES = liburcu-cds.la
-liburcu_qsbr_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
 liburcu_mb_la_LIBADD = -lurcu-cds
 liburcu_mb_la_DEPENDENCIES = liburcu-cds.la
-liburcu_mb_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
 liburcu_signal_la_LIBADD = -lurcu-cds
 liburcu_signal_la_DEPENDENCIES = liburcu-cds.la
-liburcu_signal_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = -lurcu-cds
 liburcu_bp_la_DEPENDENCIES = liburcu-cds.la
-liburcu_bp_la_LDFLAGS = -version-info $(URCU_LIBRARY_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
