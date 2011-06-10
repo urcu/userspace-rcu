@@ -37,26 +37,21 @@ liburcu_cds_la_SOURCES = wfqueue.c wfstack.c rculfqueue.c rculfstack.c \
 			$(COMPAT)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_la_LIBADD = -lurcu-cds
-liburcu_la_DEPENDENCIES = liburcu-cds.la
+liburcu_la_LIBADD = liburcu-cds.la
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
-liburcu_qsbr_la_LIBADD = -lurcu-cds
-liburcu_qsbr_la_DEPENDENCIES = liburcu-cds.la
+liburcu_qsbr_la_LIBADD = liburcu-cds.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
-liburcu_mb_la_LIBADD = -lurcu-cds
-liburcu_mb_la_DEPENDENCIES = liburcu-cds.la
+liburcu_mb_la_LIBADD = liburcu-cds.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
-liburcu_signal_la_LIBADD = -lurcu-cds
-liburcu_signal_la_DEPENDENCIES = liburcu-cds.la
+liburcu_signal_la_LIBADD = liburcu-cds.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
-liburcu_bp_la_LIBADD = -lurcu-cds
-liburcu_bp_la_DEPENDENCIES = liburcu-cds.la
+liburcu_bp_la_LIBADD = liburcu-cds.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
