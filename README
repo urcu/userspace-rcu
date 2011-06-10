@@ -8,6 +8,7 @@ BUILDING
 	./configure
 	make
 	make install
+	ldconfig
 
 	Hints:	Forcing 32-bit build:
 		* CFLAGS="-m32 -g -O2" ./configure
