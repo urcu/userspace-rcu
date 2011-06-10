@@ -1,10 +1,10 @@
-#ifndef _URCU_ARCH_PPC_H
-#define _URCU_ARCH_PPC_H
+#ifndef _URCU_ARCH_ARM_H
+#define _URCU_ARCH_ARM_H
 
 /*
- * arch_ppc.h: trivial definitions for the powerpc architecture.
+ * arch_arm.h: trivial definitions for the ARM architecture.
  *
- * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
+ * Copyright (c) 2010 Paul E. McKenney, IBM Corporation.
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,45 +29,32 @@
 extern "C" {
 #endif 
 
-/* Include size of POWER5+ L3 cache lines: 256 bytes */
-#define CAA_CACHE_LINE_SIZE	256
+#ifdef CONFIG_RCU_ARM_HAVE_DMB
+#define cmm_mb()	asm volatile("dmb":::"memory")
+#define cmm_rmb()	asm volatile("dmb":::"memory")
+#define cmm_wmb()	asm volatile("dmb":::"memory")
+#endif /* CONFIG_RCU_ARM_HAVE_DMB */
 
-#define cmm_mb()    asm volatile("sync":::"memory")
-
-#define mftbl()						\
-	({ 						\
-		unsigned long rval;			\
-		asm volatile("mftbl %0" : "=r" (rval));	\
-		rval;					\
-	})
-
-#define mftbu()						\
-	({						\
-		unsigned long rval;			\
-		asm volatile("mftbu %0" : "=r" (rval));	\
-		rval;					\
-	})
+#include <stdlib.h>
+#include <sys/time.h>
 
 typedef unsigned long long cycles_t;
 
 static inline cycles_t caa_get_cycles (void)
 {
-	long h, l;
+	cycles_t thetime;
+	struct timeval tv;
 
-	for (;;) {
-		h = mftbu();
-		cmm_barrier();
-		l = mftbl();
-		cmm_barrier();
-		if (mftbu() == h)
-			return (((cycles_t) h) << 32) + l;
-	}
+	if (gettimeofday(&tv, NULL) != 0)
+		return 0;
+	thetime = ((cycles_t)tv.tv_sec) * 1000000ULL + ((cycles_t)tv.tv_usec);
+	return (cycles_t)thetime;
 }
 
 #ifdef __cplusplus 
 }
 #endif
 
-#include <urcu/arch_generic.h>
+#include <urcu/arch/generic.h>
 
-#endif /* _URCU_ARCH_PPC_H */
+#endif /* _URCU_ARCH_ARM_H */

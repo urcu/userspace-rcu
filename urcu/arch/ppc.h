@@ -1,10 +1,11 @@
-#ifndef _URCU_ARCH_ALPHA_H
-#define _URCU_ARCH_ALPHA_H
+#ifndef _URCU_ARCH_PPC_H
+#define _URCU_ARCH_PPC_H
 
 /*
- * arch_alpha.h: trivial definitions for the Alpha architecture.
+ * arch_ppc.h: trivial definitions for the powerpc architecture.
  *
- * Copyright (c) 2010 Paolo Bonzini <pbonzini@redhat.com>
+ * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,23 +27,47 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif 
 
-#define cmm_mb()			asm volatile("mb":::"memory")
-#define cmm_wmb()			asm volatile("wmb":::"memory")
-#define cmm_read_barrier_depends()	asm volatile("mb":::"memory")
+/* Include size of POWER5+ L3 cache lines: 256 bytes */
+#define CAA_CACHE_LINE_SIZE	256
+
+#define cmm_mb()    asm volatile("sync":::"memory")
+
+#define mftbl()						\
+	({ 						\
+		unsigned long rval;			\
+		asm volatile("mftbl %0" : "=r" (rval));	\
+		rval;					\
+	})
+
+#define mftbu()						\
+	({						\
+		unsigned long rval;			\
+		asm volatile("mftbu %0" : "=r" (rval));	\
+		rval;					\
+	})
 
 typedef unsigned long long cycles_t;
 
 static inline cycles_t caa_get_cycles (void)
 {
-	return 0;	/* not supported */
+	long h, l;
+
+	for (;;) {
+		h = mftbu();
+		cmm_barrier();
+		l = mftbl();
+		cmm_barrier();
+		if (mftbu() == h)
+			return (((cycles_t) h) << 32) + l;
+	}
 }
 
-#ifdef __cplusplus
+#ifdef __cplusplus 
 }
 #endif
 
-#include <urcu/arch_generic.h>
+#include <urcu/arch/generic.h>
 
-#endif /* _URCU_ARCH_ALPHA_H */
+#endif /* _URCU_ARCH_PPC_H */

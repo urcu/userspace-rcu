@@ -1,11 +1,10 @@
-#ifndef _URCU_ARCH_ARM_H
-#define _URCU_ARCH_ARM_H
+#ifndef _URCU_ARCH_ALPHA_H
+#define _URCU_ARCH_ALPHA_H
 
 /*
- * arch_arm.h: trivial definitions for the ARM architecture.
+ * arch_alpha.h: trivial definitions for the Alpha architecture.
  *
- * Copyright (c) 2010 Paul E. McKenney, IBM Corporation.
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright (c) 2010 Paolo Bonzini <pbonzini@redhat.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,34 +26,23 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
-#ifdef CONFIG_RCU_ARM_HAVE_DMB
-#define cmm_mb()	asm volatile("dmb":::"memory")
-#define cmm_rmb()	asm volatile("dmb":::"memory")
-#define cmm_wmb()	asm volatile("dmb":::"memory")
-#endif /* CONFIG_RCU_ARM_HAVE_DMB */
-
-#include <stdlib.h>
-#include <sys/time.h>
+#define cmm_mb()			asm volatile("mb":::"memory")
+#define cmm_wmb()			asm volatile("wmb":::"memory")
+#define cmm_read_barrier_depends()	asm volatile("mb":::"memory")
 
 typedef unsigned long long cycles_t;
 
 static inline cycles_t caa_get_cycles (void)
 {
-	cycles_t thetime;
-	struct timeval tv;
-
-	if (gettimeofday(&tv, NULL) != 0)
-		return 0;
-	thetime = ((cycles_t)tv.tv_sec) * 1000000ULL + ((cycles_t)tv.tv_usec);
-	return (cycles_t)thetime;
+	return 0;	/* not supported */
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 
-#include <urcu/arch_generic.h>
+#include <urcu/arch/generic.h>
 
-#endif /* _URCU_ARCH_ARM_H */
+#endif /* _URCU_ARCH_ALPHA_H */

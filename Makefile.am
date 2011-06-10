@@ -8,12 +8,12 @@ SUBDIRS = . tests
 include_HEADERS = urcu.h $(top_srcdir)/urcu-*.h
 nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/rculist.h urcu/rcuhlist.h urcu/system.h urcu/urcu-futex.h \
-		urcu/uatomic_generic.h urcu/arch_generic.h urcu/wfstack.h \
+		urcu/uatomic_generic.h urcu/arch/generic.h urcu/wfstack.h \
 		urcu/wfqueue.h urcu/rculfstack.h urcu/rculfqueue.h \
 		urcu/urcu_ref.h urcu/map/*.h urcu/static/*.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic_arch.h urcu/config.h
 
-EXTRA_DIST = $(top_srcdir)/urcu/arch_*.h $(top_srcdir)/urcu/uatomic_arch_*.h \
+EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic_arch_*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
 		README LICENSE compat_arch_x86.c
 

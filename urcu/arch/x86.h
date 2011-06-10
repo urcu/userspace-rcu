@@ -69,6 +69,6 @@ static inline cycles_t caa_get_cycles(void)
 }
 #endif
 
-#include <urcu/arch_generic.h>
+#include <urcu/arch/generic.h>
 
 #endif /* _URCU_ARCH_X86_H */

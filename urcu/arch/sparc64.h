@@ -1,10 +1,10 @@
-#ifndef _URCU_ARCH_GCC_H
-#define _URCU_ARCH_GCC_H
+#ifndef _URCU_ARCH_SPARC64_H
+#define _URCU_ARCH_SPARC64_H
 
 /*
- * arch_gcc.h: trivial definitions for architectures using gcc __sync_
+ * arch_sparc64.h: trivial definitions for the Sparc64 architecture.
  *
- * Copyright (c) 2010 Paul E. McKenney, IBM Corporation.
+ * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -29,26 +29,32 @@
 extern "C" {
 #endif 
 
-#include <stdlib.h>
-#include <sys/time.h>
+#define CAA_CACHE_LINE_SIZE	256
+
+/*
+ * Inspired from the Linux kernel. Workaround Spitfire bug #51.
+ */
+#define membar_safe(type)			\
+__asm__ __volatile__("ba,pt %%xcc, 1f\n\t"	\
+		     "membar " type "\n"	\
+		     "1:\n"			\
+		     : : : "memory")
+
+#define cmm_mb()	membar_safe("#LoadLoad | #LoadStore | #StoreStore | #StoreLoad")
+#define cmm_rmb()	membar_safe("#LoadLoad")
+#define cmm_wmb()	membar_safe("#StoreStore")
 
 typedef unsigned long long cycles_t;
 
 static inline cycles_t caa_get_cycles (void)
 {
-	cycles_t thetime;
-	struct timeval tv;
-
-	if (gettimeofday(&tv, NULL) != 0)
-		return 0;
-	thetime = ((cycles_t)tv.tv_sec) * 1000000ULL + ((cycles_t)tv.tv_usec);
-	return (cycles_t)thetime;
+	return 0;	/* unimplemented */
 }
 
 #ifdef __cplusplus 
 }
 #endif
 
-#include <urcu/arch_generic.h>
+#include <urcu/arch/generic.h>
 
-#endif /* _URCU_ARCH_GCC_H */
+#endif /* _URCU_ARCH_SPARC64_H */

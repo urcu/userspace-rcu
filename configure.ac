@@ -82,7 +82,7 @@ asm volatile("dmb":::"memory");
 fi
 
 UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
-ARCHSRC=urcu/arch_$ARCHTYPE.h
+ARCHSRC=urcu/arch/$ARCHTYPE.h
 if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
 	APISRC=tests/api_gcc.h
 else
