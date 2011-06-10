@@ -27,7 +27,7 @@
  */
 
 #include <urcu/urcu_ref.h>
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 #include <assert.h>
 /* A urcu implementation header should be already included. */
 

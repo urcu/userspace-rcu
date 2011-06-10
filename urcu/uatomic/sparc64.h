@@ -75,6 +75,6 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 }
 #endif
 
-#include <urcu/uatomic_generic.h>
+#include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_ARCH_UATOMIC_PPC_H */

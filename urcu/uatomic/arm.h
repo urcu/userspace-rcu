@@ -38,6 +38,6 @@ extern "C" {
 }
 #endif
 
-#include <urcu/uatomic_generic.h>
+#include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_ARCH_UATOMIC_ARM_H */

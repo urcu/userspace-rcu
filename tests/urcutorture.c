@@ -24,6 +24,6 @@
 #include <urcu-bp.h>
 #endif
 
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 #include <urcu/rculist.h>
 #include "rcutorture.h"

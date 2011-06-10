@@ -28,7 +28,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 
 #ifdef __cplusplus
 extern "C" {

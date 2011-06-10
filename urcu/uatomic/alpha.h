@@ -27,6 +27,6 @@
 
 #include <urcu/compiler.h>
 #include <urcu/system.h>
-#include <urcu/uatomic_generic.h>
+#include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_UATOMIC_ARCH_ALPHA_H */

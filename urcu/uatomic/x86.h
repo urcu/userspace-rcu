@@ -591,6 +591,6 @@ extern unsigned long _compat_uatomic_add_return(void *addr,
 }
 #endif
 
-#include <urcu/uatomic_generic.h>
+#include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_ARCH_UATOMIC_X86_H */

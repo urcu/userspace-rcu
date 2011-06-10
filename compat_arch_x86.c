@@ -24,7 +24,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <assert.h>
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 
 /*
  * It does not really matter if the constructor is called before using

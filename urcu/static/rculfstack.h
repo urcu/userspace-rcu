@@ -26,7 +26,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 /* A urcu implementation header should be already included. */
 
 #ifdef __cplusplus

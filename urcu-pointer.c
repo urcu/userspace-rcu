@@ -24,7 +24,7 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 
 #include "urcu/static/urcu-pointer.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */

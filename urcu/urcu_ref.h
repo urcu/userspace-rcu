@@ -15,7 +15,7 @@
  */
 
 #include <assert.h>
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 
 struct urcu_ref {
 	long refcount; /* ATOMIC */

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
-#include <urcu/uatomic_arch.h>
+#include <urcu/uatomic.h>
 
 struct testvals {
 	unsigned char c;

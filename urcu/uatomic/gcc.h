@@ -32,7 +32,7 @@ extern "C" {
 /*
  * If your platform doesn't have a full set of atomics, you will need
  * a separate uatomic_arch_*.h file for your architecture.  Otherwise,
- * just rely on the definitions in uatomic_generic.h.
+ * just rely on the definitions in uatomic/generic.h.
  */
 #define UATOMIC_HAS_ATOMIC_BYTE
 #define UATOMIC_HAS_ATOMIC_SHORT
@@ -41,6 +41,6 @@ extern "C" {
 }
 #endif
 
-#include <urcu/uatomic_generic.h>
+#include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_ARCH_UATOMIC_GCC_H */

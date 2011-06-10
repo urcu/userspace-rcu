@@ -81,7 +81,7 @@ asm volatile("dmb":::"memory");
 )
 fi
 
-UATOMICSRC=urcu/uatomic_arch_$ARCHTYPE.h
+UATOMICSRC=urcu/uatomic/$ARCHTYPE.h
 ARCHSRC=urcu/arch/$ARCHTYPE.h
 if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
 	APISRC=tests/api_gcc.h
@@ -240,7 +240,7 @@ CFLAGS=$saved_CFLAGS
 
 AC_CONFIG_LINKS([
 	urcu/arch.h:$ARCHSRC
-	urcu/uatomic_arch.h:$UATOMICSRC
+	urcu/uatomic.h:$UATOMICSRC
 	tests/api.h:$APISRC
 ])
 AC_CONFIG_FILES([
