@@ -155,8 +155,8 @@ test_urcu_bp_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_lfq_SOURCES = test_urcu_lfq.c
-test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c
+test_urcu_lfq_SOURCES = test_urcu_lfq.c $(URCU)
+test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c $(URCU)
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfq_dynlink_LDADD = $(URCU_CDS_LIB)
 

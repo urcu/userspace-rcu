@@ -63,7 +63,6 @@ static inline pid_t gettid(void)
 #endif
 #include <urcu.h>
 #include <urcu/rculfqueue.h>
-#include <urcu-defer.h>
 
 static volatile int test_go, test_stop;
 
@@ -226,11 +225,6 @@ void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
-	ret = rcu_defer_register_thread();
-	if (ret) {
-		printf("Error in rcu_defer_register_thread\n");
-		exit(-1);
-	}
 	rcu_register_thread();
 
 	while (!test_go)
@@ -258,8 +252,6 @@ void *thr_dequeuer(void *_count)
 	}
 
 	rcu_unregister_thread();
-	rcu_defer_unregister_thread();
-
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
 		       pthread_self(), (unsigned long)gettid(), nr_dequeues,
