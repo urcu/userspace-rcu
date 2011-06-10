@@ -40,14 +40,19 @@ extern "C" {
  * which point their reference count will be decremented.
  */
 
+struct cds_lfq_queue_rcu;
+
 struct cds_lfq_node_rcu {
 	struct cds_lfq_node_rcu *next;
 	struct urcu_ref ref;
+	struct cds_lfq_queue_rcu *queue;
+	struct rcu_head rcu_head;
 };
 
 struct cds_lfq_queue_rcu {
 	struct cds_lfq_node_rcu *head, *tail;
 	struct cds_lfq_node_rcu init;	/* Dummy initialization node */
+	void (*release)(struct urcu_ref *ref);
 };
 
 #ifdef _LGPL_SOURCE
@@ -62,21 +67,28 @@ struct cds_lfq_queue_rcu {
 #else /* !_LGPL_SOURCE */
 
 extern void cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node);
-extern void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q);
-extern void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node);
+extern void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
+			     void (*release)(struct urcu_ref *ref));
 
 /*
- * The entry returned by dequeue must be taken care of by doing a urcu_ref_put,
- * which calls the release primitive when the reference count drops to zero. A
- * grace period must be waited after execution of the release callback before
- * performing the actual memory reclamation or modifying the cds_lfq_node_rcu
- * structure.
+ * Should be called under rcu read lock critical section.
+ */
+extern void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
+				struct cds_lfq_node_rcu *node);
+
+/*
+ * Should be called under rcu read lock critical section.
+ *
+ * The entry returned by dequeue must be taken care of by doing a
+ * urcu_delayed_ref_put, which calls the release primitive after the
+ * reference count drops to zero _and_ a following grace period passes.
+ *
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
  * period has elapsed (after the refcount reached 0).
  */
 extern struct cds_lfq_node_rcu *
-cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q, void (*release)(struct urcu_ref *));
+cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q);
 
 #endif /* !_LGPL_SOURCE */
 

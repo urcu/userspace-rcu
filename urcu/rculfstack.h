@@ -51,6 +51,8 @@ extern void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s);
 extern void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node);
 
 /*
+ * Should be called under rcu read lock critical section.
+ *
  * The caller must wait for a grace period to pass before freeing the returned
  * node or modifying the cds_lfs_node_rcu structure.
  * Returns NULL if stack is empty.

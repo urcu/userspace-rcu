@@ -21,7 +21,10 @@
  */
 
 /* Use the urcu symbols to select the appropriate rcu flavor at link time */
+#define _LGPL_SOURCE
 #include "urcu.h"
+
+#undef _LGPL_SOURCE
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu/rculfstack.h"
 #include "urcu/rculfstack-static.h"

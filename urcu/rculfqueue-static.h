@@ -53,17 +53,24 @@ void _cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node)
 	urcu_ref_init(&node->ref);
 }
 
-void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q)
+void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
+		       void (*release)(struct urcu_ref *ref))
 {
 	_cds_lfq_node_init_rcu(&q->init);
 	/* Make sure the initial node is never freed. */
 	urcu_ref_set(&q->init.ref, URCU_LFQ_PERMANENT_REF);
 	q->head = q->tail = &q->init;
+	q->release = release;
 }
 
-void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)
+/*
+ * Should be called under rcu read lock critical section.
+ */
+void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
+			  struct cds_lfq_node_rcu *node)
 {
 	urcu_ref_get(&node->ref);
+	node->queue = q;
 
 	/*
 	 * uatomic_cmpxchg() implicit memory barrier orders earlier stores to
@@ -73,7 +80,6 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *
 	for (;;) {
 		struct cds_lfq_node_rcu *tail, *next;
 
-		rcu_read_lock();
 		tail = rcu_dereference(q->tail);
 		/*
 		 * Typically expect tail->next to be NULL.
@@ -87,7 +93,6 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *
 			 * us to it, that's fine).
 			 */
 			(void) uatomic_cmpxchg(&q->tail, tail, node);
-			rcu_read_unlock();
 			return;
 		} else {
 			/*
@@ -95,44 +100,39 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *
 			 * further and retry.
 			 */
 			(void) uatomic_cmpxchg(&q->tail, tail, next);
-			rcu_read_unlock();
 			continue;
 		}
 	}
 }
 
 /*
- * The entry returned by dequeue must be taken care of by doing a urcu_ref_put,
- * which calls the release primitive when the reference count drops to zero. A
- * grace period must be waited after execution of the release callback before
- * performing the actual memory reclamation or modifying the cds_lfq_node_rcu
- * structure.
+ * Should be called under rcu read lock critical section.
+ *
+ * The entry returned by dequeue must be taken care of by doing a
+ * urcu_ref_put after a grace period passes.
+ *
  * In other words, the entry lfq node returned by dequeue must not be
  * modified/re-used/freed until the reference count reaches zero and a grace
- * period has elapsed (after the refcount reached 0).
+ * period has elapsed.
  */
 struct cds_lfq_node_rcu *
-_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q, void (*release)(struct urcu_ref *))
+_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 {
 	for (;;) {
 		struct cds_lfq_node_rcu *head, *next;
 
-		rcu_read_lock();
 		head = rcu_dereference(q->head);
 		next = rcu_dereference(head->next);
 		if (next) {
 			if (uatomic_cmpxchg(&q->head, head, next) == head) {
-				rcu_read_unlock();
-				urcu_ref_put(&head->ref, release);
+				urcu_ref_put(&head->ref, q->release);
 				return next;
 			} else {
 				/* Concurrently pushed, retry */
-				rcu_read_unlock();
 				continue;
 			}
 		} else {
 			/* Empty */
-			rcu_read_unlock();
 			return NULL;
 		}
 	}
