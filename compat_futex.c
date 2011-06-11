@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <poll.h>
+#include <stdint.h>
 
 #include <urcu/arch.h>
 #include <urcu/futex.h>
@@ -39,8 +40,8 @@ static pthread_cond_t compat_futex_cond = PTHREAD_COND_INITIALIZER;
  * Waiter will relinquish the CPU until woken up.
  */
 
-int compat_futex_noasync(int *uaddr, int op, int val,
-	const struct timespec *timeout, int *uaddr2, int val3)
+int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
+	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
 	int ret, i, gret = 0;
 
@@ -84,8 +85,8 @@ end:
  * Waiter will busy-loop trying to read the condition.
  */
 
-int compat_futex_async(int *uaddr, int op, int val,
-	const struct timespec *timeout, int *uaddr2, int val3)
+int compat_futex_async(int32_t *uaddr, int op, int32_t val,
+	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
 	int ret, i;
 

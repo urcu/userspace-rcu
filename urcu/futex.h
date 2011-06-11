@@ -22,6 +22,7 @@
  */
 
 #include <urcu/config.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,12 +50,12 @@ extern "C" {
 #define futex_async(uaddr, op, val, timeout, uaddr2, val3)	\
 		futex(uaddr, op, val, timeout, uaddr2, val3)
 #else
-extern int compat_futex_noasync(int *uaddr, int op, int val,
-	const struct timespec *timeout, int *uaddr2, int val3);
+extern int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
+	const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
 #define futex_noasync(uaddr, op, val, timeout, uaddr2, val3)	\
 		compat_futex_noasync(uaddr, op, val, timeout, uaddr2, val3)
-extern int compat_futex_async(int *uaddr, int op, int val,
-	const struct timespec *timeout, int *uaddr2, int val3);
+extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
+	const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
 #define futex_async(uaddr, op, val, timeout, uaddr2, val3)	\
 		compat_futex_async(uaddr, op, val, timeout, uaddr2, val3)
 #endif

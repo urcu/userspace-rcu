@@ -35,6 +35,7 @@
 #include <limits.h>
 #include <syscall.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
@@ -141,7 +142,7 @@ struct rcu_reader {
 
 extern struct rcu_reader __thread rcu_reader;
 
-extern int gp_futex;
+extern int32_t gp_futex;
 
 /*
  * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.

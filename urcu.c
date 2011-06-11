@@ -30,6 +30,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
@@ -62,7 +63,7 @@ void __attribute__((destructor)) rcu_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int gp_futex;
+int32_t gp_futex;
 
 /*
  * Global grace period counter.

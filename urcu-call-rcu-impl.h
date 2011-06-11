@@ -26,6 +26,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
@@ -46,7 +47,7 @@
 struct call_rcu_data {
 	struct cds_wfq_queue cbs;
 	unsigned long flags;
-	int futex;
+	int32_t futex;
 	unsigned long qlen; /* maintained for debugging. */
 	pthread_t tid;
 	int cpu_affinity;

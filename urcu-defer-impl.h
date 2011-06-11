@@ -40,6 +40,7 @@
 #include <sys/time.h>
 #include <syscall.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "urcu/futex.h"
 
@@ -121,7 +122,7 @@ extern void synchronize_rcu(void);
 static pthread_mutex_t rcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t defer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int defer_thread_futex;
+static int32_t defer_thread_futex;
 
 /*
  * Written to only by each individual deferer. Read by both the deferer and
