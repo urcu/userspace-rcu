@@ -19,7 +19,8 @@ nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
-		README LICENSE compat_arch_x86.c
+		README LICENSE compat_arch_x86.c \
+		urcu-call-rcu-impl.h urcu-defer-impl.h
 
 if COMPAT_ARCH
 COMPAT=compat_arch_@ARCHTYPE@.c
