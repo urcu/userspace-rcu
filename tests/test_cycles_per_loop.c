@@ -18,4 +18,5 @@ int main()
 	time2 = caa_get_cycles();
 	printf("CPU clock cycles per loop: %g\n", (time2 - time1) /
 						  (double)NR_LOOPS);
+	return 0;
 }
