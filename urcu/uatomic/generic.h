@@ -316,7 +316,7 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 }
 
 #define uatomic_and(addr, v)		\
-	(uatomic_and((addr),		\
+	(_uatomic_and((addr),		\
 		    (unsigned long)(v),	\
 		    sizeof(*(addr))))
 #endif /* #ifndef uatomic_and */
@@ -387,9 +387,9 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 }
 
 #define uatomic_or(addr, v)		\
-	(uatomic_or((addr),		\
-		    (unsigned long)(v),	\
-		    sizeof(*(addr))))
+	(_uatomic_or((addr),		\
+		     (unsigned long)(v),\
+		     sizeof(*(addr))))
 #endif /* #ifndef uatomic_or */
 
 #ifndef uatomic_add_return
