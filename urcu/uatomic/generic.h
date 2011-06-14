@@ -269,6 +269,8 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old & val, 1);
 		} while (oldt != old);
+
+		return;
 	}
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
@@ -292,6 +294,8 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old & val, 4);
 		} while (oldt != old);
+
+		return;
 	}
 #if (CAA_BITS_PER_LONG == 64)
 	case 8:
@@ -303,11 +307,12 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old & val, 8);
 		} while (oldt != old);
+
+		return;
 	}
 #endif
 	}
 	_uatomic_link_error();
-	return 0;
 }
 
 #define uatomic_and(addr, v)		\
@@ -333,6 +338,8 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old | val, 1);
 		} while (oldt != old);
+
+		return;
 	}
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
@@ -345,6 +352,8 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old | val, 2);
 		} while (oldt != old);
+
+		return;
 	}
 #endif
 	case 4:
@@ -356,6 +365,8 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old | val, 4);
 		} while (oldt != old);
+
+		return;
 	}
 #if (CAA_BITS_PER_LONG == 64)
 	case 8:
@@ -367,11 +378,12 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 			old = oldt;
 			oldt = _uatomic_cmpxchg(addr, old, old | val, 8);
 		} while (oldt != old);
+
+		return;
 	}
 #endif
 	}
 	_uatomic_link_error();
-	return 0;
 }
 
 #define uatomic_or(addr, v)		\
