@@ -160,7 +160,7 @@ test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c $(URCU)
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfq_dynlink_LDADD = $(URCU_CDS_LIB)
 
-test_urcu_wfq_SOURCES = test_urcu_wfq.c
+test_urcu_wfq_SOURCES = test_urcu_wfq.c $(COMPAT)
 test_urcu_wfq_dynlink_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfq_dynlink_LDADD = $(URCU_CDS_LIB)
@@ -170,7 +170,7 @@ test_urcu_lfs_dynlink_SOURCES = test_urcu_lfs.c $(URCU_DEFER)
 test_urcu_lfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfs_dynlink_LDADD = $(URCU_CDS_LIB)
 
-test_urcu_wfs_SOURCES = test_urcu_wfs.c
+test_urcu_wfs_SOURCES = test_urcu_wfs.c $(COMPAT)
 test_urcu_wfs_dynlink_SOURCES = test_urcu_wfs.c
 test_urcu_wfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfs_dynlink_LDADD = $(URCU_CDS_LIB)

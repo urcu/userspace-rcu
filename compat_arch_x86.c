@@ -152,6 +152,7 @@ unsigned long _compat_uatomic_xchg(void *addr, unsigned long _new, int len)
 		 * generate an illegal instruction. Cannot catch this with
 		 * linker tricks when optimizations are disabled.
 		 */
+		retval = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
 	mutex_lock_signal_restore(&compat_mutex, &mask);
@@ -195,6 +196,7 @@ unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 		 * generate an illegal instruction. Cannot catch this with
 		 * linker tricks when optimizations are disabled.
 		 */
+		retval = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
 	mutex_lock_signal_restore(&compat_mutex, &mask);
@@ -275,6 +277,7 @@ unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
 		 * generate an illegal instruction. Cannot catch this with
 		 * linker tricks when optimizations are disabled.
 		 */
+		result = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
 	mutex_lock_signal_restore(&compat_mutex, &mask);

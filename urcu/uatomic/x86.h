@@ -536,26 +536,24 @@ extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 						(unsigned long)(_new), 	       \
 						sizeof(*(addr))))
 
-extern unsigned long _compat_uatomic_and(void *addr,
-				         unsigned long _new, int len);
+extern void _compat_uatomic_and(void *addr, unsigned long _new, int len);
 #define compat_uatomic_and(addr, v)				       \
-	((__typeof__(*(addr))) _compat_uatomic_and((addr),	       \
-						   (unsigned long)(v), \
-						   sizeof(*(addr))))
+	(_compat_uatomic_and((addr),				       \
+			(unsigned long)(v),			       \
+			sizeof(*(addr))))
 
-extern unsigned long _compat_uatomic_or(void *addr,
-				        unsigned long _new, int len);
+extern void _compat_uatomic_or(void *addr, unsigned long _new, int len);
 #define compat_uatomic_or(addr, v)				       \
-	((__typeof__(*(addr))) _compat_uatomic_or((addr),	       \
-						  (unsigned long)(v),  \
-						  sizeof(*(addr))))
+	(_compat_uatomic_or((addr),				       \
+			  (unsigned long)(v),			       \
+			  sizeof(*(addr))))
 
 extern unsigned long _compat_uatomic_add_return(void *addr,
 						unsigned long _new, int len);
-#define compat_uatomic_add_return(addr, v)				       \
-	((__typeof__(*(addr))) _compat_uatomic_add_return((addr),	       \
-						(unsigned long)(v), 	       \
-						sizeof(*(addr))))
+#define compat_uatomic_add_return(addr, v)			       \
+	((__typeof__(*(addr))) _compat_uatomic_add_return((addr),      \
+						   (unsigned long)(v), \
+						   sizeof(*(addr))))
 
 #define compat_uatomic_add(addr, v)					       \
 		((void)compat_uatomic_add_return((addr), (v)))
