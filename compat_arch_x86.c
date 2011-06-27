@@ -122,10 +122,11 @@ unsigned long _compat_uatomic_set(void *addr, unsigned long _new, int len)
 		 * generate an illegal instruction. Cannot catch this with
 		 * linker tricks when optimizations are disabled.
 		 */
+		result = 0;
 		__asm__ __volatile__("ud2");
 	}
 	mutex_lock_signal_restore(&compat_mutex, &mask);
-	return _new;
+	return result;
 }
 
 unsigned long _compat_uatomic_xchg(void *addr, unsigned long _new, int len)
