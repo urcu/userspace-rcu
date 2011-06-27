@@ -1,0 +1,120 @@
+2011-06-27 Userspace RCU 0.6.3
+	* uatomic: Fix i386 compatibility build errors in uatomic.
+
+2011-06-13 Userspace RCU 0.6.2
+	* Fix build on powerpc.
+
+2011-06-13 Userspace RCU 0.6.1
+	* Add missing headers into release tarball:
+	    urcu-call-rcu-impl.h and urcu-defer-impl.h
+
+2011-06-10 Userspace RCU 0.6.0
+	* Added call_rcu() support, graciously contributed by Paul E. McKenney.
+	* Added urcu/cds.h and merged all "Concurrent Data Containers" (CDS)
+	  into a single .so: liburcu-cds.so to have a single header/shared
+	  object holding all concurrency-aware data containers. It provides
+	  support for RCU lists, queues and stacks at the moment.
+	* liburcu 0.6.0 now allows linking a single application with multiple
+	  flavors of RCU. This required a library API change which is
+	  incompatible with older 0.5.x liburcu. The .so version number
+	  is therefore bumped from 0 to 1 (e.g. liburcu.so.1).
+	* Added "atfork" handling API, documented in README. Only useful for
+	  processes using fork() without following exec().
+	* Renaming the following files, keeping the old files (producing a
+	  compiler warning):
+	    urcu/uatomic_arch.h -> urcu/uatomic.h
+	    urcu/urcu-futex.h -> urcu/futex.h
+	    urcu/urcu_ref.h -> urcu/ref.h
+
+2011-03-04 Userspace RCU 0.5.4
+	 *  urcu-bp: Update fork() handling
+
+	    Introduce
+
+	    extern void rcu_bp_before_fork(void);
+	    extern void rcu_bp_after_fork_parent(void);
+	    extern void rcu_bp_after_fork_child(void);
+
+	    to handle fork gracefully. These disable signals and hold
+	    the registry mutex across forks. (this flavor of the liburcu
+	    library ("bp" for "bulletproof") is mainly used by UST, the
+	    user-space tracer).
+
+2011-03-03 Userspace RCU 0.5.3
+	* Add support for older ARM single-CPU architecturess (pre-ARMv7)
+	  (thanks to Jason Wessel from WindRiver).
+	* Fix ARMv7 cmm_rmb/cmm_wmb primitives (use a dmb barrier).
+	* Remove leftover list_t type from urcu/list.h (namespace cleanup).
+	* urcu_defer: handle malloc error value.
+	* Update README file to describe urcu interaction with fork() when not
+	* followed
+	  by an exec() system call.
+
+2010-11-18 Userspace RCU 0.5.2
+	* Fix renaming error introduced in 0.5.0.
+
+2010-11-18 Userspace RCU 0.5.1
+	* Fix renaming error introduced in 0.5.0. (incomplete fix)
+
+2010-11-18 Userspace RCU 0.5.0
+	* Version 0.5.0 changes the API presented by memory model,
+	  architecture abstraction and data structure primitives in
+	  headers. The prefixes are, respectively:
+	    - cmm_ : Concurrent Memory Model
+	    - caa_ : Concurrent Architecture Abstraction
+	    - cds_ : Concurrent Data Structures
+
+2010-03-04 Userspace RCU 0.4.2
+	* Add generic uatomic ops support.
+	* Bugfix in urcu-bp. (rare garbage collection bug occurring in
+	  multithreaded environment). Only affects urcu-bp users (UST).
+
+2010-02-12 Userspace RCU 0.4.1
+	* s390: compilation fix.
+
+2010-01-30 Userspace RCU 0.4.0
+	* API change: SIGURCU -> SIGRCU
+	* API changes: standardize on rcu_ prefix.
+	* API change: urcu_init -> rcu_init.
+	* urcu/config.h options renamed to CONFIG_RCU_HAVE_FENCE,
+	  CONFIG_RCU_HAVE_FUTEX, CONFIG_RCU_SMP, CONFIG_RCU_COMPAT_ARCH.
+	  ((moving from URCU -> RCU).
+	* library names changes: liburcu becomes the "default" version, using
+	  sys_membarrier() when available, and using liburcu-mb as a
+	  fallback.
+	* The signal-based liburcu is renamed from liburcu to
+	  liburcu-signal. People previously using the signal-based
+	  "liburcu" will automatically be moved to the "default" liburcu
+	  version.
+
+2009-11-16 Userspace RCU 0.3.1
+	* Add support for sparcv9 32-bit build.
+	* Update build system to use --host instead of --target.
+
+2009-11-03 Userspace RCU 0.3.0
+	* API change for the "deferred work" interface.
+
+2009-10-14 Userspace RCU 0.2.3
+	* Move to autotools.
+	* Automated architecture detection, with i386 fallback.
+	* Detect if NR_futex is on the system, fallback on portable
+	  alternatives.
+	* Add configure mode for UP-only systems.
+
+2009-10-02 Userspace RCU 0.2.2
+	* Phases out rcu_publish_content() api.
+	* Adds type checking to urcu-pointer.h pointer exchange primitives.
+
+2009-10-02 Userspace RCU 0.2.1
+	* small header dependency fix for rculist.h.
+	* new "liburcu-bp.so" : "Bulletproof RCU", made especially for
+	  the UST userspace tracer. It's a library that sacrifices a bit
+	  of read-side performance for automatically monitoring thread
+	  creation/removal. See README for details.
+
+2009-10-01 Userspace RCU 0.2
+	* Clarify usage of rcu_cmpxchg_pointer, rcu_xchg_pointer,
+	  rcu_set_pointer.
+
+2009-09-29 Userspace RCU 0.1
+	* Initial release.
