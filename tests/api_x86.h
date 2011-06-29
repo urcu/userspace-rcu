@@ -404,8 +404,8 @@ typedef pthread_t thread_id_t;
 
 #define NR_THREADS 128
 
-#define __THREAD_ID_MAP_EMPTY 0
-#define __THREAD_ID_MAP_WAITING 1
+#define __THREAD_ID_MAP_EMPTY ((thread_id_t) 0)
+#define __THREAD_ID_MAP_WAITING ((thread_id_t) 1)
 thread_id_t __thread_id_map[NR_THREADS];
 spinlock_t __thread_id_map_mutex;
 
