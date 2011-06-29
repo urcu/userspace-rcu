@@ -31,7 +31,6 @@
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <syscall.h>
 #include <unistd.h>
 #include <stdint.h>
 
@@ -46,14 +45,17 @@
 extern "C" {
 #endif 
 
-/* Default is RCU_MEMBARRIER */
+/* Default is RCU_MEMBARRIER on linux */
 #if !defined(RCU_MEMBARRIER) && !defined(RCU_MB) && !defined(RCU_SIGNAL)
-#define RCU_MEMBARRIER
+# ifdef __linux__
+# define RCU_MEMBARRIER
+# else
+# define RCU_MB
+# endif
 #endif
 
 #ifdef RCU_MEMBARRIER
-#include <unistd.h>
-#include <sys/syscall.h>
+#include <syscall.h>
 
 /* If the headers do not support SYS_membarrier, statically use RCU_MB */
 #ifdef SYS_membarrier
