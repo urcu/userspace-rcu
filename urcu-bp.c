@@ -254,7 +254,6 @@ static void resize_arena(struct registry_arena *arena, size_t len)
 	if (new_arena == arena->p)
 		return;
 
-	memcpy(new_arena, arena->p, arena->len);
 	bzero(new_arena + arena->len, len - arena->len);
 	arena->p = new_arena;
 }
