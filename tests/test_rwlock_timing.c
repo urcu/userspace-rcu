@@ -30,11 +30,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <pthread.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)

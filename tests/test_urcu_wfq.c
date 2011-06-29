@@ -34,11 +34,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <sched.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
