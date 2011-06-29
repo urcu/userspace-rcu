@@ -146,7 +146,7 @@ static inline void debug_yield_write(void)
 
 static inline void debug_yield_init(void)
 {
-	rand_yield = time(NULL) ^ pthread_self();
+	rand_yield = time(NULL) ^ (unsigned long) pthread_self();
 }
 #else
 static inline void debug_yield_read(void)
