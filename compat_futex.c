@@ -111,4 +111,5 @@ int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 	default:
 		return -EINVAL;
 	}
+	return 0;
 }
