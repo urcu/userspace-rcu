@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/time.h>
-#include <syscall.h>
 #include <unistd.h>
 #include <sched.h>
 
