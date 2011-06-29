@@ -39,6 +39,8 @@ supported, with the following exceptions:
   therefore not compatible with liburcu on x86 32-bit (i386, i486, i586, i686).
   The problem has been reported to the gcc community:
     http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
+- gcc 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
+  See: http://kerneltrap.org/node/7507
 - Alpha, ia64 and ARM architectures depend on 4.x gcc with atomic builtins
   support.
 
