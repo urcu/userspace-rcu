@@ -41,6 +41,10 @@
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-bp.h"
 
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 /* Sleep delay in us */
 #define RCU_SLEEP_DELAY		1000
 #define ARENA_INIT_ALLOC	16
