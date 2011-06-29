@@ -88,8 +88,6 @@ end:
 int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	int ret, i;
-
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
 	 * account. 
