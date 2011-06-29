@@ -33,7 +33,6 @@
 #include <pthread.h>
 #include <assert.h>
 #include <limits.h>
-#include <syscall.h>
 #include <unistd.h>
 #include <stdint.h>
 
