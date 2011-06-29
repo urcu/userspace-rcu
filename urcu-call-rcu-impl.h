@@ -88,26 +88,6 @@ static struct call_rcu_data *default_call_rcu_data;
 static struct call_rcu_data **per_cpu_call_rcu_data;
 static long maxcpus;
 
-static void call_rcu_wait(struct call_rcu_data *crdp)
-{
-	/* Read call_rcu list before read futex */
-	cmm_smp_mb();
-	if (uatomic_read(&crdp->futex) == -1)
-		futex_async(&crdp->futex, FUTEX_WAIT, -1,
-		      NULL, NULL, 0);
-}
-
-static void call_rcu_wake_up(struct call_rcu_data *crdp)
-{
-	/* Write to call_rcu list before reading/writing futex */
-	cmm_smp_mb();
-	if (unlikely(uatomic_read(&crdp->futex) == -1)) {
-		uatomic_set(&crdp->futex, 0);
-		futex_async(&crdp->futex, FUTEX_WAKE, 1,
-		      NULL, NULL, 0);
-	}
-}
-
 /* Allocate the array if it has not already been allocated. */
 
 static void alloc_cpu_call_rcu_data(void)
@@ -193,6 +173,26 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 	return 0;
 }
 #endif
+
+static void call_rcu_wait(struct call_rcu_data *crdp)
+{
+	/* Read call_rcu list before read futex */
+	cmm_smp_mb();
+	if (uatomic_read(&crdp->futex) == -1)
+		futex_async(&crdp->futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
+}
+
+static void call_rcu_wake_up(struct call_rcu_data *crdp)
+{
+	/* Write to call_rcu list before reading/writing futex */
+	cmm_smp_mb();
+	if (unlikely(uatomic_read(&crdp->futex) == -1)) {
+		uatomic_set(&crdp->futex, 0);
+		futex_async(&crdp->futex, FUTEX_WAKE, 1,
+		      NULL, NULL, 0);
+	}
+}
 
 /* This is the code run by each call_rcu thread. */
 
