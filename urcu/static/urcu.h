@@ -45,13 +45,18 @@
 extern "C" {
 #endif 
 
-/* Default is RCU_MEMBARRIER on linux */
+/* Default is RCU_MEMBARRIER */
 #if !defined(RCU_MEMBARRIER) && !defined(RCU_MB) && !defined(RCU_SIGNAL)
-# ifdef __linux__
-# define RCU_MEMBARRIER
-# else
-# define RCU_MB
-# endif
+#define RCU_MEMBARRIER
+#endif
+
+/*
+ * RCU_MEMBARRIER is only possibly available on Linux. Fallback to RCU_MB
+ * otherwise.
+ */
+#if !defined(__linux__) && defined(RCU_MEMBARRIER)
+#undef RCU_MEMBARRIER
+#define RCU_MB
 #endif
 
 #ifdef RCU_MEMBARRIER
