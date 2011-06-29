@@ -56,7 +56,7 @@
 */
 void *mremap(void *old_address, size_t old_size, size_t new_size, int flags)
 {
-	void *new_arena;
+	void *new_address;
 
 	assert(flags & MREMAP_MAYMOVE);
 	assert(!(flags & MREMAP_FIXED));
