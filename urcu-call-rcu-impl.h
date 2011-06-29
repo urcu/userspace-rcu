@@ -115,7 +115,12 @@ static void alloc_cpu_call_rcu_data(void)
 
 #else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
 
-static const struct call_rcu_data **per_cpu_call_rcu_data = NULL;
+/*
+ * per_cpu_call_rcu_data should be constant, but some functions below, used both
+ * for cases where cpu number is available and not available, assume it it not
+ * constant.
+ */
+static struct call_rcu_data **per_cpu_call_rcu_data = NULL;
 static const long maxcpus = -1;
 
 static void alloc_cpu_call_rcu_data(void)
