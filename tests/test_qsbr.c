@@ -185,7 +185,8 @@ void rcu_copy_mutex_unlock(void)
 /*
  * malloc/free are reusing memory areas too quickly, which does not let us
  * test races appropriately. Use a large circular array for allocations.
- * ARRAY_SIZE is larger than nr_writers, which insures we never run over our tail.
+ * ARRAY_SIZE is larger than nr_writers, and we keep the mutex across
+ * both alloc and free, which insures we never run over our tail.
  */
 #define ARRAY_SIZE (1048576 * nr_writers)
 #define ARRAY_POISON 0xDEADBEEF
@@ -197,7 +198,6 @@ static struct test_array *test_array_alloc(void)
 	struct test_array *ret;
 	int index;
 
-	rcu_copy_mutex_lock();
 	index = array_index % ARRAY_SIZE;
 	assert(test_array[index].a == ARRAY_POISON ||
 		test_array[index].a == 0);
@@ -205,7 +205,6 @@ static struct test_array *test_array_alloc(void)
 	array_index++;
 	if (array_index == ARRAY_SIZE)
 		array_index = 0;
-	rcu_copy_mutex_unlock();
 	return ret;
 }
 
@@ -213,9 +212,7 @@ static void test_array_free(struct test_array *ptr)
 {
 	if (!ptr)
 		return;
-	rcu_copy_mutex_lock();
 	ptr->a = ARRAY_POISON;
-	rcu_copy_mutex_unlock();
 }
 
 void *thr_reader(void *_count)
@@ -281,6 +278,7 @@ void *thr_writer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
+		rcu_copy_mutex_lock();
 		new = test_array_alloc();
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
@@ -291,6 +289,7 @@ void *thr_writer(void *_count)
 		if (old)
 			old->a = 0;
 		test_array_free(old);
+		rcu_copy_mutex_unlock();
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;
