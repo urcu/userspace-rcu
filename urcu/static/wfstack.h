@@ -40,11 +40,13 @@ extern "C" {
 #define CDS_WFS_ADAPT_ATTEMPTS		10	/* Retry if being set */
 #define CDS_WFS_WAIT			10	/* Wait 10 ms if being set */
 
+static inline
 void _cds_wfs_node_init(struct cds_wfs_node *node)
 {
 	node->next = NULL;
 }
 
+static inline
 void _cds_wfs_init(struct cds_wfs_stack *s)
 {
 	int ret;
@@ -54,6 +56,7 @@ void _cds_wfs_init(struct cds_wfs_stack *s)
 	assert(!ret);
 }
 
+static inline
 void _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
 	struct cds_wfs_node *old_head;
@@ -74,6 +77,7 @@ void _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 /*
  * Returns NULL if stack is empty.
  */
+static inline
 struct cds_wfs_node *
 ___cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
@@ -100,6 +104,7 @@ retry:
 		goto retry;		/* Concurrent modification. Retry. */
 }
 
+static inline
 struct cds_wfs_node *
 _cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
