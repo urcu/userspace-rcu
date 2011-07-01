@@ -30,7 +30,6 @@
 #include <urcu/uatomic.h>
 #include <assert.h>
 #include <errno.h>
-/* A urcu implementation header should be already included. */
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,24 +45,18 @@ struct cds_lfq_node_rcu_dummy {
  * Lock-free RCU queue. Enqueue and dequeue operations hold a RCU read
  * lock to deal with cmpxchg ABA problem. This queue is *not* circular:
  * head points to the oldest node, tail points to the newest node.
- * Dummy nodes are kept to ensure enqueue and dequeue can always proceed
+ * A dummy node is kept to ensure enqueue and dequeue can always proceed
  * concurrently. Keeping a separate head and tail helps with large
  * queues: enqueue and dequeue can proceed concurrently without
  * wrestling for exclusive access to the same variables.
  *
- * We keep two dummy nodes in the queue to distinguish between empty queue
- * state and intermediate state while a dummy node dequeue/requeue is
- * being performed. Dequeue retry if it detects that it would be
- * dequeueing the last node (it means a dummy node dequeue-requeue is in
- * progress). This ensures that there is always at least one node in
- * the queue. In a situation where the two dummy nodes are being
- * requeued (they therefore don't appear in the queue at a given
- * moment), we are certain that there is at least one non-dummy node in
- * the queue (ensured by the test for NULL next node upon dequeue).
+ * Dequeue retry if it detects that it would be dequeueing the last node
+ * (it means a dummy node dequeue-requeue is in progress). This ensures
+ * that there is always at least one node in the queue.
  *
- * In the dequeue operation, we internally reallocate the dummy nodes
- * upon dequeue/requeue and use call_rcu to free them after a grace
- * period.
+ * In the dequeue operation, we internally reallocate the dummy node
+ * upon dequeue/requeue and use call_rcu to free the old one after a
+ * grace period.
  */
 
 static inline
@@ -121,7 +114,7 @@ void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
 				void (*func)(struct rcu_head *head)))
 {
 	q->tail = make_dummy(q, NULL);
-	q->head = make_dummy(q, q->tail);
+	q->head = q->tail;
 	q->queue_call_rcu = queue_call_rcu;
 }
 
@@ -133,14 +126,12 @@ void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
 static inline
 int _cds_lfq_destroy_rcu(struct cds_lfq_queue_rcu *q)
 {
-	struct cds_lfq_node_rcu *head, *next;
+	struct cds_lfq_node_rcu *head;
 
 	head = rcu_dereference(q->head);
-	next = rcu_dereference(get_node(head)->next);
-	if (!(is_dummy(head) && is_dummy(next) && get_node(next)->next == NULL))
+	if (!(is_dummy(head) && get_node(head)->next == NULL))
 		return -EPERM;	/* not empty */
 	rcu_free_dummy(head);
-	rcu_free_dummy(next);
 	return 0;
 }
 
@@ -195,7 +186,7 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 
 		head = rcu_dereference(q->head);
 		next = rcu_dereference(get_node(head)->next);
-		if (is_dummy(head) && is_dummy(next) && get_node(next)->next == NULL)
+		if (is_dummy(head) && next == NULL)
 			return NULL;	/* empty */
 		/*
 		 * We never, ever allow dequeue to get to a state where
