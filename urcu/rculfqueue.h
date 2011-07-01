@@ -37,8 +37,7 @@ struct cds_lfq_node_rcu {
 };
 
 struct cds_lfq_queue_rcu {
-	struct cds_lfq_node_rcu *head;
-	struct cds_lfq_node_rcu *tail;
+	struct cds_lfq_node_rcu *head, *tail, *dummy;
 	void (*queue_call_rcu)(struct rcu_head *head,
 		void (*func)(struct rcu_head *head));
 };

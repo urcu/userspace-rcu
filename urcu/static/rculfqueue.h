@@ -60,9 +60,9 @@ struct cds_lfq_node_rcu_dummy {
  */
 
 static inline
-int is_dummy(struct cds_lfq_node_rcu *node)
+int is_dummy(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)
 {
-	return ((unsigned long) node) & 0x1UL;
+	return node == q->dummy;
 }
 
 static inline
@@ -75,13 +75,7 @@ struct cds_lfq_node_rcu *make_dummy(struct cds_lfq_queue_rcu *q,
 	assert(dummy);
 	dummy->parent.next = next;
 	dummy->q = q;
-	return (struct cds_lfq_node_rcu *) (((unsigned long) &dummy->parent) | 0x1UL);
-}
-
-static inline
-struct cds_lfq_node_rcu *get_node(struct cds_lfq_node_rcu *node)
-{
-	return (struct cds_lfq_node_rcu *) (((unsigned long )node) & ~0x1UL);
+	return &dummy->parent;
 }
 
 static inline
@@ -97,8 +91,7 @@ void rcu_free_dummy(struct cds_lfq_node_rcu *node)
 {
 	struct cds_lfq_node_rcu_dummy *dummy;
 
-	dummy = caa_container_of(get_node(node), struct cds_lfq_node_rcu_dummy,
-				 parent);
+	dummy = caa_container_of(node, struct cds_lfq_node_rcu_dummy, parent);
 	dummy->q->queue_call_rcu(&dummy->head, free_dummy);
 }
 
@@ -114,6 +107,7 @@ void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
 				void (*func)(struct rcu_head *head)))
 {
 	q->tail = make_dummy(q, NULL);
+	q->dummy = q->tail;
 	q->head = q->tail;
 	q->queue_call_rcu = queue_call_rcu;
 }
@@ -129,7 +123,7 @@ int _cds_lfq_destroy_rcu(struct cds_lfq_queue_rcu *q)
 	struct cds_lfq_node_rcu *head;
 
 	head = rcu_dereference(q->head);
-	if (!(is_dummy(head) && get_node(head)->next == NULL))
+	if (!(is_dummy(q, head) && head->next == NULL))
 		return -EPERM;	/* not empty */
 	rcu_free_dummy(head);
 	return 0;
@@ -151,7 +145,7 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 		struct cds_lfq_node_rcu *tail, *next;
 
 		tail = rcu_dereference(q->tail);
-		next = uatomic_cmpxchg(&get_node(tail)->next, NULL, node);
+		next = uatomic_cmpxchg(&tail->next, NULL, node);
 		if (next == NULL) {
 			/*
 			 * Tail was at the end of queue, we successfully
@@ -185,8 +179,8 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 		struct cds_lfq_node_rcu *head, *next;
 
 		head = rcu_dereference(q->head);
-		next = rcu_dereference(get_node(head)->next);
-		if (is_dummy(head) && next == NULL)
+		next = rcu_dereference(head->next);
+		if (is_dummy(q, head) && next == NULL)
 			return NULL;	/* empty */
 		/*
 		 * We never, ever allow dequeue to get to a state where
@@ -197,7 +191,7 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 		 */
 		if (next) {
 			if (uatomic_cmpxchg(&q->head, head, next) == head) {
-				if (is_dummy(head)) {
+				if (is_dummy(q, head)) {
 					struct cds_lfq_node_rcu *node;
 					/*
 					 * Requeue dummy. We need to
@@ -206,6 +200,12 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 					 */
 					rcu_free_dummy(head);
 					node = make_dummy(q, NULL);
+					/*
+					 * We are the only thread
+					 * allowed to update dummy (we
+					 * own the old dummy).
+					 */
+					q->dummy = node;
 					_cds_lfq_enqueue_rcu(q, node);
 					continue;	/* try again */
 				}
