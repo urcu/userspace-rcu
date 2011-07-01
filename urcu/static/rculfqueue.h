@@ -79,6 +79,7 @@ struct cds_lfq_node_rcu *make_dummy(struct cds_lfq_queue_rcu *q,
 	struct cds_lfq_node_rcu_dummy *dummy;
 
 	dummy = malloc(sizeof(struct cds_lfq_node_rcu_dummy));
+	assert(dummy);
 	dummy->parent.next = next;
 	dummy->q = q;
 	return (struct cds_lfq_node_rcu *) (((unsigned long) &dummy->parent) | 0x1UL);
