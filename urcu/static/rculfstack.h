@@ -33,15 +33,18 @@
 extern "C" {
 #endif
 
+static inline
 void _cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node)
 {
 }
 
+static inline
 void _cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 {
 	s->head = NULL;
 }
 
+static inline
 void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
 {
 	struct cds_lfs_node_rcu *head = NULL;
@@ -67,6 +70,7 @@ void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *nod
  * node or modifying the cds_lfs_node_rcu structure.
  * Returns NULL if stack is empty.
  */
+static inline
 struct cds_lfs_node_rcu *
 _cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)
 {

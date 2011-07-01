@@ -40,8 +40,8 @@ struct cds_lfs_stack_rcu {
 #include <urcu/static/rculfstack.h>
 
 #define cds_lfs_node_init_rcu	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu		_cds_lfs_push_rcu
+#define cds_lfs_init_rcu	_cds_lfs_init_rcu
+#define cds_lfs_push_rcu	_cds_lfs_push_rcu
 #define cds_lfs_pop_rcu		_cds_lfs_pop_rcu
 
 #else /* !_LGPL_SOURCE */
