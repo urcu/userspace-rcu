@@ -62,7 +62,7 @@ struct cds_lfq_node_rcu_dummy {
 static inline
 int is_dummy(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)
 {
-	return node == q->dummy;
+	return node == CMM_LOAD_SHARED(q->dummy);
 }
 
 static inline
@@ -203,9 +203,13 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 					/*
 					 * We are the only thread
 					 * allowed to update dummy (we
-					 * own the old dummy).
+					 * own the old dummy). Other
+					 * dequeue threads read it
+					 * concurrently with RCU
+					 * read-lock held, which
+					 * protects from ABA.
 					 */
-					q->dummy = node;
+					CMM_STORE_SHARED(q->dummy, node);
 					_cds_lfq_enqueue_rcu(q, node);
 					continue;	/* try again */
 				}
