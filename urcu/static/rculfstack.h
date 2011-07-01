@@ -27,7 +27,6 @@
  */
 
 #include <urcu/uatomic.h>
-/* A urcu implementation header should be already included. */
 
 #ifdef __cplusplus
 extern "C" {
