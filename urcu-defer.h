@@ -6,7 +6,7 @@
  *
  * Userspace RCU header - deferred execution
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * LGPL-compatible code should include this header with :
@@ -32,29 +32,36 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
+ * Note: the defer_rcu() API is currently EXPERIMENTAL. It may change in the
+ * future.
+ * 
  * Important !
  *
  * Each thread queuing memory reclamation must be registered with
  * rcu_defer_register_thread(). rcu_defer_unregister_thread() should be
  * called before the thread exits.
  *
- * *NEVER* use call_rcu()/rcu_defer_queue() within a RCU read-side critical
- * section, because this primitive need to call synchronize_rcu() if the thread
- * queue is full.
+ * *NEVER* use defer_rcu() within a RCU read-side critical section, because this
+ * primitive need to call synchronize_rcu() if the thread queue is full.
  */
 
-#define call_rcu		rcu_defer_queue
-#define rcu_reclaim_queue(p)	rcu_defer_queue(free, p)
-
-extern void rcu_defer_queue(void (*fct)(void *p), void *p);
+extern void defer_rcu(void (*fct)(void *p), void *p);
 
 /*
  * Thread registration for reclamation.
  */
-extern void rcu_defer_register_thread(void);
+extern int rcu_defer_register_thread(void);
 extern void rcu_defer_unregister_thread(void);
 extern void rcu_defer_barrier(void);
 extern void rcu_defer_barrier_thread(void);
+
+#ifdef __cplusplus 
+}
+#endif
 
 #endif /* _URCU_BATCH_H */

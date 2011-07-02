@@ -1,2 +1,0 @@
-#define first_read_updated	(first_read[0] == 6)
-#define second_read_updated	(second_read[0] == 4)

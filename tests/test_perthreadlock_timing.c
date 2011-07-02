@@ -3,7 +3,7 @@
  *
  * Per thread locks - test program
  *
- * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,13 +29,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <pthread.h>
+#include <errno.h>
 
-#include "../arch.h"
+#include <urcu/arch.h>
 
-/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
-#define CACHE_LINE_SIZE 4096
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -52,7 +53,7 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#include "../urcu.h"
+#include <urcu.h>
 
 struct test_array {
 	int a;
@@ -62,7 +63,7 @@ static struct test_array test_array = { 8 };
 
 struct per_thread_lock {
 	pthread_mutex_t lock;
-} __attribute__((aligned(CACHE_LINE_SIZE)));	/* cache-line aligned */
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
 
 static struct per_thread_lock *per_thread_lock;
 
@@ -80,8 +81,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -93,7 +94,7 @@ void *thr_reader(void *arg)
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	time1 = get_cycles();
+	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
 			pthread_mutex_lock(&per_thread_lock[tidx].lock);
@@ -101,7 +102,7 @@ void *thr_reader(void *arg)
 			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
 	}
-	time2 = get_cycles();
+	time2 = caa_get_cycles();
 
 	reader_time[tidx] = time2 - time1;
 
@@ -124,7 +125,7 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
-			time1 = get_cycles();
+			time1 = caa_get_cycles();
 			for (tidx = 0; tidx < NR_READ; tidx++) {
 				pthread_mutex_lock(&per_thread_lock[tidx].lock);
 			}
@@ -132,7 +133,7 @@ void *thr_writer(void *arg)
 			for (tidx = NR_READ - 1; tidx >= 0; tidx--) {
 				pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 			}
-			time2 = get_cycles();
+			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
 		}

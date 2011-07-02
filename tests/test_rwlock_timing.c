@@ -3,7 +3,7 @@
  *
  * Userspace RCU library - test program
  *
- * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -29,12 +30,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <pthread.h>
-#include "../arch.h"
+#include <errno.h>
 
-/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
-#define CACHE_LINE_SIZE 4096
+#include <urcu/arch.h>
+
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -51,7 +54,7 @@ static inline pid_t gettid(void)
 }
 #endif
 
-#include "../urcu.h"
+#include <urcu.h>
 
 struct test_array {
 	int a;
@@ -75,8 +78,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -87,7 +90,7 @@ void *thr_reader(void *arg)
 			"reader", pthread_self(), (unsigned long)gettid());
 	sleep(2);
 
-	time1 = get_cycles();
+	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
 			pthread_rwlock_rdlock(&lock);
@@ -95,7 +98,7 @@ void *thr_reader(void *arg)
 			pthread_rwlock_unlock(&lock);
 		}
 	}
-	time2 = get_cycles();
+	time2 = caa_get_cycles();
 
 	reader_time[(unsigned long)arg] = time2 - time1;
 
@@ -117,11 +120,11 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
-			time1 = get_cycles();
+			time1 = caa_get_cycles();
 			pthread_rwlock_wrlock(&lock);
 			test_array.a = 8;
 			pthread_rwlock_unlock(&lock);
-			time2 = get_cycles();
+			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
 		}

@@ -32,6 +32,18 @@
 #include <pthread.h>
 
 /*
+ * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
+ * publication headers.
+ */
+#include <urcu-pointer.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
+#include <urcu/map/urcu-qsbr.h>
+
+/*
  * Important !
  *
  * Each thread containing read-side critical sections must be registered
@@ -41,25 +53,27 @@
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu-qsbr-static.h>
+#include <urcu/static/urcu-qsbr.h>
 
 /*
  * Mappings for static use of the userspace RCU library.
  * Should only be used in LGPL-compatible code.
  */
 
-#define rcu_dereference		_rcu_dereference
-#define rcu_read_lock		_rcu_read_lock
-#define rcu_read_unlock		_rcu_read_unlock
+/*
+ * rcu_read_lock()
+ * rcu_read_unlock()
+ *
+ * Mark the beginning and end of a read-side critical section.
+ * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread()
+ * FOR EACH THREAD WITH READ-SIDE CRITICAL SECTION.
+ */
+#define rcu_read_lock_qsbr		_rcu_read_lock
+#define rcu_read_unlock_qsbr		_rcu_read_unlock
 
-#define rcu_quiescent_state	_rcu_quiescent_state
-#define rcu_thread_offline	_rcu_thread_offline
-#define rcu_thread_online	_rcu_thread_online
-
-#define rcu_assign_pointer	_rcu_assign_pointer
-#define rcu_cmpxchg_pointer	_rcu_cmpxchg_pointer
-#define rcu_xchg_pointer	_rcu_xchg_pointer
-#define rcu_publish_content	_rcu_publish_content
+#define rcu_quiescent_state_qsbr	_rcu_quiescent_state
+#define rcu_thread_offline_qsbr		_rcu_thread_offline
+#define rcu_thread_online_qsbr		_rcu_thread_online
 
 #else /* !_LGPL_SOURCE */
 
@@ -71,50 +85,31 @@
  * QSBR read lock/unlock are guaranteed to be no-ops. Therefore, we expose them
  * in the LGPL header for any code to use. However, the debug version is not
  * nops and may contain sanity checks. To activate it, applications must be
- * recompiled with -DURCU_DEBUG (even non-LGPL/GPL applications). This is the
+ * recompiled with -DRCU_DEBUG (even non-LGPL/GPL applications). This is the
  * best trade-off between license/performance/code triviality and
  * library debugging & tracing features we could come up with.
  */
 
-#if (!defined(BUILD_QSBR_LIB) && defined(URCU_DEBUG))
+#if (!defined(BUILD_QSBR_LIB) && defined(RCU_DEBUG))
 
 static inline void rcu_read_lock(void)
 {
 }
 
-static inline void rcu_read_lock(void)
+static inline void rcu_read_unlock(void)
 {
 }
 
-#else /* !URCU_DEBUG */
+#else /* !RCU_DEBUG */
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
 
-#endif /* !URCU_DEBUG */
-
-extern void *rcu_dereference(void *p);
+#endif /* !RCU_DEBUG */
 
 extern void rcu_quiescent_state(void);
 extern void rcu_thread_offline(void);
 extern void rcu_thread_online(void);
-
-extern void *rcu_assign_pointer_sym(void **p, void *v);
-
-#define rcu_assign_pointer(p, v)			\
-	rcu_assign_pointer_sym((void **)(p), (v))
-
-extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
-#define rcu_cmpxchg_pointer(p, old, _new)		\
-	rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new))
-
-extern void *rcu_xchg_pointer_sym(void **p, void *v);
-#define rcu_xchg_pointer(p, v)				\
-	rcu_xchg_pointer_sym((void **)(p), (v))
-
-extern void *rcu_publish_content_sym(void **p, void *v);
-#define rcu_publish_content(p, v)			\
-	rcu_publish_content_sym((void **)(p), (v))
 
 #endif /* !_LGPL_SOURCE */
 
@@ -125,5 +120,12 @@ extern void synchronize_rcu(void);
  */
 extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
+
+#ifdef __cplusplus 
+}
+#endif
+
+#include <urcu-call-rcu.h>
+#include <urcu-defer.h>
 
 #endif /* _URCU_QSBR_H */

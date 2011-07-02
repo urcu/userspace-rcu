@@ -1,0 +1,12 @@
+#! /bin/sh
+
+set -x
+if [ ! -e config ]; then
+	mkdir config
+fi
+aclocal
+libtoolize --force --copy
+autoheader
+automake --add-missing --copy
+autoconf
+

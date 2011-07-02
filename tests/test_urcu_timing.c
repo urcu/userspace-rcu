@@ -3,7 +3,7 @@
  *
  * Userspace RCU library - test program
  *
- * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
-#include "../arch.h"
+#include <errno.h>
+#include <urcu/arch.h>
 
-/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
-#define CACHE_LINE_SIZE 4096
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -51,7 +52,7 @@ static inline pid_t gettid(void)
 #endif
 
 #define _LGPL_SOURCE
-#include "../urcu.h"
+#include <urcu.h>
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -96,8 +97,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CACHE_LINE_SIZE))) *writer_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
@@ -111,7 +112,7 @@ void *thr_reader(void *arg)
 
 	rcu_register_thread();
 
-	time1 = get_cycles();
+	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
 			rcu_read_lock();
@@ -122,7 +123,7 @@ void *thr_reader(void *arg)
 			rcu_read_unlock();
 		}
 	}
-	time2 = get_cycles();
+	time2 = caa_get_cycles();
 
 	rcu_unregister_thread();
 
@@ -147,7 +148,7 @@ void *thr_writer(void *arg)
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
-			time1 = get_cycles();
+			time1 = caa_get_cycles();
 			new = malloc(sizeof(struct test_array));
 			rcu_copy_mutex_lock();
 			old = test_rcu_pointer;
@@ -155,14 +156,15 @@ void *thr_writer(void *arg)
 				assert(old->a == 8);
 			}
 			new->a = 8;
-			old = rcu_publish_content(&test_rcu_pointer, new);
+			old = rcu_xchg_pointer(&test_rcu_pointer, new);
 			rcu_copy_mutex_unlock();
+			synchronize_rcu();
 			/* can be done after unlock */
 			if (old) {
 				old->a = 0;
 			}
 			free(old);
-			time2 = get_cycles();
+			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
 		}

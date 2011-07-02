@@ -3,7 +3,7 @@
  *
  * Userspace RCU QSBR library
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * This library is free software; you can redistribute it and/or
@@ -23,63 +23,60 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/map/urcu-qsbr.h"
+
 #define BUILD_QSBR_LIB
-#include "urcu-qsbr-static.h"
+#include "urcu/static/urcu-qsbr.h"
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu-qsbr.h"
 
-static pthread_mutex_t urcu_mutex = PTHREAD_MUTEX_INITIALIZER;
+void __attribute__((destructor)) rcu_exit(void);
 
-int gp_futex;
+static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
+
+int32_t gp_futex;
 
 /*
  * Global grace period counter.
  */
-unsigned long urcu_gp_ctr = RCU_GP_ONLINE;
+unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-unsigned long __thread rcu_reader_qs_gp;
-
-/* Thread IDs of registered readers */
-#define INIT_NUM_THREADS 4
-
-struct reader_registry {
-	pthread_t tid;
-	unsigned long *rcu_reader_qs_gp;
-};
+struct rcu_reader __thread rcu_reader;
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
 unsigned int __thread rand_yield;
 #endif
 
-static struct reader_registry *registry;
-static int num_readers, alloc_readers;
+static CDS_LIST_HEAD(registry);
 
-static void internal_urcu_lock(void)
+static void mutex_lock(pthread_mutex_t *mutex)
 {
 	int ret;
 
 #ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(&urcu_mutex);
+	ret = pthread_mutex_lock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
 		exit(-1);
 	}
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(&urcu_mutex)) != 0) {
+	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR) {
 			printf("ret = %d, errno = %d\n", ret, errno);
 			perror("Error in pthread mutex lock");
@@ -90,11 +87,11 @@ static void internal_urcu_lock(void)
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
 
-static void internal_urcu_unlock(void)
+static void mutex_unlock(pthread_mutex_t *mutex)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&urcu_mutex);
+	ret = pthread_mutex_unlock(mutex);
 	if (ret) {
 		perror("Error in pthread mutex unlock");
 		exit(-1);
@@ -104,48 +101,82 @@ static void internal_urcu_unlock(void)
 /*
  * synchronize_rcu() waiting. Single thread.
  */
-static void wait_gp(struct reader_registry *index)
+static void wait_gp(void)
 {
-	atomic_dec(&gp_futex);
-	smp_mb(); /* Write futex before read reader_gp */
-	if (!rcu_gp_ongoing(index->rcu_reader_qs_gp)) {
-		/* Read reader_gp before write futex */
-		smp_mb();
-		/* Callbacks are queued, don't wait. */
-		atomic_set(&gp_futex, 0);
-	} else {
-		/* Read reader_gp before read futex */
-		smp_rmb();
-		if (atomic_read(&gp_futex) == -1)
-			futex(&gp_futex, FUTEX_WAIT, -1,
-			      NULL, NULL, 0);
-	}
+	/* Read reader_gp before read futex */
+	cmm_smp_rmb();
+	if (uatomic_read(&gp_futex) == -1)
+		futex_noasync(&gp_futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
 }
 
-static void wait_for_quiescent_state(void)
+static void update_counter_and_wait(void)
 {
-	struct reader_registry *index;
+	CDS_LIST_HEAD(qsreaders);
+	int wait_loops = 0;
+	struct rcu_reader *index, *tmp;
 
-	if (!registry)
-		return;
+#if (CAA_BITS_PER_LONG < 64)
+	/* Switch parity: 0 -> 1, 1 -> 0 */
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR);
+#else	/* !(CAA_BITS_PER_LONG < 64) */
+	/* Increment current G.P. */
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr + RCU_GP_CTR);
+#endif	/* !(CAA_BITS_PER_LONG < 64) */
+
+	/*
+	 * Must commit rcu_gp_ctr update to memory before waiting for
+	 * quiescent state. Failure to do so could result in the writer
+	 * waiting forever while new readers are always accessing data
+	 * (no progress). Enforce compiler-order of store to rcu_gp_ctr
+	 * before load rcu_reader ctr.
+	 */
+	cmm_barrier();
+
+	/*
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	cmm_smp_mb();
+
 	/*
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
-	for (index = registry; index < registry + num_readers; index++) {
-		int wait_loops = 0;
+	for (;;) {
+		wait_loops++;
+		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			uatomic_dec(&gp_futex);
+			/* Write futex before read reader_gp */
+			cmm_smp_mb();
+		}
 
-		while (rcu_gp_ongoing(index->rcu_reader_qs_gp)) {
-			if (wait_loops++ == RCU_QS_ACTIVE_ATTEMPTS) {
-				wait_gp(index);
+		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
+			if (!rcu_gp_ongoing(&index->ctr))
+				cds_list_move(&index->node, &qsreaders);
+		}
+
+		if (cds_list_empty(&registry)) {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				/* Read reader_gp before write futex */
+				cmm_smp_mb();
+				uatomic_set(&gp_futex, 0);
+			}
+			break;
+		} else {
+			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+				wait_gp();
 			} else {
 #ifndef HAS_INCOHERENT_CACHES
-				cpu_relax();
+				caa_cpu_relax();
 #else /* #ifndef HAS_INCOHERENT_CACHES */
-				smp_mb();
+				cmm_smp_mb();
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 			}
 		}
 	}
+	/* put back the reader list in the registry */
+	cds_list_splice(&qsreaders, &registry);
 }
 
 /*
@@ -153,111 +184,99 @@ static void wait_for_quiescent_state(void)
  * long-size to ensure we do not encounter an overflow bug.
  */
 
-#if (BITS_PER_LONG < 64)
-/*
- * called with urcu_mutex held.
- */
-static void switch_next_urcu_qparity(void)
-{
-	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr ^ RCU_GP_CTR);
-}
-
+#if (CAA_BITS_PER_LONG < 64)
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
 
-	was_online = rcu_reader_qs_gp;
+	was_online = rcu_reader.ctr;
 
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to.
 	 */
 	/* Write new ptr before changing the qparity */
-	smp_mb();
+	cmm_smp_mb();
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
-	 * our own quiescent state. This allows using synchronize_rcu() in
-	 * threads registered as readers.
+	 * our own quiescent state. This allows using synchronize_rcu()
+	 * in threads registered as readers.
 	 */
 	if (was_online)
-		STORE_SHARED(rcu_reader_qs_gp, 0);
+		CMM_STORE_SHARED(rcu_reader.ctr, 0);
 
-	internal_urcu_lock();
+	mutex_lock(&rcu_gp_lock);
 
-	switch_next_urcu_qparity();	/* 0 -> 1 */
-
-	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 0 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
-	 */
+	if (cds_list_empty(&registry))
+		goto out;
 
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 0 */
+	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
 
 	/*
 	 * Must finish waiting for quiescent state for parity 0 before
-	 * committing qparity update to memory. Failure to do so could result in
-	 * the writer waiting forever while new readers are always accessing
-	 * data (no progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 * committing next rcu_gp_ctr update to memory. Failure to
+	 * do so could result in the writer waiting forever while new
+	 * readers are always accessing data (no progress).  Enforce
+	 * compiler-order of load rcu_reader ctr before store to
+	 * rcu_gp_ctr.
 	 */
-
-	switch_next_urcu_qparity();	/* 1 -> 0 */
+	cmm_barrier();
 
 	/*
-	 * Must commit qparity update to memory before waiting for parity
-	 * 1 quiescent state. Failure to do so could result in the writer
-	 * waiting forever while new readers are always accessing data (no
-	 * progress).
-	 * Ensured by STORE_SHARED and LOAD_SHARED.
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
 	 */
+	cmm_smp_mb();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
 	 */
-	wait_for_quiescent_state();	/* Wait readers in parity 1 */
-
-	internal_urcu_unlock();
+	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
+out:
+	mutex_unlock(&rcu_gp_lock);
 
 	/*
 	 * Finish waiting for reader threads before letting the old ptr being
 	 * freed.
 	 */
 	if (was_online)
-		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
-	smp_mb();
+		_CMM_STORE_SHARED(rcu_reader.ctr,
+				  CMM_LOAD_SHARED(rcu_gp_ctr));
+	cmm_smp_mb();
 }
-#else /* !(BITS_PER_LONG < 64) */
+#else /* !(CAA_BITS_PER_LONG < 64) */
 void synchronize_rcu(void)
 {
 	unsigned long was_online;
 
-	was_online = rcu_reader_qs_gp;
+	was_online = rcu_reader.ctr;
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
-	 * our own quiescent state. This allows using synchronize_rcu() in
-	 * threads registered as readers.
+	 * our own quiescent state. This allows using synchronize_rcu()
+	 * in threads registered as readers.
 	 */
-	smp_mb();
+	cmm_smp_mb();
 	if (was_online)
-		STORE_SHARED(rcu_reader_qs_gp, 0);
+		CMM_STORE_SHARED(rcu_reader.ctr, 0);
 
-	internal_urcu_lock();
-	STORE_SHARED(urcu_gp_ctr, urcu_gp_ctr + RCU_GP_CTR);
-	wait_for_quiescent_state();
-	internal_urcu_unlock();
+	mutex_lock(&rcu_gp_lock);
+	if (cds_list_empty(&registry))
+		goto out;
+	update_counter_and_wait();
+out:
+	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)
-		_STORE_SHARED(rcu_reader_qs_gp, LOAD_SHARED(urcu_gp_ctr));
-	smp_mb();
+		_CMM_STORE_SHARED(rcu_reader.ctr,
+				  CMM_LOAD_SHARED(rcu_gp_ctr));
+	cmm_smp_mb();
 }
-#endif  /* !(BITS_PER_LONG < 64) */
+#endif  /* !(CAA_BITS_PER_LONG < 64) */
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
@@ -271,38 +290,6 @@ void rcu_read_lock(void)
 void rcu_read_unlock(void)
 {
 	_rcu_read_unlock();
-}
-
-void *rcu_dereference(void *p)
-{
-	return _rcu_dereference(p);
-}
-
-void *rcu_assign_pointer_sym(void **p, void *v)
-{
-	wmb();
-	return STORE_SHARED(p, v);
-}
-
-void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
-{
-	wmb();
-	return cmpxchg(p, old, _new);
-}
-
-void *rcu_xchg_pointer_sym(void **p, void *v)
-{
-	wmb();
-	return xchg(p, v);
-}
-
-void *rcu_publish_content_sym(void **p, void *v)
-{
-	void *oldptr;
-
-	oldptr = _rcu_xchg_pointer(p, v);
-	synchronize_rcu();
-	return oldptr;
 }
 
 void rcu_quiescent_state(void)
@@ -320,59 +307,14 @@ void rcu_thread_online(void)
 	_rcu_thread_online();
 }
 
-static void rcu_add_reader(pthread_t id)
-{
-	struct reader_registry *oldarray;
-
-	if (!registry) {
-		alloc_readers = INIT_NUM_THREADS;
-		num_readers = 0;
-		registry =
-			malloc(sizeof(struct reader_registry) * alloc_readers);
-	}
-	if (alloc_readers < num_readers + 1) {
-		oldarray = registry;
-		registry = malloc(sizeof(struct reader_registry)
-				* (alloc_readers << 1));
-		memcpy(registry, oldarray,
-			sizeof(struct reader_registry) * alloc_readers);
-		alloc_readers <<= 1;
-		free(oldarray);
-	}
-	registry[num_readers].tid = id;
-	/* reference to the TLS of _this_ reader thread. */
-	registry[num_readers].rcu_reader_qs_gp = &rcu_reader_qs_gp;
-	num_readers++;
-}
-
-/*
- * Never shrink (implementation limitation).
- * This is O(nb threads). Eventually use a hash table.
- */
-static void rcu_remove_reader(pthread_t id)
-{
-	struct reader_registry *index;
-
-	assert(registry != NULL);
-	for (index = registry; index < registry + num_readers; index++) {
-		if (pthread_equal(index->tid, id)) {
-			memcpy(index, &registry[num_readers - 1],
-				sizeof(struct reader_registry));
-			registry[num_readers - 1].tid = 0;
-			registry[num_readers - 1].rcu_reader_qs_gp = NULL;
-			num_readers--;
-			return;
-		}
-	}
-	/* Hrm not found, forgot to register ? */
-	assert(0);
-}
-
 void rcu_register_thread(void)
 {
-	internal_urcu_lock();
-	rcu_add_reader(pthread_self());
-	internal_urcu_unlock();
+	rcu_reader.tid = pthread_self();
+	assert(rcu_reader.ctr == 0);
+
+	mutex_lock(&rcu_gp_lock);
+	cds_list_add(&rcu_reader.node, &registry);
+	mutex_unlock(&rcu_gp_lock);
 	_rcu_thread_online();
 }
 
@@ -383,7 +325,15 @@ void rcu_unregister_thread(void)
 	 * with a waiting writer.
 	 */
 	_rcu_thread_offline();
-	internal_urcu_lock();
-	rcu_remove_reader(pthread_self());
-	internal_urcu_unlock();
+	mutex_lock(&rcu_gp_lock);
+	cds_list_del(&rcu_reader.node);
+	mutex_unlock(&rcu_gp_lock);
 }
+
+void rcu_exit(void)
+{
+	assert(cds_list_empty(&registry));
+}
+
+#include "urcu-call-rcu-impl.h"
+#include "urcu-defer-impl.h"

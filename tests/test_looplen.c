@@ -3,7 +3,7 @@
  *
  * Userspace RCU library - test program
  *
- * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,10 +30,14 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <sched.h>
+#include <errno.h>
 
-#include "../arch.h"
+#include <urcu/arch.h>
+
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
@@ -55,12 +59,12 @@ static inline pid_t gettid(void)
 #else
 #define debug_yield_read()
 #endif
-#include "../urcu.h"
+#include <urcu.h>
 
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 #define LOOPS 1048576
@@ -74,9 +78,9 @@ int main(int argc, char **argv)
 	double cpl;
 
 	for (i = 0; i < TESTS; i++) {
-		time1 = get_cycles();
+		time1 = caa_get_cycles();
 		loop_sleep(LOOPS);
-		time2 = get_cycles();
+		time2 = caa_get_cycles();
 		time_tot += time2 - time1;
 	}
 	cpl = ((double)time_tot) / (double)TESTS / (double)LOOPS;

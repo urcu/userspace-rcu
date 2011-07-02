@@ -6,7 +6,7 @@
  *
  * Userspace RCU header
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
  * LGPL-compatible code should include this header with :
@@ -35,58 +35,62 @@
 #include <pthread.h>
 
 /*
+ * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
+ * publication headers.
+ */
+#include <urcu-pointer.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
+#include <urcu/map/urcu.h>
+
+/*
  * Important !
  *
  * Each thread containing read-side critical sections must be registered
- * with rcu_register_thread() before calling rcu_read_lock().
- * rcu_unregister_thread() should be called before the thread exits.
+ * with rcu_register_thread_mb() before calling rcu_read_lock_mb().
+ * rcu_unregister_thread_mb() should be called before the thread exits.
  */
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu-static.h>
+#include <urcu/static/urcu.h>
 
 /*
  * Mappings for static use of the userspace RCU library.
  * Should only be used in LGPL-compatible code.
  */
 
-#define rcu_dereference		_rcu_dereference
-#define rcu_read_lock		_rcu_read_lock
-#define rcu_read_unlock		_rcu_read_unlock
-
-#define rcu_assign_pointer	_rcu_assign_pointer
-#define rcu_cmpxchg_pointer	_rcu_cmpxchg_pointer
-#define rcu_xchg_pointer	_rcu_xchg_pointer
-#define rcu_publish_content	_rcu_publish_content
+/*
+ * rcu_read_lock()
+ * rcu_read_unlock()
+ *
+ * Mark the beginning and end of a read-side critical section.
+ * DON'T FORGET TO USE RCU_REGISTER/UNREGISTER_THREAD() FOR EACH THREAD WITH
+ * READ-SIDE CRITICAL SECTION.
+ */
+#ifdef RCU_MEMBARRIER
+#define rcu_read_lock_memb		_rcu_read_lock
+#define rcu_read_unlock_memb		_rcu_read_unlock
+#elif defined(RCU_SIGNAL)
+#define rcu_read_lock_sig		_rcu_read_lock
+#define rcu_read_unlock_sig		_rcu_read_unlock
+#elif defined(RCU_MB)
+#define rcu_read_lock_mb		_rcu_read_lock
+#define rcu_read_unlock_mb		_rcu_read_unlock
+#endif
 
 #else /* !_LGPL_SOURCE */
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
+ * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
-
-extern void *rcu_dereference(void *p);
-
-extern void *rcu_assign_pointer_sym(void **p, void *v);
-
-#define rcu_assign_pointer(p, v)			\
-	rcu_assign_pointer_sym((void **)(p), (v))
-
-extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
-#define rcu_cmpxchg_pointer(p, old, _new)		\
-	rcu_cmpxchg_pointer_sym((void **)(p), (old), (_new))
-
-extern void *rcu_xchg_pointer_sym(void **p, void *v);
-#define rcu_xchg_pointer(p, v)				\
-	rcu_xchg_pointer_sym((void **)(p), (v))
-
-extern void *rcu_publish_content_sym(void **p, void *v);
-#define rcu_publish_content(p, v)			\
-	rcu_publish_content_sym((void **)(p), (v))
 
 #endif /* !_LGPL_SOURCE */
 
@@ -97,5 +101,17 @@ extern void synchronize_rcu(void);
  */
 extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
+
+/*
+ * Explicit rcu initialization, for "early" use within library constructors.
+ */
+extern void rcu_init(void);
+
+#ifdef __cplusplus 
+}
+#endif
+
+#include <urcu-call-rcu.h>
+#include <urcu-defer.h>
 
 #endif /* _URCU_H */
