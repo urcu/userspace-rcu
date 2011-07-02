@@ -11,13 +11,13 @@
 
 #include <urcu.h>
 #include <urcu-defer.h>
-#include <arch.h>
-#include <arch_atomic.h>
-#include <compiler.h>
+#include <urcu/arch.h>
+#include <urcu/uatomic.h>
 #include <urcu/jhash.h>
+#include <urcu/compiler.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <urcu-ht.h>
+#include <urcu/rculfhash.h>
 
 /*
  * Maximum number of hash table buckets: 256M on 64-bit.

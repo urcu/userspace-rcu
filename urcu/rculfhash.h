@@ -1,5 +1,5 @@
-#ifndef _URCU_HT_H
-#define _URCU_HT_H
+#ifndef _URCU_RCULFHASH_H
+#define _URCU_RCULFHASH_H
 
 #include <stdint.h>
 
@@ -35,4 +35,4 @@ void ht_resize(struct rcu_ht *ht, int growth);
 
 uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval);
 
-#endif /* _URCU_HT_H */
+#endif /* _URCU_RCULFHASH_H */
