@@ -30,13 +30,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sys/syscall.h>
 #include <sched.h>
-#include <urcu-ht.h>
-#include <urcu-defer.h>
 #include <errno.h>
 
-#include "../arch.h"
+#ifdef __linux__
+#include <syscall.h>
+#endif
 
 #define HASH_SIZE	32
 #define RAND_POOL	1000
@@ -67,7 +66,9 @@ static inline pid_t gettid(void)
 #else
 #define debug_yield_read()
 #endif
-#include "../urcu.h"
+#include <urcu.h>
+#include <urcu/rculfhash.h>
+#include <urcu-call-rcu.h>
 
 static unsigned int __thread rand_lookup;
 static unsigned long __thread nr_add;
@@ -96,7 +97,7 @@ static unsigned long rduration;
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
-		cpu_relax();
+		caa_cpu_relax();
 }
 
 static int verbose_mode;
@@ -180,12 +181,28 @@ void rcu_copy_mutex_unlock(void)
 	}
 }
 
-#define ARRAY_POISON 0xDEADBEEF
+static
+unsigned long test_hash(void *_hashseed, void *_key)
+{
+	unsigned long seed = (unsigned long) _hashseed;
+	unsigned long key = (unsigned long) _key;
+	unsigned long v;
+
+	v = key ^ seed;
+	v ^= v << 8;
+	v ^= v << 16;
+	v ^= v << 27;
+	v ^= v >> 8;
+	v ^= v >> 16;
+	v ^= v >> 27;
+
+	return v;
+}
 
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
-	struct test_data *local_ptr;
+	struct rcu_ht_node *node;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
@@ -197,13 +214,13 @@ void *thr_reader(void *_count)
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		rcu_read_lock();
-		local_ptr = ht_lookup(test_ht,
+		node = ht_lookup(test_ht,
 			(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL));
-		if (local_ptr == NULL)
+		if (node == NULL)
 			lookup_fail++;
 		else
 			lookup_ok++;
@@ -227,10 +244,18 @@ void *thr_reader(void *_count)
 
 }
 
+static
+void free_node_cb(struct rcu_head *head)
+{
+	struct rcu_ht_node *node =
+		caa_container_of(head, struct rcu_ht_node, head);
+	free(node);
+}
+
 void *thr_writer(void *_count)
 {
+	struct rcu_ht_node *node;
 	unsigned long long *count = _count;
-	struct test_data *data;
 	int ret;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -239,46 +264,55 @@ void *thr_writer(void *_count)
 	set_affinity();
 
 	rcu_register_thread();
-	rcu_defer_register_thread();
 
 	while (!test_go)
 	{
 	}
-	smp_mb();
+	cmm_smp_mb();
 
 	for (;;) {
 		if (rand_r(&rand_lookup) & 1) {
-			data = malloc(sizeof(struct test_data));
-			//rcu_copy_mutex_lock();
-			ret = ht_add(test_ht,
-			    (void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
-			    data);
+			node = malloc(sizeof(struct rcu_ht_node));
+			rcu_read_lock();
+			ht_node_init(node,
+				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
+				(void *) 0x42);
+			ret = ht_add(test_ht, node);
+			rcu_read_unlock();
 			if (ret == -EEXIST) {
-				free(data);
+				free(node);
 				nr_addexist++;
 			} else {
 				nr_add++;
 			}
-			//rcu_copy_mutex_unlock();
 		} else {
 			/* May delete */
-			//rcu_copy_mutex_lock();
-			ret = ht_delete(test_ht,
-			   (void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL));
-			if (ret == -ENOENT)
-				nr_delnoent++;
+			rcu_read_lock();
+			node = ht_lookup(test_ht,
+				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL));
+			if (node)
+				ret = ht_remove(test_ht, node);
 			else
+				ret = -ENOENT;
+			rcu_read_unlock();
+			if (ret == 0) {
+				call_rcu(&node->head, free_node_cb);
 				nr_del++;
-			//rcu_copy_mutex_unlock();
+			} else
+				nr_delnoent++;
 		}
+#if 0
 		//if (nr_writes % 100000 == 0) {
 		if (nr_writes % 1000 == 0) {
+			rcu_read_lock();
 			if (rand_r(&rand_lookup) & 1) {
 				ht_resize(test_ht, 1);
 			} else {
 				ht_resize(test_ht, -1);
 			}
+			rcu_read_unlock();
 		}
+#endif //0
 		nr_writes++;
 		if (unlikely(!test_duration_write()))
 			break;
@@ -286,7 +320,6 @@ void *thr_writer(void *_count)
 			loop_sleep(wdelay);
 	}
 
-	rcu_defer_unregister_thread();
 	rcu_unregister_thread();
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
@@ -396,8 +429,8 @@ int main(int argc, char **argv)
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
-	test_ht = ht_new(ht_jhash, free, HASH_SIZE, sizeof(unsigned long),
-			 43223455);
+	test_ht = ht_new(test_hash, (void *) 0x42,
+			 HASH_SIZE, call_rcu);
 	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {
@@ -413,7 +446,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	smp_mb();
+	cmm_smp_mb();
 
 	test_go = 1;
 
@@ -434,9 +467,7 @@ int main(int argc, char **argv)
 		tot_writes += count_writer[i];
 	}
 	rcu_register_thread();
-	rcu_defer_register_thread();
 	ret = ht_destroy(test_ht);
-	rcu_defer_unregister_thread();
 	rcu_unregister_thread();
 	
 	printf_verbose("final delete: %d items\n", ret);

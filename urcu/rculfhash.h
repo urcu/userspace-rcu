@@ -2,37 +2,55 @@
 #define _URCU_RCULFHASH_H
 
 #include <stdint.h>
+#include <urcu-call-rcu.h>
+
+struct rcu_ht_node {
+	struct rcu_ht_node *next;
+	void *key;
+	unsigned long hash;
+	unsigned long reverse_hash;
+	unsigned int dummy;
+	void *value;
+	struct rcu_head head;
+};
+
+struct rcu_ht;
 
 /*
  * Caution !
- * Ensure writer threads are registered as urcu readers and with with
- * urcu-defer.
- * Ensure reader threads are registered as urcu readers.
+ * Ensure reader and writer threads are registered as urcu readers.
  */
 
-typedef uint32_t (*ht_hash_fct)(void *key, uint32_t length, uint32_t initval);
+typedef unsigned long (*ht_hash_fct)(void *hashseed, void *key);
+
+static inline
+void ht_node_init(struct rcu_ht_node *node, void *key, void *value)
+{
+	node->key = key;
+	node->value = value;
+	node->dummy = 0;
+}
 
 /*
  * init_size must be power of two.
  */
-struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
-		      unsigned long init_size, uint32_t keylen,
-		      uint32_t hashseed);
-
-int ht_delete_all(struct rcu_ht *ht);
+struct rcu_ht *ht_new(ht_hash_fct hash_fct,
+		      void *hashseed,
+		      unsigned long init_size,
+		      void (*ht_call_rcu)(struct rcu_head *head,
+				void (*func)(struct rcu_head *head)));
 
 int ht_destroy(struct rcu_ht *ht);
 
-void *ht_lookup(struct rcu_ht *ht, void *key);
+/* Call with rcu_read_lock held. */
+struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key);
 
-int ht_add(struct rcu_ht *ht, void *key, void *data);
+/* Call with rcu_read_lock held. */
+int ht_add(struct rcu_ht *ht, struct rcu_ht_node *node);
 
-int ht_delete(struct rcu_ht *ht, void *key);
-
-void *ht_steal(struct rcu_ht *ht, void *key);
+/* Call with rcu_read_lock held. */
+int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 void ht_resize(struct rcu_ht *ht, int growth);
-
-uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval);
 
 #endif /* _URCU_RCULFHASH_H */

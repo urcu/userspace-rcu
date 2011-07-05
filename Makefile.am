@@ -15,7 +15,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/wfqueue.h urcu/rculfstack.h urcu/rculfqueue.h \
 		urcu/ref.h urcu/map/*.h urcu/static/*.h urcu/cds.h \
 		urcu/urcu_ref.h urcu/urcu-futex.h urcu/uatomic_arch.h \
-		urcu/urcu-ht.h
+		urcu/rculfhash.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \

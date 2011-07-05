@@ -1,6 +1,23 @@
-
 /*
- * TODO: keys are currently assumed <= sizeof(void *). Key target never freed.
+ * rculfhash.c
+ *
+ * Userspace RCU library - Lock-Free Expandable RCU Hash Table
+ *
+ * Copyright 2010-2011 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #define _LGPL_SOURCE
@@ -8,338 +25,342 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <urcu.h>
-#include <urcu-defer.h>
+#include <urcu-call-rcu.h>
 #include <urcu/arch.h>
 #include <urcu/uatomic.h>
 #include <urcu/jhash.h>
 #include <urcu/compiler.h>
+#include <urcu/rculfhash.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <urcu/rculfhash.h>
 
-/*
- * Maximum number of hash table buckets: 256M on 64-bit.
- * Should take about 512MB max if we assume 1 node per 4 buckets.
- */
-#define MAX_HT_BUCKETS ((256 << 10) / sizeof(void *))
+#define BUCKET_SIZE_RESIZE_THRESHOLD	5
 
-/* node flags */
-#define	NODE_STOLEN	(1 << 0)
-
-struct rcu_ht_node;
-
-struct rcu_ht_node {
-	struct rcu_ht_node *next;
-	void *key;
-	void *data;
-	unsigned int flags;
-};
+#ifndef max
+#define max(a, b)	((a) > (b) ? (a) : (b))
+#endif
 
 struct rcu_table {
-	unsigned long size;
+	unsigned long size;	/* always a power of 2 */
+	struct rcu_head head;
 	struct rcu_ht_node *tbl[0];
 };
 
 struct rcu_ht {
 	struct rcu_table *t;		/* shared */
 	ht_hash_fct hash_fct;
-	void (*free_fct)(void *data);	/* fct to free data */
-	uint32_t keylen;
-	uint32_t hashseed;
+	void *hashseed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	int resize_ongoing;		/* fast-path resize check */
+	unsigned long target_size;
+	void (*ht_call_rcu)(struct rcu_head *head,
+		      void (*func)(struct rcu_head *head));
 };
 
-struct rcu_ht *ht_new(ht_hash_fct hash_fct, void (*free_fct)(void *data),
-		      unsigned long init_size, uint32_t keylen,
-		      uint32_t hashseed)
+struct rcu_resize_work {
+	struct rcu_head head;
+	struct rcu_ht *ht;
+};
+
+static
+void ht_resize_lazy(struct rcu_ht *ht, int growth);
+
+static
+void check_resize(struct rcu_ht *ht, unsigned long chain_len)
+{
+	if (chain_len >= BUCKET_SIZE_RESIZE_THRESHOLD)
+		ht_resize_lazy(ht, chain_len / BUCKET_SIZE_RESIZE_THRESHOLD);
+}
+
+/*
+ * Algorithm to reverse bits in a word by lookup table, extended to
+ * 64-bit words.
+ * ref.
+ * http://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+ */
+
+static const uint8_t BitReverseTable256[256] = 
+{
+#define R2(n) (n),   (n) + 2*64,     (n) + 1*64,     (n) + 3*64
+#define R4(n) R2(n), R2((n) + 2*16), R2((n) + 1*16), R2((n) + 3*16)
+#define R6(n) R4(n), R4((n) + 2*4 ), R4((n) + 1*4 ), R4((n) + 3*4 )
+	R6(0), R6(2), R6(1), R6(3)
+};
+#undef R2
+#undef R4
+#undef R6
+
+static
+uint8_t bit_reverse_u8(uint8_t v)
+{
+	return BitReverseTable256[v];
+}
+
+static __attribute__((unused))
+uint32_t bit_reverse_u32(uint32_t v)
+{
+	return ((uint32_t) bit_reverse_u8(v) << 24) | 
+		((uint32_t) bit_reverse_u8(v >> 8) << 16) | 
+		((uint32_t) bit_reverse_u8(v >> 16) << 8) | 
+		((uint32_t) bit_reverse_u8(v >> 24));
+}
+
+static __attribute__((unused))
+uint64_t bit_reverse_u64(uint64_t v)
+{
+	return ((uint64_t) bit_reverse_u8(v) << 56) | 
+		((uint64_t) bit_reverse_u8(v >> 8)  << 48) | 
+		((uint64_t) bit_reverse_u8(v >> 16) << 40) |
+		((uint64_t) bit_reverse_u8(v >> 24) << 32) |
+		((uint64_t) bit_reverse_u8(v >> 32) << 24) | 
+		((uint64_t) bit_reverse_u8(v >> 40) << 16) | 
+		((uint64_t) bit_reverse_u8(v >> 48) << 8) |
+		((uint64_t) bit_reverse_u8(v >> 56));
+}
+
+static
+unsigned long bit_reverse_ulong(unsigned long v)
+{
+#if (CAA_BITS_PER_LONG == 32)
+	return bit_reverse_u32(v);
+#else
+	return bit_reverse_u64(v);
+#endif
+}
+
+static
+struct rcu_ht_node *clear_flag(struct rcu_ht_node *node)
+{
+	return (struct rcu_ht_node *) (((unsigned long) node) & ~0x1);
+}
+
+static
+int is_removed(struct rcu_ht_node *node)
+{
+	return ((unsigned long) node) & 0x1;
+}
+
+static
+struct rcu_ht_node *flag_removed(struct rcu_ht_node *node)
+{
+	return (struct rcu_ht_node *) (((unsigned long) node) | 0x1);
+}
+
+static
+void _uatomic_max(unsigned long *ptr, unsigned long v)
+{
+	unsigned long old1, old2;
+
+	old1 = uatomic_read(ptr);
+	do {
+		old2 = old1;
+		if (old2 >= v)
+			break;
+	} while ((old1 = uatomic_cmpxchg(ptr, old2, v)) != old2);
+}
+
+static
+int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
+{
+	struct rcu_ht_node *iter_prev = NULL, *iter = NULL;
+
+	for (;;) {
+		unsigned long chain_len = 0;
+
+		iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+		assert(iter_prev);
+		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		for (;;) {
+			iter = clear_flag(rcu_dereference(iter_prev->next));
+			if (unlikely(!iter))
+				break;
+			if (iter->reverse_hash < node->reverse_hash)
+				break;
+			iter_prev = iter;
+			check_resize(ht, ++chain_len);
+		}
+		/* add in iter_prev->next */
+		if (is_removed(iter))
+			continue;
+		node->next = iter;
+		if (uatomic_cmpxchg(&iter_prev->next, iter, node) != iter)
+			continue;
+	}
+}
+
+static
+int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
+{
+	struct rcu_ht_node *iter_prev, *iter, *next, *old;
+	unsigned long chain_len;
+	int found, ret = 0;
+	int flagged = 0;
+
+retry:
+	chain_len = 0;
+	found = 0;
+	iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+	assert(iter_prev);
+	assert(iter_prev->reverse_hash <= node->reverse_hash);
+	for (;;) {
+		iter = clear_flag(rcu_dereference(iter_prev->next));
+		if (unlikely(!iter))
+			break;
+		if (iter->reverse_hash < node->reverse_hash)
+			break;
+		if (iter == node) {
+			found = 1;
+			break;
+		}
+		iter_prev = iter;
+	} 
+	if (!found) {
+		ret = -ENOENT;
+		goto end;
+	}
+	next = rcu_dereference(iter->next);
+	if (!flagged) {
+		if (is_removed(next)) {
+			ret = -ENOENT;
+			goto end;
+		}
+		/* set deletion flag */
+		if ((old = uatomic_cmpxchg(&iter->next, next, flag_removed(next))) != next) {
+			if (old == flag_removed(next)) {
+				ret = -ENOENT;
+				goto end;
+			} else {
+				goto retry;
+			}
+		}
+		flagged = 1;
+	}
+	/*
+	 * Remove the element from the list. Retry if there has been a
+	 * concurrent add (there cannot be a concurrent delete, because
+	 * we won the deletion flag cmpxchg).
+	 */
+	if (uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next)) != iter)
+		goto retry;
+end:
+	return ret;
+}
+
+static
+void init_table(struct rcu_ht *ht, struct rcu_table *t,
+		unsigned long first, unsigned long len)
+{
+	unsigned long i, end;
+
+	end = first + len;
+	for (i = first; i < end; i++) {
+		/* Update table size when power of two */
+		if (i != 0 && !(i & (i - 1)))
+			t->size = i;
+		t->tbl[i] = calloc(1, sizeof(struct rcu_ht_node));
+		t->tbl[i]->dummy = 1;
+		t->tbl[i]->hash = i;
+		t->tbl[i]->reverse_hash = bit_reverse_ulong(i);
+		_ht_add(ht, t, t->tbl[i]);
+	}
+	t->size = end;
+}
+
+struct rcu_ht *ht_new(ht_hash_fct hash_fct,
+		      void *hashseed,
+		      unsigned long init_size,
+		      void (*ht_call_rcu)(struct rcu_head *head,
+				void (*func)(struct rcu_head *head)))
 {
 	struct rcu_ht *ht;
 
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
-	ht->free_fct = free_fct;
-	ht->keylen = keylen;
 	ht->hashseed = hashseed;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	ht->resize_ongoing = 0;	/* shared */
 	ht->t = calloc(1, sizeof(struct rcu_table)
-		       + (init_size * sizeof(struct rcu_ht_node *)));
-	ht->t->size = init_size;
+		       + (max(init_size, 1) * sizeof(struct rcu_ht_node *)));
+	ht->t->size = 0;
+	init_table(ht, ht->t, 0, max(init_size, 1));
+	ht->target_size = ht->t->size;
+	ht->ht_call_rcu = ht_call_rcu;
 	return ht;
 }
 
-void *ht_lookup(struct rcu_ht *ht, void *key)
+struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key)
 {
 	struct rcu_table *t;
-	unsigned long hash;
 	struct rcu_ht_node *node;
-	void *ret;
+	unsigned long hash, reverse_hash;
 
-	rcu_read_lock();
+	hash = ht->hash_fct(ht->hashseed, key);
+	reverse_hash = bit_reverse_ulong(hash);
+
 	t = rcu_dereference(ht->t);
-	smp_read_barrier_depends();	/* read t before size and table */
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
-	smp_read_barrier_depends();	/* read size before links */
-	node = rcu_dereference(t->tbl[hash]);
+	cmm_smp_read_barrier_depends();	/* read t before size and table */
+	node = rcu_dereference(t->tbl[hash & (t->size - 1)]);
 	for (;;) {
-		if (likely(!node)) {
-			ret = NULL;
+		if (unlikely(!node))
+			break;
+		if (node->reverse_hash > reverse_hash) {
+			node = NULL;
 			break;
 		}
 		if (node->key == key) {
-			ret = node->data;
+			if (is_removed(rcu_dereference(node->next)))
+				node = NULL;
 			break;
 		}
-		node = rcu_dereference(node->next);
+		node = clear_flag(rcu_dereference(node->next));
 	}
-	rcu_read_unlock();
-
-	return ret;
+	return node;
 }
 
-/*
- * Will re-try until either:
- * - The key is already there (-EEXIST)
- * - We successfully add the key at the head of a table bucket.
- */
-int ht_add(struct rcu_ht *ht, void *key, void *data)
+int ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node *node, *old_head, *new_head;
 	struct rcu_table *t;
-	unsigned long hash;
-	int ret = 0;
 
-	new_head = calloc(1, sizeof(struct rcu_ht_node));
-	new_head->key = key;
-	new_head->data = data;
-	new_head->flags = 0;
-	/* here comes the fun and tricky part.
-	 * Add at the beginning with a cmpxchg.
-	 * Hold a read lock between the moment the first element is read
-	 * and the nodes traversal (to find duplicates). This ensures
-	 * the head pointer has not been reclaimed when cmpxchg is done.
-	 * Always adding at the head ensures that we would have to
-	 * re-try if a new item has been added concurrently. So we ensure that
-	 * we never add duplicates. */
-retry:
-	rcu_read_lock();
-
-	if (unlikely(LOAD_SHARED(ht->resize_ongoing))) {
-		rcu_read_unlock();
-		/*
-		 * Wait for resize to complete before continuing.
-		 */
-		ret = pthread_mutex_lock(&ht->resize_mutex);
-		assert(!ret);
-		ret = pthread_mutex_unlock(&ht->resize_mutex);
-		assert(!ret);
-		goto retry;
-	}
+	node->hash = ht->hash_fct(ht->hashseed, node->key);
+	node->reverse_hash = bit_reverse_ulong((unsigned long) node->hash);
 
 	t = rcu_dereference(ht->t);
-	/* no read barrier needed, because no concurrency with resize */
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
-
-	old_head = node = rcu_dereference(t->tbl[hash]);
-	for (;;) {
-		if (likely(!node)) {
-			break;
-		}
-		if (node->key == key) {
-			ret = -EEXIST;
-			goto end;
-		}
-		node = rcu_dereference(node->next);
-	}
-	new_head->next = old_head;
-	if (rcu_cmpxchg_pointer(&t->tbl[hash], old_head, new_head) != old_head)
-		goto restart;
-end:
-	rcu_read_unlock();
-	return ret;
-
-	/* restart loop, release and re-take the read lock to be kind to GP */
-restart:
-	rcu_read_unlock();
-	goto retry;
+	cmm_smp_read_barrier_depends();	/* read t before size and table */
+	return _ht_add(ht, t, node);
 }
 
-/*
- * Restart until we successfully remove the entry, or no entry is left
- * ((void *)(unsigned long)-ENOENT).
- * Deal with concurrent stealers by doing an extra verification pass to check
- * that no element in the list are still pointing to the element stolen.
- * This could happen if two concurrent steal for consecutive objects are
- * executed. A pointer to an object being stolen could be saved by the
- * concurrent stealer for the previous object.
- * Also, given that in this precise scenario, another stealer can also want to
- * delete the doubly-referenced object; use a "stolen" flag to let only one
- * stealer delete the object.
- */
-void *ht_steal(struct rcu_ht *ht, void *key)
+int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node **prev, *node, *del_node = NULL;
 	struct rcu_table *t;
-	unsigned long hash;
-	void *data;
-	int ret;
-
-retry:
-	rcu_read_lock();
-
-	if (unlikely(LOAD_SHARED(ht->resize_ongoing))) {
-		rcu_read_unlock();
-		/*
-		 * Wait for resize to complete before continuing.
-		 */
-		ret = pthread_mutex_lock(&ht->resize_mutex);
-		assert(!ret);
-		ret = pthread_mutex_unlock(&ht->resize_mutex);
-		assert(!ret);
-		goto retry;
-	}
 
 	t = rcu_dereference(ht->t);
-	/* no read barrier needed, because no concurrency with resize */
-	hash = ht->hash_fct(key, ht->keylen, ht->hashseed) % t->size;
-
-	prev = &t->tbl[hash];
-	node = rcu_dereference(*prev);
-	for (;;) {
-		if (likely(!node)) {
-			if (del_node) {
-				goto end;
-			} else {
-				goto error;
-			}
-		}
-		if (node->key == key) {
-			break;
-		}
-		prev = &node->next;
-		node = rcu_dereference(*prev);
-	}
-
-	if (!del_node) {
-		/*
-		 * Another concurrent thread stole it ? If so, let it deal with
-		 * this. Assume NODE_STOLEN is the only flag. If this changes,
-		 * read flags before cmpxchg.
-		 */
-		if (cmpxchg(&node->flags, 0, NODE_STOLEN) != 0)
-			goto error;
-	}
-
-	/* Found it ! pointer to object is in "prev" */
-	if (rcu_cmpxchg_pointer(prev, node, node->next) == node)
-		del_node = node;
-	goto restart;
-
-end:
-	/*
-	 * From that point, we own node. Note that there can still be concurrent
-	 * RCU readers using it. We can free it outside of read lock after a GP.
-	 */
-	rcu_read_unlock();
-
-	data = del_node->data;
-	call_rcu(free, del_node);
-	return data;
-
-error:
-	data = (void *)(unsigned long)-ENOENT;
-	rcu_read_unlock();
-	return data;
-
-	/* restart loop, release and re-take the read lock to be kind to GP */
-restart:
-	rcu_read_unlock();
-	goto retry;
+	cmm_smp_read_barrier_depends();	/* read t before size and table */
+	return _ht_remove(ht, t, node);
 }
 
-int ht_delete(struct rcu_ht *ht, void *key)
+static
+int ht_delete_dummy(struct rcu_ht *ht)
 {
-	void *data;
-
-	data = ht_steal(ht, key);
-	if (data && data != (void *)(unsigned long)-ENOENT) {
-		if (ht->free_fct)
-			call_rcu(ht->free_fct, data);
-		return 0;
-	} else {
-		return -ENOENT;
-	}
-}
-
-/* Delete all old elements. Allow concurrent writer accesses. */
-int ht_delete_all(struct rcu_ht *ht)
-{
+	struct rcu_table *t;
+	struct rcu_ht_node *node;
 	unsigned long i;
-	struct rcu_ht_node **prev, *node, *inext;
-	struct rcu_table *t;
-	int cnt = 0;
-	int ret;
 
-	/*
-	 * Mutual exclusion with resize operations, but leave add/steal execute
-	 * concurrently. This is OK because we operate only on the heads.
-	 */
-	ret = pthread_mutex_lock(&ht->resize_mutex);
-	assert(!ret);
-
-	t = rcu_dereference(ht->t);
-	/* no read barrier needed, because no concurrency with resize */
+	t = ht->t;
+	/* Check that the table is empty */
+	node = t->tbl[0];
+	do {
+		if (!node->dummy)
+			return -EPERM;
+		node = node->next;
+	} while (node);
+	/* Internal sanity check: all nodes left should be dummy */
 	for (i = 0; i < t->size; i++) {
-		rcu_read_lock();
-		prev = &t->tbl[i];
-		/*
-		 * Cut the head. After that, we own the first element.
-		 */
-		node = rcu_xchg_pointer(prev, NULL);
-		if (!node) {
-			rcu_read_unlock();
-			continue;
-		}
-		/*
-		 * We manage a list shared with concurrent writers and readers.
-		 * Note that a concurrent add may or may not be deleted by us,
-		 * depending if it arrives before or after the head is cut.
-		 * "node" points to our first node. Remove first elements
-		 * iteratively.
-		 */
-		for (;;) {
-			inext = NULL;
-			prev = &node->next;
-			if (prev)
-				inext = rcu_xchg_pointer(prev, NULL);
-			/*
-			 * "node" is the first element of the list we have cut.
-			 * We therefore own it, no concurrent writer may delete
-			 * it. There can only be concurrent lookups. Concurrent
-			 * add can only be done on a bucket head, but we've cut
-			 * it already. inext is also owned by us, because we
-			 * have exchanged it for "NULL". It will therefore be
-			 * safe to use it after a G.P.
-			 */
-			rcu_read_unlock();
-			if (node->data)
-				call_rcu(ht->free_fct, node->data);
-			call_rcu(free, node);
-			cnt++;
-			if (likely(!inext))
-				break;
-			rcu_read_lock();
-			node = inext;
-		}
+		assert(t->tbl[i]->dummy);
+		free(t->tbl[i]);
 	}
-
-	ret = pthread_mutex_unlock(&ht->resize_mutex);
-	assert(!ret);
-	return cnt;
+	return 0;
 }
 
 /*
@@ -350,136 +371,83 @@ int ht_destroy(struct rcu_ht *ht)
 {
 	int ret;
 
-	ret = ht_delete_all(ht);
+	ret = ht_delete_dummy(ht);
+	if (ret)
+		return ret;
 	free(ht->t);
 	free(ht);
 	return ret;
 }
 
-static void ht_resize_grow(struct rcu_ht *ht)
+static
+void ht_free_table_cb(struct rcu_head *head)
 {
-	unsigned long i, new_size, old_size;
+	struct rcu_table *t =
+		caa_container_of(head, struct rcu_table, head);
+	free(t);
+}
+
+/* called with resize mutex held */
+static
+void _do_ht_resize(struct rcu_ht *ht)
+{
+	unsigned long new_size, old_size;
 	struct rcu_table *new_t, *old_t;
-	struct rcu_ht_node *node, *new_node, *tmp;
-	unsigned long hash;
 
 	old_t = ht->t;
 	old_size = old_t->size;
 
-	if (old_size == MAX_HT_BUCKETS)
+	new_size = CMM_LOAD_SHARED(ht->target_size);
+	if (old_size == new_size)
 		return;
-
-	new_size = old_size << 1;
-	new_t = calloc(1, sizeof(struct rcu_table)
-		       + (new_size * sizeof(struct rcu_ht_node *)));
-	new_t->size = new_size;
-
-	for (i = 0; i < old_size; i++) {
-		/*
-		 * Re-hash each entry, insert in new table.
-		 * It's important that a reader looking for a key _will_ find it
-		 * if it's in the table.
-		 * Copy each node. (just the node, not ->data)
-		 */
-		node = old_t->tbl[i];
-		while (node) {
-			hash = ht->hash_fct(node->key, ht->keylen, ht->hashseed)
-					    % new_size;
-			new_node = malloc(sizeof(struct rcu_ht_node));
-			new_node->key = node->key;
-			new_node->data = node->data;
-			new_node->flags = node->flags;
-			new_node->next = new_t->tbl[hash]; /* link to first */
-			new_t->tbl[hash] = new_node;	   /* add to head */
-			node = node->next;
-		}
-	}
-
-	/* Changing table and size atomically wrt lookups */
-	rcu_assign_pointer(ht->t, new_t);
-
-	/* Ensure all concurrent lookups use new size and table */
-	synchronize_rcu();
-
-	for (i = 0; i < old_size; i++) {
-		node = old_t->tbl[i];
-		while (node) {
-			tmp = node->next;
-			free(node);
-			node = tmp;
-		}
-	}
-	free(old_t);
-}
-
-static void ht_resize_shrink(struct rcu_ht *ht)
-{
-	unsigned long i, new_size;
-	struct rcu_table *new_t, *old_t;
-	struct rcu_ht_node **prev, *node;
-
-	old_t = ht->t;
-	if (old_t->size == 1)
-		return;
-
-	new_size = old_t->size >> 1;
-
-	for (i = 0; i < new_size; i++) {
-		/* Link end with first entry of i + new_size */
-		prev = &old_t->tbl[i];
-		node = *prev;
-		while (node) {
-			prev = &node->next;
-			node = *prev;
-		}
-		*prev = old_t->tbl[i + new_size];
-	}
-	smp_wmb();	/* write links before changing size */
-	STORE_SHARED(old_t->size, new_size);
-
-	/* Ensure all concurrent lookups use new size */
-	synchronize_rcu();
-
 	new_t = realloc(old_t, sizeof(struct rcu_table)
-			  + (new_size * sizeof(struct rcu_ht_node *)));
-	/* shrinking, pointers should not move */
-	assert(new_t == old_t);
+			+ (new_size * sizeof(struct rcu_ht_node *)));
+	if (new_size > old_size)
+		init_table(ht, new_t, old_size, new_size - old_size);
+	cmm_smp_wmb();	/* update content before updating reallocated size */
+	CMM_STORE_SHARED(new_t->size, new_size);
+	if (new_t != old_t) {
+		/* Changing table and size atomically wrt lookups */
+		rcu_assign_pointer(ht->t, new_t);
+		ht->ht_call_rcu(&old_t->head, ht_free_table_cb);
+	}
 }
 
-/*
- * growth: >0: *2, <0: /2
- */
+static
+void resize_target_update(struct rcu_ht *ht, int growth_order)
+{
+	_uatomic_max(&ht->target_size,
+		CMM_LOAD_SHARED(ht->target_size) << growth_order);
+}
+
 void ht_resize(struct rcu_ht *ht, int growth)
 {
-	int ret;
-
-	ret = pthread_mutex_lock(&ht->resize_mutex);
-	assert(!ret);
-	STORE_SHARED(ht->resize_ongoing, 1);
-	synchronize_rcu();
-	/* All add/remove are waiting on the mutex. */
-	if (growth > 0)
-		ht_resize_grow(ht);
-	else if (growth < 0)
-		ht_resize_shrink(ht);
-	smp_mb();
-	STORE_SHARED(ht->resize_ongoing, 0);
-	ret = pthread_mutex_unlock(&ht->resize_mutex);
-	assert(!ret);
+	resize_target_update(ht, growth);
+	pthread_mutex_lock(&ht->resize_mutex);
+	_do_ht_resize(ht);
+	pthread_mutex_unlock(&ht->resize_mutex);
 }
 
-/*
- * Expects keys <= than pointer size to be encoded in the pointer itself.
- */
-uint32_t ht_jhash(void *key, uint32_t length, uint32_t initval)
+static
+void do_resize_cb(struct rcu_head *head)
 {
-	uint32_t ret;
-	void *vkey;
+	struct rcu_resize_work *work =
+		caa_container_of(head, struct rcu_resize_work, head);
+	struct rcu_ht *ht = work->ht;
 
-	if (length <= sizeof(void *))
-		vkey = &key;
-	else
-		vkey = key;
-	ret = jhash(vkey, length, initval);
-	return ret;
+	pthread_mutex_lock(&ht->resize_mutex);
+	_do_ht_resize(ht);
+	pthread_mutex_unlock(&ht->resize_mutex);
+	free(work);
+}
+
+static
+void ht_resize_lazy(struct rcu_ht *ht, int growth)
+{
+	struct rcu_resize_work *work;
+
+	work = malloc(sizeof(*work));
+	work->ht = ht;
+	resize_target_update(ht, growth);
+	ht->ht_call_rcu(&work->head, do_resize_cb);
 }
