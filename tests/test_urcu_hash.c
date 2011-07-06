@@ -405,9 +405,12 @@ void *thr_writer(void *_count)
 				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
 				sizeof(void *),
 				(void *) 0x42);
-			ht_add(test_ht, node);
+			ret = ht_add_unique(test_ht, node);
 			rcu_read_unlock();
-			nr_add++;
+			if (ret)
+				nr_addexist++;
+			else
+				nr_add++;
 		} else {
 			/* May delete */
 			rcu_read_lock();

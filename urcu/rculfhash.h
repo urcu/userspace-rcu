@@ -56,6 +56,9 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len);
 void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 /* Call with rcu_read_lock held. */
+int ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node);
+
+/* Call with rcu_read_lock held. */
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 void ht_resize(struct rcu_ht *ht, int growth);

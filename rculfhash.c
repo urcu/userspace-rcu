@@ -205,12 +205,13 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 }
 
 static
-void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
+int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
+	     int unique)
 {
 	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next;
 
 	if (!t->size)
-		return;
+		return 0;
 	for (;;) {
 		uint32_t chain_len = 0;
 
@@ -232,6 +233,12 @@ void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 			next = rcu_dereference(clear_flag(iter)->next);
 			if (unlikely(is_removed(next)))
 				continue;
+			if (unique
+			    && !clear_flag(iter)->dummy
+			    && !ht->compare_fct(node->key, node->key_len,
+					clear_flag(iter)->key,
+					clear_flag(iter)->key_len))
+				return -EEXIST;
 			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
 				break;
 			/* Only account for identical reverse hash once */
@@ -250,6 +257,7 @@ void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 		else
 			break;
 	}
+	return 0;
 }
 
 static
@@ -345,7 +353,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		t->tbl[i]->dummy = 1;
 		t->tbl[i]->hash = i;
 		t->tbl[i]->reverse_hash = bit_reverse_ulong(i);
-		_ht_add(ht, t, t->tbl[i]);
+		(void) _ht_add(ht, t, t->tbl[i], 0);
 	}
 	t->resize_target = t->size = end;
 	t->resize_initiated = 0;
@@ -412,7 +420,18 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->reverse_hash = bit_reverse_ulong((unsigned long) node->hash);
 
 	t = rcu_dereference(ht->t);
-	_ht_add(ht, t, node);
+	(void) _ht_add(ht, t, node, 0);
+}
+
+int ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
+{
+	struct rcu_table *t;
+
+	node->hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
+	node->reverse_hash = bit_reverse_ulong((unsigned long) node->hash);
+
+	t = rcu_dereference(ht->t);
+	return _ht_add(ht, t, node, 1);
 }
 
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
