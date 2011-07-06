@@ -247,7 +247,7 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 			iter_prev = clear_flag(iter);
 			iter_prev_next = next;
 		}
-		assert(node != iter);
+		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
 		node->next = iter;
@@ -264,17 +264,32 @@ static
 int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 {
 	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next, *old;
-	unsigned long chain_len;
 	int found;
 	int flagged = 0;
 
+	/* logically delete the node */
+	old = rcu_dereference(node->next);
+	do {
+		next = old;
+		if (is_removed(next))
+			goto end;
+		old = uatomic_cmpxchg(&node->next, next,
+				      flag_removed(next));
+	} while (old != next);
+
+	/* We performed the (logical) deletion. */
+	flagged = 1;
+
+	/*
+	 * Ensure that the node is not visible to readers anymore: lookup for
+	 * the node, and remove it if found.
+	 */
 retry:
-	chain_len = 0;
 	found = 0;
 	/*
 	 * iter_prev points to the non-removed node prior to the remove
 	 * location.
-	 * node is the node to remove.
+	 * next points to the non-removed node following the remove location.
 	 */
 	iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
 	/* We can always skip the dummy node initially */
@@ -286,8 +301,9 @@ retry:
 		if (unlikely(!clear_flag(iter)))
 			break;
 		next = rcu_dereference(clear_flag(iter)->next);
-		if (iter == node) {
+		if (clear_flag(iter) == node) {
 			found = 1;
+			assert(is_removed(rcu_dereference(node->next)));
 			break;
 		}
 		if (unlikely(is_removed(next)))
@@ -299,31 +315,6 @@ retry:
 	} 
 	if (!found)
 		goto end;
-	if (!flagged) {
-		if (is_removed(next))
-			goto end;
-		/* set deletion flag */
-		if ((old = uatomic_cmpxchg(&iter->next, next,
-					   flag_removed(next))) != next) {
-			if (old == flag_removed(next))
-				goto end;
-			else
-				goto retry;
-		}
-		flagged = 1;
-	}
-	/*
-	 * Remove the element from the list.
-	 * - Retry if there has been a concurrent add before us.
-	 * - Retry if the prev node has been deleted (its next removed
-	 *   flag would be set).
-	 * - There cannot be a concurrent delete for our position, because
-	 *   we won the deletion flag cmpxchg.
-	 * - If there is a concurrent add or remove after us while our
-	 *   removed flag is set, it will skip us and link directly after
-	 *   the prior non-removed node before us. In this case, the
-	 *   retry will not find the node in the list anymore.
-	 */
 	if (uatomic_cmpxchg(&iter_prev->next, iter_prev_next,
 			    clear_flag(next)) != iter_prev_next)
 		goto retry;
@@ -332,9 +323,10 @@ end:
 	 * Only the flagging action indicated that we (and no other)
 	 * removed the node from the hash.
 	 */
-	if (flagged)
+	if (flagged) {
+		assert(is_removed(rcu_dereference(node->next)));
 		return 0;
-	else
+	} else
 		return -ENOENT;
 }
 
