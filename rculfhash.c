@@ -56,6 +56,7 @@
 struct rcu_table {
 	unsigned long size;	/* always a power of 2 */
 	unsigned long resize_target;
+	int resize_initiated;
 	struct rcu_head head;
 	struct rcu_ht_node *tbl[0];
 };
@@ -206,101 +207,127 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 static
 void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node *iter_prev = NULL, *iter = NULL;
+	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next;
 
 	if (!t->size)
 		return;
 	for (;;) {
 		uint32_t chain_len = 0;
 
+		/*
+		 * iter_prev points to the non-removed node prior to the
+		 * insert location.
+		 * iter iterates until it finds the next non-removed
+		 * node.
+		 */
 		iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+		/* We can always skip the dummy node initially */
+		iter_prev_next = next = rcu_dereference(iter_prev->next);
 		assert(iter_prev);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
-			iter = clear_flag(rcu_dereference(iter_prev->next));
-			if (unlikely(!iter))
+			iter = next;
+			if (unlikely(!clear_flag(iter)))
 				break;
-			if (iter->reverse_hash > node->reverse_hash)
+			next = rcu_dereference(clear_flag(iter)->next);
+			if (unlikely(is_removed(next)))
+				continue;
+			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
 				break;
-			iter_prev = iter;
-			check_resize(ht, t, ++chain_len);
+			/* Only account for identical reverse hash once */
+			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
+				check_resize(ht, t, ++chain_len);
+			iter_prev = clear_flag(iter);
+			iter_prev_next = next;
 		}
-		/*
-		 * add in iter_prev->next: TODO: check for helping
-		 * delete, for lock-freedom...
-		 */
-		if (is_removed(iter))
-			continue;
 		assert(node != iter);
-		node->next = iter;
+		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
-		if (uatomic_cmpxchg(&iter_prev->next, iter, node) != iter)
+		node->next = iter;
+		if (uatomic_cmpxchg(&iter_prev->next, iter_prev_next,
+				    node) != iter_prev_next)
 			continue;
-		break;
+		else
+			break;
 	}
 }
 
 static
 int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node *iter_prev, *iter, *next, *old;
+	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next, *old;
 	unsigned long chain_len;
-	int found, ret = 0;
+	int found;
 	int flagged = 0;
 
 retry:
 	chain_len = 0;
 	found = 0;
+	/*
+	 * iter_prev points to the non-removed node prior to the remove
+	 * location.
+	 * node is the node to remove.
+	 */
 	iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+	/* We can always skip the dummy node initially */
+	iter_prev_next = next = rcu_dereference(iter_prev->next);
 	assert(iter_prev);
 	assert(iter_prev->reverse_hash <= node->reverse_hash);
 	for (;;) {
-		iter = clear_flag(rcu_dereference(iter_prev->next));
-		if (unlikely(!iter))
+		iter = next;
+		if (unlikely(!clear_flag(iter)))
 			break;
-		if (unlikely(iter->reverse_hash > node->reverse_hash))
-			break;
+		next = rcu_dereference(clear_flag(iter)->next);
 		if (iter == node) {
 			found = 1;
 			break;
 		}
-		iter_prev = iter;
+		if (unlikely(is_removed(next)))
+			continue;
+		if (clear_flag(iter)->reverse_hash > node->reverse_hash)
+			break;
+		iter_prev = clear_flag(iter);
+		iter_prev_next = next;
 	} 
-	if (!found) {
-		ret = -ENOENT;
+	if (!found)
 		goto end;
-	}
-	next = rcu_dereference(iter->next);
 	if (!flagged) {
-		if (is_removed(next)) {
-			ret = -ENOENT;
+		if (is_removed(next))
 			goto end;
-		}
 		/* set deletion flag */
 		if ((old = uatomic_cmpxchg(&iter->next, next,
 					   flag_removed(next))) != next) {
-			if (old == flag_removed(next)) {
-				ret = -ENOENT;
+			if (old == flag_removed(next))
 				goto end;
-			} else {
+			else
 				goto retry;
-			}
 		}
 		flagged = 1;
 	}
 	/*
 	 * Remove the element from the list.
-	 * Retry if there has been a concurrent add before us.
-	 * Retry if the prev node has been deleted.
-	 * There cannot be a concurrent delete for our position, because
-	 * we won the deletion flag cmpxchg.
-	 * If there is a concurrent add after us, our deletion flag
-	 * makes it busy-loop (FIXME: not lock-free).
+	 * - Retry if there has been a concurrent add before us.
+	 * - Retry if the prev node has been deleted (its next removed
+	 *   flag would be set).
+	 * - There cannot be a concurrent delete for our position, because
+	 *   we won the deletion flag cmpxchg.
+	 * - If there is a concurrent add or remove after us while our
+	 *   removed flag is set, it will skip us and link directly after
+	 *   the prior non-removed node before us. In this case, the
+	 *   retry will not find the node in the list anymore.
 	 */
-	if (uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next)) != iter)
+	if (uatomic_cmpxchg(&iter_prev->next, iter_prev_next,
+			    clear_flag(next)) != iter_prev_next)
 		goto retry;
 end:
-	return ret;
+	/*
+	 * Only the flagging action indicated that we (and no other)
+	 * removed the node from the hash.
+	 */
+	if (flagged)
+		return 0;
+	else
+		return -ENOENT;
 }
 
 static
@@ -321,6 +348,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		_ht_add(ht, t, t->tbl[i]);
 	}
 	t->resize_target = t->size = end;
+	t->resize_initiated = 0;
 }
 
 struct rcu_ht *ht_new(ht_hash_fct hash_fct,
@@ -483,6 +511,7 @@ void ht_resize(struct rcu_ht *ht, int growth)
 
 	target_size = resize_target_update(t, growth);
 	if (t->size < target_size) {
+		CMM_STORE_SHARED(t->resize_initiated, 1);
 		pthread_mutex_lock(&ht->resize_mutex);
 		_do_ht_resize(ht);
 		pthread_mutex_unlock(&ht->resize_mutex);
@@ -509,9 +538,10 @@ void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
 	unsigned long target_size;
 
 	target_size = resize_target_update(t, growth);
-	if (t->size < target_size) {
+	if (!CMM_LOAD_SHARED(t->resize_initiated) && t->size < target_size) {
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->ht_call_rcu(&work->head, do_resize_cb);
+		CMM_STORE_SHARED(t->resize_initiated, 1);
 	}
 }
