@@ -46,7 +46,8 @@
 #define dbg_printf(args...)
 #endif
 
-#define BUCKET_SIZE_RESIZE_THRESHOLD	4
+#define CHAIN_LEN_TARGET		4
+#define CHAIN_LEN_RESIZE_THRESHOLD	16
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -165,8 +166,9 @@ static
 void check_resize(struct rcu_ht *ht, struct rcu_table *t,
 		  uint32_t chain_len)
 {
-	if (chain_len >= BUCKET_SIZE_RESIZE_THRESHOLD)
-		ht_resize_lazy(ht, t, log2_u32(chain_len));
+	if (chain_len >= CHAIN_LEN_RESIZE_THRESHOLD)
+		ht_resize_lazy(ht, t,
+			log2_u32(chain_len - CHAIN_LEN_TARGET));
 }
 
 static
