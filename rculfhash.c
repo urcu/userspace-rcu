@@ -46,7 +46,7 @@
 #define dbg_printf(args...)
 #endif
 
-#define BUCKET_SIZE_RESIZE_THRESHOLD	8
+#define BUCKET_SIZE_RESIZE_THRESHOLD	4
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -62,7 +62,8 @@ struct rcu_table {
 struct rcu_ht {
 	struct rcu_table *t;		/* shared */
 	ht_hash_fct hash_fct;
-	void *hashseed;
+	ht_compare_fct compare_fct;
+	unsigned long hash_seed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
 	void (*ht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
@@ -314,7 +315,8 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 }
 
 struct rcu_ht *ht_new(ht_hash_fct hash_fct,
-		      void *hashseed,
+		      ht_compare_fct compare_fct,
+		      unsigned long hash_seed,
 		      unsigned long init_size,
 		      void (*ht_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head)))
@@ -323,7 +325,8 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
-	ht->hashseed = hashseed;
+	ht->compare_fct = compare_fct;
+	ht->hash_seed = hash_seed;
 	ht->ht_call_rcu = ht_call_rcu;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
@@ -336,13 +339,13 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 	return ht;
 }
 
-struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key)
+struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 {
 	struct rcu_table *t;
 	struct rcu_ht_node *node;
 	unsigned long hash, reverse_hash;
 
-	hash = ht->hash_fct(ht->hashseed, key);
+	hash = ht->hash_fct(key, key_len, ht->hash_seed);
 	reverse_hash = bit_reverse_ulong(hash);
 
 	t = rcu_dereference(ht->t);
@@ -354,7 +357,7 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key)
 			node = NULL;
 			break;
 		}
-		if (node->key == key) {
+		if (!ht->compare_fct(node->key, node->key_len, key, key_len)) {
 			if (is_removed(rcu_dereference(node->next)))
 				node = NULL;
 			break;
@@ -368,7 +371,7 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 {
 	struct rcu_table *t;
 
-	node->hash = ht->hash_fct(ht->hashseed, node->key);
+	node->hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
 	node->reverse_hash = bit_reverse_ulong((unsigned long) node->hash);
 
 	t = rcu_dereference(ht->t);
@@ -451,7 +454,6 @@ void _do_ht_resize(struct rcu_ht *ht)
 	memcpy(&new_t->tbl, &old_t->tbl,
 	       old_size * sizeof(struct rcu_ht_node *));
 	init_table(ht, new_t, old_size, new_size - old_size);
-	new_t->size = new_size;
 	/* Changing table and size atomically wrt lookups */
 	rcu_assign_pointer(ht->t, new_t);
 	ht->ht_call_rcu(&old_t->head, ht_free_table_cb);
