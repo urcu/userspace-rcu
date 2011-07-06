@@ -220,7 +220,7 @@ void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 			iter = clear_flag(rcu_dereference(iter_prev->next));
 			if (unlikely(!iter))
 				break;
-			if (iter->reverse_hash < node->reverse_hash)
+			if (iter->reverse_hash > node->reverse_hash)
 				break;
 			iter_prev = iter;
 			check_resize(ht, t, ++chain_len);
@@ -255,7 +255,7 @@ retry:
 		iter = clear_flag(rcu_dereference(iter_prev->next));
 		if (unlikely(!iter))
 			break;
-		if (iter->reverse_hash < node->reverse_hash)
+		if (unlikely(iter->reverse_hash > node->reverse_hash))
 			break;
 		if (iter == node) {
 			found = 1;
@@ -355,12 +355,12 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 	for (;;) {
 		if (unlikely(!node))
 			break;
-		if (node->reverse_hash > reverse_hash) {
+		if (unlikely(node->reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
 		}
 		if (!ht->compare_fct(node->key, node->key_len, key, key_len)) {
-			if (is_removed(rcu_dereference(node->next)))
+			if (unlikely(is_removed(rcu_dereference(node->next))))
 				node = NULL;
 			break;
 		}
