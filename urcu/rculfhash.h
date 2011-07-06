@@ -11,7 +11,6 @@ struct rcu_ht_node {
 	unsigned long hash;
 	unsigned long reverse_hash;
 	unsigned int dummy;
-	void *value;
 	struct rcu_head head;
 };
 
@@ -29,11 +28,10 @@ typedef unsigned long (*ht_compare_fct)(void *key1, size_t key1_len,
 
 static inline
 void ht_node_init(struct rcu_ht_node *node, void *key,
-		  size_t key_len, void *value)
+		  size_t key_len)
 {
 	node->key = key;
 	node->key_len = key_len;
-	node->value = value;
 	node->dummy = 0;
 }
 

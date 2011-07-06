@@ -403,8 +403,7 @@ void *thr_writer(void *_count)
 			rcu_read_lock();
 			ht_node_init(node,
 				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
-				sizeof(void *),
-				(void *) 0x42);
+				sizeof(void *));
 			ret = ht_add_unique(test_ht, node);
 			rcu_read_unlock();
 			if (ret) {
