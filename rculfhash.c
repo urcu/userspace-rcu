@@ -225,7 +225,10 @@ void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 			iter_prev = iter;
 			check_resize(ht, t, ++chain_len);
 		}
-		/* add in iter_prev->next */
+		/*
+		 * add in iter_prev->next: TODO: check for helping
+		 * delete, for lock-freedom...
+		 */
 		if (is_removed(iter))
 			continue;
 		assert(node != iter);
@@ -286,9 +289,13 @@ retry:
 		flagged = 1;
 	}
 	/*
-	 * Remove the element from the list. Retry if there has been a
-	 * concurrent add (there cannot be a concurrent delete, because
-	 * we won the deletion flag cmpxchg).
+	 * Remove the element from the list.
+	 * Retry if there has been a concurrent add before us.
+	 * Retry if the prev node has been deleted.
+	 * There cannot be a concurrent delete for our position, because
+	 * we won the deletion flag cmpxchg.
+	 * If there is a concurrent add after us, our deletion flag
+	 * makes it busy-loop (FIXME: not lock-free).
 	 */
 	if (uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next)) != iter)
 		goto retry;
