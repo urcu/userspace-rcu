@@ -277,14 +277,9 @@ void *thr_writer(void *_count)
 			ht_node_init(node,
 				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
 				(void *) 0x42);
-			ret = ht_add(test_ht, node);
+			ht_add(test_ht, node);
 			rcu_read_unlock();
-			if (ret == -EEXIST) {
-				free(node);
-				nr_addexist++;
-			} else {
-				nr_add++;
-			}
+			nr_add++;
 		} else {
 			/* May delete */
 			rcu_read_lock();
@@ -466,10 +461,10 @@ int main(int argc, char **argv)
 			exit(1);
 		tot_writes += count_writer[i];
 	}
-	rcu_register_thread();
 	ret = ht_destroy(test_ht);
-	rcu_unregister_thread();
-	
+	if (ret)
+		printf("WARNING: nodes left in the hash table upon destroy\n");
+
 	printf_verbose("final delete: %d items\n", ret);
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);

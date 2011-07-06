@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <urcu.h>
 #include <urcu-call-rcu.h>
@@ -37,7 +38,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define BUCKET_SIZE_RESIZE_THRESHOLD	5
+#define BUCKET_SIZE_RESIZE_THRESHOLD	32
+#define MAX_NR_BUCKETS			1048576		/* 1M buckets */
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -65,13 +67,15 @@ struct rcu_resize_work {
 };
 
 static
-void ht_resize_lazy(struct rcu_ht *ht, int growth);
+void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth);
 
 static
-void check_resize(struct rcu_ht *ht, unsigned long chain_len)
+void check_resize(struct rcu_ht *ht, struct rcu_table *t,
+		  unsigned long chain_len)
 {
+	//printf("check resize chain len %lu\n", chain_len);
 	if (chain_len >= BUCKET_SIZE_RESIZE_THRESHOLD)
-		ht_resize_lazy(ht, chain_len / BUCKET_SIZE_RESIZE_THRESHOLD);
+		ht_resize_lazy(ht, t, chain_len / BUCKET_SIZE_RESIZE_THRESHOLD);
 }
 
 /*
@@ -162,14 +166,18 @@ void _uatomic_max(unsigned long *ptr, unsigned long v)
 }
 
 static
-int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
+void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 {
 	struct rcu_ht_node *iter_prev = NULL, *iter = NULL;
 
+	if (!t->size)
+		return;
 	for (;;) {
 		unsigned long chain_len = 0;
 
 		iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+		//printf("iter prev %p hash %lu bucket %lu\n", iter_prev,
+		//	node->hash, node->hash & (t->size - 1));
 		assert(iter_prev);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
@@ -179,14 +187,17 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 			if (iter->reverse_hash < node->reverse_hash)
 				break;
 			iter_prev = iter;
-			check_resize(ht, ++chain_len);
+			check_resize(ht, t, ++chain_len);
 		}
 		/* add in iter_prev->next */
 		if (is_removed(iter))
 			continue;
+		assert(node != iter);
 		node->next = iter;
+		assert(iter_prev != node);
 		if (uatomic_cmpxchg(&iter_prev->next, iter, node) != iter)
 			continue;
+		break;
 	}
 }
 
@@ -227,7 +238,8 @@ retry:
 			goto end;
 		}
 		/* set deletion flag */
-		if ((old = uatomic_cmpxchg(&iter->next, next, flag_removed(next))) != next) {
+		if ((old = uatomic_cmpxchg(&iter->next, next,
+					   flag_removed(next))) != next) {
 			if (old == flag_removed(next)) {
 				ret = -ENOENT;
 				goto end;
@@ -279,14 +291,16 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 	ht = calloc(1, sizeof(struct rcu_ht));
 	ht->hash_fct = hash_fct;
 	ht->hashseed = hashseed;
+	ht->ht_call_rcu = ht_call_rcu;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->t = calloc(1, sizeof(struct rcu_table)
 		       + (max(init_size, 1) * sizeof(struct rcu_ht_node *)));
 	ht->t->size = 0;
+	pthread_mutex_lock(&ht->resize_mutex);
 	init_table(ht, ht->t, 0, max(init_size, 1));
+	pthread_mutex_unlock(&ht->resize_mutex);
 	ht->target_size = ht->t->size;
-	ht->ht_call_rcu = ht_call_rcu;
 	return ht;
 }
 
@@ -300,7 +314,6 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key)
 	reverse_hash = bit_reverse_ulong(hash);
 
 	t = rcu_dereference(ht->t);
-	cmm_smp_read_barrier_depends();	/* read t before size and table */
 	node = rcu_dereference(t->tbl[hash & (t->size - 1)]);
 	for (;;) {
 		if (unlikely(!node))
@@ -319,7 +332,7 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key)
 	return node;
 }
 
-int ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
+void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 {
 	struct rcu_table *t;
 
@@ -327,8 +340,7 @@ int ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->reverse_hash = bit_reverse_ulong((unsigned long) node->hash);
 
 	t = rcu_dereference(ht->t);
-	cmm_smp_read_barrier_depends();	/* read t before size and table */
-	return _ht_add(ht, t, node);
+	_ht_add(ht, t, node);
 }
 
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
@@ -336,7 +348,6 @@ int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
 	struct rcu_table *t;
 
 	t = rcu_dereference(ht->t);
-	cmm_smp_read_barrier_depends();	/* read t before size and table */
 	return _ht_remove(ht, t, node);
 }
 
@@ -394,35 +405,42 @@ void _do_ht_resize(struct rcu_ht *ht)
 	unsigned long new_size, old_size;
 	struct rcu_table *new_t, *old_t;
 
+	//return; //TEST
+
 	old_t = ht->t;
 	old_size = old_t->size;
 
 	new_size = CMM_LOAD_SHARED(ht->target_size);
 	if (old_size == new_size)
 		return;
-	new_t = realloc(old_t, sizeof(struct rcu_table)
+	new_t = malloc(sizeof(struct rcu_table)
 			+ (new_size * sizeof(struct rcu_ht_node *)));
-	if (new_size > old_size)
-		init_table(ht, new_t, old_size, new_size - old_size);
-	cmm_smp_wmb();	/* update content before updating reallocated size */
-	CMM_STORE_SHARED(new_t->size, new_size);
-	if (new_t != old_t) {
-		/* Changing table and size atomically wrt lookups */
-		rcu_assign_pointer(ht->t, new_t);
-		ht->ht_call_rcu(&old_t->head, ht_free_table_cb);
-	}
+	assert(new_size > old_size);
+	memcpy(&new_t->tbl, &old_t->tbl,
+	       old_size * sizeof(struct rcu_ht_node *));
+	init_table(ht, new_t, old_size, new_size - old_size);
+	new_t->size = new_size;
+	/* Changing table and size atomically wrt lookups */
+	rcu_assign_pointer(ht->t, new_t);
+	ht->ht_call_rcu(&old_t->head, ht_free_table_cb);
 }
 
 static
-void resize_target_update(struct rcu_ht *ht, int growth_order)
+void resize_target_update(struct rcu_ht *ht, struct rcu_table *t,
+			  int growth_order)
 {
-	_uatomic_max(&ht->target_size,
-		CMM_LOAD_SHARED(ht->target_size) << growth_order);
+	unsigned long new_size = t->size << growth_order;
+
+	if (new_size > MAX_NR_BUCKETS)
+		new_size = MAX_NR_BUCKETS;
+	//printf("resize update prevtarget %lu current %lu order %d\n",
+	//	ht->target_size, t->size, growth_order);
+	_uatomic_max(&ht->target_size, new_size);
 }
 
 void ht_resize(struct rcu_ht *ht, int growth)
 {
-	resize_target_update(ht, growth);
+	resize_target_update(ht, rcu_dereference(ht->t), growth);
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_ht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
@@ -442,12 +460,12 @@ void do_resize_cb(struct rcu_head *head)
 }
 
 static
-void ht_resize_lazy(struct rcu_ht *ht, int growth)
+void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
 {
 	struct rcu_resize_work *work;
 
 	work = malloc(sizeof(*work));
 	work->ht = ht;
-	resize_target_update(ht, growth);
+	resize_target_update(ht, t, growth);
 	ht->ht_call_rcu(&work->head, do_resize_cb);
 }

@@ -46,7 +46,7 @@ int ht_destroy(struct rcu_ht *ht);
 struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key);
 
 /* Call with rcu_read_lock held. */
-int ht_add(struct rcu_ht *ht, struct rcu_ht_node *node);
+void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 /* Call with rcu_read_lock held. */
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node);
