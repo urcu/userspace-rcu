@@ -38,7 +38,7 @@
 #endif
 
 #define HASH_SIZE	32
-#define RAND_POOL	1000
+#define RAND_POOL	10000
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -407,9 +407,10 @@ void *thr_writer(void *_count)
 				(void *) 0x42);
 			ret = ht_add_unique(test_ht, node);
 			rcu_read_unlock();
-			if (ret)
+			if (ret) {
+				free(node);
 				nr_addexist++;
-			else
+			} else
 				nr_add++;
 		} else {
 			/* May delete */
