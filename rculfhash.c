@@ -38,8 +38,15 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define BUCKET_SIZE_RESIZE_THRESHOLD	32
-#define MAX_NR_BUCKETS			1048576		/* 1M buckets */
+#define DEBUG		/* Test */
+
+#ifdef DEBUG
+#define dbg_printf(args...)     printf(args)
+#else
+#define dbg_printf(args...)
+#endif
+
+#define BUCKET_SIZE_RESIZE_THRESHOLD	8
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -47,6 +54,7 @@
 
 struct rcu_table {
 	unsigned long size;	/* always a power of 2 */
+	unsigned long resize_target;
 	struct rcu_head head;
 	struct rcu_ht_node *tbl[0];
 };
@@ -56,7 +64,6 @@ struct rcu_ht {
 	ht_hash_fct hash_fct;
 	void *hashseed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	unsigned long target_size;
 	void (*ht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
 };
@@ -66,23 +73,12 @@ struct rcu_resize_work {
 	struct rcu_ht *ht;
 };
 
-static
-void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth);
-
-static
-void check_resize(struct rcu_ht *ht, struct rcu_table *t,
-		  unsigned long chain_len)
-{
-	//printf("check resize chain len %lu\n", chain_len);
-	if (chain_len >= BUCKET_SIZE_RESIZE_THRESHOLD)
-		ht_resize_lazy(ht, t, chain_len / BUCKET_SIZE_RESIZE_THRESHOLD);
-}
-
 /*
  * Algorithm to reverse bits in a word by lookup table, extended to
  * 64-bit words.
- * ref.
+ * Source:
  * http://graphics.stanford.edu/~seander/bithacks.html#BitReverseTable
+ * Originally from Public Domain.
  */
 
 static const uint8_t BitReverseTable256[256] = 
@@ -134,6 +130,44 @@ unsigned long bit_reverse_ulong(unsigned long v)
 #endif
 }
 
+/*
+ * Algorithm to find the log2 of a 32-bit unsigned integer.
+ * source: http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup
+ * Originally from Public Domain.
+ */
+static const char LogTable256[256] = 
+{
+#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
+	-1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+	LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
+	LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
+};
+
+uint32_t log2_u32(uint32_t v)
+{
+	uint32_t t, tt;
+
+	if ((tt = (v >> 16)))
+		return (t = (tt >> 8))
+				? 24 + LogTable256[t]
+				: 16 + LogTable256[tt];
+	else
+		return (t = (v >> 8))
+				? 8 + LogTable256[t]
+				: LogTable256[v];
+}
+
+static
+void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth);
+
+static
+void check_resize(struct rcu_ht *ht, struct rcu_table *t,
+		  uint32_t chain_len)
+{
+	if (chain_len >= BUCKET_SIZE_RESIZE_THRESHOLD)
+		ht_resize_lazy(ht, t, log2_u32(chain_len));
+}
+
 static
 struct rcu_ht_node *clear_flag(struct rcu_ht_node *node)
 {
@@ -153,7 +187,7 @@ struct rcu_ht_node *flag_removed(struct rcu_ht_node *node)
 }
 
 static
-void _uatomic_max(unsigned long *ptr, unsigned long v)
+unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 {
 	unsigned long old1, old2;
 
@@ -161,8 +195,9 @@ void _uatomic_max(unsigned long *ptr, unsigned long v)
 	do {
 		old2 = old1;
 		if (old2 >= v)
-			break;
+			return old2;
 	} while ((old1 = uatomic_cmpxchg(ptr, old2, v)) != old2);
+	return v;
 }
 
 static
@@ -173,11 +208,9 @@ void _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 	if (!t->size)
 		return;
 	for (;;) {
-		unsigned long chain_len = 0;
+		uint32_t chain_len = 0;
 
 		iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
-		//printf("iter prev %p hash %lu bucket %lu\n", iter_prev,
-		//	node->hash, node->hash & (t->size - 1));
 		assert(iter_prev);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
@@ -277,7 +310,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		t->tbl[i]->reverse_hash = bit_reverse_ulong(i);
 		_ht_add(ht, t, t->tbl[i]);
 	}
-	t->size = end;
+	t->resize_target = t->size = end;
 }
 
 struct rcu_ht *ht_new(ht_hash_fct hash_fct,
@@ -300,7 +333,6 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 	pthread_mutex_lock(&ht->resize_mutex);
 	init_table(ht, ht->t, 0, max(init_size, 1));
 	pthread_mutex_unlock(&ht->resize_mutex);
-	ht->target_size = ht->t->size;
 	return ht;
 }
 
@@ -405,12 +437,12 @@ void _do_ht_resize(struct rcu_ht *ht)
 	unsigned long new_size, old_size;
 	struct rcu_table *new_t, *old_t;
 
-	//return; //TEST
-
 	old_t = ht->t;
 	old_size = old_t->size;
 
-	new_size = CMM_LOAD_SHARED(ht->target_size);
+	new_size = CMM_LOAD_SHARED(old_t->resize_target);
+	dbg_printf("rculfhash: resize from %lu to %lu buckets\n",
+		   old_size, new_size);
 	if (old_size == new_size)
 		return;
 	new_t = malloc(sizeof(struct rcu_table)
@@ -426,24 +458,24 @@ void _do_ht_resize(struct rcu_ht *ht)
 }
 
 static
-void resize_target_update(struct rcu_ht *ht, struct rcu_table *t,
-			  int growth_order)
+unsigned long resize_target_update(struct rcu_table *t,
+				   int growth_order)
 {
-	unsigned long new_size = t->size << growth_order;
-
-	if (new_size > MAX_NR_BUCKETS)
-		new_size = MAX_NR_BUCKETS;
-	//printf("resize update prevtarget %lu current %lu order %d\n",
-	//	ht->target_size, t->size, growth_order);
-	_uatomic_max(&ht->target_size, new_size);
+	return _uatomic_max(&t->resize_target,
+			    t->size << growth_order);
 }
 
 void ht_resize(struct rcu_ht *ht, int growth)
 {
-	resize_target_update(ht, rcu_dereference(ht->t), growth);
-	pthread_mutex_lock(&ht->resize_mutex);
-	_do_ht_resize(ht);
-	pthread_mutex_unlock(&ht->resize_mutex);
+	struct rcu_table *t = rcu_dereference(ht->t);
+	unsigned long target_size;
+
+	target_size = resize_target_update(t, growth);
+	if (t->size < target_size) {
+		pthread_mutex_lock(&ht->resize_mutex);
+		_do_ht_resize(ht);
+		pthread_mutex_unlock(&ht->resize_mutex);
+	}
 }
 
 static
@@ -463,9 +495,12 @@ static
 void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
 {
 	struct rcu_resize_work *work;
+	unsigned long target_size;
 
-	work = malloc(sizeof(*work));
-	work->ht = ht;
-	resize_target_update(ht, t, growth);
-	ht->ht_call_rcu(&work->head, do_resize_cb);
+	target_size = resize_target_update(t, growth);
+	if (t->size < target_size) {
+		work = malloc(sizeof(*work));
+		work->ht = ht;
+		ht->ht_call_rcu(&work->head, do_resize_cb);
+	}
 }
