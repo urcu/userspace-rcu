@@ -5,12 +5,14 @@
 #include <urcu-call-rcu.h>
 
 struct rcu_ht_node {
+	/* cache-hot for iteration */
 	struct rcu_ht_node *next;
-	void *key;
-	size_t key_len;
-	unsigned long hash;
 	unsigned long reverse_hash;
+	void *key;
+	unsigned int key_len;
 	unsigned int dummy;
+	/* cache-cold for iteration */
+	unsigned long hash;
 	struct rcu_head head;
 };
 
