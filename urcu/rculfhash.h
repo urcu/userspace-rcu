@@ -12,7 +12,6 @@ struct rcu_ht_node {
 	unsigned int key_len;
 	unsigned int dummy;
 	/* cache-cold for iteration */
-	unsigned long hash;
 	struct rcu_head head;
 };
 
