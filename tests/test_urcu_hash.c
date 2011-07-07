@@ -594,8 +594,13 @@ int main(int argc, char **argv)
 		tot_writes += count_writer[i];
 	}
 	ret = ht_destroy(test_ht);
-	if (ret)
-		printf("WARNING: nodes left in the hash table upon destroy\n");
+	if (ret) {
+		unsigned long count, removed;
+
+		ht_count_nodes(test_ht, &count, &removed);
+		printf("WARNING: nodes left in the hash table upon destroy: "
+			"%lu nodes + %lu logically removed.\n", count, removed);
+	}
 
 	printf_verbose("final delete: %d items\n", ret);
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,

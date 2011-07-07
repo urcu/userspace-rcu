@@ -204,11 +204,42 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 	return v;
 }
 
+/*
+ * Remove all logically deleted nodes from a bucket up to a certain node key.
+ */
+static
+void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
+{
+	struct rcu_ht_node *iter_prev, *iter, *next;
+
+	for (;;) {
+		iter_prev = dummy;
+		/* We can always skip the dummy node initially */
+		iter = rcu_dereference(iter_prev->next);
+		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		if (unlikely(!iter))
+			return;
+		for (;;) {
+			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
+				return;
+			next = rcu_dereference(clear_flag(iter)->next);
+			if (is_removed(next))
+				break;
+			if (unlikely(!next))
+				return;
+			iter_prev = iter;
+			iter = next;
+		}
+		assert(!is_removed(iter));
+		(void) uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next));
+	}
+}
+
 static
 int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 	     int unique)
 {
-	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next;
+	struct rcu_ht_node *iter_prev, *dummy, *iter, *next;
 
 	if (!t->size)
 		return 0;
@@ -218,53 +249,52 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 		/*
 		 * iter_prev points to the non-removed node prior to the
 		 * insert location.
-		 * iter iterates until it finds the next non-removed
-		 * node.
 		 */
 		iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
 		/* We can always skip the dummy node initially */
-		iter_prev_next = next = rcu_dereference(iter_prev->next);
-		assert(iter_prev);
+		iter = rcu_dereference(iter_prev->next);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
-			iter = next;
-			if (unlikely(!clear_flag(iter)))
-				break;
-			next = rcu_dereference(clear_flag(iter)->next);
-			if (unlikely(is_removed(next)))
-				continue;
-			if (unique
-			    && !clear_flag(iter)->dummy
-			    && !ht->compare_fct(node->key, node->key_len,
-					clear_flag(iter)->key,
-					clear_flag(iter)->key_len))
-				return -EEXIST;
+			if (unlikely(!iter))
+				goto insert;
 			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
-				break;
+				goto insert;
+			next = rcu_dereference(clear_flag(iter)->next);
+			if (is_removed(next))
+				goto gc;
 			/* Only account for identical reverse hash once */
 			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
 				check_resize(ht, t, ++chain_len);
 			iter_prev = clear_flag(iter);
-			iter_prev_next = next;
+			iter = next;
 		}
+	insert:
 		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
 		node->next = iter;
-		if (uatomic_cmpxchg(&iter_prev->next, iter_prev_next,
-				    node) != iter_prev_next)
-			continue;
+		if (uatomic_cmpxchg(&iter_prev->next, iter,
+				    node) != iter)
+			continue;	/* retry */
 		else
-			break;
+			goto gc_end;
+	gc:
+		/* Garbage collect logically removed nodes in the bucket */
+		dummy = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+		_ht_gc_bucket(dummy, node);
+		/* retry */
 	}
+gc_end:
+	/* Garbage collect logically removed nodes in the bucket */
+	dummy = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+	_ht_gc_bucket(dummy, node);
 	return 0;
 }
 
 static
 int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node *iter_prev, *iter, *iter_prev_next, *next, *old;
-	int found;
+	struct rcu_ht_node *dummy, *next, *old;
 	int flagged = 0;
 
 	/* logically delete the node */
@@ -273,6 +303,7 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 		next = old;
 		if (is_removed(next))
 			goto end;
+		assert(!node->dummy);
 		old = uatomic_cmpxchg(&node->next, next,
 				      flag_removed(next));
 	} while (old != next);
@@ -282,42 +313,11 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 
 	/*
 	 * Ensure that the node is not visible to readers anymore: lookup for
-	 * the node, and remove it if found.
+	 * the node, and remove it (along with any other logically removed node)
+	 * if found.
 	 */
-retry:
-	found = 0;
-	/*
-	 * iter_prev points to the non-removed node prior to the remove
-	 * location.
-	 * next points to the non-removed node following the remove location.
-	 */
-	iter_prev = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
-	/* We can always skip the dummy node initially */
-	iter_prev_next = next = rcu_dereference(iter_prev->next);
-	assert(iter_prev);
-	assert(iter_prev->reverse_hash <= node->reverse_hash);
-	for (;;) {
-		iter = next;
-		if (unlikely(!clear_flag(iter)))
-			break;
-		next = rcu_dereference(clear_flag(iter)->next);
-		if (clear_flag(iter) == node) {
-			found = 1;
-			assert(is_removed(rcu_dereference(node->next)));
-			break;
-		}
-		if (unlikely(is_removed(next)))
-			continue;
-		if (clear_flag(iter)->reverse_hash > node->reverse_hash)
-			break;
-		iter_prev = clear_flag(iter);
-		iter_prev_next = next;
-	} 
-	if (!found)
-		goto end;
-	if (uatomic_cmpxchg(&iter_prev->next, iter_prev_next,
-			    clear_flag(next)) != iter_prev_next)
-		goto retry;
+	dummy = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
+	_ht_gc_bucket(dummy, node);
 end:
 	/*
 	 * Only the flagging action indicated that we (and no other)
@@ -395,12 +395,13 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 			break;
 		}
 		if (!ht->compare_fct(node->key, node->key_len, key, key_len)) {
-			if (unlikely(is_removed(rcu_dereference(node->next))))
-				node = NULL;
-			break;
+			if (likely(!is_removed(rcu_dereference(node->next)))
+			    && likely(!node->dummy))
+				break;
 		}
 		node = clear_flag(rcu_dereference(node->next));
 	}
+	assert(!node || !node->dummy);
 	return node;
 }
 
@@ -448,6 +449,7 @@ int ht_delete_dummy(struct rcu_ht *ht)
 		if (!node->dummy)
 			return -EPERM;
 		node = node->next;
+		assert(!is_removed(node));
 	} while (node);
 	/* Internal sanity check: all nodes left should be dummy */
 	for (i = 0; i < t->size; i++) {
@@ -471,6 +473,30 @@ int ht_destroy(struct rcu_ht *ht)
 	free(ht->t);
 	free(ht);
 	return ret;
+}
+
+void ht_count_nodes(struct rcu_ht *ht,
+		unsigned long *count,
+		unsigned long *removed)
+{
+	struct rcu_table *t;
+	struct rcu_ht_node *node, *next;
+
+	*count = 0;
+	*removed = 0;
+
+	t = rcu_dereference(ht->t);
+	/* Check that the table is empty */
+	node = rcu_dereference(t->tbl[0]);
+	do {
+		next = rcu_dereference(node->next);
+		if (is_removed(next)) {
+			assert(!node->dummy);
+			(*removed)++;
+		} else if (!node->dummy)
+			(*count)++;
+		node = clear_flag(next);
+	} while (node);
 }
 
 static

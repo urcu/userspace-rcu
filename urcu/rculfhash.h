@@ -46,6 +46,10 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 				void (*func)(struct rcu_head *head)));
 
 int ht_destroy(struct rcu_ht *ht);
+/* Count the number of nodes in the hash table. Call with rcu_read_lock held. */
+void ht_count_nodes(struct rcu_ht *ht,
+		unsigned long *count,
+		unsigned long *removed);
 
 /* Call with rcu_read_lock held. */
 struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len);
