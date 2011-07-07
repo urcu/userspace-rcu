@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <urcu-call-rcu.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct rcu_ht_node {
 	/* cache-hot for iteration */
 	struct rcu_ht_node *next;
@@ -70,5 +74,9 @@ struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node);
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 void ht_resize(struct rcu_ht *ht, int growth);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _URCU_RCULFHASH_H */
