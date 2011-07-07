@@ -570,6 +570,9 @@ int main(int argc, char **argv)
 	test_ht = ht_new(test_hash, test_compare, 0x42UL,
 			 HASH_SIZE, call_rcu);
 
+        err = create_all_cpu_call_rcu_data(0);
+        assert(!err);
+
 	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {
