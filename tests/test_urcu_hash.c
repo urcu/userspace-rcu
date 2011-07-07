@@ -37,8 +37,8 @@
 #include <syscall.h>
 #endif
 
-#define HASH_SIZE	32
-#define RAND_POOL	1000000
+#define DEFAULT_HASH_SIZE	32
+#define DEFAULT_RAND_POOL	1000000
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
@@ -99,6 +99,10 @@ static unsigned long duration;
 
 /* read-side C.S. duration, in loops */
 static unsigned long rduration;
+
+static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
+static unsigned long rand_pool = DEFAULT_RAND_POOL;
+static int add_only, add_unique;
 
 static inline void loop_sleep(unsigned long l)
 {
@@ -351,7 +355,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		rcu_read_lock();
 		node = ht_lookup(test_ht,
-			(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
+			(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 			sizeof(void *));
 		if (node == NULL)
 			lookup_fail++;
@@ -404,15 +408,18 @@ void *thr_writer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		if (rand_r(&rand_lookup) & 1) {
+		if (add_only || rand_r(&rand_lookup) & 1) {
 			node = malloc(sizeof(struct rcu_ht_node));
 			rcu_read_lock();
 			ht_node_init(node,
-				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
+				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 				sizeof(void *));
-			ret_node = ht_add_unique(test_ht, node);
+			if (add_unique)
+				ret_node = ht_add_unique(test_ht, node);
+			else
+				ht_add(test_ht, node);
 			rcu_read_unlock();
-			if (ret_node != node) {
+			if (add_unique && ret_node != node) {
 				free(node);
 				nr_addexist++;
 			} else
@@ -421,7 +428,7 @@ void *thr_writer(void *_count)
 			/* May delete */
 			rcu_read_lock();
 			node = ht_lookup(test_ht,
-				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
+				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 				sizeof(void *));
 			if (node)
 				ret = ht_remove(test_ht, node);
@@ -476,6 +483,10 @@ void show_usage(int argc, char **argv)
 	printf(" [-c duration] (reader C.S. duration (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
+	printf(" [-p size] (random key value pool size)");
+	printf(" [-h size] (initial hash table size)");
+	printf(" [-u] Uniquify add.");
+	printf(" [-i] Add only (no removal).");
 	printf("\n");
 }
 
@@ -553,13 +564,45 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose_mode = 1;
 			break;
+		case 'p':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			rand_pool = atol(argv[++i]);
+			break;
+		case 'h':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			init_hash_size = atol(argv[++i]);
+			break;
+		case 'u':
+			add_unique = 1;
+			break;
+		case 'i':
+			add_only = 1;
+			break;
 		}
+	}
+
+	/* Check if hash size is power of 2 */
+	if (init_hash_size && init_hash_size & (init_hash_size - 1)) {
+		printf("Error: Hash table size %lu is not a power of 2.\n",
+			init_hash_size);
+		return -1;
 	}
 
 	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
+	printf_verbose("Random pool size : %lu.\n", rand_pool);
+	printf_verbose("Mode:%s%s.\n",
+		add_only ? " add only" : " add/remove",
+		add_unique ? " uniquify" : "");
+	printf_verbose("Initial hash table size: %lu buckets.\n", init_hash_size);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
@@ -568,7 +611,7 @@ int main(int argc, char **argv)
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = ht_new(test_hash, test_compare, 0x42UL,
-			 HASH_SIZE, call_rcu);
+			 init_hash_size, call_rcu);
 
         err = create_all_cpu_call_rcu_data(0);
         assert(!err);
@@ -621,10 +664,10 @@ int main(int argc, char **argv)
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
-		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
+		"wdelay %6lu rand_pool %12llu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
 		"nr_add %12llu nr_remove %12llu nr_leaked %12llu\n",
 		argv[0], duration, nr_readers, rduration,
-		nr_writers, wdelay, tot_reads, tot_writes,
+		nr_writers, wdelay, rand_pool, tot_reads, tot_writes,
 		tot_reads + tot_writes, tot_add, tot_remove,
 		tot_add - tot_remove - count);
 	free(tid_reader);
