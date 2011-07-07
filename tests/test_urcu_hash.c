@@ -38,7 +38,7 @@
 #endif
 
 #define HASH_SIZE	32
-#define RAND_POOL	10000
+#define RAND_POOL	1000000
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
