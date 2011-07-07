@@ -387,7 +387,7 @@ void free_node_cb(struct rcu_head *head)
 
 void *thr_writer(void *_count)
 {
-	struct rcu_ht_node *node;
+	struct rcu_ht_node *node, *ret_node;
 	struct wr_count *count = _count;
 	int ret;
 
@@ -410,9 +410,9 @@ void *thr_writer(void *_count)
 			ht_node_init(node,
 				(void *)(unsigned long)(rand_r(&rand_lookup) % RAND_POOL),
 				sizeof(void *));
-			ret = ht_add_unique(test_ht, node);
+			ret_node = ht_add_unique(test_ht, node);
 			rcu_read_unlock();
-			if (ret) {
+			if (ret_node != node) {
 				free(node);
 				nr_addexist++;
 			} else
@@ -569,6 +569,7 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = ht_new(test_hash, test_compare, 0x42UL,
 			 HASH_SIZE, call_rcu);
+
 	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {

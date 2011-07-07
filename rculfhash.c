@@ -234,14 +234,16 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 }
 
 static
-int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
-	     int unique)
+struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
+			    struct rcu_ht_node *node, int unique)
 {
 	struct rcu_ht_node *iter_prev, *dummy, *iter, *next;
 	unsigned long hash;
 
-	if (!t->size)
-		return 0;
+	if (!t->size) {
+		assert(node->dummy);
+		return node;	/* Initial first add (head) */
+	}
 	hash = bit_reverse_ulong(node->reverse_hash);
 	for (;;) {
 		uint32_t chain_len = 0;
@@ -267,7 +269,7 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 			    && !ht->compare_fct(node->key, node->key_len,
 						clear_flag(iter)->key,
 						clear_flag(iter)->key_len))
-				return -EEXIST;
+				return clear_flag(iter);
 			/* Only account for identical reverse hash once */
 			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
 				check_resize(ht, t, ++chain_len);
@@ -293,7 +295,7 @@ gc_end:
 	/* Garbage collect logically removed nodes in the bucket */
 	dummy = rcu_dereference(t->tbl[hash & (t->size - 1)]);
 	_ht_gc_bucket(dummy, node);
-	return 0;
+	return node;
 }
 
 static
@@ -423,7 +425,7 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	(void) _ht_add(ht, t, node, 0);
 }
 
-int ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
+struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
 {
 	struct rcu_table *t;
 	unsigned long hash;

@@ -58,8 +58,13 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len);
 /* Call with rcu_read_lock held. */
 void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node);
 
-/* Call with rcu_read_lock held. */
-int ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node);
+/*
+ * Call with rcu_read_lock held.
+ * Returns the node added upon success.
+ * Returns the unique node already present upon failure. If ht_add_unique fails,
+ * the node passed as parameter should be freed by the caller.
+ */
+struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node);
 
 /* Call with rcu_read_lock held. */
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node);
