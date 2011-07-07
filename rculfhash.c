@@ -259,7 +259,7 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 				goto insert;
 			next = rcu_dereference(clear_flag(iter)->next);
 			if (is_removed(next))
-				goto gc;
+				goto gc_node;
 			/* Only account for identical reverse hash once */
 			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
 				check_resize(ht, t, ++chain_len);
@@ -276,10 +276,9 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 			continue;	/* retry */
 		else
 			goto gc_end;
-	gc:
-		/* Garbage collect logically removed nodes in the bucket */
-		dummy = rcu_dereference(t->tbl[node->hash & (t->size - 1)]);
-		_ht_gc_bucket(dummy, node);
+	gc_node:
+		assert(!is_removed(iter));
+		(void) uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next));
 		/* retry */
 	}
 gc_end:
