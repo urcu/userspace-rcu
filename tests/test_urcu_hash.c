@@ -70,6 +70,12 @@ static inline pid_t gettid(void)
 #include <urcu/rculfhash.h>
 #include <urcu-call-rcu.h>
 
+struct wr_count {
+	unsigned long update_ops;
+	unsigned long add;
+	unsigned long remove;
+};
+
 static unsigned int __thread rand_lookup;
 static unsigned long __thread nr_add;
 static unsigned long __thread nr_addexist;
@@ -382,7 +388,7 @@ void free_node_cb(struct rcu_head *head)
 void *thr_writer(void *_count)
 {
 	struct rcu_ht_node *node;
-	unsigned long long *count = _count;
+	struct wr_count *count = _count;
 	int ret;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -454,7 +460,9 @@ void *thr_writer(void *_count)
 	printf_verbose("info id %lx: nr_add %lu, nr_addexist %lu, nr_del %lu, "
 			"nr_delnoent %lu\n", pthread_self(), nr_add,
 			nr_addexist, nr_del, nr_delnoent);
-	*count = nr_writes;
+	count->update_ops = nr_writes;
+	count->add = nr_add;
+	count->remove = nr_del;
 	return ((void*)2);
 }
 
@@ -476,8 +484,11 @@ int main(int argc, char **argv)
 	int err;
 	pthread_t *tid_reader, *tid_writer;
 	void *tret;
-	unsigned long long *count_reader, *count_writer;
-	unsigned long long tot_reads = 0, tot_writes = 0;
+	unsigned long long *count_reader;
+	struct wr_count *count_writer;
+	unsigned long long tot_reads = 0, tot_writes = 0,
+		tot_add = 0, tot_remove = 0;
+	unsigned long count, removed;
 	int i, a, ret;
 
 	if (argc < 4) {
@@ -591,26 +602,27 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_writes += count_writer[i];
+		tot_writes += count_writer[i].update_ops;
+		tot_add += count_writer[i].add;
+		tot_remove += count_writer[i].remove;
 	}
-	ret = ht_destroy(test_ht);
-	if (ret) {
-		unsigned long count, removed;
-
-		ht_count_nodes(test_ht, &count, &removed);
+	ht_count_nodes(test_ht, &count, &removed);
+	if (count || removed)
 		printf("WARNING: nodes left in the hash table upon destroy: "
 			"%lu nodes + %lu logically removed.\n", count, removed);
-	}
+	(void) ht_destroy(test_ht);
 
 	printf_verbose("final delete: %d items\n", ret);
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
-		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
+		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
+		"nr_add %12llu nr_remove %12llu nr_leaked %12llu\n",
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
-		tot_reads + tot_writes);
+		tot_reads + tot_writes, tot_add, tot_remove,
+		tot_add - tot_remove - count);
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
