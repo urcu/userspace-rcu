@@ -262,6 +262,12 @@ int _ht_add(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node,
 			next = rcu_dereference(clear_flag(iter)->next);
 			if (is_removed(next))
 				goto gc_node;
+			if (unique
+			    && !clear_flag(iter)->dummy
+			    && !ht->compare_fct(node->key, node->key_len,
+						clear_flag(iter)->key,
+						clear_flag(iter)->key_len))
+				return -EEXIST;
 			/* Only account for identical reverse hash once */
 			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
 				check_resize(ht, t, ++chain_len);
