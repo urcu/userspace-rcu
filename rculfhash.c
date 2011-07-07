@@ -217,16 +217,14 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->next);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
-		if (unlikely(!iter))
-			return;
 		for (;;) {
+			if (unlikely(!iter))
+				return;
 			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
 				return;
 			next = rcu_dereference(clear_flag(iter)->next);
 			if (is_removed(next))
 				break;
-			if (unlikely(!next))
-				return;
 			iter_prev = iter;
 			iter = next;
 		}
