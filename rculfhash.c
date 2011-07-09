@@ -216,21 +216,21 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 	for (;;) {
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
-		iter = rcu_dereference(iter_prev->next);
-		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		iter = rcu_dereference(iter_prev->p.next);
+		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
 			if (unlikely(!iter))
 				return;
-			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
+			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
 				return;
-			next = rcu_dereference(clear_flag(iter)->next);
+			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (is_removed(next))
 				break;
 			iter_prev = iter;
 			iter = next;
 		}
 		assert(!is_removed(iter));
-		(void) uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next));
+		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, clear_flag(next));
 	}
 }
 
@@ -242,10 +242,10 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 	unsigned long hash;
 
 	if (!t->size) {
-		assert(node->dummy);
+		assert(node->p.dummy);
 		return node;	/* Initial first add (head) */
 	}
-	hash = bit_reverse_ulong(node->reverse_hash);
+	hash = bit_reverse_ulong(node->p.reverse_hash);
 	for (;;) {
 		uint32_t chain_len = 0;
 
@@ -255,24 +255,24 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		 */
 		iter_prev = rcu_dereference(t->tbl[hash & (t->size - 1)]);
 		/* We can always skip the dummy node initially */
-		iter = rcu_dereference(iter_prev->next);
-		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		iter = rcu_dereference(iter_prev->p.next);
+		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
 			if (unlikely(!iter))
 				goto insert;
-			if (clear_flag(iter)->reverse_hash > node->reverse_hash)
+			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
 				goto insert;
-			next = rcu_dereference(clear_flag(iter)->next);
+			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (is_removed(next))
 				goto gc_node;
 			if (unique
-			    && !clear_flag(iter)->dummy
+			    && !clear_flag(iter)->p.dummy
 			    && !ht->compare_fct(node->key, node->key_len,
 						clear_flag(iter)->key,
 						clear_flag(iter)->key_len))
 				return clear_flag(iter);
 			/* Only account for identical reverse hash once */
-			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash)
+			if (iter_prev->p.reverse_hash != clear_flag(iter)->p.reverse_hash)
 				check_resize(ht, t, ++chain_len);
 			iter_prev = clear_flag(iter);
 			iter = next;
@@ -281,15 +281,15 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
-		node->next = iter;
-		if (uatomic_cmpxchg(&iter_prev->next, iter,
+		node->p.next = iter;
+		if (uatomic_cmpxchg(&iter_prev->p.next, iter,
 				    node) != iter)
 			continue;	/* retry */
 		else
 			goto gc_end;
 	gc_node:
 		assert(!is_removed(iter));
-		(void) uatomic_cmpxchg(&iter_prev->next, iter, clear_flag(next));
+		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, clear_flag(next));
 		/* retry */
 	}
 gc_end:
@@ -307,13 +307,13 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 	unsigned long hash;
 
 	/* logically delete the node */
-	old = rcu_dereference(node->next);
+	old = rcu_dereference(node->p.next);
 	do {
 		next = old;
 		if (is_removed(next))
 			goto end;
-		assert(!node->dummy);
-		old = uatomic_cmpxchg(&node->next, next,
+		assert(!node->p.dummy);
+		old = uatomic_cmpxchg(&node->p.next, next,
 				      flag_removed(next));
 	} while (old != next);
 
@@ -325,7 +325,7 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 	 * the node, and remove it (along with any other logically removed node)
 	 * if found.
 	 */
-	hash = bit_reverse_ulong(node->reverse_hash);
+	hash = bit_reverse_ulong(node->p.reverse_hash);
 	dummy = rcu_dereference(t->tbl[hash & (t->size - 1)]);
 	_ht_gc_bucket(dummy, node);
 end:
@@ -334,7 +334,7 @@ end:
 	 * removed the node from the hash.
 	 */
 	if (flagged) {
-		assert(is_removed(rcu_dereference(node->next)));
+		assert(is_removed(rcu_dereference(node->p.next)));
 		return 0;
 	} else
 		return -ENOENT;
@@ -351,9 +351,9 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		/* Update table size when power of two */
 		if (i != 0 && !(i & (i - 1)))
 			t->size = i;
-		t->tbl[i] = calloc(1, sizeof(struct rcu_ht_node));
-		t->tbl[i]->dummy = 1;
-		t->tbl[i]->reverse_hash = bit_reverse_ulong(i);
+		t->tbl[i] = calloc(1, sizeof(struct _rcu_ht_node));
+		t->tbl[i]->p.dummy = 1;
+		t->tbl[i]->p.reverse_hash = bit_reverse_ulong(i);
 		(void) _ht_add(ht, t, t->tbl[i], 0);
 	}
 	t->resize_target = t->size = end;
@@ -400,18 +400,18 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 	for (;;) {
 		if (unlikely(!node))
 			break;
-		if (unlikely(node->reverse_hash > reverse_hash)) {
+		if (unlikely(node->p.reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
 		}
-		if (likely(!is_removed(rcu_dereference(node->next)))
-		    && !node->dummy
+		if (likely(!is_removed(rcu_dereference(node->p.next)))
+		    && !node->p.dummy
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
 		}
-		node = clear_flag(rcu_dereference(node->next));
+		node = clear_flag(rcu_dereference(node->p.next));
 	}
-	assert(!node || !node->dummy);
+	assert(!node || !node->p.dummy);
 	return node;
 }
 
@@ -421,7 +421,7 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	unsigned long hash;
 
 	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
-	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
 	(void) _ht_add(ht, t, node, 0);
@@ -433,7 +433,7 @@ struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
 	unsigned long hash;
 
 	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
-	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
 	return _ht_add(ht, t, node, 1);
@@ -458,14 +458,14 @@ int ht_delete_dummy(struct rcu_ht *ht)
 	/* Check that the table is empty */
 	node = t->tbl[0];
 	do {
-		if (!node->dummy)
+		if (!node->p.dummy)
 			return -EPERM;
-		node = node->next;
+		node = node->p.next;
 		assert(!is_removed(node));
 	} while (node);
 	/* Internal sanity check: all nodes left should be dummy */
 	for (i = 0; i < t->size; i++) {
-		assert(t->tbl[i]->dummy);
+		assert(t->tbl[i]->p.dummy);
 		free(t->tbl[i]);
 	}
 	return 0;
@@ -504,11 +504,11 @@ void ht_count_nodes(struct rcu_ht *ht,
 	/* Check that the table is empty */
 	node = rcu_dereference(t->tbl[0]);
 	do {
-		next = rcu_dereference(node->next);
+		next = rcu_dereference(node->p.next);
 		if (is_removed(next)) {
-			assert(!node->dummy);
+			assert(!node->p.dummy);
 			(*removed)++;
-		} else if (!node->dummy)
+		} else if (!node->p.dummy)
 			(*count)++;
 		node = clear_flag(next);
 	} while (node);

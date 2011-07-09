@@ -8,13 +8,17 @@
 extern "C" {
 #endif
 
-struct rcu_ht_node {
-	/* cache-hot for iteration */
+struct _rcu_ht_node {
 	struct rcu_ht_node *next;
 	unsigned long reverse_hash;
+	unsigned int dummy;
+};
+
+struct rcu_ht_node {
+	/* cache-hot for iteration */
+	struct _rcu_ht_node p;          /* needs to be first field */
 	void *key;
 	unsigned int key_len;
-	unsigned int dummy;
 	/* cache-cold for iteration */
 	struct rcu_head head;
 };
@@ -37,7 +41,7 @@ void ht_node_init(struct rcu_ht_node *node, void *key,
 {
 	node->key = key;
 	node->key_len = key_len;
-	node->dummy = 0;
+	node->p.dummy = 0;
 }
 
 /*
