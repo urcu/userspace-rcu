@@ -53,6 +53,9 @@
 #define max(a, b)	((a) > (b) ? (a) : (b))
 #endif
 
+#define REMOVED_FLAG		(1UL << 0)
+#define FLAGS_MASK		((1UL << 1) - 1)
+
 struct rcu_table {
 	unsigned long size;	/* always a power of 2 */
 	unsigned long resize_target;
@@ -176,19 +179,19 @@ void check_resize(struct rcu_ht *ht, struct rcu_table *t,
 static
 struct rcu_ht_node *clear_flag(struct rcu_ht_node *node)
 {
-	return (struct rcu_ht_node *) (((unsigned long) node) & ~0x1);
+	return (struct rcu_ht_node *) (((unsigned long) node) & ~FLAGS_MASK);
 }
 
 static
 int is_removed(struct rcu_ht_node *node)
 {
-	return ((unsigned long) node) & 0x1;
+	return ((unsigned long) node) & REMOVED_FLAG;
 }
 
 static
 struct rcu_ht_node *flag_removed(struct rcu_ht_node *node)
 {
-	return (struct rcu_ht_node *) (((unsigned long) node) | 0x1);
+	return (struct rcu_ht_node *) (((unsigned long) node) | REMOVED_FLAG);
 }
 
 static
