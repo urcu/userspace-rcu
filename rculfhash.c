@@ -222,7 +222,7 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
-			if (unlikely(!iter))
+			if (unlikely(!clear_flag(iter)))
 				return;
 			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
 				return;
@@ -261,7 +261,7 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
-			if (unlikely(!iter))
+			if (unlikely(!clear_flag(iter)))
 				goto insert;
 			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
 				goto insert;
@@ -465,7 +465,7 @@ int ht_delete_dummy(struct rcu_ht *ht)
 			return -EPERM;
 		node = node->p.next;
 		assert(!is_removed(node));
-	} while (node);
+	} while (clear_flag(node));
 	/* Internal sanity check: all nodes left should be dummy */
 	for (i = 0; i < t->size; i++) {
 		assert(t->tbl[i]->p.dummy);
