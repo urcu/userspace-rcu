@@ -247,7 +247,7 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (is_removed(next))
 				break;
-			iter_prev = iter;
+			iter_prev = clear_flag(iter);
 			iter = next;
 		}
 		assert(!is_removed(iter));
