@@ -54,7 +54,8 @@
 #endif
 
 #define REMOVED_FLAG		(1UL << 0)
-#define FLAGS_MASK		((1UL << 1) - 1)
+#define DUMMY_FLAG		(1UL << 1)
+#define FLAGS_MASK		((1UL << 2) - 1)
 
 struct rcu_table {
 	unsigned long size;	/* always a power of 2 */
@@ -195,6 +196,18 @@ struct rcu_ht_node *flag_removed(struct rcu_ht_node *node)
 }
 
 static
+int is_dummy(struct rcu_ht_node *node)
+{
+	return ((unsigned long) node) & DUMMY_FLAG;
+}
+
+static
+struct rcu_ht_node *flag_dummy(struct rcu_ht_node *node)
+{
+	return (struct rcu_ht_node *) (((unsigned long) node) | DUMMY_FLAG);
+}
+ 
+static
 unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 {
 	unsigned long old1, old2;
@@ -214,7 +227,7 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 static
 void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 {
-	struct rcu_ht_node *iter_prev, *iter, *next;
+	struct rcu_ht_node *iter_prev, *iter, *next, *new_next;
 
 	for (;;) {
 		iter_prev = dummy;
@@ -233,19 +246,26 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 			iter = next;
 		}
 		assert(!is_removed(iter));
-		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, clear_flag(next));
+		if (is_dummy(iter))
+			new_next = flag_dummy(clear_flag(next));
+		else
+			new_next = clear_flag(next);
+		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 	}
 }
 
 static
 struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
-			    struct rcu_ht_node *node, int unique)
+			    struct rcu_ht_node *node, int unique, int dummy)
 {
-	struct rcu_ht_node *iter_prev, *dummy, *iter, *next;
+	struct rcu_ht_node *iter_prev, *iter, *next, *new_node, *new_next,
+			*dummy_node;
 	unsigned long hash;
 
 	if (!t->size) {
 		assert(node->p.dummy);
+		assert(dummy);
+		node->p.next = flag_dummy(NULL);
 		return node;	/* Initial first add (head) */
 	}
 	hash = bit_reverse_ulong(node->p.reverse_hash);
@@ -284,21 +304,32 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
-		node->p.next = iter;
+		if (!dummy)
+			node->p.next = iter;
+		else
+			node->p.next = flag_dummy(iter);
+		if (is_dummy(iter))
+			new_node = flag_dummy(node);
+		else
+			new_node = node;
 		if (uatomic_cmpxchg(&iter_prev->p.next, iter,
-				    node) != iter)
+				    new_node) != iter)
 			continue;	/* retry */
 		else
 			goto gc_end;
 	gc_node:
 		assert(!is_removed(iter));
-		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, clear_flag(next));
+		if (is_dummy(iter))
+			new_next = flag_dummy(clear_flag(next));
+		else
+			new_next = clear_flag(next);
+		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 		/* retry */
 	}
 gc_end:
 	/* Garbage collect logically removed nodes in the bucket */
-	dummy = rcu_dereference(t->tbl[hash & (t->size - 1)]);
-	_ht_gc_bucket(dummy, node);
+	dummy_node = rcu_dereference(t->tbl[hash & (t->size - 1)]);
+	_ht_gc_bucket(dummy_node, node);
 	return node;
 }
 
@@ -357,7 +388,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		t->tbl[i] = calloc(1, sizeof(struct _rcu_ht_node));
 		t->tbl[i]->p.dummy = 1;
 		t->tbl[i]->p.reverse_hash = bit_reverse_ulong(i);
-		(void) _ht_add(ht, t, t->tbl[i], 0);
+		(void) _ht_add(ht, t, t->tbl[i], 0, 1);
 	}
 	t->resize_target = t->size = end;
 	t->resize_initiated = 0;
@@ -427,7 +458,7 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
-	(void) _ht_add(ht, t, node, 0);
+	(void) _ht_add(ht, t, node, 0, 0);
 }
 
 struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
@@ -439,7 +470,7 @@ struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
-	return _ht_add(ht, t, node, 1);
+	return _ht_add(ht, t, node, 1, 0);
 }
 
 int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
