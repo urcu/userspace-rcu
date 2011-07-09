@@ -263,7 +263,6 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 	unsigned long hash;
 
 	if (!t->size) {
-		assert(node->p.dummy);
 		assert(dummy);
 		node->p.next = flag_dummy(NULL);
 		return node;	/* Initial first add (head) */
@@ -289,7 +288,7 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 			if (is_removed(next))
 				goto gc_node;
 			if (unique
-			    && !clear_flag(iter)->p.dummy
+			    && !is_dummy(next)
 			    && !ht->compare_fct(node->key, node->key_len,
 						clear_flag(iter)->key,
 						clear_flag(iter)->key_len))
@@ -305,9 +304,9 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		assert(!is_removed(iter_prev));
 		assert(iter_prev != node);
 		if (!dummy)
-			node->p.next = iter;
+			node->p.next = clear_flag(iter);
 		else
-			node->p.next = flag_dummy(iter);
+			node->p.next = flag_dummy(clear_flag(iter));
 		if (is_dummy(iter))
 			new_node = flag_dummy(node);
 		else
@@ -346,7 +345,7 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 		next = old;
 		if (is_removed(next))
 			goto end;
-		assert(!node->p.dummy);
+		assert(!is_dummy(next));
 		old = uatomic_cmpxchg(&node->p.next, next,
 				      flag_removed(next));
 	} while (old != next);
@@ -386,7 +385,6 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		if (i != 0 && !(i & (i - 1)))
 			t->size = i;
 		t->tbl[i] = calloc(1, sizeof(struct _rcu_ht_node));
-		t->tbl[i]->p.dummy = 1;
 		t->tbl[i]->p.reverse_hash = bit_reverse_ulong(i);
 		(void) _ht_add(ht, t, t->tbl[i], 0, 1);
 	}
@@ -423,7 +421,7 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 {
 	struct rcu_table *t;
-	struct rcu_ht_node *node;
+	struct rcu_ht_node *node, *next;
 	unsigned long hash, reverse_hash;
 
 	hash = ht->hash_fct(key, key_len, ht->hash_seed);
@@ -438,14 +436,15 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 			node = NULL;
 			break;
 		}
-		if (likely(!is_removed(rcu_dereference(node->p.next)))
-		    && !node->p.dummy
+		next = rcu_dereference(node->p.next);
+		if (likely(!is_removed(next))
+		    && !is_dummy(next)
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
 		}
-		node = clear_flag(rcu_dereference(node->p.next));
+		node = clear_flag(next);
 	}
-	assert(!node || !node->p.dummy);
+	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
 	return node;
 }
 
@@ -492,14 +491,14 @@ int ht_delete_dummy(struct rcu_ht *ht)
 	/* Check that the table is empty */
 	node = t->tbl[0];
 	do {
-		if (!node->p.dummy)
+		node = clear_flag(node)->p.next;
+		if (!is_dummy(node))
 			return -EPERM;
-		node = node->p.next;
 		assert(!is_removed(node));
 	} while (clear_flag(node));
 	/* Internal sanity check: all nodes left should be dummy */
 	for (i = 0; i < t->size; i++) {
-		assert(t->tbl[i]->p.dummy);
+		assert(is_dummy(t->tbl[i]->p.next));
 		free(t->tbl[i]);
 	}
 	return 0;
@@ -540,9 +539,9 @@ void ht_count_nodes(struct rcu_ht *ht,
 	do {
 		next = rcu_dereference(node->p.next);
 		if (is_removed(next)) {
-			assert(!node->p.dummy);
+			assert(!is_dummy(next));
 			(*removed)++;
-		} else if (!node->p.dummy)
+		} else if (!is_dummy(next))
 			(*count)++;
 		node = clear_flag(next);
 	} while (node);

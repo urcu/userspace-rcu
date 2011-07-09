@@ -11,7 +11,6 @@ extern "C" {
 struct _rcu_ht_node {
 	struct rcu_ht_node *next;
 	unsigned long reverse_hash;
-	unsigned int dummy;
 };
 
 struct rcu_ht_node {
@@ -41,7 +40,6 @@ void ht_node_init(struct rcu_ht_node *node, void *key,
 {
 	node->key = key;
 	node->key_len = key_len;
-	node->p.dummy = 0;
 }
 
 /*
