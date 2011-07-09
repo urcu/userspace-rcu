@@ -67,6 +67,7 @@ struct rcu_ht {
 	ht_compare_fct compare_fct;
 	unsigned long hash_seed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
+	unsigned int in_progress_resize;
 	void (*ht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
 };
@@ -373,6 +374,7 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 	ht->compare_fct = compare_fct;
 	ht->hash_seed = hash_seed;
 	ht->ht_call_rcu = ht_call_rcu;
+	ht->in_progress_resize = 0;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->t = calloc(1, sizeof(struct rcu_table)
@@ -477,6 +479,9 @@ int ht_destroy(struct rcu_ht *ht)
 {
 	int ret;
 
+	/* Wait for in-flight resize operations to complete */
+	while (uatomic_read(&ht->in_progress_resize))
+		poll(NULL, 0, 100);	/* wait for 100ms */
 	ret = ht_delete_dummy(ht);
 	if (ret)
 		return ret;
@@ -576,6 +581,8 @@ void do_resize_cb(struct rcu_head *head)
 	_do_ht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
 	free(work);
+	cmm_smp_mb();	/* finish resize before decrement */
+	uatomic_dec(&ht->in_progress_resize);
 }
 
 static
@@ -586,6 +593,8 @@ void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
 
 	target_size = resize_target_update(t, growth);
 	if (!CMM_LOAD_SHARED(t->resize_initiated) && t->size < target_size) {
+		uatomic_inc(&ht->in_progress_resize);
+		cmm_smp_mb();	/* increment resize count before calling it */
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->ht_call_rcu(&work->head, do_resize_cb);
