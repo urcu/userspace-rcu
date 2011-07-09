@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 struct _rcu_ht_node {
-	struct rcu_ht_node *next;
+	struct rcu_ht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
 };
 

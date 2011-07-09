@@ -53,6 +53,11 @@
 #define max(a, b)	((a) > (b) ? (a) : (b))
 #endif
 
+/*
+ * The removed flag needs to be updated atomically with the pointer.
+ * The dummy flag does not require to be updated atomically with the
+ * pointer, but it is added as a pointer low bit flag to save space.
+ */
 #define REMOVED_FLAG		(1UL << 0)
 #define DUMMY_FLAG		(1UL << 1)
 #define FLAGS_MASK		((1UL << 2) - 1)
