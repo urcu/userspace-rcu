@@ -76,7 +76,7 @@ struct rcu_ht {
 	ht_compare_fct compare_fct;
 	unsigned long hash_seed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	unsigned int in_progress_resize;
+	unsigned int in_progress_resize, in_progress_destroy;
 	void (*ht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
 };
@@ -525,10 +525,14 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 			new_node->p.reverse_hash =
 				bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
 			(void) _ht_add(ht, t, new_node, 0, 1);
+			if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+				break;
 		}
 		/* Update table size */
 		t->size = !i ? 1 : (1UL << i);
 		dbg_printf("rculfhash: init new size: %lu\n", t->size);
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+			break;
 	}
 	t->resize_target = t->size;
 	t->resize_initiated = 0;
@@ -673,6 +677,7 @@ int ht_destroy(struct rcu_ht *ht)
 	int ret;
 
 	/* Wait for in-flight resize operations to complete */
+	CMM_STORE_SHARED(ht->in_progress_destroy, 1);
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
 	ret = ht_delete_dummy(ht);

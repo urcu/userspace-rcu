@@ -115,7 +115,7 @@ static int verbose_mode;
 #define printf_verbose(fmt, args...)		\
 	do {					\
 		if (verbose_mode)		\
-			printf(fmt, args);	\
+			printf(fmt, ## args);	\
 	} while (0)
 
 static unsigned int cpu_affinities[NR_CPUS];
@@ -653,13 +653,19 @@ int main(int argc, char **argv)
 		tot_add += count_writer[i].add;
 		tot_remove += count_writer[i].remove;
 	}
+	printf("Counting nodes... ");
+	fflush(stdout);
 	ht_count_nodes(test_ht, &count, &removed);
+	printf("done.\n");
 	if (count || removed)
 		printf("WARNING: nodes left in the hash table upon destroy: "
 			"%lu nodes + %lu logically removed.\n", count, removed);
-	(void) ht_destroy(test_ht);
+	ret = ht_destroy(test_ht);
 
-	printf_verbose("final delete: %d items\n", ret);
+	if (ret)
+		printf_verbose("final delete aborted\n");
+	else
+		printf_verbose("final delete success\n");
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
