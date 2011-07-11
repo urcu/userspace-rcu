@@ -736,8 +736,8 @@ void _do_ht_resize(struct rcu_ht *ht)
 	if (old_size == new_size)
 		return;
 	new_order = get_count_order_ulong(new_size) + 1;
-	dbg_printf("rculfhash: resize from %lu (order %lu) to %lu (order %lu) buckets\n",
-		   old_size, old_order, new_size, new_order);
+	printf("rculfhash: resize from %lu (order %lu) to %lu (order %lu) buckets\n",
+	       old_size, old_order, new_size, new_order);
 	new_t = malloc(sizeof(struct rcu_table)
 			+ (new_order * sizeof(struct _rcu_ht_node *)));
 	assert(new_size > old_size);
