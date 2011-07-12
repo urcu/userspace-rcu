@@ -20,6 +20,75 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/*
+ * Based on the following articles:
+ * - Ori Shalev and Nir Shavit. Split-ordered lists: Lock-free
+ *   extensible hash tables. J. ACM 53, 3 (May 2006), 379-405.
+ * - Michael, M. M. High performance dynamic lock-free hash tables
+ *   and list-based sets. In Proceedings of the fourteenth annual ACM
+ *   symposium on Parallel algorithms and architectures, ACM Press,
+ *   (2002), 73-82.
+ *
+ * Some specificities of this Lock-Free Expandable RCU Hash Table
+ * implementation:
+ *
+ * - RCU read-side critical section allows readers to perform hash
+ *   table lookups and use the returned objects safely by delaying
+ *   memory reclaim of a grace period.
+ * - Add and remove operations are lock-free, and do not need to
+ *   allocate memory. They need to be executed within RCU read-side
+ *   critical section to ensure the objects they read are valid and to
+ *   deal with the cmpxchg ABA problem.
+ * - add and add_unique operations are supported. add_unique checks if
+ *   the node key already exists in the hash table. It ensures no key
+ *   duplicata exists.
+ * - The resize operation executes concurrently with add/remove/lookup.
+ * - Hash table nodes are contained within a split-ordered list. This
+ *   list is ordered by incrementing reversed-bits-hash value.
+ * - An index of dummy nodes is kept. These dummy nodes are the hash
+ *   table "buckets", and they are also chained together in the
+ *   split-ordered list, which allows recursive expansion.
+ * - The resize operation only allows expanding the hash table.
+ *   It is triggered either through an API call or automatically by
+ *   detecting long chains in the add operation.
+ * - Resize operation initiated by long chain detection is executed by a
+ *   call_rcu thread, which keeps lock-freedom of add and remove.
+ * - Resize operations are protected by a mutex.
+ * - The removal operation is split in two parts: first, a "removed"
+ *   flag is set in the next pointer within the node to remove. Then,
+ *   a "garbage collection" is performed in the bucket containing the
+ *   removed node (from the start of the bucket up to the removed node).
+ *   All encountered nodes with "removed" flag set in their next
+ *   pointers are removed from the linked-list. If the cmpxchg used for
+ *   removal fails (due to concurrent garbage-collection or concurrent
+ *   add), we retry from the beginning of the bucket. This ensures that
+ *   the node with "removed" flag set is removed from the hash table
+ *   (not visible to lookups anymore) before the RCU read-side critical
+ *   section held across removal ends. Furthermore, this ensures that
+ *   the node with "removed" flag set is removed from the linked-list
+ *   before its memory is reclaimed. Only the thread which removal
+ *   successfully set the "removed" flag (with a cmpxchg) into a node's
+ *   next pointer is considered to have succeeded its removal (and thus
+ *   owns the node to reclaim). Because we garbage-collect starting from
+ *   an invariant node (the start-of-bucket dummy node) up to the
+ *   "removed" node (or find a reverse-hash that is higher), we are sure
+ *   that a successful traversal of the chain leads to a chain that is
+ *   present in the linked-list (the start node is never removed) and
+ *   that is does not contain the "removed" node anymore, even if
+ *   concurrent delete/add operations are changing the structure of the
+ *   list concurrently.
+ * - A RCU "order table" indexed by log2(hash index) is copied and
+ *   expanded by the resize operation. This order table allows finding
+ *   the "dummy node" tables.
+ * - There is one dummy node table per hash index order. The size of
+ *   each dummy node table is half the number of hashes contained in
+ *   this order.
+ * - call_rcu is used to garbage-collect the old order table.
+ * - The per-order dummy node tables contain a compact version of the
+ *   hash table nodes. These tables are invariant after they are
+ *   populated into the hash table.
+ */
+
 #define _LGPL_SOURCE
 #include <stdlib.h>
 #include <errno.h>
@@ -38,12 +107,10 @@
 #include <stdio.h>
 #include <pthread.h>
 
-//#define DEBUG		/* Test */
-
 #ifdef DEBUG
-#define dbg_printf(args...)     printf(args)
+#define dbg_printf(fmt, args...)     printf(fmt, ## args)
 #else
-#define dbg_printf(args...)
+#define dbg_printf(fmt, args...)
 #endif
 
 #define CHAIN_LEN_TARGET		4
