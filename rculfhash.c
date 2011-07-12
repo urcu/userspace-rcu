@@ -425,10 +425,10 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 		for (;;) {
 			if (unlikely(!clear_flag(iter)))
 				return;
-			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
+			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				return;
 			next = rcu_dereference(clear_flag(iter)->p.next);
-			if (is_removed(next))
+			if (likely(is_removed(next)))
 				break;
 			iter_prev = clear_flag(iter);
 			iter = next;
@@ -474,10 +474,10 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		for (;;) {
 			if (unlikely(!clear_flag(iter)))
 				goto insert;
-			if (clear_flag(iter)->p.reverse_hash > node->p.reverse_hash)
+			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
 			next = rcu_dereference(clear_flag(iter)->p.next);
-			if (is_removed(next))
+			if (unlikely(is_removed(next)))
 				goto gc_node;
 			if (unique
 			    && !is_dummy(next)
@@ -540,7 +540,7 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 	old = rcu_dereference(node->p.next);
 	do {
 		next = old;
-		if (is_removed(next))
+		if (unlikely(is_removed(next)))
 			goto end;
 		assert(!is_dummy(next));
 		old = uatomic_cmpxchg(&node->p.next, next,
