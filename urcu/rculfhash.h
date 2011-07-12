@@ -8,6 +8,11 @@
 extern "C" {
 #endif
 
+/*
+ * struct rcu_ht_node and struct _rcu_ht_node should be aligned on
+ * 4-bytes boundaries because the two lower bits are used as flags.
+ */
+
 struct _rcu_ht_node {
 	struct rcu_ht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
