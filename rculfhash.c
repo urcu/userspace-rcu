@@ -77,6 +77,11 @@
  *   that is does not contain the "removed" node anymore, even if
  *   concurrent delete/add operations are changing the structure of the
  *   list concurrently.
+ * - The add operation performs gargage collection of buckets if it
+ *   encounters nodes with removed flag set in the bucket where it wants
+ *   to add its new node. This ensures lock-freedom of add operation by
+ *   helping the remover unlink nodes from the list rather than to wait
+ *   for it do to so.
  * - A RCU "order table" indexed by log2(hash index) is copied and
  *   expanded by the resize operation. This order table allows finding
  *   the "dummy node" tables.
