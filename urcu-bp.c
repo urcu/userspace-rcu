@@ -295,7 +295,7 @@ static void add_thread(void)
 	if (registry_arena.len
 	    < registry_arena.used + sizeof(struct rcu_reader))
 		resize_arena(&registry_arena,
-		max(registry_arena.len << 1, ARENA_INIT_ALLOC));
+		caa_max(registry_arena.len << 1, ARENA_INIT_ALLOC));
 	/*
 	 * Find a free spot.
 	 */
