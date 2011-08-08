@@ -39,12 +39,12 @@
  */
 #define CMM_ACCESS_ONCE(x)	(*(volatile typeof(x) *)&(x))
 
-#ifndef max
-#define max(a,b) ((a)>(b)?(a):(b))
+#ifndef caa_max
+#define caa_max(a,b) ((a)>(b)?(a):(b))
 #endif
 
-#ifndef min
-#define min(a,b) ((a)<(b)?(a):(b))
+#ifndef caa_min
+#define caa_min(a,b) ((a)<(b)?(a):(b))
 #endif
 
 #if defined(__SIZEOF_LONG__)
