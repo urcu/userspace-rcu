@@ -55,18 +55,6 @@ extern "C" {
  * This is required to permit relinking with newer versions of the library.
  */
 
-/*
- * If a reader is really non-cooperative and refuses to commit its
- * rcu_reader.ctr count to memory (there is no barrier in the reader
- * per-se), kick it after a few loops waiting for it.
- */
-#define KICK_READER_LOOPS 10000
-
-/*
- * Active attempts to check for reader Q.S. before calling futex().
- */
-#define RCU_QS_ACTIVE_ATTEMPTS 100
-
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)	assert(args)
 #else
