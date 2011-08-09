@@ -53,6 +53,11 @@ int32_t gp_futex;
 unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
 
 /*
+ * Active attempts to check for reader Q.S. before calling futex().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
+
+/*
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
