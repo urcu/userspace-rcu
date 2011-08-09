@@ -95,18 +95,6 @@ extern "C" {
 #define SIGRCU SIGUSR1
 #endif
 
-/*
- * If a reader is really non-cooperative and refuses to commit its
- * rcu_active_readers count to memory (there is no barrier in the reader
- * per-se), kick it after a few loops waiting for it.
- */
-#define KICK_READER_LOOPS 10000
-
-/*
- * Active attempts to check for reader Q.S. before calling futex().
- */
-#define RCU_QS_ACTIVE_ATTEMPTS 100
-
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)	assert(args)
 #else
