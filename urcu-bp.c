@@ -78,6 +78,11 @@ void *mremap(void *old_address, size_t old_size, size_t new_size, int flags)
 #define RCU_SLEEP_DELAY		1000
 #define ARENA_INIT_ALLOC	16
 
+/*
+ * Active attempts to check for reader Q.S. before calling sleep().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
+
 void __attribute__((destructor)) rcu_bp_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
