@@ -27,6 +27,8 @@
  * to redistribute under later versions of GPL might not be available.
  */
 
+#include <urcu/arch.h>
+
 #ifndef __always_inline
 #define __always_inline inline
 #endif
@@ -162,8 +164,8 @@ typedef pthread_t thread_id_t;
 
 #define NR_THREADS 128
 
-#define __THREAD_ID_MAP_EMPTY 0
-#define __THREAD_ID_MAP_WAITING 1
+#define __THREAD_ID_MAP_EMPTY ((thread_id_t) 0)
+#define __THREAD_ID_MAP_WAITING ((thread_id_t) 1)
 thread_id_t __thread_id_map[NR_THREADS];
 spinlock_t __thread_id_map_mutex;
 
@@ -174,6 +176,11 @@ spinlock_t __thread_id_map_mutex;
 	for (t = 0; t < NR_THREADS; t++) \
 		if ((__thread_id_map[t] != __THREAD_ID_MAP_EMPTY) && \
 		    (__thread_id_map[t] != __THREAD_ID_MAP_WAITING))
+
+#define for_each_tid(t, tid) \
+	for (t = 0; t < NR_THREADS; t++) \
+		if ((((tid) = __thread_id_map[t]) != __THREAD_ID_MAP_EMPTY) && \
+		    ((tid) != __THREAD_ID_MAP_WAITING))
 
 pthread_key_t thread_id_key;
 

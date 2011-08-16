@@ -74,8 +74,6 @@
  * Machine parameters.
  */
 
-#define CONFIG_PPC64
-
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(CAA_CACHE_LINE_SIZE)))
 
