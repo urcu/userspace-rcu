@@ -35,7 +35,7 @@
 /* Mapping macros to allow multiple flavors in a single binary. */
 
 #if !defined(RCU_MEMBARRIER) && !defined(RCU_SIGNAL) && !defined(RCU_MB)
-#define RCU_MB
+#define RCU_MEMBARRIER
 #endif
 
 #ifdef RCU_MEMBARRIER
