@@ -83,11 +83,6 @@ fi
 
 UATOMICSRC=urcu/uatomic/$ARCHTYPE.h
 ARCHSRC=urcu/arch/$ARCHTYPE.h
-if test "x$ARCHTYPE" != xx86 -a "x$ARCHTYPE" != xppc; then
-	APISRC=tests/api_gcc.h
-else
-	APISRC=tests/api_$ARCHTYPE.h
-fi
 if test "$ARCHTYPE" == "armv7l"; then
 	CFLAGS="-mcpu=cortex-a9 -mtune=cortex-a9 -O"
 fi
@@ -241,7 +236,6 @@ CFLAGS=$saved_CFLAGS
 AC_CONFIG_LINKS([
 	urcu/arch.h:$ARCHSRC
 	urcu/uatomic.h:$UATOMICSRC
-	tests/api.h:$APISRC
 ])
 AC_CONFIG_FILES([
 	Makefile
