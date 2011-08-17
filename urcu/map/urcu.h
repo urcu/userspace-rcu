@@ -38,6 +38,31 @@
 #define RCU_MEMBARRIER
 #endif
 
+/*
+ * RCU_MEMBARRIER is only possibly available on Linux. Fallback to
+ * RCU_MB
+ * otherwise.
+ */
+#if !defined(__linux__) && defined(RCU_MEMBARRIER)
+#undef RCU_MEMBARRIER
+#define RCU_MB
+#endif
+
+#ifdef RCU_MEMBARRIER
+#include <syscall.h>
+
+/* If the headers do not support SYS_membarrier, statically use RCU_MB */
+#ifdef SYS_membarrier
+# define MEMBARRIER_EXPEDITED		(1 << 0)
+# define MEMBARRIER_DELAYED		(1 << 1)
+# define MEMBARRIER_QUERY		(1 << 16)
+# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
+#else
+# undef RCU_MEMBARRIER
+# define RCU_MB
+#endif
+#endif
+
 #ifdef RCU_MEMBARRIER
 
 #define rcu_read_lock			rcu_read_lock_memb
