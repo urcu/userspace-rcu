@@ -33,11 +33,11 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la \
+lib_LTLIBRARIES = liburcu-cds-common.la \
+		liburcu.la liburcu-qsbr.la \
 		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
 		liburcu-cds.la liburcu-cds-qsbr.la \
-		liburcu-cds-mb.la liburcu-cds-signal.la liburcu-cds-bp.la \
-		liburcu-cds-common.la
+		liburcu-cds-mb.la liburcu-cds-signal.la liburcu-cds-bp.la
 
 liburcu_cds_common_la_SOURCES = wfqueue.c wfstack.c $(COMPAT)
 
