@@ -27,10 +27,8 @@
  * to redistribute under later versions of GPL might not be available.
  */
 
+#include <urcu/compiler.h>
 #include <urcu/arch.h>
-
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-#define BUILD_BUG_ON_ZERO(e) (sizeof(char[1 - 2 * !!(e)]) - 1)
 
 /*
  * Machine parameters.
