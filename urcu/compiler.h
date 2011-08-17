@@ -61,4 +61,7 @@
 		(type *)((char *)__ptr - offsetof(type, member));	\
 	})
 
+#define CAA_BUILD_BUG_ON_ZERO(cond) (sizeof(struct { int:-!!(cond); }))
+#define CAA_BUILD_BUG_ON(cond) ((void)BUILD_BUG_ON_ZERO(cond))
+
 #endif /* _URCU_COMPILER_H */

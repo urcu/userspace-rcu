@@ -27,55 +27,13 @@
  * to redistribute under later versions of GPL might not be available.
  */
 
+#include <urcu/compiler.h>
 #include <urcu/arch.h>
-
-#ifndef __always_inline
-#define __always_inline inline
-#endif
-
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-#define BUILD_BUG_ON_ZERO(e) (sizeof(char[1 - 2 * !!(e)]) - 1)
-
-#ifdef __ASSEMBLY__
-#  define stringify_in_c(...)   __VA_ARGS__
-#  define ASM_CONST(x)          x
-#else
-/* This version of stringify will deal with commas... */
-#  define __stringify_in_c(...) #__VA_ARGS__
-#  define stringify_in_c(...)   __stringify_in_c(__VA_ARGS__) " "
-#  define __ASM_CONST(x)        x##UL
-#  define ASM_CONST(x)          __ASM_CONST(x)
-#endif
-
-
-/*
- * arch-i386.h: Expose x86 atomic instructions.  80486 and better only.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, but version 2 only due to inclusion
- * of Linux-kernel code.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
- * Copyright (c) 2006 Paul E. McKenney, IBM.
- *
- * Much code taken from the Linux kernel.  For such code, the option
- * to redistribute under later versions of GPL might not be available.
- */
 
 /*
  * Machine parameters.
  */
 
-/* #define CAA_CACHE_LINE_SIZE 64 */
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(CAA_CACHE_LINE_SIZE)))
 
@@ -111,14 +69,6 @@
 #include <sched.h>
 #include <sys/param.h>
 /* #include "atomic.h" */
-
-/*
- * Default machine parameters.
- */
-
-#ifndef CAA_CACHE_LINE_SIZE
-/* #define CAA_CACHE_LINE_SIZE 128 */
-#endif /* #ifndef CAA_CACHE_LINE_SIZE */
 
 /*
  * Exclusive locking primitives.
@@ -337,106 +287,7 @@ long long get_microseconds(void)
 			per_thread(name, __i_p_t_i) = v; \
 	} while (0)
 
-/*
- * CPU traversal primitives.
- */
-
-#ifndef NR_CPUS
-#define NR_CPUS 16
-#endif /* #ifndef NR_CPUS */
-
-#define for_each_possible_cpu(cpu) \
-	for (cpu = 0; cpu < NR_CPUS; cpu++)
-#define for_each_online_cpu(cpu) \
-	for (cpu = 0; cpu < NR_CPUS; cpu++)
-
-/*
- * Per-CPU variables.
- */
-
-#define DEFINE_PER_CPU(type, name) \
-	struct { \
-		__typeof__(type) v \
-			__attribute__((__aligned__(CAA_CACHE_LINE_SIZE))); \
-	} __per_cpu_##name[NR_CPUS]
-#define DECLARE_PER_CPU(type, name) extern DEFINE_PER_CPU(type, name)
-
 DEFINE_PER_THREAD(int, smp_processor_id);
-
-#define per_cpu(name, thread) __per_cpu_##name[thread].v
-#define __get_cpu_var(name) per_cpu(name, smp_processor_id())
-
-#define init_per_cpu(name, v) \
-	do { \
-		int __i_p_c_i; \
-		for (__i_p_c_i = 0; __i_p_c_i < NR_CPUS; __i_p_c_i++) \
-			per_cpu(name, __i_p_c_i) = v; \
-	} while (0)
-
-/*
- * CPU state checking (crowbarred).
- */
-
-#define idle_cpu(cpu) 0
-#define in_softirq() 1
-#define hardirq_count() 0
-#define PREEMPT_SHIFT   0
-#define SOFTIRQ_SHIFT   (PREEMPT_SHIFT + PREEMPT_BITS)
-#define HARDIRQ_SHIFT   (SOFTIRQ_SHIFT + SOFTIRQ_BITS)
-#define PREEMPT_BITS    8
-#define SOFTIRQ_BITS    8
-
-/*
- * CPU hotplug.
- */
-
-struct notifier_block {
-	int (*notifier_call)(struct notifier_block *, unsigned long, void *);
-	struct notifier_block *next;
-	int priority;
-};
-
-#define CPU_ONLINE		0x0002 /* CPU (unsigned)v is up */
-#define CPU_UP_PREPARE		0x0003 /* CPU (unsigned)v coming up */
-#define CPU_UP_CANCELED		0x0004 /* CPU (unsigned)v NOT coming up */
-#define CPU_DOWN_PREPARE	0x0005 /* CPU (unsigned)v going down */
-#define CPU_DOWN_FAILED		0x0006 /* CPU (unsigned)v NOT going down */
-#define CPU_DEAD		0x0007 /* CPU (unsigned)v dead */
-#define CPU_DYING		0x0008 /* CPU (unsigned)v not running any task,
-				        * not handling interrupts, soon dead */
-#define CPU_POST_DEAD		0x0009 /* CPU (unsigned)v dead, cpu_hotplug
-					* lock is dropped */
-
-/* Used for CPU hotplug events occuring while tasks are frozen due to a suspend
- * operation in progress
- */
-#define CPU_TASKS_FROZEN	0x0010
-
-#define CPU_ONLINE_FROZEN	(CPU_ONLINE | CPU_TASKS_FROZEN)
-#define CPU_UP_PREPARE_FROZEN	(CPU_UP_PREPARE | CPU_TASKS_FROZEN)
-#define CPU_UP_CANCELED_FROZEN	(CPU_UP_CANCELED | CPU_TASKS_FROZEN)
-#define CPU_DOWN_PREPARE_FROZEN	(CPU_DOWN_PREPARE | CPU_TASKS_FROZEN)
-#define CPU_DOWN_FAILED_FROZEN	(CPU_DOWN_FAILED | CPU_TASKS_FROZEN)
-#define CPU_DEAD_FROZEN		(CPU_DEAD | CPU_TASKS_FROZEN)
-#define CPU_DYING_FROZEN	(CPU_DYING | CPU_TASKS_FROZEN)
-
-/* Hibernation and suspend events */
-#define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
-#define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
-#define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
-#define PM_POST_SUSPEND		0x0004 /* Suspend finished */
-#define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
-#define PM_POST_RESTORE		0x0006 /* Restore failed */
-
-#define NOTIFY_DONE		0x0000		/* Don't care */
-#define NOTIFY_OK		0x0001		/* Suits me */
-#define NOTIFY_STOP_MASK	0x8000		/* Don't call further */
-#define NOTIFY_BAD		(NOTIFY_STOP_MASK|0x0002)
-						/* Bad/Veto action */
-/*
- * Clean way to return from the notifier and stop further calls.
- */
-#define NOTIFY_STOP		(NOTIFY_OK|NOTIFY_STOP_MASK)
 
 /*
  * Bug checks.
