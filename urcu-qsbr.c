@@ -150,26 +150,33 @@ static void update_counter_and_wait(void)
 	 */
 	for (;;) {
 		wait_loops++;
-		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_dec(&gp_futex);
+		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
+			uatomic_set(&gp_futex, -1);
+			/*
+			 * Write futex before write waiting (the other side
+			 * reads them in the opposite order).
+			 */
+			cmm_smp_wmb();
+			cds_list_for_each_entry(index, &registry, node) {
+				_CMM_STORE_SHARED(index->waiting, 1);
+			}
 			/* Write futex before read reader_gp */
 			cmm_smp_mb();
 		}
-
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
 				cds_list_move(&index->node, &qsreaders);
 		}
 
 		if (cds_list_empty(&registry)) {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				cmm_smp_mb();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
 		} else {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				wait_gp();
 			} else {
 #ifndef HAS_INCOHERENT_CACHES
