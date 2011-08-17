@@ -33,28 +33,39 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-lib_LTLIBRARIES = liburcu-cds.la liburcu.la liburcu-qsbr.la \
-		liburcu-mb.la liburcu-signal.la liburcu-bp.la
+lib_LTLIBRARIES = liburcu.la liburcu-qsbr.la \
+		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
+		liburcu-cds.la liburcu-cds-qsbr.la \
+		liburcu-cds-mb.la liburcu-cds-signal.la liburcu-cds-bp.la \
+		liburcu-cds-common.la
 
-liburcu_cds_la_SOURCES = wfqueue.c wfstack.c rculfqueue.c rculfstack.c \
-			$(COMPAT)
+liburcu_cds_common_la_SOURCES = wfqueue.c wfstack.c $(COMPAT)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_la_LIBADD = liburcu-cds.la
+liburcu_la_LIBADD = liburcu-cds-common.la
+liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
-liburcu_qsbr_la_LIBADD = liburcu-cds.la
+liburcu_qsbr_la_LIBADD = liburcu-cds-common.la
+liburcu_cds_qsbr_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_qsbr_la_CFLAGS = -DRCU_QSBR
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
-liburcu_mb_la_LIBADD = liburcu-cds.la
+liburcu_mb_la_LIBADD = liburcu-cds-common.la
+liburcu_cds_mb_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_mb_la_CFLAGS = -DRCU_MB
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
-liburcu_signal_la_LIBADD = liburcu-cds.la
+liburcu_signal_la_LIBADD = liburcu-cds-common.la
+liburcu_cds_signal_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_signal_la_CFLAGS = -DRCU_SIGNAL
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
-liburcu_bp_la_LIBADD = liburcu-cds.la
+liburcu_bp_la_LIBADD = liburcu-cds-common.la
+liburcu_cds_bp_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_bp_la_CFLAGS = -DRCU_BP
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \

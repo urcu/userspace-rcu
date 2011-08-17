@@ -47,11 +47,35 @@ struct cds_lfq_queue_rcu {
 
 #include <urcu/static/rculfqueue.h>
 
-#define cds_lfq_node_init_rcu		_cds_lfq_node_init_rcu
-#define cds_lfq_init_rcu		_cds_lfq_init_rcu
-#define cds_lfq_destroy_rcu		_cds_lfq_destroy_rcu
-#define cds_lfq_enqueue_rcu		_cds_lfq_enqueue_rcu
-#define cds_lfq_dequeue_rcu		_cds_lfq_dequeue_rcu
+#define cds_lfq_node_init_rcu_qsbr	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu_qsbr		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu_qsbr	_cds_lfq_destroy_rcu
+#define cds_lfq_enqueue_rcu_qsbr	_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu_qsbr	_cds_lfq_dequeue_rcu
+
+#define cds_lfq_node_init_rcu_bp	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu_bp		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu_bp		_cds_lfq_destroy_rcu
+#define cds_lfq_enqueue_rcu_bp		_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu_bp		_cds_lfq_dequeue_rcu
+
+#define cds_lfq_node_init_rcu_memb	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu_memb		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu_memb	_cds_lfq_destroy_rcu
+#define cds_lfq_enqueue_rcu_memb	_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu_memb	_cds_lfq_dequeue_rcu
+
+#define cds_lfq_node_init_rcu_mb	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu_mb		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu_mb		_cds_lfq_destroy_rcu
+#define cds_lfq_enqueue_rcu_mb		_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu_mb		_cds_lfq_dequeue_rcu
+
+#define cds_lfq_node_init_rcu_sig	_cds_lfq_node_init_rcu
+#define cds_lfq_init_rcu_sig		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu_sig		_cds_lfq_destroy_rcu
+#define cds_lfq_enqueue_rcu_sig		_cds_lfq_enqueue_rcu
+#define cds_lfq_dequeue_rcu_sig		_cds_lfq_dequeue_rcu
 
 #else /* !_LGPL_SOURCE */
 

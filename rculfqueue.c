@@ -21,8 +21,14 @@
  */
 
 #define _LGPL_SOURCE
-/* Use the urcu symbols to select the appropriate rcu flavor at link time */
-#include "urcu.h"
+
+#ifdef RCU_QSBR
+# include "urcu-qsbr.h"
+#elif defined(RCU_BP)
+# include "urcu-bp.h"
+#else
+# include "urcu.h"
+#endif
 
 #undef _LGPL_SOURCE
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
