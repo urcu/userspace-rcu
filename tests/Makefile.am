@@ -49,8 +49,7 @@ URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 URCU_CDS_BP_LIB=$(top_builddir)/liburcu-cds-bp.la
 URCU_CDS_COMMON_LIB=$(top_builddir)/liburcu-cds-common.la
 
-EXTRA_DIST = $(top_srcdir)/tests/api.h
-
+EXTRA_DIST = $(top_srcdir)/tests/api.h runall.sh
 
 test_urcu_SOURCES = test_urcu.c $(URCU)
 
