@@ -25,6 +25,7 @@
 
 #define _BSD_SOURCE
 #define _GNU_SOURCE
+#define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -35,11 +36,14 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/wfqueue.h"
 #include "urcu/map/urcu.h"
-
 #include "urcu/static/urcu.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu.h"
+#define _LGPL_SOURCE
 
 /*
  * If a reader is really non-cooperative and refuses to commit its

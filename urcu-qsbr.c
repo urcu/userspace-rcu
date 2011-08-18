@@ -24,6 +24,7 @@
  */
 
 #define _GNU_SOURCE
+#define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -34,12 +35,15 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/wfqueue.h"
 #include "urcu/map/urcu-qsbr.h"
-
 #define BUILD_QSBR_LIB
 #include "urcu/static/urcu-qsbr.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu-qsbr.h"
+#define _LGPL_SOURCE
 
 void __attribute__((destructor)) rcu_exit(void);
 
