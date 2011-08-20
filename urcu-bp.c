@@ -373,9 +373,10 @@ end:
 	assert(!ret);
 }
 
-void rcu_bp_exit()
+void rcu_bp_exit(void)
 {
-	munmap(registry_arena.p, registry_arena.len);
+	if (registry_arena.p)
+		munmap(registry_arena.p, registry_arena.len);
 }
 
 /*
