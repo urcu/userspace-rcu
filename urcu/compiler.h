@@ -55,9 +55,16 @@
 #define CAA_BITS_PER_LONG	32
 #endif
 
-#define caa_container_of(ptr, type, member)					\
+/*
+ * caa_container_of - Get the address of an object containing a field.
+ *
+ * @ptr: pointer to the field.
+ * @type: type of the object.
+ * @member: name of the field within the object.
+ */
+#define caa_container_of(ptr, type, member)				\
 	({								\
-		const typeof(((type *)NULL)->member) * __ptr = (ptr);	\
+		const typeof(((type *) NULL)->member) * __ptr = (ptr);	\
 		(type *)((char *)__ptr - offsetof(type, member));	\
 	})
 
