@@ -51,9 +51,10 @@ void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 	_cds_lfs_init_rcu(s);
 }
 
-void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
+int cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
+		struct cds_lfs_node_rcu *node)
 {
-	_cds_lfs_push_rcu(s, node);
+	return _cds_lfs_push_rcu(s, node);
 }
 
 struct cds_lfs_node_rcu *cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)

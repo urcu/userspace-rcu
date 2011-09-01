@@ -64,9 +64,13 @@ void _cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
  * required if we first read the old head value). This design decision
  * might be revisited after more throrough benchmarking on various
  * platforms.
+ *
+ * Returns 0 if the stack was empty prior to adding the node.
+ * Returns non-zero otherwise.
  */
 static inline
-void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
+int _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
+			  struct cds_lfs_node_rcu *node)
 {
 	struct cds_lfs_node_rcu *head = NULL;
 
@@ -82,6 +86,7 @@ void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *nod
 		if (old_head == head)
 			break;
 	}
+	return (int) !!((unsigned long) head);
 }
 
 /*

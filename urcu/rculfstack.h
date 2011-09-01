@@ -68,7 +68,8 @@ struct cds_lfs_stack_rcu {
 
 extern void cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node);
 extern void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s);
-extern void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node);
+extern int cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
+			struct cds_lfs_node_rcu *node);
 
 /*
  * Acts as a RCU reader.
