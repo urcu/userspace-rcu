@@ -84,7 +84,7 @@ static unsigned long __thread nr_delnoent;
 static unsigned long __thread lookup_fail;
 static unsigned long __thread lookup_ok;
 
-static struct rcu_ht *test_ht;
+static struct cds_lfht *test_ht;
 
 struct test_data {
 	int a;
@@ -338,7 +338,7 @@ unsigned long test_compare(void *key1, size_t key1_len,
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
-	struct rcu_ht_node *node;
+	struct cds_lfht_node *node;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
@@ -354,7 +354,7 @@ void *thr_reader(void *_count)
 
 	for (;;) {
 		rcu_read_lock();
-		node = ht_lookup(test_ht,
+		node = cds_lfht_lookup(test_ht,
 			(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 			sizeof(void *));
 		if (node == NULL)
@@ -384,14 +384,14 @@ void *thr_reader(void *_count)
 static
 void free_node_cb(struct rcu_head *head)
 {
-	struct rcu_ht_node *node =
-		caa_container_of(head, struct rcu_ht_node, head);
+	struct cds_lfht_node *node =
+		caa_container_of(head, struct cds_lfht_node, head);
 	free(node);
 }
 
 void *thr_writer(void *_count)
 {
-	struct rcu_ht_node *node, *ret_node;
+	struct cds_lfht_node *node, *ret_node;
 	struct wr_count *count = _count;
 	int ret;
 
@@ -409,15 +409,15 @@ void *thr_writer(void *_count)
 
 	for (;;) {
 		if (add_only || rand_r(&rand_lookup) & 1) {
-			node = malloc(sizeof(struct rcu_ht_node));
+			node = malloc(sizeof(struct cds_lfht_node));
 			rcu_read_lock();
-			ht_node_init(node,
+			cds_lfht_node_init(node,
 				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 				sizeof(void *));
 			if (add_unique)
-				ret_node = ht_add_unique(test_ht, node);
+				ret_node = cds_lfht_add_unique(test_ht, node);
 			else
-				ht_add(test_ht, node);
+				cds_lfht_add(test_ht, node);
 			rcu_read_unlock();
 			if (add_unique && ret_node != node) {
 				free(node);
@@ -427,11 +427,11 @@ void *thr_writer(void *_count)
 		} else {
 			/* May delete */
 			rcu_read_lock();
-			node = ht_lookup(test_ht,
+			node = cds_lfht_lookup(test_ht,
 				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
 				sizeof(void *));
 			if (node)
-				ret = ht_remove(test_ht, node);
+				ret = cds_lfht_remove(test_ht, node);
 			else
 				ret = -ENOENT;
 			rcu_read_unlock();
@@ -610,7 +610,7 @@ int main(int argc, char **argv)
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
-	test_ht = ht_new(test_hash, test_compare, 0x42UL,
+	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			 init_hash_size, call_rcu);
 
         err = create_all_cpu_call_rcu_data(0);
@@ -655,12 +655,12 @@ int main(int argc, char **argv)
 	}
 	printf("Counting nodes... ");
 	fflush(stdout);
-	ht_count_nodes(test_ht, &count, &removed);
+	cds_lfht_count_nodes(test_ht, &count, &removed);
 	printf("done.\n");
 	if (count || removed)
 		printf("WARNING: nodes left in the hash table upon destroy: "
 			"%lu nodes + %lu logically removed.\n", count, removed);
-	ret = ht_destroy(test_ht);
+	ret = cds_lfht_destroy(test_ht);
 
 	if (ret)
 		printf_verbose("final delete aborted\n");

@@ -139,23 +139,23 @@ struct rcu_table {
 	unsigned long resize_target;
 	int resize_initiated;
 	struct rcu_head head;
-	struct _rcu_ht_node *tbl[0];
+	struct _cds_lfht_node *tbl[0];
 };
 
-struct rcu_ht {
+struct cds_lfht {
 	struct rcu_table *t;		/* shared */
-	ht_hash_fct hash_fct;
-	ht_compare_fct compare_fct;
+	cds_lfht_hash_fct hash_fct;
+	cds_lfht_compare_fct compare_fct;
 	unsigned long hash_seed;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
 	unsigned int in_progress_resize, in_progress_destroy;
-	void (*ht_call_rcu)(struct rcu_head *head,
+	void (*cds_lfht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
 };
 
 struct rcu_resize_work {
 	struct rcu_head head;
-	struct rcu_ht *ht;
+	struct cds_lfht *ht;
 };
 
 /*
@@ -351,48 +351,48 @@ int get_count_order_ulong(unsigned long x)
 }
 
 static
-void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth);
+void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
 
 static
-void check_resize(struct rcu_ht *ht, struct rcu_table *t,
+void check_resize(struct cds_lfht *ht, struct rcu_table *t,
 		  uint32_t chain_len)
 {
 	if (chain_len > 100)
 		dbg_printf("WARNING: large chain length: %u.\n",
 			   chain_len);
 	if (chain_len >= CHAIN_LEN_RESIZE_THRESHOLD)
-		ht_resize_lazy(ht, t,
+		cds_lfht_resize_lazy(ht, t,
 			get_count_order_u32(chain_len - (CHAIN_LEN_TARGET - 1)));
 }
 
 static
-struct rcu_ht_node *clear_flag(struct rcu_ht_node *node)
+struct cds_lfht_node *clear_flag(struct cds_lfht_node *node)
 {
-	return (struct rcu_ht_node *) (((unsigned long) node) & ~FLAGS_MASK);
+	return (struct cds_lfht_node *) (((unsigned long) node) & ~FLAGS_MASK);
 }
 
 static
-int is_removed(struct rcu_ht_node *node)
+int is_removed(struct cds_lfht_node *node)
 {
 	return ((unsigned long) node) & REMOVED_FLAG;
 }
 
 static
-struct rcu_ht_node *flag_removed(struct rcu_ht_node *node)
+struct cds_lfht_node *flag_removed(struct cds_lfht_node *node)
 {
-	return (struct rcu_ht_node *) (((unsigned long) node) | REMOVED_FLAG);
+	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVED_FLAG);
 }
 
 static
-int is_dummy(struct rcu_ht_node *node)
+int is_dummy(struct cds_lfht_node *node)
 {
 	return ((unsigned long) node) & DUMMY_FLAG;
 }
 
 static
-struct rcu_ht_node *flag_dummy(struct rcu_ht_node *node)
+struct cds_lfht_node *flag_dummy(struct cds_lfht_node *node)
 {
-	return (struct rcu_ht_node *) (((unsigned long) node) | DUMMY_FLAG);
+	return (struct cds_lfht_node *) (((unsigned long) node) | DUMMY_FLAG);
 }
  
 static
@@ -413,9 +413,9 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
  * Remove all logically deleted nodes from a bucket up to a certain node key.
  */
 static
-void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
+void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 {
-	struct rcu_ht_node *iter_prev, *iter, *next, *new_next;
+	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
 
 	for (;;) {
 		iter_prev = dummy;
@@ -443,12 +443,12 @@ void _ht_gc_bucket(struct rcu_ht_node *dummy, struct rcu_ht_node *node)
 }
 
 static
-struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
-			    struct rcu_ht_node *node, int unique, int dummy)
+struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht, struct rcu_table *t,
+				struct cds_lfht_node *node, int unique, int dummy)
 {
-	struct rcu_ht_node *iter_prev, *iter, *next, *new_node, *new_next,
+	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
 			*dummy_node;
-	struct _rcu_ht_node *lookup;
+	struct _cds_lfht_node *lookup;
 	unsigned long hash, index, order;
 
 	if (!t->size) {
@@ -467,7 +467,7 @@ struct rcu_ht_node *_ht_add(struct rcu_ht *ht, struct rcu_table *t,
 		index = hash & (t->size - 1);
 		order = get_count_order_ulong(index + 1);
 		lookup = &t->tbl[order][index & ((1UL << (order - 1)) - 1)];
-		iter_prev = (struct rcu_ht_node *) lookup;
+		iter_prev = (struct cds_lfht_node *) lookup;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
@@ -523,16 +523,17 @@ gc_end:
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &t->tbl[order][index & ((1UL << (order - 1)) - 1)];
-	dummy_node = (struct rcu_ht_node *) lookup;
-	_ht_gc_bucket(dummy_node, node);
+	dummy_node = (struct cds_lfht_node *) lookup;
+	_cds_lfht_gc_bucket(dummy_node, node);
 	return node;
 }
 
 static
-int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
+int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
+		struct cds_lfht_node *node)
 {
-	struct rcu_ht_node *dummy, *next, *old;
-	struct _rcu_ht_node *lookup;
+	struct cds_lfht_node *dummy, *next, *old;
+	struct _cds_lfht_node *lookup;
 	int flagged = 0;
 	unsigned long hash, index, order;
 
@@ -559,8 +560,8 @@ int _ht_remove(struct rcu_ht *ht, struct rcu_table *t, struct rcu_ht_node *node)
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &t->tbl[order][index & ((1UL << (order - 1)) - 1)];
-	dummy = (struct rcu_ht_node *) lookup;
-	_ht_gc_bucket(dummy, node);
+	dummy = (struct cds_lfht_node *) lookup;
+	_cds_lfht_gc_bucket(dummy, node);
 end:
 	/*
 	 * Only the flagging action indicated that we (and no other)
@@ -574,7 +575,7 @@ end:
 }
 
 static
-void init_table(struct rcu_ht *ht, struct rcu_table *t,
+void init_table(struct cds_lfht *ht, struct rcu_table *t,
 		unsigned long first_order, unsigned long len_order)
 {
 	unsigned long i, end_order;
@@ -588,15 +589,15 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 
 		len = !i ? 1 : 1UL << (i - 1);
 		dbg_printf("init order %lu len: %lu\n", i, len);
-		t->tbl[i] = calloc(len, sizeof(struct _rcu_ht_node));
+		t->tbl[i] = calloc(len, sizeof(struct _cds_lfht_node));
 		for (j = 0; j < len; j++) {
 			dbg_printf("init entry: i %lu j %lu hash %lu\n",
 				   i, j, !i ? 0 : (1UL << (i - 1)) + j);
-			struct rcu_ht_node *new_node =
-				(struct rcu_ht_node *) &t->tbl[i][j];
+			struct cds_lfht_node *new_node =
+				(struct cds_lfht_node *) &t->tbl[i][j];
 			new_node->p.reverse_hash =
 				bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-			(void) _ht_add(ht, t, new_node, 0, 1);
+			(void) _cds_lfht_add(ht, t, new_node, 0, 1);
 			if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 				break;
 		}
@@ -610,27 +611,27 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 	t->resize_initiated = 0;
 }
 
-struct rcu_ht *ht_new(ht_hash_fct hash_fct,
-		      ht_compare_fct compare_fct,
-		      unsigned long hash_seed,
-		      unsigned long init_size,
-		      void (*ht_call_rcu)(struct rcu_head *head,
-				void (*func)(struct rcu_head *head)))
+struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
+			cds_lfht_compare_fct compare_fct,
+			unsigned long hash_seed,
+			unsigned long init_size,
+			void (*cds_lfht_call_rcu)(struct rcu_head *head,
+					void (*func)(struct rcu_head *head)))
 {
-	struct rcu_ht *ht;
+	struct cds_lfht *ht;
 	unsigned long order;
 
-	ht = calloc(1, sizeof(struct rcu_ht));
+	ht = calloc(1, sizeof(struct cds_lfht));
 	ht->hash_fct = hash_fct;
 	ht->compare_fct = compare_fct;
 	ht->hash_seed = hash_seed;
-	ht->ht_call_rcu = ht_call_rcu;
+	ht->cds_lfht_call_rcu = cds_lfht_call_rcu;
 	ht->in_progress_resize = 0;
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(max(init_size, 1)) + 1;
-	ht->t = calloc(1, sizeof(struct rcu_table)
-		       + (order * sizeof(struct _rcu_ht_node *)));
+	ht->t = calloc(1, sizeof(struct cds_lfht)
+		       + (order * sizeof(struct _cds_lfht_node *)));
 	ht->t->size = 0;
 	pthread_mutex_lock(&ht->resize_mutex);
 	init_table(ht, ht->t, 0, order);
@@ -638,11 +639,11 @@ struct rcu_ht *ht_new(ht_hash_fct hash_fct,
 	return ht;
 }
 
-struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
+struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len)
 {
 	struct rcu_table *t;
-	struct rcu_ht_node *node, *next;
-	struct _rcu_ht_node *lookup;
+	struct cds_lfht_node *node, *next;
+	struct _cds_lfht_node *lookup;
 	unsigned long hash, reverse_hash, index, order;
 
 	hash = ht->hash_fct(key, key_len, ht->hash_seed);
@@ -654,7 +655,7 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 	lookup = &t->tbl[order][index & ((1UL << (order - 1)) - 1)];
 	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
 		   hash, index, order, index & ((1UL << (order - 1)) - 1));
-	node = (struct rcu_ht_node *) lookup;
+	node = (struct cds_lfht_node *) lookup;
 	for (;;) {
 		if (unlikely(!node))
 			break;
@@ -674,7 +675,7 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 	return node;
 }
 
-void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
+void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	struct rcu_table *t;
 	unsigned long hash;
@@ -683,10 +684,11 @@ void ht_add(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
-	(void) _ht_add(ht, t, node, 0, 0);
+	(void) _cds_lfht_add(ht, t, node, 0, 0);
 }
 
-struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
+struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
+					struct cds_lfht_node *node)
 {
 	struct rcu_table *t;
 	unsigned long hash;
@@ -695,29 +697,29 @@ struct rcu_ht_node *ht_add_unique(struct rcu_ht *ht, struct rcu_ht_node *node)
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
-	return _ht_add(ht, t, node, 1, 0);
+	return _cds_lfht_add(ht, t, node, 1, 0);
 }
 
-int ht_remove(struct rcu_ht *ht, struct rcu_ht_node *node)
+int cds_lfht_remove(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	struct rcu_table *t;
 
 	t = rcu_dereference(ht->t);
-	return _ht_remove(ht, t, node);
+	return _cds_lfht_remove(ht, t, node);
 }
 
 static
-int ht_delete_dummy(struct rcu_ht *ht)
+int cds_lfht_delete_dummy(struct cds_lfht *ht)
 {
 	struct rcu_table *t;
-	struct rcu_ht_node *node;
-	struct _rcu_ht_node *lookup;
+	struct cds_lfht_node *node;
+	struct _cds_lfht_node *lookup;
 	unsigned long order, i;
 
 	t = ht->t;
 	/* Check that the table is empty */
 	lookup = &t->tbl[0][0];
-	node = (struct rcu_ht_node *) lookup;
+	node = (struct cds_lfht_node *) lookup;
 	do {
 		node = clear_flag(node)->p.next;
 		if (!is_dummy(node))
@@ -744,7 +746,7 @@ int ht_delete_dummy(struct rcu_ht *ht)
  * Should only be called when no more concurrent readers nor writers can
  * possibly access the table.
  */
-int ht_destroy(struct rcu_ht *ht)
+int cds_lfht_destroy(struct cds_lfht *ht)
 {
 	int ret;
 
@@ -752,7 +754,7 @@ int ht_destroy(struct rcu_ht *ht)
 	CMM_STORE_SHARED(ht->in_progress_destroy, 1);
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
-	ret = ht_delete_dummy(ht);
+	ret = cds_lfht_delete_dummy(ht);
 	if (ret)
 		return ret;
 	free(ht->t);
@@ -760,13 +762,13 @@ int ht_destroy(struct rcu_ht *ht)
 	return ret;
 }
 
-void ht_count_nodes(struct rcu_ht *ht,
+void cds_lfht_count_nodes(struct cds_lfht *ht,
 		unsigned long *count,
 		unsigned long *removed)
 {
 	struct rcu_table *t;
-	struct rcu_ht_node *node, *next;
-	struct _rcu_ht_node *lookup;
+	struct cds_lfht_node *node, *next;
+	struct _cds_lfht_node *lookup;
 	unsigned long nr_dummy = 0;
 
 	*count = 0;
@@ -775,7 +777,7 @@ void ht_count_nodes(struct rcu_ht *ht,
 	t = rcu_dereference(ht->t);
 	/* Count non-dummy nodes in the table */
 	lookup = &t->tbl[0][0];
-	node = (struct rcu_ht_node *) lookup;
+	node = (struct cds_lfht_node *) lookup;
 	do {
 		next = rcu_dereference(node->p.next);
 		if (is_removed(next)) {
@@ -791,7 +793,7 @@ void ht_count_nodes(struct rcu_ht *ht,
 }
 
 static
-void ht_free_table_cb(struct rcu_head *head)
+void cds_lfht_free_table_cb(struct rcu_head *head)
 {
 	struct rcu_table *t =
 		caa_container_of(head, struct rcu_table, head);
@@ -800,7 +802,7 @@ void ht_free_table_cb(struct rcu_head *head)
 
 /* called with resize mutex held */
 static
-void _do_ht_resize(struct rcu_ht *ht)
+void _do_cds_lfht_resize(struct cds_lfht *ht)
 {
 	unsigned long new_size, old_size, old_order, new_order;
 	struct rcu_table *new_t, *old_t;
@@ -815,15 +817,15 @@ void _do_ht_resize(struct rcu_ht *ht)
 	new_order = get_count_order_ulong(new_size) + 1;
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 	       old_size, old_order, new_size, new_order);
-	new_t = malloc(sizeof(struct rcu_table)
-			+ (new_order * sizeof(struct _rcu_ht_node *)));
+	new_t = malloc(sizeof(struct cds_lfht)
+			+ (new_order * sizeof(struct _cds_lfht_node *)));
 	assert(new_size > old_size);
 	memcpy(&new_t->tbl, &old_t->tbl,
-	       old_order * sizeof(struct _rcu_ht_node *));
+	       old_order * sizeof(struct _cds_lfht_node *));
 	init_table(ht, new_t, old_order, new_order - old_order);
 	/* Changing table and size atomically wrt lookups */
 	rcu_assign_pointer(ht->t, new_t);
-	ht->ht_call_rcu(&old_t->head, ht_free_table_cb);
+	ht->cds_lfht_call_rcu(&old_t->head, cds_lfht_free_table_cb);
 }
 
 static
@@ -834,7 +836,7 @@ unsigned long resize_target_update(struct rcu_table *t,
 			    t->size << growth_order);
 }
 
-void ht_resize(struct rcu_ht *ht, int growth)
+void cds_lfht_resize(struct cds_lfht *ht, int growth)
 {
 	struct rcu_table *t = rcu_dereference(ht->t);
 	unsigned long target_size;
@@ -851,7 +853,7 @@ void ht_resize(struct rcu_ht *ht, int growth)
 	if (t->size < target_size) {
 		CMM_STORE_SHARED(t->resize_initiated, 1);
 		pthread_mutex_lock(&ht->resize_mutex);
-		_do_ht_resize(ht);
+		_do_cds_lfht_resize(ht);
 		pthread_mutex_unlock(&ht->resize_mutex);
 	}
 }
@@ -861,10 +863,10 @@ void do_resize_cb(struct rcu_head *head)
 {
 	struct rcu_resize_work *work =
 		caa_container_of(head, struct rcu_resize_work, head);
-	struct rcu_ht *ht = work->ht;
+	struct cds_lfht *ht = work->ht;
 
 	pthread_mutex_lock(&ht->resize_mutex);
-	_do_ht_resize(ht);
+	_do_cds_lfht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
 	free(work);
 	cmm_smp_mb();	/* finish resize before decrement */
@@ -872,7 +874,7 @@ void do_resize_cb(struct rcu_head *head)
 }
 
 static
-void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
+void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth)
 {
 	struct rcu_resize_work *work;
 	unsigned long target_size;
@@ -883,7 +885,7 @@ void ht_resize_lazy(struct rcu_ht *ht, struct rcu_table *t, int growth)
 		cmm_smp_mb();	/* increment resize count before calling it */
 		work = malloc(sizeof(*work));
 		work->ht = ht;
-		ht->ht_call_rcu(&work->head, do_resize_cb);
+		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
 		CMM_STORE_SHARED(t->resize_initiated, 1);
 	}
 }
