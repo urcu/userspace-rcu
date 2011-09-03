@@ -113,7 +113,7 @@
 #include <pthread.h>
 
 #ifdef DEBUG
-#define dbg_printf(fmt, args...)     printf(fmt, ## args)
+#define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
 #else
 #define dbg_printf(fmt, args...)
 #endif
@@ -358,7 +358,7 @@ void check_resize(struct rcu_ht *ht, struct rcu_table *t,
 		  uint32_t chain_len)
 {
 	if (chain_len > 100)
-		dbg_printf("rculfhash: WARNING: large chain length: %u.\n",
+		dbg_printf("WARNING: large chain length: %u.\n",
 			   chain_len);
 	if (chain_len >= CHAIN_LEN_RESIZE_THRESHOLD)
 		ht_resize_lazy(ht, t,
@@ -579,7 +579,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 {
 	unsigned long i, end_order;
 
-	dbg_printf("rculfhash: init table: first_order %lu end_order %lu\n",
+	dbg_printf("init table: first_order %lu end_order %lu\n",
 		   first_order, first_order + len_order);
 	end_order = first_order + len_order;
 	t->size = !first_order ? 0 : (1UL << (first_order - 1));
@@ -587,10 +587,10 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		unsigned long j, len;
 
 		len = !i ? 1 : 1UL << (i - 1);
-		dbg_printf("rculfhash: init order %lu len: %lu\n", i, len);
+		dbg_printf("init order %lu len: %lu\n", i, len);
 		t->tbl[i] = calloc(len, sizeof(struct _rcu_ht_node));
 		for (j = 0; j < len; j++) {
-			dbg_printf("rculfhash: init entry: i %lu j %lu hash %lu\n",
+			dbg_printf("init entry: i %lu j %lu hash %lu\n",
 				   i, j, !i ? 0 : (1UL << (i - 1)) + j);
 			struct rcu_ht_node *new_node =
 				(struct rcu_ht_node *) &t->tbl[i][j];
@@ -602,7 +602,7 @@ void init_table(struct rcu_ht *ht, struct rcu_table *t,
 		}
 		/* Update table size */
 		t->size = !i ? 1 : (1UL << i);
-		dbg_printf("rculfhash: init new size: %lu\n", t->size);
+		dbg_printf("init new size: %lu\n", t->size);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
 	}
@@ -652,7 +652,7 @@ struct rcu_ht_node *ht_lookup(struct rcu_ht *ht, void *key, size_t key_len)
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &t->tbl[order][index & ((1UL << (order - 1)) - 1)];
-	dbg_printf("rculfhash: lookup hash %lu index %lu order %lu aridx %lu\n",
+	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
 		   hash, index, order, index & ((1UL << (order - 1)) - 1));
 	node = (struct rcu_ht_node *) lookup;
 	for (;;) {
@@ -730,7 +730,7 @@ int ht_delete_dummy(struct rcu_ht *ht)
 
 		len = !order ? 1 : 1UL << (order - 1);
 		for (i = 0; i < len; i++) {
-			dbg_printf("rculfhash: delete order %lu i %lu hash %lu\n",
+			dbg_printf("delete order %lu i %lu hash %lu\n",
 				order, i,
 				bit_reverse_ulong(t->tbl[order][i].reverse_hash));
 			assert(is_dummy(t->tbl[order][i].next));
@@ -787,7 +787,7 @@ void ht_count_nodes(struct rcu_ht *ht,
 			(nr_dummy)++;
 		node = clear_flag(next);
 	} while (node);
-	dbg_printf("rculfhash: number of dummy nodes: %lu\n", nr_dummy);
+	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
 }
 
 static
@@ -813,7 +813,7 @@ void _do_ht_resize(struct rcu_ht *ht)
 	if (old_size == new_size)
 		return;
 	new_order = get_count_order_ulong(new_size) + 1;
-	printf("rculfhash: resize from %lu (order %lu) to %lu (order %lu) buckets\n",
+	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 	       old_size, old_order, new_size, new_order);
 	new_t = malloc(sizeof(struct rcu_table)
 			+ (new_order * sizeof(struct _rcu_ht_node *)));
@@ -838,6 +838,14 @@ void ht_resize(struct rcu_ht *ht, int growth)
 {
 	struct rcu_table *t = rcu_dereference(ht->t);
 	unsigned long target_size;
+
+	if (growth < 0) {
+		/*
+		 * Silently refuse to shrink hash table. (not supported)
+		 */
+		dbg_printf("shrinking hash table not supported.\n");
+		return;
+	}
 
 	target_size = resize_target_update(t, growth);
 	if (t->size < target_size) {
