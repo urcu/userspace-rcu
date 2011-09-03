@@ -39,30 +39,10 @@ struct cds_lfs_stack_rcu {
 
 #include <urcu/static/rculfstack.h>
 
-#define cds_lfs_node_init_rcu_qsbr	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu_qsbr		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu_qsbr		_cds_lfs_push_rcu
-#define cds_lfs_pop_rcu_qsbr		_cds_lfs_pop_rcu
-
-#define cds_lfs_node_init_rcu_bp	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu_bp		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu_bp		_cds_lfs_push_rcu
-#define cds_lfs_pop_rcu_bp		_cds_lfs_pop_rcu
-
-#define cds_lfs_node_init_rcu_memb	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu_memb		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu_memb		_cds_lfs_push_rcu
-#define cds_lfs_pop_rcu_memb		_cds_lfs_pop_rcu
-
-#define cds_lfs_node_init_rcu_mb	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu_mb		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu_mb		_cds_lfs_push_rcu
-#define cds_lfs_pop_rcu_mb		_cds_lfs_pop_rcu
-
-#define cds_lfs_node_init_rcu_sig	_cds_lfs_node_init_rcu
-#define cds_lfs_init_rcu_sig		_cds_lfs_init_rcu
-#define cds_lfs_push_rcu_sig		_cds_lfs_push_rcu
-#define cds_lfs_pop_rcu_sig		_cds_lfs_pop_rcu
+#define cds_lfs_node_init_rcu		_cds_lfs_node_init_rcu
+#define cds_lfs_init_rcu		_cds_lfs_init_rcu
+#define cds_lfs_push_rcu		_cds_lfs_push_rcu
+#define cds_lfs_pop_rcu			_cds_lfs_pop_rcu
 
 #else /* !_LGPL_SOURCE */
 

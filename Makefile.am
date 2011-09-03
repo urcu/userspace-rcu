@@ -33,34 +33,36 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-lib_LTLIBRARIES = liburcu-cds-common.la \
+lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
 		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
-		liburcu-cds.la liburcu-cds-qsbr.la \
-		liburcu-cds-mb.la liburcu-cds-signal.la liburcu-cds-bp.la
+		liburcu-cds.la
 
-liburcu_cds_common_la_SOURCES = wfqueue.c wfstack.c $(COMPAT)
+#
+# liburcu-common contains wait-free queues (needed by call_rcu) as well
+# as futex fallbacks.
+#
+liburcu_common_la_SOURCES = wfqueue.c wfstack.c $(COMPAT)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_la_LIBADD = liburcu-common.la
 
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
-liburcu_cds_qsbr_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
-liburcu_cds_qsbr_la_CFLAGS = -DRCU_QSBR
+liburcu_qsbr_la_LIBADD = liburcu-common.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB
-liburcu_cds_mb_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
-liburcu_cds_mb_la_CFLAGS = -DRCU_MB
+liburcu_mb_la_LIBADD = liburcu-common.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
-liburcu_cds_signal_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
-liburcu_cds_signal_la_CFLAGS = -DRCU_SIGNAL
+liburcu_signal_la_LIBADD = liburcu-common.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
-liburcu_cds_bp_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
-liburcu_cds_bp_la_CFLAGS = -DRCU_BP
+liburcu_bp_la_LIBADD = liburcu-common.la
+
+liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \

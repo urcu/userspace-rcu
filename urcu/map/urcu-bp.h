@@ -64,16 +64,4 @@
 #define rcu_defer_barrier		rcu_defer_barrier_bp
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
 
-/* Concurrent Data Structures */
-#define cds_lfq_node_init_rcu		cds_lfq_node_init_rcu_bp
-#define cds_lfq_init_rcu		cds_lfq_init_rcu_bp
-#define cds_lfq_destroy_rcu		cds_lfq_destroy_rcu_bp
-#define cds_lfq_enqueue_rcu		cds_lfq_enqueue_rcu_bp
-#define cds_lfq_dequeue_rcu		cds_lfq_dequeue_rcu_bp
-
-#define cds_lfs_node_init_rcu		cds_lfs_node_init_rcu_bp
-#define cds_lfs_init_rcu		cds_lfs_init_rcu_bp
-#define cds_lfs_push_rcu		cds_lfs_push_rcu_bp
-#define cds_lfs_pop_rcu			cds_lfs_pop_rcu_bp
-
 #endif /* _URCU_BP_MAP_H */

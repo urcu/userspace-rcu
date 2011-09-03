@@ -37,17 +37,13 @@ URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfqu
 URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfqueue.c $(COMPAT)
 URCU_DEFER=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfqueue.c $(COMPAT)
 
+URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
-URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
-URCU_CDS_QSBR_LIB=$(top_builddir)/liburcu-cds-qsbr.la
 URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
-URCU_CDS_MB_LIB=$(top_builddir)/liburcu-cds-mb.la
 URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
-URCU_CDS_SIGNAL_LIB=$(top_builddir)/liburcu-cds-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
-URCU_CDS_BP_LIB=$(top_builddir)/liburcu-cds-bp.la
-URCU_CDS_COMMON_LIB=$(top_builddir)/liburcu-cds-common.la
+URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
 EXTRA_DIST = $(top_srcdir)/tests/api.h runall.sh
 
@@ -164,20 +160,20 @@ test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c $(URCU)
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfq_dynlink_LDADD = $(URCU_CDS_LIB)
 
-test_urcu_wfq_SOURCES = test_urcu_wfq.c $(URCU_CDS_COMMON_LIB) $(COMPAT)
+test_urcu_wfq_SOURCES = test_urcu_wfq.c $(URCU_COMMON_LIB)
 test_urcu_wfq_dynlink_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_wfq_dynlink_LDADD = $(URCU_CDS_COMMON_LIB)
+test_urcu_wfq_dynlink_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_lfs_SOURCES = test_urcu_lfs.c $(URCU_CDS_LIB) $(URCU_DEFER)
 test_urcu_lfs_dynlink_SOURCES = test_urcu_lfs.c $(URCU_DEFER)
 test_urcu_lfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfs_dynlink_LDADD = $(URCU_CDS_LIB)
 
-test_urcu_wfs_SOURCES = test_urcu_wfs.c $(URCU_CDS_COMMON_LIB) $(COMPAT)
+test_urcu_wfs_SOURCES = test_urcu_wfs.c $(URCU_COMMON_LIB)
 test_urcu_wfs_dynlink_SOURCES = test_urcu_wfs.c
 test_urcu_wfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_wfs_dynlink_LDADD = $(URCU_CDS_COMMON_LIB)
+test_urcu_wfs_dynlink_LDADD = $(URCU_COMMON_LIB)
 
 urcutorture.c: api.h
 

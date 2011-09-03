@@ -95,18 +95,6 @@
 #define rcu_defer_barrier		rcu_defer_barrier_memb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_memb
 
-/* Concurrent Data Structures */
-#define cds_lfq_node_init_rcu		cds_lfq_node_init_rcu_memb
-#define cds_lfq_init_rcu		cds_lfq_init_rcu_memb
-#define cds_lfq_destroy_rcu		cds_lfq_destroy_rcu_memb
-#define cds_lfq_enqueue_rcu		cds_lfq_enqueue_rcu_memb
-#define cds_lfq_dequeue_rcu		cds_lfq_dequeue_rcu_memb
-
-#define cds_lfs_node_init_rcu		cds_lfs_node_init_rcu_memb
-#define cds_lfs_init_rcu		cds_lfs_init_rcu_memb
-#define cds_lfs_push_rcu		cds_lfs_push_rcu_memb
-#define cds_lfs_pop_rcu			cds_lfs_pop_rcu_memb
-
 #elif defined(RCU_SIGNAL)
 
 #define rcu_read_lock			rcu_read_lock_sig
@@ -139,18 +127,6 @@
 #define rcu_defer_barrier		rcu_defer_barrier_sig
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_sig
 
-/* Concurrent Data Structures */
-#define cds_lfq_node_init_rcu		cds_lfq_node_init_rcu_sig
-#define cds_lfq_init_rcu		cds_lfq_init_rcu_sig
-#define cds_lfq_destroy_rcu		cds_lfq_destroy_rcu_sig
-#define cds_lfq_enqueue_rcu		cds_lfq_enqueue_rcu_sig
-#define cds_lfq_dequeue_rcu		cds_lfq_dequeue_rcu_sig
-
-#define cds_lfs_node_init_rcu		cds_lfs_node_init_rcu_sig
-#define cds_lfs_init_rcu		cds_lfs_init_rcu_sig
-#define cds_lfs_push_rcu		cds_lfs_push_rcu_sig
-#define cds_lfs_pop_rcu			cds_lfs_pop_rcu_sig
-
 #elif defined(RCU_MB)
 
 #define rcu_read_lock			rcu_read_lock_mb
@@ -182,18 +158,6 @@
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_mb
 #define rcu_defer_barrier		rcu_defer_barrier_mb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_mb
-
-/* Concurrent Data Structures */
-#define cds_lfq_node_init_rcu		cds_lfq_node_init_rcu_mb
-#define cds_lfq_init_rcu		cds_lfq_init_rcu_mb
-#define cds_lfq_destroy_rcu		cds_lfq_destroy_rcu_mb
-#define cds_lfq_enqueue_rcu		cds_lfq_enqueue_rcu_mb
-#define cds_lfq_dequeue_rcu		cds_lfq_dequeue_rcu_mb
-
-#define cds_lfs_node_init_rcu		cds_lfs_node_init_rcu_mb
-#define cds_lfs_init_rcu		cds_lfs_init_rcu_mb
-#define cds_lfs_push_rcu		cds_lfs_push_rcu_mb
-#define cds_lfs_pop_rcu			cds_lfs_pop_rcu_mb
 
 #else
 

@@ -20,17 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Use the urcu symbols to select the appropriate rcu flavor at link time */
-#define _LGPL_SOURCE
-
-#ifdef RCU_QSBR
-# include "urcu-qsbr.h"
-#elif defined(RCU_BP)
-# include "urcu-bp.h"
-#else
-# include "urcu.h"
-#endif
-
 #undef _LGPL_SOURCE
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include "urcu/rculfstack.h"

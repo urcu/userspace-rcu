@@ -27,6 +27,7 @@
  */
 
 #include <urcu/uatomic.h>
+#include <urcu-pointer.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,6 +28,7 @@
 
 #include <urcu-call-rcu.h>
 #include <urcu/uatomic.h>
+#include <urcu-pointer.h>
 #include <assert.h>
 #include <errno.h>
 
