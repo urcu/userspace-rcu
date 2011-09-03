@@ -73,6 +73,7 @@ static inline pid_t gettid(void)
 struct wr_count {
 	unsigned long update_ops;
 	unsigned long add;
+	unsigned long add_exist;
 	unsigned long remove;
 };
 
@@ -469,6 +470,7 @@ void *thr_writer(void *_count)
 			nr_addexist, nr_del, nr_delnoent);
 	count->update_ops = nr_writes;
 	count->add = nr_add;
+	count->add_exist = nr_addexist;
 	count->remove = nr_del;
 	return ((void*)2);
 }
@@ -498,7 +500,7 @@ int main(int argc, char **argv)
 	unsigned long long *count_reader;
 	struct wr_count *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0,
-		tot_add = 0, tot_remove = 0;
+		tot_add = 0, tot_add_exist = 0, tot_remove = 0;
 	unsigned long count, removed;
 	int i, a, ret;
 
@@ -651,6 +653,7 @@ int main(int argc, char **argv)
 			exit(1);
 		tot_writes += count_writer[i].update_ops;
 		tot_add += count_writer[i].add;
+		tot_add_exist += count_writer[i].add_exist;
 		tot_remove += count_writer[i].remove;
 	}
 	printf("Counting nodes... ");
@@ -671,10 +674,10 @@ int main(int argc, char **argv)
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
 		"wdelay %6lu rand_pool %12llu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
-		"nr_add %12llu nr_remove %12llu nr_leaked %12llu\n",
+		"nr_add %12llu nr_add_fail %12llu nr_remove %12llu nr_leaked %12llu\n",
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, rand_pool, tot_reads, tot_writes,
-		tot_reads + tot_writes, tot_add, tot_remove,
+		tot_reads + tot_writes, tot_add, tot_add_exist, tot_remove,
 		tot_add - tot_remove - count);
 	free(tid_reader);
 	free(tid_writer);
