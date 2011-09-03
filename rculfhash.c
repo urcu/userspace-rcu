@@ -622,7 +622,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	unsigned long order;
 
 	/* init_size must be power of two */
-	if (init_size & (init_size - 1))
+	if (init_size && (init_size & (init_size - 1)))
 		return NULL;
 	ht = calloc(1, sizeof(struct cds_lfht));
 	ht->hash_fct = hash_fct;
