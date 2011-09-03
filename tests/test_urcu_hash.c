@@ -480,12 +480,19 @@ void *thr_writer(void *_count)
 	return ((void*)2);
 }
 
-static void populate_hash(void)
+static int populate_hash(void)
 {
 	struct cds_lfht_node *node, *ret_node;
 
 	if (!init_populate)
-		return;
+		return 0;
+
+	if (add_unique && init_populate * 10 > rand_pool) {
+		printf("WARNING: required to populate %lu nodes (-k), but random "
+"pool is quite small (%lu values) and we are in add_unique (-u) mode. Try with a "
+"larger random pool (-p option).\n", init_populate, rand_pool);
+		return -1;
+	}
 
 	while (nr_add < init_populate) {
 		node = malloc(sizeof(struct cds_lfht_node));
@@ -503,6 +510,7 @@ static void populate_hash(void)
 			nr_add++;
 		nr_writes++;
 	}
+	return 0;
 }
 
 void show_usage(int argc, char **argv)
@@ -648,7 +656,8 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			 init_hash_size, call_rcu);
-	populate_hash();
+	ret = populate_hash();
+	assert(!ret);
         err = create_all_cpu_call_rcu_data(0);
         assert(!err);
 
