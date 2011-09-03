@@ -24,6 +24,7 @@
  */
 
 #define _GNU_SOURCE
+#define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -34,12 +35,15 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/wfqueue.h"
 #include "urcu/map/urcu-qsbr.h"
-
 #define BUILD_QSBR_LIB
 #include "urcu/static/urcu-qsbr.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu-qsbr.h"
+#define _LGPL_SOURCE
 
 void __attribute__((destructor)) rcu_exit(void);
 
@@ -51,6 +55,11 @@ int32_t gp_futex;
  * Global grace period counter.
  */
 unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
+
+/*
+ * Active attempts to check for reader Q.S. before calling futex().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
@@ -145,26 +154,33 @@ static void update_counter_and_wait(void)
 	 */
 	for (;;) {
 		wait_loops++;
-		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_dec(&gp_futex);
+		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
+			uatomic_set(&gp_futex, -1);
+			/*
+			 * Write futex before write waiting (the other side
+			 * reads them in the opposite order).
+			 */
+			cmm_smp_wmb();
+			cds_list_for_each_entry(index, &registry, node) {
+				_CMM_STORE_SHARED(index->waiting, 1);
+			}
 			/* Write futex before read reader_gp */
 			cmm_smp_mb();
 		}
-
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
 				cds_list_move(&index->node, &qsreaders);
 		}
 
 		if (cds_list_empty(&registry)) {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				cmm_smp_mb();
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
 		} else {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				wait_gp();
 			} else {
 #ifndef HAS_INCOHERENT_CACHES

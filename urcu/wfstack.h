@@ -54,7 +54,7 @@ struct cds_wfs_stack {
 
 extern void cds_wfs_node_init(struct cds_wfs_node *node);
 extern void cds_wfs_init(struct cds_wfs_stack *s);
-extern void cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node);
+extern int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node);
 /* __cds_wfs_pop_blocking: caller ensures mutual exclusion between pops */
 extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
 extern struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s);

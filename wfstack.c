@@ -38,9 +38,9 @@ void cds_wfs_init(struct cds_wfs_stack *s)
 	_cds_wfs_init(s);
 }
 
-void cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
+int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
-	_cds_wfs_push(s, node);
+	return _cds_wfs_push(s, node);
 }
 
 struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)

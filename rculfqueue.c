@@ -20,13 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define _LGPL_SOURCE
-/* Use the urcu symbols to select the appropriate rcu flavor at link time */
-#include "urcu.h"
-
-#undef _LGPL_SOURCE
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu/rculfqueue.h"
+#define _LGPL_SOURCE
 #include "urcu/static/rculfqueue.h"
 
 /*
@@ -39,9 +36,15 @@ void cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node)
 }
 
 void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
-		      void (*release)(struct urcu_ref *ref))
+		      void queue_call_rcu(struct rcu_head *head,
+				void (*func)(struct rcu_head *head)))
 {
-	_cds_lfq_init_rcu(q, release);
+	_cds_lfq_init_rcu(q, queue_call_rcu);
+}
+
+int cds_lfq_destroy_rcu(struct cds_lfq_queue_rcu *q)
+{
+	return _cds_lfq_destroy_rcu(q);
 }
 
 void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q, struct cds_lfq_node_rcu *node)

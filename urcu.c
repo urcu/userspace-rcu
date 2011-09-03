@@ -25,6 +25,7 @@
 
 #define _BSD_SOURCE
 #define _GNU_SOURCE
+#define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -35,11 +36,26 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/wfqueue.h"
 #include "urcu/map/urcu.h"
-
 #include "urcu/static/urcu.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu.h"
+#define _LGPL_SOURCE
+
+/*
+ * If a reader is really non-cooperative and refuses to commit its
+ * rcu_active_readers count to memory (there is no barrier in the reader
+ * per-se), kick it after a few loops waiting for it.
+ */
+#define KICK_READER_LOOPS 10000
+
+/*
+ * Active attempts to check for reader Q.S. before calling futex().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
 
 #ifdef RCU_MEMBARRIER
 static int init_done;

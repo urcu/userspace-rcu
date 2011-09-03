@@ -23,36 +23,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <urcu/ref.h>
 #include <assert.h>
+#include <urcu-call-rcu.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * Lock-free RCU queue using reference counting. Enqueue and dequeue operations
- * hold a RCU read lock to deal with cmpxchg ABA problem. This implementation
- * keeps a dummy head node to ensure we can always update the queue locklessly.
- * Given that this is a queue, the dummy head node must always advance as we
- * dequeue entries. Therefore, we keep a reference count on each entry we are
- * dequeueing, so they can be kept as dummy head node until the next dequeue, at
- * which point their reference count will be decremented.
- */
-
 struct cds_lfq_queue_rcu;
 
 struct cds_lfq_node_rcu {
 	struct cds_lfq_node_rcu *next;
-	struct urcu_ref ref;
-	struct cds_lfq_queue_rcu *queue;
-	struct rcu_head rcu_head;
+	int dummy;
 };
 
 struct cds_lfq_queue_rcu {
 	struct cds_lfq_node_rcu *head, *tail;
-	struct cds_lfq_node_rcu init;	/* Dummy initialization node */
-	void (*release)(struct urcu_ref *ref);
+	void (*queue_call_rcu)(struct rcu_head *head,
+		void (*func)(struct rcu_head *head));
 };
 
 #ifdef _LGPL_SOURCE
@@ -61,6 +49,7 @@ struct cds_lfq_queue_rcu {
 
 #define cds_lfq_node_init_rcu		_cds_lfq_node_init_rcu
 #define cds_lfq_init_rcu		_cds_lfq_init_rcu
+#define cds_lfq_destroy_rcu		_cds_lfq_destroy_rcu
 #define cds_lfq_enqueue_rcu		_cds_lfq_enqueue_rcu
 #define cds_lfq_dequeue_rcu		_cds_lfq_dequeue_rcu
 
@@ -68,7 +57,14 @@ struct cds_lfq_queue_rcu {
 
 extern void cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node);
 extern void cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
-			     void (*release)(struct urcu_ref *ref));
+			     void queue_call_rcu(struct rcu_head *head,
+					void (*func)(struct rcu_head *head)));
+/*
+ * The queue should be emptied before calling destroy.
+ *
+ * Return 0 on success, -EPERM if queue is not empty.
+ */
+extern int cds_lfq_destroy_rcu(struct cds_lfq_queue_rcu *q);
 
 /*
  * Should be called under rcu read lock critical section.
@@ -79,12 +75,9 @@ extern void cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 /*
  * Should be called under rcu read lock critical section.
  *
- * The entry returned by dequeue must be taken care of by doing a
- * sequence of urcu_ref_put which release handler should do a call_rcu.
- *
- * In other words, the entry lfq node returned by dequeue must not be
- * modified/re-used/freed until the reference count reaches zero and a grace
- * period has elapsed (after the refcount reached 0).
+ * The caller must wait for a grace period to pass before freeing the returned
+ * node or modifying the cds_lfq_node_rcu structure.
+ * Returns NULL if queue is empty.
  */
 extern
 struct cds_lfq_node_rcu *cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q);

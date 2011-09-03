@@ -20,13 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Use the urcu symbols to select the appropriate rcu flavor at link time */
-#define _LGPL_SOURCE
-#include "urcu.h"
-
-#undef _LGPL_SOURCE
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu/rculfstack.h"
+#define _LGPL_SOURCE
 #include "urcu/static/rculfstack.h"
 
 /*
@@ -44,9 +41,10 @@ void cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 	_cds_lfs_init_rcu(s);
 }
 
-void cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
+int cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
+		struct cds_lfs_node_rcu *node)
 {
-	_cds_lfs_push_rcu(s, node);
+	return _cds_lfs_push_rcu(s, node);
 }
 
 struct cds_lfs_node_rcu *cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)

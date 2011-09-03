@@ -27,7 +27,7 @@
  */
 
 #include <urcu/uatomic.h>
-/* A urcu implementation header should be already included. */
+#include <urcu-pointer.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,8 +44,34 @@ void _cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
 	s->head = NULL;
 }
 
+/*
+ * Lock-free stack push is not subject to ABA problem, so no need to
+ * take the RCU read-side lock. Even if "head" changes between two
+ * uatomic_cmpxchg() invocations here (being popped, and then pushed
+ * again by one or more concurrent threads), the second
+ * uatomic_cmpxchg() invocation only cares about pushing a new entry at
+ * the head of the stack, ensuring consistency by making sure the new
+ * node->next is the same pointer value as the value replaced as head.
+ * It does not care about the content of the actual next node, so it can
+ * very well be reallocated between the two uatomic_cmpxchg().
+ *
+ * We take the approach of expecting the stack to be usually empty, so
+ * we first try an initial uatomic_cmpxchg() on a NULL old_head, and
+ * retry if the old head was non-NULL (the value read by the first
+ * uatomic_cmpxchg() is used as old head for the following loop). The
+ * upside of this scheme is to minimize the amount of cacheline traffic,
+ * always performing an exclusive cacheline access, rather than doing
+ * non-exclusive followed by exclusive cacheline access (which would be
+ * required if we first read the old head value). This design decision
+ * might be revisited after more throrough benchmarking on various
+ * platforms.
+ *
+ * Returns 0 if the stack was empty prior to adding the node.
+ * Returns non-zero otherwise.
+ */
 static inline
-void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *node)
+int _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
+			  struct cds_lfs_node_rcu *node)
 {
 	struct cds_lfs_node_rcu *head = NULL;
 
@@ -61,6 +87,7 @@ void _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s, struct cds_lfs_node_rcu *nod
 		if (old_head == head)
 			break;
 	}
+	return (int) !!((unsigned long) head);
 }
 
 /*

@@ -75,7 +75,7 @@ static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
 	 * structure containing node and setting node->next to NULL before
 	 * publication.
 	 */
-	old_tail = uatomic_xchg(&q->tail, node);
+	old_tail = uatomic_xchg(&q->tail, &node->next);
 	/*
 	 * At this point, dequeuers see a NULL old_tail->next, which indicates
 	 * that the queue is being appended to. The following store will append

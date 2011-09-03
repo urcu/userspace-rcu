@@ -56,8 +56,11 @@ void _cds_wfs_init(struct cds_wfs_stack *s)
 	assert(!ret);
 }
 
+/*
+ * Returns 0 if stack was empty, 1 otherwise.
+ */
 static inline
-void _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
+int _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
 	struct cds_wfs_node *old_head;
 
@@ -72,6 +75,7 @@ void _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 	 * until node->next is set to old_head.
 	 */
 	CMM_STORE_SHARED(node->next, old_head);
+	return (old_head != CDS_WF_STACK_END);
 }
 
 /*

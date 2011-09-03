@@ -24,6 +24,7 @@
  */
 
 #define _GNU_SOURCE
+#define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
@@ -35,11 +36,14 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "urcu/wfqueue.h"
 #include "urcu/map/urcu-bp.h"
-
 #include "urcu/static/urcu-bp.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
 #include "urcu-bp.h"
+#define _LGPL_SOURCE
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
@@ -77,6 +81,11 @@ void *mremap(void *old_address, size_t old_size, size_t new_size, int flags)
 /* Sleep delay in us */
 #define RCU_SLEEP_DELAY		1000
 #define ARENA_INIT_ALLOC	16
+
+/*
+ * Active attempts to check for reader Q.S. before calling sleep().
+ */
+#define RCU_QS_ACTIVE_ATTEMPTS 100
 
 void __attribute__((destructor)) rcu_bp_exit(void);
 
@@ -295,7 +304,7 @@ static void add_thread(void)
 	if (registry_arena.len
 	    < registry_arena.used + sizeof(struct rcu_reader))
 		resize_arena(&registry_arena,
-		max(registry_arena.len << 1, ARENA_INIT_ALLOC));
+		caa_max(registry_arena.len << 1, ARENA_INIT_ALLOC));
 	/*
 	 * Find a free spot.
 	 */
@@ -364,9 +373,10 @@ end:
 	assert(!ret);
 }
 
-void rcu_bp_exit()
+void rcu_bp_exit(void)
 {
-	munmap(registry_arena.p, registry_arena.len);
+	if (registry_arena.p)
+		munmap(registry_arena.p, registry_arena.len);
 }
 
 /*

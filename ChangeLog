@@ -1,3 +1,8 @@
+2011-07-21 Userspace RCU 0.6.4
+	* uatomic: Fix ARM build errors in uatomic.
+	* urcu tests: hold mutex across use of custom allocator.
+	* Portability fixes to support FreeBSD 8.2.
+
 2011-06-27 Userspace RCU 0.6.3
 	* uatomic: Fix i386 compatibility build errors in uatomic.
 

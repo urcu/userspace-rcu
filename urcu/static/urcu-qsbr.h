@@ -55,18 +55,6 @@ extern "C" {
  * This is required to permit relinking with newer versions of the library.
  */
 
-/*
- * If a reader is really non-cooperative and refuses to commit its
- * rcu_reader.ctr count to memory (there is no barrier in the reader
- * per-se), kick it after a few loops waiting for it.
- */
-#define KICK_READER_LOOPS 10000
-
-/*
- * Active attempts to check for reader Q.S. before calling futex().
- */
-#define RCU_QS_ACTIVE_ATTEMPTS 100
-
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)	assert(args)
 #else
@@ -136,6 +124,7 @@ struct rcu_reader {
 	unsigned long ctr;
 	/* Data used for registry */
 	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+	int waiting;
 	pthread_t tid;
 };
 
@@ -148,7 +137,11 @@ extern int32_t gp_futex;
  */
 static inline void wake_up_gp(void)
 {
-	if (unlikely(uatomic_read(&gp_futex) == -1)) {
+	if (unlikely(_CMM_LOAD_SHARED(rcu_reader.waiting))) {
+		_CMM_STORE_SHARED(rcu_reader.waiting, 0);
+		cmm_smp_mb();
+		if (uatomic_read(&gp_futex) != -1)
+			return;
 		uatomic_set(&gp_futex, 0);
 		futex_noasync(&gp_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);

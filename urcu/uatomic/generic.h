@@ -98,20 +98,23 @@ void _uatomic_and(void *addr, unsigned long val,
 #ifdef UATOMIC_HAS_ATOMIC_BYTE
 	case 1:
 		__sync_and_and_fetch_1(addr, val);
+		return;
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
 	case 2:
 		__sync_and_and_fetch_2(addr, val);
+		return;
 #endif
 	case 4:
 		__sync_and_and_fetch_4(addr, val);
+		return;
 #if (CAA_BITS_PER_LONG == 64)
 	case 8:
 		__sync_and_and_fetch_8(addr, val);
+		return;
 #endif
 	}
 	_uatomic_link_error();
-	return 0;
 }
 
 #define uatomic_and(addr, v)			\
@@ -131,20 +134,24 @@ void _uatomic_or(void *addr, unsigned long val,
 #ifdef UATOMIC_HAS_ATOMIC_BYTE
 	case 1:
 		__sync_or_and_fetch_1(addr, val);
+		return;
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
 	case 2:
 		__sync_or_and_fetch_2(addr, val);
+		return;
 #endif
 	case 4:
 		__sync_or_and_fetch_4(addr, val);
+		return;
 #if (CAA_BITS_PER_LONG == 64)
 	case 8:
 		__sync_or_and_fetch_8(addr, val);
+		return;
 #endif
 	}
 	_uatomic_link_error();
-	return 0;
+	return;
 }
 
 #define uatomic_or(addr, v)			\
