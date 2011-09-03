@@ -1,5 +1,5 @@
 /*
- * test_ht.c
+ * test_urcu_hash.c
  *
  * Userspace RCU library - test program
  *
@@ -102,6 +102,7 @@ static unsigned long duration;
 static unsigned long rduration;
 
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
+static unsigned long init_populate;
 static unsigned long rand_pool = DEFAULT_RAND_POOL;
 static int add_only, add_unique;
 
@@ -479,6 +480,31 @@ void *thr_writer(void *_count)
 	return ((void*)2);
 }
 
+static void populate_hash(void)
+{
+	struct cds_lfht_node *node, *ret_node;
+
+	if (!init_populate)
+		return;
+
+	while (nr_add < init_populate) {
+		node = malloc(sizeof(struct cds_lfht_node));
+		cds_lfht_node_init(node,
+			(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
+			sizeof(void *));
+		if (add_unique)
+			ret_node = cds_lfht_add_unique(test_ht, node);
+		else
+			cds_lfht_add(test_ht, node);
+		if (add_unique && ret_node != node) {
+			free(node);
+			nr_addexist++;
+		} else
+			nr_add++;
+		nr_writes++;
+	}
+}
+
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s)", argv[0]);
@@ -493,6 +519,7 @@ void show_usage(int argc, char **argv)
 	printf(" [-h size] (initial hash table size)");
 	printf(" [-u] Uniquify add.");
 	printf(" [-i] Add only (no removal).");
+	printf(" [-k nr_nodes] Number of nodes to insert initially.");
 	printf("\n");
 }
 
@@ -590,6 +617,9 @@ int main(int argc, char **argv)
 		case 'i':
 			add_only = 1;
 			break;
+		case 'k':
+			init_populate = atol(argv[++i]);
+			break;
 		}
 	}
 
@@ -618,7 +648,7 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			 init_hash_size, call_rcu);
-
+	populate_hash();
         err = create_all_cpu_call_rcu_data(0);
         assert(!err);
 
@@ -678,11 +708,11 @@ int main(int argc, char **argv)
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
 		"wdelay %6lu rand_pool %12llu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
-		"nr_add %12llu nr_add_fail %12llu nr_remove %12llu nr_leaked %12llu\n",
+		"nr_add %12llu nr_add_fail %12llu nr_remove %12llu nr_leaked %12lld\n",
 		argv[0], duration, nr_readers, rduration,
 		nr_writers, wdelay, rand_pool, tot_reads, tot_writes,
 		tot_reads + tot_writes, tot_add, tot_add_exist, tot_remove,
-		tot_add - tot_remove - count);
+		(long long) tot_add + init_populate - tot_remove - count);
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
