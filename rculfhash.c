@@ -678,6 +678,39 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 	return node;
 }
 
+struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
+				struct cds_lfht_node *node)
+{
+	struct cds_lfht_node *next;
+	unsigned long reverse_hash;
+	void *key;
+	size_t key_len;
+
+	reverse_hash = node->p.reverse_hash;
+	key = node->key;
+	key_len = node->key_len;
+	next = rcu_dereference(node->p.next);
+	node = clear_flag(next);
+
+	for (;;) {
+		if (unlikely(!node))
+			break;
+		if (unlikely(node->p.reverse_hash > reverse_hash)) {
+			node = NULL;
+			break;
+		}
+		next = rcu_dereference(node->p.next);
+		if (likely(!is_removed(next))
+		    && !is_dummy(next)
+		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
+				break;
+		}
+		node = clear_flag(next);
+	}
+	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
+	return node;
+}
+
 void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	struct rcu_table *t;
