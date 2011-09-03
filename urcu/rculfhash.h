@@ -76,6 +76,7 @@ void cds_lfht_node_init(struct cds_lfht_node *node, void *key,
  * cds_lfht_new - allocate a hash table.
  *
  * init_size must be power of two.
+ * Return NULL on error.
  */
 struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
@@ -86,6 +87,8 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 
 /*
  * cds_lfht_destroy - destroy a hash table.
+ *
+ * Return 0 on success, negative error value on error.
  */
 int cds_lfht_destroy(struct cds_lfht *ht);
 
@@ -101,7 +104,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 /*
  * cds_lfht_lookup - lookup a node by key.
  *
- * Returns NULL if not found.
+ * Return NULL if not found.
  * Call with rcu_read_lock held.
  */
 struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len);
@@ -109,7 +112,7 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 /*
  * cds_lfht_next - get the next item with same key (after a lookup).
  *
- * Returns NULL if no following node exists with same key.
+ * Return NULL if no following node exists with same key.
  * RCU read-side lock must be held across cds_lfht_lookup and cds_lfht_next calls, and also
  * between cds_lfht_next calls using the node returned by a previous cds_lfht_next.
  * Call with rcu_read_lock held.
@@ -126,8 +129,8 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
 /*
  * cds_lfht_add_unique - add a node to hash table, if key is not present.
  *
- * Returns the node added upon success.
- * Returns the unique node already present upon failure. If cds_lfht_add_unique fails,
+ * Return the node added upon success.
+ * Return the unique node already present upon failure. If cds_lfht_add_unique fails,
  * the node passed as parameter should be freed by the caller.
  * Call with rcu_read_lock held.
  */
