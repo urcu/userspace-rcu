@@ -88,7 +88,7 @@ void rcu_free_dummy(struct cds_lfq_node_rcu *node)
 
 	assert(node->dummy);
 	dummy = caa_container_of(node, struct cds_lfq_node_rcu_dummy, parent);
-	call_rcu(&dummy->head, free_dummy_cb);
+	dummy->q->queue_call_rcu(&dummy->head, free_dummy_cb);
 }
 
 static inline
@@ -109,10 +109,13 @@ void _cds_lfq_node_init_rcu(struct cds_lfq_node_rcu *node)
 }
 
 static inline
-void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q)
+void _cds_lfq_init_rcu(struct cds_lfq_queue_rcu *q,
+		       void queue_call_rcu(struct rcu_head *head,
+				void (*func)(struct rcu_head *head)))
 {
 	q->tail = make_dummy(q, NULL);
 	q->head = q->tail;
+	q->queue_call_rcu = queue_call_rcu;
 }
 
 /*
@@ -133,7 +136,7 @@ int _cds_lfq_destroy_rcu(struct cds_lfq_queue_rcu *q)
 }
 
 /*
- * Acts as a RCU reader.
+ * Should be called under rcu read lock critical section.
  */
 static inline
 void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
@@ -147,7 +150,6 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 	for (;;) {
 		struct cds_lfq_node_rcu *tail, *next;
 
-		rcu_read_lock();
 		tail = rcu_dereference(q->tail);
 		next = uatomic_cmpxchg(&tail->next, NULL, node);
 		if (next == NULL) {
@@ -157,7 +159,6 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 			 * enqueue might beat us to it, that's fine).
 			 */
 			(void) uatomic_cmpxchg(&q->tail, tail, node);
-			rcu_read_unlock();
 			return;
 		} else {
 			/*
@@ -165,7 +166,6 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 			 * Help moving tail further and retry.
 			 */
 			(void) uatomic_cmpxchg(&q->tail, tail, next);
-			rcu_read_unlock();
 			continue;
 		}
 	}
@@ -182,7 +182,7 @@ void enqueue_dummy(struct cds_lfq_queue_rcu *q)
 }
 
 /*
- * Acts as a RCU reader.
+ * Should be called under rcu read lock critical section.
  *
  * The caller must wait for a grace period to pass before freeing the returned
  * node or modifying the cds_lfq_node_rcu structure.
@@ -194,13 +194,10 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 	for (;;) {
 		struct cds_lfq_node_rcu *head, *next;
 
-		rcu_read_lock();
 		head = rcu_dereference(q->head);
 		next = rcu_dereference(head->next);
-		if (head->dummy && next == NULL) {
-			rcu_read_unlock();
+		if (head->dummy && next == NULL)
 			return NULL;	/* empty */
-		}
 		/*
 		 * We never, ever allow dequeue to get to a state where
 		 * the queue is empty (we need at least one node in the
@@ -212,17 +209,13 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 			enqueue_dummy(q);
 			next = rcu_dereference(head->next);
 		}
-		if (uatomic_cmpxchg(&q->head, head, next) != head) {
-			rcu_read_unlock();
+		if (uatomic_cmpxchg(&q->head, head, next) != head)
 			continue;	/* Concurrently pushed. */
-		}
 		if (head->dummy) {
 			/* Free dummy after grace period. */
 			rcu_free_dummy(head);
-			rcu_read_unlock();
 			continue;	/* try again */
 		}
-		rcu_read_unlock();
 		return head;
 	}
 }

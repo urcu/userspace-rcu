@@ -72,7 +72,7 @@ extern int cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
 			struct cds_lfs_node_rcu *node);
 
 /*
- * Acts as a RCU reader.
+ * Should be called under rcu read lock critical section.
  *
  * The caller must wait for a grace period to pass before freeing the returned
  * node or modifying the cds_lfs_node_rcu structure.

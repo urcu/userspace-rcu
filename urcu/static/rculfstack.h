@@ -90,7 +90,7 @@ int _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
 }
 
 /*
- * Acts as a RCU reader.
+ * Should be called under rcu read-side lock.
  *
  * The caller must wait for a grace period to pass before freeing the returned
  * node or modifying the cds_lfs_node_rcu structure.
@@ -103,22 +103,18 @@ _cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)
 	for (;;) {
 		struct cds_lfs_node_rcu *head;
 
-		rcu_read_lock();
 		head = rcu_dereference(s->head);
 		if (head) {
 			struct cds_lfs_node_rcu *next = rcu_dereference(head->next);
 
 			if (uatomic_cmpxchg(&s->head, head, next) == head) {
-				rcu_read_unlock();
 				return head;
 			} else {
 				/* Concurrent modification. Retry. */
-				rcu_read_unlock();
 				continue;
 			}
 		} else {
 			/* Empty stack */
-			rcu_read_unlock();
 			return NULL;
 		}
 	}

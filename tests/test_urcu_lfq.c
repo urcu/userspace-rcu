@@ -180,7 +180,9 @@ void *thr_enqueuer(void *_count)
 		if (!node)
 			goto fail;
 		cds_lfq_node_init_rcu(node);
+		rcu_read_lock();
 		cds_lfq_enqueue_rcu(&q, node);
+		rcu_read_unlock();
 		nr_successful_enqueues++;
 
 		if (unlikely(wdelay))
@@ -228,7 +230,10 @@ void *thr_dequeuer(void *_count)
 	for (;;) {
 		struct cds_lfq_node_rcu *node;
 
+		rcu_read_lock();
 		node = cds_lfq_dequeue_rcu(&q);
+		rcu_read_unlock();
+
 		if (node) {
 			defer_rcu(free, node);
 			nr_successful_dequeues++;
@@ -257,7 +262,9 @@ void test_end(struct cds_lfq_queue_rcu *q, unsigned long long *nr_dequeues)
 	struct cds_lfq_node_rcu *node;
 
 	do {
+		rcu_read_lock();
 		node = cds_lfq_dequeue_rcu(q);
+		rcu_read_unlock();
 		if (node) {
 			free(node);	/* no more concurrent access */
 			(*nr_dequeues)++;
@@ -356,7 +363,7 @@ int main(int argc, char **argv)
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
-	cds_lfq_init_rcu(&q);
+	cds_lfq_init_rcu(&q, call_rcu);
 
 	next_aff = 0;
 

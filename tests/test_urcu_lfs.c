@@ -229,7 +229,9 @@ void *thr_dequeuer(void *_count)
 	for (;;) {
 		struct cds_lfs_node_rcu *node;
 
+		rcu_read_lock();
 		node = cds_lfs_pop_rcu(&s);
+		rcu_read_unlock();
 		if (node) {
 			defer_rcu(free, node);
 			nr_successful_dequeues++;
