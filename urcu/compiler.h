@@ -71,4 +71,12 @@
 #define CAA_BUILD_BUG_ON_ZERO(cond) (sizeof(struct { int:-!!(cond); }))
 #define CAA_BUILD_BUG_ON(cond) ((void)BUILD_BUG_ON_ZERO(cond))
 
+/*
+ * __rcu is an annotation that documents RCU pointer accesses that need
+ * to be protected by a read-side critical section. Eventually, a static
+ * checker will be able to use this annotation to detect incorrect RCU
+ * usage.
+ */
+#define __rcu
+
 #endif /* _URCU_COMPILER_H */
