@@ -66,7 +66,7 @@ static inline pid_t gettid(void)
 #else
 #define debug_yield_read()
 #endif
-#include <urcu.h>
+#include <urcu-qsbr.h>
 #include <urcu/rculfhash.h>
 #include <urcu-call-rcu.h>
 
@@ -369,6 +369,8 @@ void *thr_reader(void *_count)
 		nr_reads++;
 		if (unlikely(!test_duration_read()))
 			break;
+		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
+			rcu_quiescent_state();
 	}
 
 	rcu_unregister_thread();
@@ -459,6 +461,8 @@ void *thr_writer(void *_count)
 			break;
 		if (unlikely(wdelay))
 			loop_sleep(wdelay);
+		if (unlikely((nr_writes & ((1 << 10) - 1)) == 0))
+			rcu_quiescent_state();
 	}
 
 	rcu_unregister_thread();
