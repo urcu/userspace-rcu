@@ -37,7 +37,6 @@ struct cds_list_head
   struct cds_list_head *prev;
 };
 
-
 /* Define a variable with the head and tail of the list.  */
 #define CDS_LIST_HEAD(name) \
   struct cds_list_head name = { &(name), &(name) }
@@ -126,14 +125,21 @@ cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
     }
 }
 
+/* Returns 1 if list is empty, 0 otherwise */
+static inline
+int cds_list_empty(struct cds_list_head *head)
+{
+	return head->next == head->prev;
+}
+
 /* Get typed element from list at a given position.  */
 #define cds_list_entry(ptr, type, member) \
   ((type *) ((char *) (ptr) - (unsigned long) (&((type *) 0)->member)))
 
 
 /* Get first entry from a list. */
-#define cds_list_first_entry(ptr, type, member) \
-	cds_list_entry((ptr)->next, type, member)
+#define cds_list_first_entry(head, type, member) \
+	cds_list_entry((head)->next, type, member)
 
 
 /* Iterate forward over the elements of the list.  */
