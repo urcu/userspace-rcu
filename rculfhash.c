@@ -139,7 +139,7 @@
 #define FLAGS_MASK		((1UL << 2) - 1)
 
 struct ht_items_count {
-	unsigned long v;
+	unsigned long add, remove;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 struct rcu_table {
@@ -363,6 +363,10 @@ int get_count_order_ulong(unsigned long x)
 static
 void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
 
+static
+void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
+				unsigned long count);
+
 /*
  * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
  * available, then we support hash table item accounting.
@@ -424,24 +428,17 @@ int ht_get_cpu(void)
 }
 
 static
-unsigned long ht_count_update(struct cds_lfht *ht, unsigned int value)
-{
-	int cpu;
-
-	if (unlikely(!ht->percpu_count))
-		return 0;
-	cpu = ht_get_cpu();
-	if (unlikely(cpu < 0))
-		return 0;
-	return uatomic_add_return(&ht->percpu_count[cpu].v, 1);
-}
-
-static
 void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
 {
 	unsigned long percpu_count;
+	int cpu;
 
-	percpu_count = ht_count_update(ht, 1);
+	if (unlikely(!ht->percpu_count))
+		return;
+	cpu = ht_get_cpu();
+	if (unlikely(cpu < 0))
+		return;
+	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].add, 1);
 	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		unsigned long count;
 
@@ -451,7 +448,7 @@ void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
 		/* If power of 2 */
 		if (!(count & (count - 1))) {
 			dbg_printf("add global %lu\n", count);
-			cds_lfht_resize_lazy(ht, t, 1);
+			cds_lfht_resize_lazy_count(ht, t, count);
 		}
 	}
 }
@@ -460,18 +457,24 @@ static
 void ht_count_remove(struct cds_lfht *ht, struct rcu_table *t)
 {
 	unsigned long percpu_count;
+	int cpu;
 
-	percpu_count = ht_count_update(ht, -1);
+	if (unlikely(!ht->percpu_count))
+		return;
+	cpu = ht_get_cpu();
+	if (unlikely(cpu < 0))
+		return;
+	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].remove, -1);
 	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		unsigned long count;
 
 		dbg_printf("remove percpu %lu\n", percpu_count);
 		count = uatomic_add_return(&ht->count,
-					   1UL << COUNT_COMMIT_ORDER);
+					   -(1UL << COUNT_COMMIT_ORDER));
 		/* If power of 2 */
 		if (!(count & (count - 1))) {
 			dbg_printf("remove global %lu\n", count);
-			cds_lfht_resize_lazy(ht, t, -1);
+			cds_lfht_resize_lazy_count(ht, t, count);
 		}
 	}
 }
@@ -1035,6 +1038,13 @@ unsigned long resize_target_update(struct rcu_table *t,
 			    t->size << growth_order);
 }
 
+static
+unsigned long resize_target_update_count(struct rcu_table *t,
+				   unsigned long count)
+{
+	return _uatomic_max(&t->resize_target, count);
+}
+
 void cds_lfht_resize(struct cds_lfht *ht, int growth)
 {
 	struct rcu_table *t = rcu_dereference(ht->t);
@@ -1079,6 +1089,24 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth)
 	unsigned long target_size;
 
 	target_size = resize_target_update(t, growth);
+	if (!CMM_LOAD_SHARED(t->resize_initiated) && t->size < target_size) {
+		uatomic_inc(&ht->in_progress_resize);
+		cmm_smp_mb();	/* increment resize count before calling it */
+		work = malloc(sizeof(*work));
+		work->ht = ht;
+		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
+		CMM_STORE_SHARED(t->resize_initiated, 1);
+	}
+}
+
+static
+void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
+				unsigned long count)
+{
+	struct rcu_resize_work *work;
+	unsigned long target_size;
+
+	target_size = resize_target_update_count(t, count);
 	if (!CMM_LOAD_SHARED(t->resize_initiated) && t->size < target_size) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before calling it */
