@@ -102,6 +102,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "config.h"
 #include <urcu.h>
 #include <urcu-call-rcu.h>
 #include <urcu/arch.h>
@@ -121,6 +122,9 @@
 #define CHAIN_LEN_TARGET		4
 #define CHAIN_LEN_RESIZE_THRESHOLD	8
 
+/* Commit counter changes to global counter each 1024 steps */
+#define COUNT_COMMIT_ORDER		10
+
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
 #endif
@@ -133,6 +137,10 @@
 #define REMOVED_FLAG		(1UL << 0)
 #define DUMMY_FLAG		(1UL << 1)
 #define FLAGS_MASK		((1UL << 2) - 1)
+
+struct ht_items_count {
+	unsigned long v;
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 struct rcu_table {
 	unsigned long size;	/* always a power of 2 */
@@ -151,6 +159,8 @@ struct cds_lfht {
 	unsigned int in_progress_resize, in_progress_destroy;
 	void (*cds_lfht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
+	unsigned long count;		/* global approximate item count */
+	struct ht_items_count *percpu_count;	/* per-cpu item count */
 };
 
 struct rcu_resize_work {
@@ -353,10 +363,152 @@ int get_count_order_ulong(unsigned long x)
 static
 void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
 
+/*
+ * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
+ * available, then we support hash table item accounting.
+ * In the unfortunate event the number of CPUs reported would be
+ * inaccurate, we use modulo arithmetic on the number of CPUs we got.
+ */
+
+#if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+
+static long nr_cpus_mask = -1;
+
+static
+struct ht_items_count *alloc_per_cpu_items_count(void)
+{
+	struct ht_items_count *count;
+
+	switch (nr_cpus_mask) {
+	case -2:
+		return NULL;
+	case -1:
+	{
+		long maxcpus;
+
+		maxcpus = sysconf(_SC_NPROCESSORS_CONF);
+		if (maxcpus <= 0) {
+			nr_cpus_mask = -2;
+			return NULL;
+		}
+		/*
+		 * round up number of CPUs to next power of two, so we
+		 * can use & for modulo.
+		 */
+		maxcpus = 1UL << get_count_order_ulong(maxcpus);
+		nr_cpus_mask = maxcpus - 1;
+	}
+		/* Fall-through */
+	default:
+		return calloc(nr_cpus_mask + 1, sizeof(*count));
+	}
+}
+
+static
+void free_per_cpu_items_count(struct ht_items_count *count)
+{
+	free(count);
+}
+
+static
+int ht_get_cpu(void)
+{
+	int cpu;
+
+	assert(nr_cpus_mask >= 0);
+	cpu = sched_getcpu();
+	if (unlikely(cpu < 0))
+		return cpu;
+	else
+		return cpu & nr_cpus_mask;
+}
+
+static
+unsigned long ht_count_update(struct cds_lfht *ht, unsigned int value)
+{
+	int cpu;
+
+	if (unlikely(!ht->percpu_count))
+		return 0;
+	cpu = ht_get_cpu();
+	if (unlikely(cpu < 0))
+		return 0;
+	return uatomic_add_return(&ht->percpu_count[cpu].v, 1);
+}
+
+static
+void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
+{
+	unsigned long percpu_count;
+
+	percpu_count = ht_count_update(ht, 1);
+	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
+		unsigned long count;
+
+		dbg_printf("add percpu %lu\n", percpu_count);
+		count = uatomic_add_return(&ht->count,
+					   1UL << COUNT_COMMIT_ORDER);
+		/* If power of 2 */
+		if (!(count & (count - 1))) {
+			dbg_printf("add global %lu\n", count);
+			cds_lfht_resize_lazy(ht, t, 1);
+		}
+	}
+}
+
+static
+void ht_count_remove(struct cds_lfht *ht, struct rcu_table *t)
+{
+	unsigned long percpu_count;
+
+	percpu_count = ht_count_update(ht, -1);
+	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
+		unsigned long count;
+
+		dbg_printf("remove percpu %lu\n", percpu_count);
+		count = uatomic_add_return(&ht->count,
+					   1UL << COUNT_COMMIT_ORDER);
+		/* If power of 2 */
+		if (!(count & (count - 1))) {
+			dbg_printf("remove global %lu\n", count);
+			cds_lfht_resize_lazy(ht, t, -1);
+		}
+	}
+}
+
+#else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+
+static const long nr_cpus_mask = -1;
+
+static
+struct ht_items_count *alloc_per_cpu_items_count(void)
+{
+	return NULL;
+}
+
+static
+void free_per_cpu_items_count(struct ht_items_count *count)
+{
+}
+
+static
+void ht_count_add(struct cds_lfht *ht)
+{
+}
+
+static
+void ht_count_remove(struct cds_lfht *ht)
+{
+}
+
+#endif /* #else #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+
+
 static
 void check_resize(struct cds_lfht *ht, struct rcu_table *t,
 		  uint32_t chain_len)
 {
+	return; 	//TEST
 	if (chain_len > 100)
 		dbg_printf("WARNING: large chain length: %u.\n",
 			   chain_len);
@@ -630,6 +782,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->hash_seed = hash_seed;
 	ht->cds_lfht_call_rcu = cds_lfht_call_rcu;
 	ht->in_progress_resize = 0;
+	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(max(init_size, 1)) + 1;
@@ -721,6 +874,7 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
 
 	t = rcu_dereference(ht->t);
 	(void) _cds_lfht_add(ht, t, node, 0, 0);
+	ht_count_add(ht, t);
 }
 
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
@@ -728,20 +882,28 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 {
 	struct rcu_table *t;
 	unsigned long hash;
+	struct cds_lfht_node *ret;
 
 	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
 
 	t = rcu_dereference(ht->t);
-	return _cds_lfht_add(ht, t, node, 1, 0);
+	ret = _cds_lfht_add(ht, t, node, 1, 0);
+	if (ret != node)
+		ht_count_add(ht, t);
+	return ret;
 }
 
 int cds_lfht_remove(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	struct rcu_table *t;
+	int ret;
 
 	t = rcu_dereference(ht->t);
-	return _cds_lfht_remove(ht, t, node);
+	ret = _cds_lfht_remove(ht, t, node);
+	if (!ret)
+		ht_count_remove(ht, t);
+	return ret;
 }
 
 static
@@ -794,6 +956,7 @@ int cds_lfht_destroy(struct cds_lfht *ht)
 	if (ret)
 		return ret;
 	free(ht->t);
+	free_per_cpu_items_count(ht->percpu_count);
 	free(ht);
 	return ret;
 }
@@ -851,7 +1014,7 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 	if (old_size == new_size)
 		return;
 	new_order = get_count_order_ulong(new_size) + 1;
-	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
+	printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 	       old_size, old_order, new_size, new_order);
 	new_t = malloc(sizeof(struct cds_lfht)
 			+ (new_order * sizeof(struct _cds_lfht_node *)));
