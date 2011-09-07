@@ -697,7 +697,7 @@ int main(int argc, char **argv)
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
-			 init_hash_size, call_rcu);
+			 init_hash_size, call_rcu, synchronize_rcu);
 	ret = populate_hash();
 	assert(!ret);
         err = create_all_cpu_call_rcu_data(0);

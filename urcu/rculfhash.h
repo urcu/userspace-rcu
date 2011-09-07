@@ -83,7 +83,8 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
-				void (*func)(struct rcu_head *head)));
+				void (*func)(struct rcu_head *head)),
+			void (*cds_lfht_synchronize_rcu)(void));
 
 /*
  * cds_lfht_destroy - destroy a hash table.
@@ -147,11 +148,9 @@ int cds_lfht_remove(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
  * cds_lfht_resize - Force a hash table resize
- * @growth: growth order (current size is multiplied by 2^growth)
- *
- * Currently, only expand operation is supported (growth >= 0).
+ * @new_size: update to this hash table size.
  */
-void cds_lfht_resize(struct cds_lfht *ht, int growth);
+void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 
 #ifdef __cplusplus
 }
