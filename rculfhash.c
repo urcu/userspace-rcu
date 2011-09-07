@@ -1117,7 +1117,7 @@ static
 unsigned long resize_target_update_count(struct rcu_table *t,
 				   unsigned long count)
 {
-	return _uatomic_max(&t->resize_target, count);
+	return uatomic_set(&t->resize_target, count);
 }
 
 static
