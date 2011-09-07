@@ -119,11 +119,15 @@
 #define dbg_printf(fmt, args...)
 #endif
 
+/*
+ * Per-CPU split-counters lazily update the global counter each 1024
+ * addition/removal. It automatically keeps track of resize required.
+ * We use the bucket length as indicator for need to expand for small
+ * tables and machines lacking per-cpu data suppport.
+ */
+#define COUNT_COMMIT_ORDER		10
 #define CHAIN_LEN_TARGET		4
 #define CHAIN_LEN_RESIZE_THRESHOLD	8
-
-/* Commit counter changes to global counter each 1024 steps */
-#define COUNT_COMMIT_ORDER		10
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -363,18 +367,20 @@ int get_count_order_ulong(unsigned long x)
 static
 void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
 
-static
-void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
-				unsigned long count);
-
 /*
  * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
  * available, then we support hash table item accounting.
  * In the unfortunate event the number of CPUs reported would be
  * inaccurate, we use modulo arithmetic on the number of CPUs we got.
  */
+//test  #undef HAVE_SCHED_GETCPU
+#undef HAVE_SCHED_GETCPU
 
 #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+
+static
+void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
+				unsigned long count);
 
 static long nr_cpus_mask = -1;
 
@@ -447,8 +453,12 @@ void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
 					   1UL << COUNT_COMMIT_ORDER);
 		/* If power of 2 */
 		if (!(count & (count - 1))) {
-			dbg_printf("add global %lu\n", count);
-			cds_lfht_resize_lazy_count(ht, t, count);
+			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD)
+					< t->size)
+				return;
+			dbg_printf("add set global %lu\n", count);
+			cds_lfht_resize_lazy_count(ht, t,
+				count >> CHAIN_LEN_TARGET);
 		}
 	}
 }
@@ -473,8 +483,12 @@ void ht_count_remove(struct cds_lfht *ht, struct rcu_table *t)
 					   -(1UL << COUNT_COMMIT_ORDER));
 		/* If power of 2 */
 		if (!(count & (count - 1))) {
-			dbg_printf("remove global %lu\n", count);
-			cds_lfht_resize_lazy_count(ht, t, count);
+			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD)
+					>= t->size)
+				return;
+			dbg_printf("remove set global %lu\n", count);
+			cds_lfht_resize_lazy_count(ht, t,
+				count >> CHAIN_LEN_TARGET);
 		}
 	}
 }
@@ -495,12 +509,12 @@ void free_per_cpu_items_count(struct ht_items_count *count)
 }
 
 static
-void ht_count_add(struct cds_lfht *ht)
+void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
 {
 }
 
 static
-void ht_count_remove(struct cds_lfht *ht)
+void ht_count_remove(struct cds_lfht *ht, struct rcu_table *t)
 {
 }
 
@@ -511,7 +525,15 @@ static
 void check_resize(struct cds_lfht *ht, struct rcu_table *t,
 		  uint32_t chain_len)
 {
-	return; 	//TEST
+	unsigned long count;
+
+	count = uatomic_read(&ht->count);
+	/*
+	 * Use bucket-local length for small table expand and for
+	 * environments lacking per-cpu data support.
+	 */
+	if (count >= (1UL << COUNT_COMMIT_ORDER))
+		return;
 	if (chain_len > 100)
 		dbg_printf("WARNING: large chain length: %u.\n",
 			   chain_len);
@@ -1038,13 +1060,6 @@ unsigned long resize_target_update(struct rcu_table *t,
 			    t->size << growth_order);
 }
 
-static
-unsigned long resize_target_update_count(struct rcu_table *t,
-				   unsigned long count)
-{
-	return _uatomic_max(&t->resize_target, count);
-}
-
 void cds_lfht_resize(struct cds_lfht *ht, int growth)
 {
 	struct rcu_table *t = rcu_dereference(ht->t);
@@ -1099,6 +1114,15 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth)
 	}
 }
 
+#if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+
+static
+unsigned long resize_target_update_count(struct rcu_table *t,
+				   unsigned long count)
+{
+	return _uatomic_max(&t->resize_target, count);
+}
+
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
 				unsigned long count)
@@ -1116,3 +1140,5 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
 		CMM_STORE_SHARED(t->resize_initiated, 1);
 	}
 }
+
+#endif
