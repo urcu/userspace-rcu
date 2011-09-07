@@ -151,6 +151,31 @@ static void set_affinity(void)
 	sched_setaffinity(0, sizeof(mask), &mask);
 }
 
+static enum {
+	AR_RANDOM = 0,
+	AR_ADD = 1,
+	AR_REMOVE = -1,
+} addremove;	/* 1: add, -1 remove, 0: random */
+
+static
+void sigusr1_handler(int signo)
+{
+	switch (addremove) {
+	case AR_ADD:
+		printf("Add/Remove: random.\n");
+		addremove = AR_RANDOM;
+		break;
+	case AR_RANDOM:
+		printf("Add/Remove: remove only.\n");
+		addremove = AR_REMOVE;
+		break;
+	case AR_REMOVE:
+		printf("Add/Remove: add only.\n");
+		addremove = AR_ADD;
+		break;
+	}
+}
+
 /*
  * returns 0 if test should end.
  */
@@ -412,7 +437,8 @@ void *thr_writer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		if (add_only || rand_r(&rand_lookup) & 1) {
+		if ((addremove == AR_ADD || add_only)
+				|| (addremove == AR_RANDOM && rand_r(&rand_lookup) & 1)) {
 			node = malloc(sizeof(struct cds_lfht_node));
 			rcu_read_lock();
 			cds_lfht_node_init(node,
@@ -542,6 +568,8 @@ int main(int argc, char **argv)
 		tot_add = 0, tot_add_exist = 0, tot_remove = 0;
 	unsigned long count, removed;
 	int i, a, ret;
+	struct sigaction act;
+	unsigned int remain;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -638,6 +666,20 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	memset(&act, 0, sizeof(act));
+	ret = sigemptyset(&act.sa_mask);
+	if (ret == -1) {
+		perror("sigemptyset");
+		return -1;
+	}
+	act.sa_handler = sigusr1_handler;
+	act.sa_flags = SA_RESTART;
+	ret = sigaction(SIGUSR1, &act, NULL);
+	if (ret == -1) {
+		perror("sigaction");
+		return -1;
+	}
+
 	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
@@ -680,7 +722,10 @@ int main(int argc, char **argv)
 
 	test_go = 1;
 
-	sleep(duration);
+	remain = duration;
+	do {
+		remain = sleep(remain);
+	} while (remain > 0);
 
 	test_stop = 1;
 
