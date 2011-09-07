@@ -126,8 +126,8 @@
  * tables and machines lacking per-cpu data suppport.
  */
 #define COUNT_COMMIT_ORDER		10
-#define CHAIN_LEN_TARGET		4
-#define CHAIN_LEN_RESIZE_THRESHOLD	8
+#define CHAIN_LEN_TARGET		1
+#define CHAIN_LEN_RESIZE_THRESHOLD	3
 
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
@@ -373,9 +373,6 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
  * In the unfortunate event the number of CPUs reported would be
  * inaccurate, we use modulo arithmetic on the number of CPUs we got.
  */
-//test  #undef HAVE_SCHED_GETCPU
-#undef HAVE_SCHED_GETCPU
-
 #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
 
 static
@@ -458,7 +455,7 @@ void ht_count_add(struct cds_lfht *ht, struct rcu_table *t)
 				return;
 			dbg_printf("add set global %lu\n", count);
 			cds_lfht_resize_lazy_count(ht, t,
-				count >> CHAIN_LEN_TARGET);
+				count >> (CHAIN_LEN_TARGET - 1));
 		}
 	}
 }
@@ -488,7 +485,7 @@ void ht_count_remove(struct cds_lfht *ht, struct rcu_table *t)
 				return;
 			dbg_printf("remove set global %lu\n", count);
 			cds_lfht_resize_lazy_count(ht, t,
-				count >> CHAIN_LEN_TARGET);
+				count >> (CHAIN_LEN_TARGET - 1));
 		}
 	}
 }
