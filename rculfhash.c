@@ -803,7 +803,7 @@ int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
 	 */
 
 	if (dummy_removal)
-		index = hash & ((t->size >> 1) - 1);
+		index = hash & ((t->size == 1) ? 0 : (t->size >> 1) - 1);
 	else
 		index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
