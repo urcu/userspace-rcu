@@ -796,16 +796,8 @@ int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
 	 * if found.
 	 */
 	hash = bit_reverse_ulong(node->p.reverse_hash);
-	/*
-	 * When removing a dummy node, we need to consider the lower
-	 * order table, so we don't end up looking up the dummy nodes we
-	 * are currently removing.
-	 */
-
-	if (dummy_removal)
-		index = hash & ((t->size == 1) ? 0 : (t->size >> 1) - 1);
-	else
-		index = hash & (t->size - 1);
+	assert(t->size > 0);
+	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &t->tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
 	dummy = (struct cds_lfht_node *) lookup;
@@ -877,6 +869,8 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 
 		len = !i ? 1 : 1UL << (i - 1);
 		dbg_printf("fini order %lu len: %lu\n", i, len);
+		/* Update table size */
+		t->size = 1UL << (i - 1);
 		/* Unlink */
 		for (j = 0; j < len; j++) {
 			struct cds_lfht_node *new_node =
@@ -891,8 +885,6 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 				break;
 		}
 		ht->cds_lfht_call_rcu(&t->tbl[i]->head, cds_lfht_free_level);
-		/* Update table size */
-		t->size = (i == 1) ? 0 : 1UL << (i - 2);
 		dbg_printf("fini new size: %lu\n", t->size);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
