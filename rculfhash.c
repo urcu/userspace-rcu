@@ -699,7 +699,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht, struct rcu_table *t,
 		 */
 		index = hash & (t->size - 1);
 		order = get_count_order_ulong(index + 1);
-		lookup = &t->tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+		lookup = &t->tbl[order]->nodes[index & ((!order ? 0 : (1UL << (order - 1))) - 1)];
 		iter_prev = (struct cds_lfht_node *) lookup;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
@@ -755,7 +755,7 @@ gc_end:
 	/* Garbage collect logically removed nodes in the bucket */
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
-	lookup = &t->tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+	lookup = &t->tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy_node = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy_node, node);
 	return node;
@@ -799,7 +799,7 @@ int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
 	assert(t->size > 0);
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
-	lookup = &t->tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+	lookup = &t->tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy, node);
 end:
@@ -940,9 +940,9 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 	t = rcu_dereference(ht->t);
 	index = hash & (t->size - 1);
 	order = get_count_order_ulong(index + 1);
-	lookup = &t->tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+	lookup = &t->tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1))) - 1)];
 	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
-		   hash, index, order, index & ((1UL << (order - 1)) - 1));
+		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
 	node = (struct cds_lfht_node *) lookup;
 	for (;;) {
 		if (unlikely(!node))
