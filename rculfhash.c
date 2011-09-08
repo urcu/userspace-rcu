@@ -166,6 +166,16 @@
 #define CHAIN_LEN_TARGET		1
 #define CHAIN_LEN_RESIZE_THRESHOLD	3
 
+/*
+ * Define the minimum table size. Protects against hash table resize overload
+ * when too many entries are added quickly before the resize can complete.
+ * This is especially the case if the table could be shrinked to a size of 1.
+ * TODO: we might want to make the add/remove operations help the resize to
+ * add or remove dummy nodes when a resize is ongoing to ensure upper-bound on
+ * chain length.
+ */
+#define MIN_TABLE_SIZE			128
+
 #ifndef max
 #define max(a, b)	((a) > (b) ? (a) : (b))
 #endif
@@ -917,7 +927,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	order = get_count_order_ulong(max(init_size, 1)) + 1;
+	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE)) + 1;
 	ht->t = calloc(1, sizeof(struct cds_lfht)
 		       + (order * sizeof(struct rcu_level *)));
 	ht->t->size = 0;
@@ -1154,7 +1164,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht, struct rcu_table *old_t,
 	unsigned long old_order, new_order;
 	struct rcu_table *new_t;
 
-	new_size = max(new_size, 1);
+	new_size = max(new_size, MIN_TABLE_SIZE);
 	old_order = get_count_order_ulong(old_size) + 1;
 	new_order = get_count_order_ulong(new_size) + 1;
 	printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
@@ -1214,7 +1224,7 @@ static
 unsigned long resize_target_update_count(struct rcu_table *t,
 				   unsigned long count)
 {
-	count = max(count, 1);
+	count = max(count, MIN_TABLE_SIZE);
 	return uatomic_set(&t->resize_target, count);
 }
 
