@@ -211,6 +211,7 @@ struct cds_lfht {
 	cds_lfht_hash_fct hash_fct;
 	cds_lfht_compare_fct compare_fct;
 	unsigned long hash_seed;
+	int flags;
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
 	unsigned int in_progress_resize, in_progress_destroy;
 	void (*cds_lfht_call_rcu)(struct rcu_head *head,
@@ -577,6 +578,8 @@ void check_resize(struct cds_lfht *ht, struct rcu_table *t,
 {
 	unsigned long count;
 
+	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
+		return;
 	count = uatomic_read(&ht->count);
 	/*
 	 * Use bucket-local length for small table expand and for
@@ -907,6 +910,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
+			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 					void (*func)(struct rcu_head *head)),
 			void (*cds_lfht_synchronize_rcu)(void))
@@ -931,6 +935,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->t = calloc(1, sizeof(struct cds_lfht)
 		       + (order * sizeof(struct rcu_level *)));
 	ht->t->size = 0;
+	ht->flags = flags;
 	pthread_mutex_lock(&ht->resize_mutex);
 	init_table(ht, ht->t, 0, order);
 	pthread_mutex_unlock(&ht->resize_mutex);
@@ -1221,19 +1226,18 @@ unsigned long resize_target_update(struct rcu_table *t,
 }
 
 static
-unsigned long resize_target_update_count(struct rcu_table *t,
-				   unsigned long count)
+void resize_target_update_count(struct rcu_table *t,
+				unsigned long count)
 {
 	count = max(count, MIN_TABLE_SIZE);
-	return uatomic_set(&t->resize_target, count);
+	uatomic_set(&t->resize_target, count);
 }
 
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
 	struct rcu_table *t = rcu_dereference(ht->t);
-	unsigned long target_size;
 
-	target_size = resize_target_update_count(t, new_size);
+	resize_target_update_count(t, new_size);
 	CMM_STORE_SHARED(t->resize_initiated, 1);
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
@@ -1279,9 +1283,10 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, struct rcu_table *t,
 				unsigned long count)
 {
 	struct rcu_resize_work *work;
-	unsigned long target_size;
 
-	target_size = resize_target_update_count(t, count);
+	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
+		return;
+	resize_target_update_count(t, count);
 	if (!CMM_LOAD_SHARED(t->resize_initiated)) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before calling it */

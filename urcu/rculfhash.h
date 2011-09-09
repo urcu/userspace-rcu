@@ -73,6 +73,13 @@ void cds_lfht_node_init(struct cds_lfht_node *node, void *key,
 }
 
 /*
+ * Hash table creation flags.
+ */
+enum {
+	CDS_LFHT_AUTO_RESIZE = (1U << 0),
+};
+
+/*
  * cds_lfht_new - allocate a hash table.
  *
  * init_size must be power of two.
@@ -82,6 +89,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
+			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head)),
 			void (*cds_lfht_synchronize_rcu)(void));
