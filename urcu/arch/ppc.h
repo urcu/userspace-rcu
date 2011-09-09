@@ -48,11 +48,24 @@ extern "C" {
 		rval;					\
 	})
 
+#define mftb()						\
+	({						\
+		unsigned long long rval;		\
+		asm volatile("mftb %0" : "=r" (rval));	\
+		rval;					\
+	})
+
 typedef unsigned long long cycles_t;
 
-static inline cycles_t caa_get_cycles (void)
+#ifdef __powerpc64__
+static inline cycles_t caa_get_cycles(void)
 {
-	long h, l;
+	return (cycles_t) mftb();
+}
+#else
+static inline cycles_t caa_get_cycles(void)
+{
+	unsigned long h, l;
 
 	for (;;) {
 		h = mftbu();
@@ -63,6 +76,7 @@ static inline cycles_t caa_get_cycles (void)
 			return (((cycles_t) h) << 32) + l;
 	}
 }
+#endif
 
 #ifdef __cplusplus 
 }
