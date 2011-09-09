@@ -104,6 +104,7 @@ static unsigned long rduration;
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
 static unsigned long init_populate;
 static unsigned long rand_pool = DEFAULT_RAND_POOL;
+static int opt_auto_resize;
 static int add_only, add_unique;
 
 static inline void loop_sleep(unsigned long l)
@@ -554,6 +555,7 @@ void show_usage(int argc, char **argv)
 	printf(" [-u] Uniquify add.");
 	printf(" [-i] Add only (no removal).");
 	printf(" [-k nr_nodes] Number of nodes to insert initially.");
+	printf(" [-A] Automatically resize hash table.");
 	printf("\n");
 }
 
@@ -656,6 +658,9 @@ int main(int argc, char **argv)
 		case 'k':
 			init_populate = atol(argv[++i]);
 			break;
+		case 'A':
+			opt_auto_resize = 1;
+			break;
 		}
 	}
 
@@ -697,7 +702,8 @@ int main(int argc, char **argv)
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
-			init_hash_size, CDS_LFHT_AUTO_RESIZE,
+			init_hash_size,
+			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0,
 			call_rcu, synchronize_rcu);
 	ret = populate_hash();
 	assert(!ret);
