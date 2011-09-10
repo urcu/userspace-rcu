@@ -663,6 +663,10 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
 
+	assert(!is_dummy(dummy));
+	assert(!is_removed(dummy));
+	assert(!is_dummy(node));
+	assert(!is_removed(node));
 	for (;;) {
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
@@ -697,6 +701,8 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht, struct rcu_table *t,
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, index, order;
 
+	assert(!is_dummy(node));
+	assert(!is_removed(node));
 	if (!t->size) {
 		assert(dummy);
 		node->p.next = flag_dummy(NULL);
@@ -718,8 +724,10 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht, struct rcu_table *t,
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
+			/* TODO: check if removed */
 			if (unlikely(!clear_flag(iter)))
 				goto insert;
+			/* TODO: check if removed */
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
 			next = rcu_dereference(clear_flag(iter)->p.next);
@@ -741,6 +749,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht, struct rcu_table *t,
 	insert:
 		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
+		assert(!is_removed(iter));
 		assert(iter_prev != node);
 		if (!dummy)
 			node->p.next = clear_flag(iter);
@@ -784,6 +793,8 @@ int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
 	unsigned long hash, index, order;
 
 	/* logically delete the node */
+	assert(!is_dummy(node));
+	assert(!is_removed(node));
 	old = rcu_dereference(node->p.next);
 	do {
 		next = old;
@@ -799,9 +810,6 @@ int _cds_lfht_remove(struct cds_lfht *ht, struct rcu_table *t,
 
 	/* We performed the (logical) deletion. */
 	flagged = 1;
-
-	if (dummy_removal)
-		node = clear_flag(node);
 
 	/*
 	 * Ensure that the node is not visible to readers anymore: lookup for
@@ -886,14 +894,14 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 		t->size = 1UL << (i - 1);
 		/* Unlink */
 		for (j = 0; j < len; j++) {
-			struct cds_lfht_node *new_node =
+			struct cds_lfht_node *fini_node =
 				(struct cds_lfht_node *) &t->tbl[i]->nodes[j];
 
 			dbg_printf("fini entry: i %lu j %lu hash %lu\n",
 				   i, j, !i ? 0 : (1UL << (i - 1)) + j);
-			new_node->p.reverse_hash =
+			fini_node->p.reverse_hash =
 				bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-			(void) _cds_lfht_remove(ht, t, new_node, 1);
+			(void) _cds_lfht_remove(ht, t, fini_node, 1);
 			if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 				break;
 		}
@@ -1180,6 +1188,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht, struct rcu_table *old_t,
 	memcpy(&new_t->tbl, &old_t->tbl,
 	       new_order * sizeof(struct rcu_level *));
 	new_t->size = !new_order ? 1 : (1UL << (new_order - 1));
+	assert(new_t->size == new_size);
 	new_t->resize_target = new_t->size;
 	new_t->resize_initiated = 0;
 
@@ -1187,9 +1196,10 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht, struct rcu_table *old_t,
 	rcu_assign_pointer(ht->t, new_t);
 
 	/*
-	 * We need to wait for all reader threads to reach Q.S. (and
+	 * We need to wait for all add operations to reach Q.S. (and
 	 * thus use the new table for lookups) before we can start
-	 * releasing the old dummy nodes.
+	 * releasing the old dummy nodes. Otherwise their lookup will
+	 * return a logically removed node as insert position.
 	 */
 	ht->cds_lfht_synchronize_rcu();
 
