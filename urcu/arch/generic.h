@@ -100,21 +100,49 @@ extern "C" {
 #endif
 
 #ifdef CONFIG_RCU_SMP
+#ifndef cmm_smp_mb
 #define cmm_smp_mb()	cmm_mb()
+#endif
+#ifndef cmm_smp_rmb
 #define cmm_smp_rmb()	cmm_rmb()
+#endif
+#ifndef cmm_smp_wmb
 #define cmm_smp_wmb()	cmm_wmb()
+#endif
+#ifndef cmm_smp_mc
 #define cmm_smp_mc()	cmm_mc()
+#endif
+#ifndef cmm_smp_rmc
 #define cmm_smp_rmc()	cmm_rmc()
+#endif
+#ifndef cmm_smp_wmc
 #define cmm_smp_wmc()	cmm_wmc()
+#endif
+#ifndef cmm_smp_read_barrier_depends
 #define cmm_smp_read_barrier_depends()	cmm_read_barrier_depends()
+#endif
 #else
+#ifndef cmm_smp_mb
 #define cmm_smp_mb()	cmm_barrier()
+#endif
+#ifndef cmm_smp_rmb
 #define cmm_smp_rmb()	cmm_barrier()
+#endif
+#ifndef cmm_smp_wmb
 #define cmm_smp_wmb()	cmm_barrier()
+#endif
+#ifndef cmm_smp_mc
 #define cmm_smp_mc()	cmm_barrier()
+#endif
+#ifndef cmm_smp_rmc
 #define cmm_smp_rmc()	cmm_barrier()
+#endif
+#ifndef cmm_smp_wmc
 #define cmm_smp_wmc()	cmm_barrier()
+#endif
+#ifndef cmm_smp_read_barrier_depends
 #define cmm_smp_read_barrier_depends()
+#endif
 #endif
 
 #ifndef caa_cpu_relax
