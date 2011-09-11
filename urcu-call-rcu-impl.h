@@ -215,6 +215,11 @@ static void *call_rcu_thread(void *arg)
 		exit(-1);
 	}
 
+	/*
+	 * If callbacks take a read-side lock, we need to be registered.
+	 */
+	rcu_register_thread();
+
 	thread_call_rcu_data = crdp;
 	if (!rt) {
 		uatomic_dec(&crdp->futex);
@@ -247,6 +252,7 @@ static void *call_rcu_thread(void *arg)
 		}
 		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOP)
 			break;
+		rcu_thread_offline();
 		if (!rt) {
 			if (&crdp->cbs.head
 			    == _CMM_LOAD_SHARED(crdp->cbs.tail)) {
@@ -264,6 +270,7 @@ static void *call_rcu_thread(void *arg)
 		} else {
 			poll(NULL, 0, 10);
 		}
+		rcu_thread_online();
 	}
 	if (!rt) {
 		/*
@@ -273,6 +280,7 @@ static void *call_rcu_thread(void *arg)
 		uatomic_set(&crdp->futex, 0);
 	}
 	uatomic_or(&crdp->flags, URCU_CALL_RCU_STOPPED);
+	rcu_unregister_thread();
 	return NULL;
 }
 
