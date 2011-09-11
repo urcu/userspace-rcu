@@ -890,8 +890,12 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 
 		len = !i ? 1 : 1UL << (i - 1);
 		dbg_printf("fini order %lu len: %lu\n", i, len);
-		/* Update table size */
-		t->size = 1UL << (i - 1);
+		/*
+		 * Update table size. Need to shrink this table prior to
+		 * removal so gc lookups use non-logically-removed dummy
+		 * nodes.
+		 */
+		t->size = 1UL << (i - 2);
 		/* Unlink */
 		for (j = 0; j < len; j++) {
 			struct cds_lfht_node *fini_node =
