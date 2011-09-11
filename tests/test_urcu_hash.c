@@ -787,6 +787,7 @@ int main(int argc, char **argv)
 		nr_writers, wdelay, rand_pool, tot_reads, tot_writes,
 		tot_reads + tot_writes, tot_add, tot_add_exist, tot_remove,
 		(long long) tot_add + init_populate - tot_remove - count);
+	free_all_cpu_call_rcu_data();
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
