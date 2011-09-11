@@ -902,7 +902,7 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 		 * removal so gc lookups use non-logically-removed dummy
 		 * nodes.
 		 */
-		t->size = (i == 1) ? 0 : 1UL << (i - 2);
+		t->size = 1UL << (i - 1);
 		/* Unlink */
 		for (j = 0; j < len; j++) {
 			struct cds_lfht_node *fini_node =
