@@ -220,6 +220,8 @@ struct cds_lfht {
 	void (*cds_lfht_call_rcu)(struct rcu_head *head,
 		      void (*func)(struct rcu_head *head));
 	void (*cds_lfht_synchronize_rcu)(void);
+	void (*cds_lfht_rcu_read_lock)(void);
+	void (*cds_lfht_rcu_read_unlock)(void);
 	unsigned long count;		/* global approximate item count */
 	struct ht_items_count *percpu_count;	/* per-cpu item count */
 };
@@ -862,6 +864,11 @@ end:
 		return -ENOENT;
 }
 
+/*
+ * Holding RCU read lock to protect _cds_lfht_add against memory
+ * reclaim that could be performed by other call_rcu worker threads (ABA
+ * problem).
+ */
 static
 void init_table(struct cds_lfht *ht, struct rcu_table *t,
 		unsigned long first_order, unsigned long len_order)
@@ -879,6 +886,7 @@ void init_table(struct cds_lfht *ht, struct rcu_table *t,
 		dbg_printf("init order %lu len: %lu\n", i, len);
 		t->tbl[i] = calloc(1, sizeof(struct rcu_level)
 				+ (len * sizeof(struct _cds_lfht_node)));
+		ht->cds_lfht_rcu_read_lock();
 		for (j = 0; j < len; j++) {
 			struct cds_lfht_node *new_node =
 				(struct cds_lfht_node *) &t->tbl[i]->nodes[j];
@@ -891,6 +899,7 @@ void init_table(struct cds_lfht *ht, struct rcu_table *t,
 			if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 				break;
 		}
+		ht->cds_lfht_rcu_read_unlock();
 		/* Update table size */
 		t->size = !i ? 1 : (1UL << i);
 		dbg_printf("init new size: %lu\n", t->size);
@@ -901,6 +910,11 @@ void init_table(struct cds_lfht *ht, struct rcu_table *t,
 	t->resize_initiated = 0;
 }
 
+/*
+ * Holding RCU read lock to protect _cds_lfht_remove against memory
+ * reclaim that could be performed by other call_rcu worker threads (ABA
+ * problem).
+ */
 static
 void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 		unsigned long first_order, unsigned long len_order)
@@ -924,6 +938,7 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 		 */
 		t->size = 1UL << (i - 1);
 		/* Unlink */
+		ht->cds_lfht_rcu_read_lock();
 		for (j = 0; j < len; j++) {
 			struct cds_lfht_node *fini_node =
 				(struct cds_lfht_node *) &t->tbl[i]->nodes[j];
@@ -936,6 +951,7 @@ void fini_table(struct cds_lfht *ht, struct rcu_table *t,
 			if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 				break;
 		}
+		ht->cds_lfht_rcu_read_unlock();
 		ht->cds_lfht_call_rcu(&t->tbl[i]->head, cds_lfht_free_level);
 		dbg_printf("fini new size: %lu\n", t->size);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
@@ -952,7 +968,9 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 					void (*func)(struct rcu_head *head)),
-			void (*cds_lfht_synchronize_rcu)(void))
+			void (*cds_lfht_synchronize_rcu)(void),
+			void (*cds_lfht_rcu_read_lock)(void),
+			void (*cds_lfht_rcu_read_unlock)(void))
 {
 	struct cds_lfht *ht;
 	unsigned long order;
@@ -966,6 +984,8 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->hash_seed = hash_seed;
 	ht->cds_lfht_call_rcu = cds_lfht_call_rcu;
 	ht->cds_lfht_synchronize_rcu = cds_lfht_synchronize_rcu;
+	ht->cds_lfht_rcu_read_lock = cds_lfht_rcu_read_lock;
+	ht->cds_lfht_rcu_read_unlock = cds_lfht_rcu_read_unlock;
 	ht->in_progress_resize = 0;
 	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */

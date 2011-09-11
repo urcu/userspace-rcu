@@ -92,7 +92,9 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head)),
-			void (*cds_lfht_synchronize_rcu)(void));
+			void (*cds_lfht_synchronize_rcu)(void),
+			void (*cds_lfht_rcu_read_lock)(void),
+			void (*cds_lfht_rcu_read_unlock)(void));
 
 /*
  * cds_lfht_destroy - destroy a hash table.
