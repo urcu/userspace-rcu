@@ -446,6 +446,7 @@ int main(int argc, char **argv)
 		       tot_successful_enqueues,
 		       tot_successful_dequeues + end_dequeues);
 
+	free_all_cpu_call_rcu_data();
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);
