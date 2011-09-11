@@ -114,6 +114,21 @@ static inline void rcu_init(void)
 {
 }
 
+/*
+ * Q.S. reporting are no-ops for these URCU flavors.
+ */
+static inline void rcu_quiescent_state(void)
+{
+}
+
+static inline void rcu_thread_offline(void)
+{
+}
+
+static inline void rcu_thread_online(void)
+{
+}
+
 #ifdef __cplusplus 
 }
 #endif
