@@ -156,6 +156,9 @@
 #define dbg_printf(fmt, args...)
 #endif
 
+/* For testing */
+#define POISON_FREE
+
 /*
  * Per-CPU split-counters lazily update the global counter each 1024
  * addition/removal. It automatically keeps track of resize required.
@@ -418,6 +421,16 @@ int get_count_order_ulong(unsigned long x)
 	return order;
 }
 
+#ifdef POISON_FREE
+#define poison_free(ptr)				\
+	do {						\
+		memset(ptr, 0x42, sizeof(*(ptr)));	\
+		free(ptr);				\
+	} while (0)
+#else
+#define poison_free(ptr)	free(ptr)
+#endif
+
 static
 void cds_lfht_resize_lazy(struct cds_lfht *ht, struct rcu_table *t, int growth);
 
@@ -468,7 +481,7 @@ struct ht_items_count *alloc_per_cpu_items_count(void)
 static
 void free_per_cpu_items_count(struct ht_items_count *count)
 {
-	free(count);
+	poison_free(count);
 }
 
 static
@@ -644,7 +657,7 @@ void cds_lfht_free_table_cb(struct rcu_head *head)
 {
 	struct rcu_table *t =
 		caa_container_of(head, struct rcu_table, head);
-	free(t);
+	poison_free(t);
 }
 
 static
@@ -652,7 +665,7 @@ void cds_lfht_free_level(struct rcu_head *head)
 {
 	struct rcu_level *l =
 		caa_container_of(head, struct rcu_level, head);
-	free(l);
+	poison_free(l);
 }
 
 /*
@@ -1101,7 +1114,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 				bit_reverse_ulong(t->tbl[order]->nodes[i].reverse_hash));
 			assert(is_dummy(t->tbl[order]->nodes[i].next));
 		}
-		free(t->tbl[order]);
+		poison_free(t->tbl[order]);
 	}
 	return 0;
 }
@@ -1121,9 +1134,9 @@ int cds_lfht_destroy(struct cds_lfht *ht)
 	ret = cds_lfht_delete_dummy(ht);
 	if (ret)
 		return ret;
-	free(ht->t);
+	poison_free(ht->t);
 	free_per_cpu_items_count(ht->percpu_count);
-	free(ht);
+	poison_free(ht);
 	return ret;
 }
 
@@ -1275,7 +1288,7 @@ void do_resize_cb(struct rcu_head *head)
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
-	free(work);
+	poison_free(work);
 	cmm_smp_mb();	/* finish resize before decrement */
 	uatomic_dec(&ht->in_progress_resize);
 }

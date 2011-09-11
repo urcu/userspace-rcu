@@ -46,6 +46,21 @@
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
+/* For testing */
+#define POISON_FREE
+
+#ifdef POISON_FREE
+#define poison_free(ptr)				\
+	do {						\
+		memset(ptr, 0x42, sizeof(*(ptr)));	\
+		free(ptr);				\
+	} while (0)
+#else
+#define poison_free(ptr)	free(ptr)
+#endif
+
+
+
 #if defined(_syscall0)
 _syscall0(pid_t, gettid)
 #elif defined(__NR_gettid)
