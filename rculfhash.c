@@ -156,9 +156,6 @@
 #define dbg_printf(fmt, args...)
 #endif
 
-/* For testing */
-#define POISON_FREE
-
 /*
  * Per-CPU split-counters lazily update the global counter each 1024
  * addition/removal. It automatically keeps track of resize required.
@@ -677,20 +674,15 @@ static
 void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
-	struct cds_lfht_node *iter_trace[64];
-	unsigned long trace_idx = 0;
 
-	memset(iter_trace, 0, sizeof(iter_trace));
 	assert(!is_dummy(dummy));
 	assert(!is_removed(dummy));
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
 	for (;;) {
-		iter_trace[trace_idx++ & (64 - 1)] = (void *) 0x1;
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
-		iter_trace[trace_idx++ & (64 - 1)] = iter;
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		/*
 		 * We should never be called with dummy (start of chain)
@@ -709,7 +701,6 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 				break;
 			iter_prev = clear_flag(iter);
 			iter = next;
-			iter_trace[trace_idx++ & (64 - 1)] = iter;
 		}
 		assert(!is_removed(iter));
 		if (is_dummy(iter))
@@ -717,7 +708,6 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 		else
 			new_next = clear_flag(next);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
-		iter_trace[trace_idx++ & (64 - 1)] = (void *) 0x2;
 	}
 }
 

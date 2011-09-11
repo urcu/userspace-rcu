@@ -46,9 +46,6 @@
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
-/* For testing */
-#define POISON_FREE
-
 #ifdef POISON_FREE
 #define poison_free(ptr)				\
 	do {						\
