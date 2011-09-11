@@ -218,8 +218,11 @@ void synchronize_rcu(void)
 	 * our own quiescent state. This allows using synchronize_rcu()
 	 * in threads registered as readers.
 	 */
-	if (was_online)
+	if (was_online) {
 		CMM_STORE_SHARED(rcu_reader.ctr, 0);
+		cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
+		wake_up_gp();
+	}
 
 	mutex_lock(&rcu_gp_lock);
 
@@ -277,8 +280,11 @@ void synchronize_rcu(void)
 	 * in threads registered as readers.
 	 */
 	cmm_smp_mb();
-	if (was_online)
+	if (was_online) {
 		CMM_STORE_SHARED(rcu_reader.ctr, 0);
+		cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
+		wake_up_gp();
+	}
 
 	mutex_lock(&rcu_gp_lock);
 	if (cds_list_empty(&registry))
