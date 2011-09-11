@@ -672,6 +672,13 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
+		/*
+		 * We should never be called with dummy (start of chain)
+		 * and logically removed node (end of path compression
+		 * marker) being the actual same node. This would be a
+		 * bug in the algorithm implementation.
+		 */
+		assert(dummy != node);
 		for (;;) {
 			if (unlikely(!clear_flag(iter)))
 				return;
