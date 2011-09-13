@@ -208,21 +208,17 @@ void synchronize_rcu(void)
 	was_online = rcu_reader.ctr;
 
 	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to.
-	 */
-	/* Write new ptr before changing the qparity */
-	cmm_smp_mb();
-
-	/*
+	 * where new ptr points to.  In the "then" case, rcu_thread_offline
+	 * includes a memory barrier.
+	 *
 	 * Mark the writer thread offline to make sure we don't wait for
 	 * our own quiescent state. This allows using synchronize_rcu()
 	 * in threads registered as readers.
 	 */
-	if (was_online) {
-		CMM_STORE_SHARED(rcu_reader.ctr, 0);
-		cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
-		wake_up_gp();
-	}
+	if (was_online)
+		rcu_thread_offline();
+	else
+		cmm_smp_mb();
 
 	mutex_lock(&rcu_gp_lock);
 
@@ -263,9 +259,9 @@ out:
 	 * freed.
 	 */
 	if (was_online)
-		_CMM_STORE_SHARED(rcu_reader.ctr,
-				  CMM_LOAD_SHARED(rcu_gp_ctr));
-	cmm_smp_mb();
+		rcu_thread_online();
+	else
+		cmm_smp_mb();
 }
 #else /* !(CAA_BITS_PER_LONG < 64) */
 void synchronize_rcu(void)
@@ -279,12 +275,10 @@ void synchronize_rcu(void)
 	 * our own quiescent state. This allows using synchronize_rcu()
 	 * in threads registered as readers.
 	 */
-	cmm_smp_mb();
-	if (was_online) {
-		CMM_STORE_SHARED(rcu_reader.ctr, 0);
-		cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
-		wake_up_gp();
-	}
+	if (was_online)
+		rcu_thread_offline();
+	else
+		cmm_smp_mb();
 
 	mutex_lock(&rcu_gp_lock);
 	if (cds_list_empty(&registry))
@@ -294,9 +288,9 @@ out:
 	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)
-		_CMM_STORE_SHARED(rcu_reader.ctr,
-				  CMM_LOAD_SHARED(rcu_gp_ctr));
-	cmm_smp_mb();
+		rcu_thread_online();
+	else
+		cmm_smp_mb();
 }
 #endif  /* !(CAA_BITS_PER_LONG < 64) */
 
