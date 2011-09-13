@@ -126,11 +126,14 @@ cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
     }
 }
 
-
 /* Get typed element from list at a given position.  */
 #define cds_list_entry(ptr, type, member) \
   ((type *) ((char *) (ptr) - (unsigned long) (&((type *) 0)->member)))
 
+
+/* Get first entry from a list. */
+#define cds_list_first_entry(ptr, type, member) \
+	cds_list_entry((ptr)->next, type, member)
 
 
 /* Iterate forward over the elements of the list.  */

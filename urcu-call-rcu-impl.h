@@ -482,7 +482,9 @@ void set_thread_call_rcu_data(struct call_rcu_data *crdp)
 /*
  * Create a separate call_rcu thread for each CPU.  This does not
  * replace a pre-existing call_rcu thread -- use the set_cpu_call_rcu_data()
- * function if you want that behavior.
+ * function if you want that behavior. Should be paired with
+ * free_all_cpu_call_rcu_data() to teardown these call_rcu worker
+ * threads.
  */
 
 int create_all_cpu_call_rcu_data(unsigned long flags)

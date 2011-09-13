@@ -33,12 +33,27 @@ extern "C" {
 
 #ifdef CONFIG_RCU_HAVE_FENCE
 #define cmm_mb()    asm volatile("mfence":::"memory")
-#define cmm_rmb()   asm volatile("lfence":::"memory")
-#define cmm_wmb()   asm volatile("sfence"::: "memory")
+
+/*
+ * Define cmm_rmb/cmm_wmb to "strict" barriers that may be needed when
+ * using SSE or working with I/O areas.  cmm_smp_rmb/cmm_smp_wmb are
+ * only compiler barriers, which is enough for general use.
+ */
+#define cmm_rmb()     asm volatile("lfence":::"memory")
+#define cmm_wmb()     asm volatile("sfence"::: "memory")
+#define cmm_smp_rmb() cmm_barrier()
+#define cmm_smp_wmb() cmm_barrier()
 #else
 /*
- * Some non-Intel clones support out of order store. cmm_wmb() ceases to be a
- * nop for these.
+ * We leave smp_rmb/smp_wmb as full barriers for processors that do not have
+ * fence instructions.
+ *
+ * An empty cmm_smp_rmb() may not be enough on old PentiumPro multiprocessor
+ * systems, due to an erratum.  The Linux kernel says that "Even distro
+ * kernels should think twice before enabling this", but for now let's
+ * be conservative and leave the full barrier on 32-bit processors.  Also,
+ * IDT WinChip supports weak store ordering, and the kernel may enable it
+ * under our feet; cmm_smp_wmb() ceases to be a nop for these processors.
  */
 #define cmm_mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
 #define cmm_rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")

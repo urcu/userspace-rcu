@@ -157,6 +157,11 @@ static unsigned long long __thread nr_successful_enqueues;
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
+struct test {
+	struct cds_lfs_node_rcu list;
+	struct rcu_head rcu;
+};
+
 static struct cds_lfs_stack_rcu s;
 
 void *thr_enqueuer(void *_count)
@@ -176,12 +181,12 @@ void *thr_enqueuer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_lfs_node_rcu *node = malloc(sizeof(*node));
+		struct test *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		cds_lfs_node_init_rcu(node);
+		cds_lfs_node_init_rcu(&node->list);
 		/* No rcu read-side is needed for push */
-		cds_lfs_push_rcu(&s, node);
+		cds_lfs_push_rcu(&s, &node->list);
 		nr_successful_enqueues++;
 
 		if (unlikely(wdelay))
@@ -202,6 +207,14 @@ fail:
 		       nr_successful_enqueues);
 	return ((void*)1);
 
+}
+
+static
+void free_node_cb(struct rcu_head *head)
+{
+	struct test *node =
+		caa_container_of(head, struct test, rcu);
+	free(node);
 }
 
 void *thr_dequeuer(void *_count)
@@ -227,13 +240,15 @@ void *thr_dequeuer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_lfs_node_rcu *node;
+		struct cds_lfs_node_rcu *snode;
+		struct test *node;
 
 		rcu_read_lock();
-		node = cds_lfs_pop_rcu(&s);
+		snode = cds_lfs_pop_rcu(&s);
+		node = caa_container_of(snode, struct test, list);
 		rcu_read_unlock();
 		if (node) {
-			defer_rcu(free, node);
+			call_rcu(&node->rcu, free_node_cb);
 			nr_successful_dequeues++;
 		}
 		nr_dequeues++;
@@ -257,15 +272,18 @@ void *thr_dequeuer(void *_count)
 
 void test_end(struct cds_lfs_stack_rcu *s, unsigned long long *nr_dequeues)
 {
-	struct cds_lfs_node_rcu *node;
+	struct cds_lfs_node_rcu *snode;
 
 	do {
-		node = cds_lfs_pop_rcu(s);
-		if (node) {
+		snode = cds_lfs_pop_rcu(s);
+		if (snode) {
+			struct test *node;
+
+			node = caa_container_of(snode, struct test, list);
 			free(node);
 			(*nr_dequeues)++;
 		}
-	} while (node);
+	} while (snode);
 }
 
 void show_usage(int argc, char **argv)
@@ -360,6 +378,8 @@ int main(int argc, char **argv)
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
 	cds_lfs_init_rcu(&s);
+	err = create_all_cpu_call_rcu_data(0);
+	assert(!err);
 
 	next_aff = 0;
 
@@ -426,6 +446,7 @@ int main(int argc, char **argv)
 		       tot_successful_enqueues,
 		       tot_successful_dequeues + end_dequeues);
 
+	free_all_cpu_call_rcu_data();
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);
