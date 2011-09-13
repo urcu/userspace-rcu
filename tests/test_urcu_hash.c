@@ -717,7 +717,8 @@ int main(int argc, char **argv)
 			init_hash_size,
 			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0,
 			call_rcu, synchronize_rcu, rcu_read_lock,
-			rcu_read_unlock);
+			rcu_read_unlock, rcu_thread_offline,
+			rcu_thread_online);
 	ret = populate_hash();
 	assert(!ret);
         err = create_all_cpu_call_rcu_data(0);

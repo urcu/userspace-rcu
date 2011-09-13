@@ -221,6 +221,13 @@ struct cds_lfht {
 	cds_lfht_compare_fct compare_fct;
 	unsigned long hash_seed;
 	int flags;
+	/*
+	 * We need to put the work threads offline (QSBR) when taking this
+	 * mutex, because we use synchronize_rcu within this mutex critical
+	 * section, which waits on read-side critical sections, and could
+	 * therefore cause grace-period deadlock if we hold off RCU G.P.
+	 * completion.
+	 */
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
 	unsigned int in_progress_resize, in_progress_destroy;
 	void (*cds_lfht_call_rcu)(struct rcu_head *head,
@@ -228,6 +235,8 @@ struct cds_lfht {
 	void (*cds_lfht_synchronize_rcu)(void);
 	void (*cds_lfht_rcu_read_lock)(void);
 	void (*cds_lfht_rcu_read_unlock)(void);
+	void (*cds_lfht_rcu_thread_offline)(void);
+	void (*cds_lfht_rcu_thread_online)(void);
 	unsigned long count;		/* global approximate item count */
 	struct ht_items_count *percpu_count;	/* per-cpu item count */
 };
@@ -879,6 +888,7 @@ void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
 	unsigned long j;
 
+	ht->cds_lfht_rcu_thread_online();
 	ht->cds_lfht_rcu_read_lock();
 	for (j = 0; j < len; j++) {
 		struct cds_lfht_node *new_node =
@@ -892,6 +902,7 @@ void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
 			break;
 	}
 	ht->cds_lfht_rcu_read_unlock();
+	ht->cds_lfht_rcu_thread_offline();
 }
 
 /*
@@ -942,6 +953,7 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
 	unsigned long j;
 
+	ht->cds_lfht_rcu_thread_online();
 	ht->cds_lfht_rcu_read_lock();
 	for (j = 0; j < len; j++) {
 		struct cds_lfht_node *fini_node =
@@ -957,6 +969,7 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 			break;
 	}
 	ht->cds_lfht_rcu_read_unlock();
+	ht->cds_lfht_rcu_thread_offline();
 }
 
 /*
@@ -1006,7 +1019,9 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 					void (*func)(struct rcu_head *head)),
 			void (*cds_lfht_synchronize_rcu)(void),
 			void (*cds_lfht_rcu_read_lock)(void),
-			void (*cds_lfht_rcu_read_unlock)(void))
+			void (*cds_lfht_rcu_read_unlock)(void),
+			void (*cds_lfht_rcu_thread_offline)(void),
+			void (*cds_lfht_rcu_thread_online)(void))
 {
 	struct cds_lfht *ht;
 	unsigned long order;
@@ -1022,14 +1037,18 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->cds_lfht_synchronize_rcu = cds_lfht_synchronize_rcu;
 	ht->cds_lfht_rcu_read_lock = cds_lfht_rcu_read_lock;
 	ht->cds_lfht_rcu_read_unlock = cds_lfht_rcu_read_unlock;
+	ht->cds_lfht_rcu_thread_offline = cds_lfht_rcu_thread_offline;
+	ht->cds_lfht_rcu_thread_online = cds_lfht_rcu_thread_online;
 	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE)) + 1;
 	ht->flags = flags;
+	ht->cds_lfht_rcu_thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
 	init_table(ht, 0, order);
 	pthread_mutex_unlock(&ht->resize_mutex);
+	ht->cds_lfht_rcu_thread_online();
 	return ht;
 }
 
@@ -1314,9 +1333,11 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
 	resize_target_update_count(ht, new_size);
 	CMM_STORE_SHARED(ht->t.resize_initiated, 1);
+	ht->cds_lfht_rcu_thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
+	ht->cds_lfht_rcu_thread_online();
 }
 
 static
@@ -1326,9 +1347,11 @@ void do_resize_cb(struct rcu_head *head)
 		caa_container_of(head, struct rcu_resize_work, head);
 	struct cds_lfht *ht = work->ht;
 
+	ht->cds_lfht_rcu_thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
+	ht->cds_lfht_rcu_thread_online();
 	poison_free(work);
 	cmm_smp_mb();	/* finish resize before decrement */
 	uatomic_dec(&ht->in_progress_resize);
