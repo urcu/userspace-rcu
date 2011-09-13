@@ -881,6 +881,11 @@ void init_table_hash(struct cds_lfht *ht, unsigned long i,
 	}
 }
 
+/*
+ * Holding RCU read lock to protect _cds_lfht_add against memory
+ * reclaim that could be performed by other call_rcu worker threads (ABA
+ * problem).
+ */
 static
 void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
@@ -903,11 +908,6 @@ void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
 	ht->cds_lfht_rcu_thread_offline();
 }
 
-/*
- * Holding RCU read lock to protect _cds_lfht_add against memory
- * reclaim that could be performed by other call_rcu worker threads (ABA
- * problem).
- */
 static
 void init_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long len_order)
@@ -946,6 +946,26 @@ void init_table(struct cds_lfht *ht,
 	}
 }
 
+/*
+ * Holding RCU read lock to protect _cds_lfht_remove against memory
+ * reclaim that could be performed by other call_rcu worker threads (ABA
+ * problem).
+ * For a single level, we logically remove and garbage collect each node.
+ *
+ * As a design choice, we perform logical removal and garbage collection on a
+ * node-per-node basis to simplify this algorithm. We also assume keeping good
+ * cache locality of the operation would overweight possible performance gain
+ * that could be achieved by batching garbage collection for multiple levels.
+ * However, this would have to be justified by benchmarks.
+ *
+ * Concurrent removal and add operations are helping us perform garbage
+ * collection of logically removed nodes. We guarantee that all logically
+ * removed nodes have been garbage-collected (unlinked) before call_rcu is
+ * invoked to free a hole level of dummy nodes (after a grace period).
+ *
+ * Logical removal and garbage collection can therefore be done in batch or on a
+ * node-per-node basis, as long as the guarantee above holds.
+ */
 static
 void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
@@ -970,11 +990,6 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 	ht->cds_lfht_rcu_thread_offline();
 }
 
-/*
- * Holding RCU read lock to protect _cds_lfht_remove against memory
- * reclaim that could be performed by other call_rcu worker threads (ABA
- * problem).
- */
 static
 void fini_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long len_order)
