@@ -752,10 +752,8 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
-			/* TODO: check if removed */
 			if (unlikely(!clear_flag(iter)))
 				goto insert;
-			/* TODO: check if removed */
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
 			next = rcu_dereference(clear_flag(iter)->p.next);
