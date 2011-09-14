@@ -194,6 +194,9 @@
 #define DUMMY_FLAG		(1UL << 1)
 #define FLAGS_MASK		((1UL << 2) - 1)
 
+/* Value of the end pointer. Should not interact with flags. */
+#define END_VALUE		0x4
+
 struct ht_items_count {
 	unsigned long add, remove;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
@@ -652,7 +655,19 @@ struct cds_lfht_node *flag_dummy(struct cds_lfht_node *node)
 {
 	return (struct cds_lfht_node *) (((unsigned long) node) | DUMMY_FLAG);
 }
- 
+
+static
+struct cds_lfht_node *get_end(void)
+{
+	return (struct cds_lfht_node *) END_VALUE;
+}
+
+static
+int is_end(struct cds_lfht_node *node)
+{
+	return clear_flag(node) == (struct cds_lfht_node *) END_VALUE;
+}
+
 static
 unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 {
@@ -709,7 +724,8 @@ int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 		 */
 		assert(dummy != node);
 		for (;;) {
-			if (unlikely(!clear_flag(iter)))
+			assert(iter != NULL);
+			if (unlikely(is_end(iter)))
 				return 0;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				return 0;
@@ -724,6 +740,7 @@ int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
+		assert(new_next != NULL);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 	}
 	return 0;
@@ -739,12 +756,13 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			*dummy_node;
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, index, order;
+	int force_dummy = 0;
 
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
 	if (!size) {
 		assert(dummy);
-		node->p.next = flag_dummy(NULL);
+		node->p.next = flag_dummy(get_end());
 		return node;	/* Initial first add (head) */
 	}
 	hash = bit_reverse_ulong(node->p.reverse_hash);
@@ -773,6 +791,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		}
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
+			assert(iter != NULL);
 			/*
 			 * When adding a dummy node, we allow concurrent
 			 * add/removal to help. If we find the dummy node in
@@ -780,7 +799,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			 */
 			if (unlikely(dummy && clear_flag(iter) == node))
 				return node;
-			if (unlikely(!clear_flag(iter)))
+			if (unlikely(is_end(iter)))
 				goto insert;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
@@ -805,14 +824,31 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_removed(iter_prev));
 		assert(!is_removed(iter));
 		assert(iter_prev != node);
-		if (!dummy)
+		if (!dummy) {
 			node->p.next = clear_flag(iter);
-		else
-			node->p.next = flag_dummy(clear_flag(iter));
+		} else {
+			/*
+			 * Dummy node insertion is performed concurrently (help
+			 * scheme). We try to link its next node, and if this
+			 * succeeds, it _means_ it's us who link this dummy node
+			 * into the table. force_dummy is set as soon as we
+			 * succeed this cmpxchg within this function.
+			 */
+			if (!force_dummy) {
+				if (uatomic_cmpxchg(&node->p.next, NULL,
+						flag_dummy(clear_flag(iter))) != NULL) {
+					return NULL;
+				}
+				force_dummy = 1;
+			} else {
+				node->p.next = flag_dummy(clear_flag(iter));
+			}
+		}
 		if (is_dummy(iter))
 			new_node = flag_dummy(node);
 		else
 			new_node = node;
+		assert(new_node != NULL);
 		if (uatomic_cmpxchg(&iter_prev->p.next, iter,
 				    new_node) != iter)
 			continue;	/* retry */
@@ -824,6 +860,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
+		assert(new_next != NULL);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 		/* retry */
 	}
@@ -863,6 +900,7 @@ int _cds_lfht_remove(struct cds_lfht *ht, unsigned long size,
 			assert(is_dummy(next));
 		else
 			assert(!is_dummy(next));
+		assert(next != NULL);
 		old = uatomic_cmpxchg(&node->p.next, next,
 				      flag_removed(next));
 	} while (old != next);
@@ -1127,23 +1165,39 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 
 struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len)
 {
-	struct cds_lfht_node *node, *next;
+	struct cds_lfht_node *node, *next, *dummy_node;
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, reverse_hash, index, order, size;
 
 	hash = ht->hash_fct(key, key_len, ht->hash_seed);
 	reverse_hash = bit_reverse_ulong(hash);
 
+restart:
 	size = rcu_dereference(ht->t.size);
 	index = hash & (size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1))) - 1)];
 	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
 		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
-	node = (struct cds_lfht_node *) lookup;
+	dummy_node = (struct cds_lfht_node *) lookup;
+	/* We can always skip the dummy node initially */
+	node = rcu_dereference(dummy_node->p.next);
+	if (unlikely(node == NULL)) {
+		/*
+		 * We are executing concurrently with a hash table
+		 * expand, so we see a dummy node with NULL next value.
+		 * Help expand by linking this node into the list and
+		 * retry.
+		 */
+		(void) _cds_lfht_add(ht, size >> 1, dummy_node, 0, 1);
+		goto restart;	/* retry */
+	}
+	node = clear_flag(node);
 	for (;;) {
-		if (unlikely(!node))
+		if (unlikely(is_end(node))) {
+			node = NULL;
 			break;
+		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
@@ -1175,8 +1229,10 @@ struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
 	node = clear_flag(next);
 
 	for (;;) {
-		if (unlikely(!node))
+		if (unlikely(is_end(node))) {
+			node = NULL;
 			break;
+		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
@@ -1248,7 +1304,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 		if (!is_dummy(node))
 			return -EPERM;
 		assert(!is_removed(node));
-	} while (clear_flag(node));
+	} while (!is_end(node));
 	/*
 	 * size accessed without rcu_dereference because hash table is
 	 * being destroyed.
@@ -1314,7 +1370,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		else
 			(nr_dummy)++;
 		node = clear_flag(next);
-	} while (node);
+	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
 }
 
