@@ -959,6 +959,11 @@ void init_table(struct cds_lfht *ht,
 
 		len = !i ? 1 : 1UL << (i - 1);
 		dbg_printf("init order %lu len: %lu\n", i, len);
+
+		/* Stop expand if the resize target changes under us */
+		if (CMM_LOAD_SHARED(ht->t.resize_target) < (!i ? 1 : (1UL << i)))
+			break;
+
 		ht->t.tbl[i] = calloc(1, sizeof(struct rcu_level)
 				+ (len * sizeof(struct _cds_lfht_node)));
 
@@ -1040,12 +1045,26 @@ void fini_table(struct cds_lfht *ht,
 		   first_order, first_order + len_order);
 	end_order = first_order + len_order;
 	assert(first_order > 0);
-	assert(ht->t.size == (1UL << (first_order - 1)));
 	for (i = end_order - 1; i >= first_order; i--) {
 		unsigned long len;
 
 		len = !i ? 1 : 1UL << (i - 1);
 		dbg_printf("fini order %lu len: %lu\n", i, len);
+
+		/* Stop shrink if the resize target changes under us */
+		if (CMM_LOAD_SHARED(ht->t.resize_target) > (1UL << (i - 1)))
+			break;
+
+		cmm_smp_wmb();	/* populate data before RCU size */
+		CMM_STORE_SHARED(ht->t.size, 1UL << (i - 1));
+
+		/*
+		 * We need to wait for all add operations to reach Q.S. (and
+		 * thus use the new table for lookups) before we can start
+		 * releasing the old dummy nodes. Otherwise their lookup will
+		 * return a logically removed node as insert position.
+		 */
+		ht->cds_lfht_synchronize_rcu();
 
 		/*
 		 * Set "removed" flag in dummy nodes about to be removed.
@@ -1099,6 +1118,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->flags = flags;
 	ht->cds_lfht_rcu_thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
+	ht->t.resize_target = 1UL << (order - 1);
 	init_table(ht, 0, order);
 	pthread_mutex_unlock(&ht->resize_mutex);
 	ht->cds_lfht_rcu_thread_online();
@@ -1327,17 +1347,6 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	       old_size, old_order, new_size, new_order);
 	assert(new_size < old_size);
 
-	cmm_smp_wmb();	/* populate data before RCU size */
-	CMM_STORE_SHARED(ht->t.size, new_size);
-
-	/*
-	 * We need to wait for all add operations to reach Q.S. (and
-	 * thus use the new table for lookups) before we can start
-	 * releasing the old dummy nodes. Otherwise their lookup will
-	 * return a logically removed node as insert position.
-	 */
-	ht->cds_lfht_synchronize_rcu();
-
 	/* Remove and unlink all dummy nodes to remove. */
 	fini_table(ht, new_order, old_order - new_order);
 }
@@ -1363,7 +1372,7 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 		ht->t.resize_initiated = 0;
 		/* write resize_initiated before read resize_target */
 		cmm_smp_mb();
-	} while (new_size != CMM_LOAD_SHARED(ht->t.resize_target));
+	} while (ht->t.size != CMM_LOAD_SHARED(ht->t.resize_target));
 }
 
 static
