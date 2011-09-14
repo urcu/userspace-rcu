@@ -734,6 +734,12 @@ int main(int argc, char **argv)
 		add_only ? " add only" : " add/remove",
 		add_unique ? " uniquify" : "");
 	printf_verbose("Initial hash table size: %lu buckets.\n", init_hash_size);
+	printf_verbose("Init pool size offset %lu size %lu.\n",
+		init_pool_offset, init_pool_size);
+	printf_verbose("Lookup pool size offset %lu size %lu.\n",
+		lookup_pool_offset, lookup_pool_size);
+	printf_verbose("Update pool size offset %lu size %lu.\n",
+		write_pool_offset, write_pool_size);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", pthread_self(), (unsigned long)gettid());
 
