@@ -400,7 +400,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		rcu_read_lock();
 		node = cds_lfht_lookup(test_ht,
-			(void *)(unsigned long)((rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
+			(void *)(((unsigned long) rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
 			sizeof(void *));
 		if (node == NULL) {
 			if (validate_lookup) {
@@ -464,7 +464,7 @@ void *thr_writer(void *_count)
 			node = malloc(sizeof(struct cds_lfht_node));
 			rcu_read_lock();
 			cds_lfht_node_init(node,
-				(void *)(unsigned long)((rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
+				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			if (add_unique)
 				ret_node = cds_lfht_add_unique(test_ht, node);
@@ -480,7 +480,7 @@ void *thr_writer(void *_count)
 			/* May delete */
 			rcu_read_lock();
 			node = cds_lfht_lookup(test_ht,
-				(void *)(unsigned long)((rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
+				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			if (node)
 				ret = cds_lfht_remove(test_ht, node);
@@ -544,7 +544,7 @@ static int populate_hash(void)
 	while (nr_add < init_populate) {
 		node = malloc(sizeof(struct cds_lfht_node));
 		cds_lfht_node_init(node,
-			(void *)(unsigned long)((rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
+			(void *)(((unsigned long) rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
 			sizeof(void *));
 		if (add_unique)
 			ret_node = cds_lfht_add_unique(test_ht, node);
