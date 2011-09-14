@@ -120,6 +120,7 @@ static int opt_auto_resize;
 static int add_only, add_unique;
 
 static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
+static int validate_lookup;
 
 static inline void loop_sleep(unsigned long l)
 {
@@ -399,10 +400,14 @@ void *thr_reader(void *_count)
 		node = cds_lfht_lookup(test_ht,
 			(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + lookup_pool_offset),
 			sizeof(void *));
-		if (node == NULL)
+		if (node == NULL) {
+			if (validate_lookup) {
+				printf("[ERROR] Lookup cannot find initial node.\n");
+			}
 			lookup_fail++;
-		else
+		} else {
 			lookup_ok++;
+		}
 		debug_yield_read();
 		if (unlikely(rduration))
 			loop_sleep(rduration);
@@ -531,8 +536,7 @@ static int populate_hash(void)
 	if (add_unique && init_populate * 10 > rand_pool) {
 		printf("WARNING: required to populate %lu nodes (-k), but random "
 "pool is quite small (%lu values) and we are in add_unique (-u) mode. Try with a "
-"larger random pool (-p option).\n", init_populate, rand_pool);
-		return -1;
+"larger random pool (-p option). This may take a while...\n", init_populate, rand_pool);
 	}
 
 	while (nr_add < init_populate) {
@@ -570,9 +574,10 @@ void show_usage(int argc, char **argv)
 	printf(" [-i] Add only (no removal).");
 	printf(" [-k nr_nodes] Number of nodes to insert initially.");
 	printf(" [-A] Automatically resize hash table.");
-	printf(" [-R offset] Lookup pool offset\n");
-	printf(" [-S offset] Write pool offset\n");
-	printf(" [-T offset] Init pool offset\n");
+	printf(" [-R offset] Lookup pool offset.");
+	printf(" [-S offset] Write pool offset.");
+	printf(" [-T offset] Init pool offset.");
+	printf(" [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).");
 	printf("\n");
 }
 
@@ -686,6 +691,9 @@ int main(int argc, char **argv)
 			break;
 		case 'T':
 			init_pool_offset = atol(argv[++i]);
+			break;
+		case 'V':
+			validate_lookup = 1;
 			break;
 
 		}
