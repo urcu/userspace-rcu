@@ -349,7 +349,11 @@ void rcu_unregister_thread(void)
 
 void rcu_exit(void)
 {
-	assert(cds_list_empty(&registry));
+	/*
+	 * Assertion disabled because call_rcu threads are now rcu
+	 * readers, and left running at exit.
+	 * assert(cds_list_empty(&registry));
+	 */
 }
 
 #include "urcu-call-rcu-impl.h"
