@@ -119,6 +119,8 @@ static unsigned long rand_pool = DEFAULT_RAND_POOL;
 static int opt_auto_resize;
 static int add_only, add_unique;
 
+static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
+
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
@@ -395,7 +397,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		rcu_read_lock();
 		node = cds_lfht_lookup(test_ht,
-			(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
+			(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + lookup_pool_offset),
 			sizeof(void *));
 		if (node == NULL)
 			lookup_fail++;
@@ -455,7 +457,7 @@ void *thr_writer(void *_count)
 			node = malloc(sizeof(struct cds_lfht_node));
 			rcu_read_lock();
 			cds_lfht_node_init(node,
-				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
+				(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + write_pool_offset),
 				sizeof(void *));
 			if (add_unique)
 				ret_node = cds_lfht_add_unique(test_ht, node);
@@ -471,7 +473,7 @@ void *thr_writer(void *_count)
 			/* May delete */
 			rcu_read_lock();
 			node = cds_lfht_lookup(test_ht,
-				(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
+				(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + write_pool_offset),
 				sizeof(void *));
 			if (node)
 				ret = cds_lfht_remove(test_ht, node);
@@ -536,7 +538,7 @@ static int populate_hash(void)
 	while (nr_add < init_populate) {
 		node = malloc(sizeof(struct cds_lfht_node));
 		cds_lfht_node_init(node,
-			(void *)(unsigned long)(rand_r(&rand_lookup) % rand_pool),
+			(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + init_pool_offset),
 			sizeof(void *));
 		if (add_unique)
 			ret_node = cds_lfht_add_unique(test_ht, node);
@@ -568,6 +570,9 @@ void show_usage(int argc, char **argv)
 	printf(" [-i] Add only (no removal).");
 	printf(" [-k nr_nodes] Number of nodes to insert initially.");
 	printf(" [-A] Automatically resize hash table.");
+	printf(" [-R offset] Lookup pool offset\n");
+	printf(" [-S offset] Write pool offset\n");
+	printf(" [-T offset] Init pool offset\n");
 	printf("\n");
 }
 
@@ -673,6 +678,16 @@ int main(int argc, char **argv)
 		case 'A':
 			opt_auto_resize = 1;
 			break;
+		case 'R':
+			lookup_pool_offset = atol(argv[++i]);
+			break;
+		case 'S':
+			write_pool_offset = atol(argv[++i]);
+			break;
+		case 'T':
+			init_pool_offset = atol(argv[++i]);
+			break;
+
 		}
 	}
 
