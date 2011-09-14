@@ -115,11 +115,13 @@ static unsigned long rduration;
 
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
 static unsigned long init_populate;
-static unsigned long rand_pool = DEFAULT_RAND_POOL;
 static int opt_auto_resize;
 static int add_only, add_unique;
 
 static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
+static unsigned long init_pool_size = DEFAULT_RAND_POOL,
+	lookup_pool_size = DEFAULT_RAND_POOL,
+	write_pool_size = DEFAULT_RAND_POOL;
 static int validate_lookup;
 
 static inline void loop_sleep(unsigned long l)
@@ -398,7 +400,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		rcu_read_lock();
 		node = cds_lfht_lookup(test_ht,
-			(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + lookup_pool_offset),
+			(void *)(unsigned long)((rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
 			sizeof(void *));
 		if (node == NULL) {
 			if (validate_lookup) {
@@ -462,7 +464,7 @@ void *thr_writer(void *_count)
 			node = malloc(sizeof(struct cds_lfht_node));
 			rcu_read_lock();
 			cds_lfht_node_init(node,
-				(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + write_pool_offset),
+				(void *)(unsigned long)((rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			if (add_unique)
 				ret_node = cds_lfht_add_unique(test_ht, node);
@@ -478,7 +480,7 @@ void *thr_writer(void *_count)
 			/* May delete */
 			rcu_read_lock();
 			node = cds_lfht_lookup(test_ht,
-				(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + write_pool_offset),
+				(void *)(unsigned long)((rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			if (node)
 				ret = cds_lfht_remove(test_ht, node);
@@ -533,16 +535,16 @@ static int populate_hash(void)
 	if (!init_populate)
 		return 0;
 
-	if (add_unique && init_populate * 10 > rand_pool) {
+	if (add_unique && init_populate * 10 > init_pool_size) {
 		printf("WARNING: required to populate %lu nodes (-k), but random "
 "pool is quite small (%lu values) and we are in add_unique (-u) mode. Try with a "
-"larger random pool (-p option). This may take a while...\n", init_populate, rand_pool);
+"larger random pool (-p option). This may take a while...\n", init_populate, init_pool_size);
 	}
 
 	while (nr_add < init_populate) {
 		node = malloc(sizeof(struct cds_lfht_node));
 		cds_lfht_node_init(node,
-			(void *)(unsigned long)((rand_r(&rand_lookup) % rand_pool) + init_pool_offset),
+			(void *)(unsigned long)((rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
 			sizeof(void *));
 		if (add_unique)
 			ret_node = cds_lfht_add_unique(test_ht, node);
@@ -568,7 +570,6 @@ void show_usage(int argc, char **argv)
 	printf(" [-c duration] (reader C.S. duration (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
-	printf(" [-p size] (random key value pool size)");
 	printf(" [-h size] (initial hash table size)");
 	printf(" [-u] Uniquify add.");
 	printf(" [-i] Add only (no removal).");
@@ -577,6 +578,9 @@ void show_usage(int argc, char **argv)
 	printf(" [-R offset] Lookup pool offset.");
 	printf(" [-S offset] Write pool offset.");
 	printf(" [-T offset] Init pool offset.");
+	printf(" [-M size] Lookup pool size.");
+	printf(" [-N size] Write pool size.");
+	printf(" [-O size] Init pool size.");
 	printf(" [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).");
 	printf("\n");
 }
@@ -657,13 +661,6 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose_mode = 1;
 			break;
-		case 'p':
-			if (argc < i + 2) {
-				show_usage(argc, argv);
-				return -1;
-			}
-			rand_pool = atol(argv[++i]);
-			break;
 		case 'h':
 			if (argc < i + 2) {
 				show_usage(argc, argv);
@@ -691,6 +688,15 @@ int main(int argc, char **argv)
 			break;
 		case 'T':
 			init_pool_offset = atol(argv[++i]);
+			break;
+		case 'M':
+			lookup_pool_size = atol(argv[++i]);
+			break;
+		case 'N':
+			write_pool_size = atol(argv[++i]);
+			break;
+		case 'O':
+			init_pool_size = atol(argv[++i]);
 			break;
 		case 'V':
 			validate_lookup = 1;
@@ -724,7 +730,6 @@ int main(int argc, char **argv)
 		duration, nr_readers, nr_writers);
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
-	printf_verbose("Random pool size : %lu.\n", rand_pool);
 	printf_verbose("Mode:%s%s.\n",
 		add_only ? " add only" : " add/remove",
 		add_unique ? " uniquify" : "");
@@ -805,10 +810,10 @@ int main(int argc, char **argv)
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu "
 		"nr_writers %3u "
-		"wdelay %6lu rand_pool %12llu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
+		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
 		"nr_add %12llu nr_add_fail %12llu nr_remove %12llu nr_leaked %12lld\n",
 		argv[0], duration, nr_readers, rduration,
-		nr_writers, wdelay, rand_pool, tot_reads, tot_writes,
+		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes, tot_add, tot_add_exist, tot_remove,
 		(long long) tot_add + init_populate - tot_remove - count);
 	free_all_cpu_call_rcu_data();
