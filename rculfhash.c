@@ -169,7 +169,8 @@
 /*
  * Define the minimum table size.
  */
-#define MIN_TABLE_SIZE			128
+//#define MIN_TABLE_SIZE			128
+#define MIN_TABLE_SIZE			1
 
 #if (CAA_BITS_PER_LONG == 32)
 #define MAX_TABLE_ORDER			32
