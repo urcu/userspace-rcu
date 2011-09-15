@@ -386,6 +386,7 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 	static int warned = 0;
 
 	call_rcu_lock(&call_rcu_mutex);
+	alloc_cpu_call_rcu_data();
 	if (cpu < 0 || maxcpus <= cpu) {
 		if (!warned) {
 			fprintf(stderr, "[error] liburcu: set CPU # out of range\n");
@@ -395,7 +396,6 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 		errno = EINVAL;
 		return -EINVAL;
 	}
-	alloc_cpu_call_rcu_data();
 	call_rcu_unlock(&call_rcu_mutex);
 	if (per_cpu_call_rcu_data == NULL) {
 		errno = ENOMEM;
