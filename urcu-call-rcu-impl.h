@@ -396,12 +396,13 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 		errno = EINVAL;
 		return -EINVAL;
 	}
-	call_rcu_unlock(&call_rcu_mutex);
 	if (per_cpu_call_rcu_data == NULL) {
+		call_rcu_unlock(&call_rcu_mutex);
 		errno = ENOMEM;
 		return -ENOMEM;
 	}
 	per_cpu_call_rcu_data[cpu] = crdp;
+	call_rcu_unlock(&call_rcu_mutex);
 	return 0;
 }
 
