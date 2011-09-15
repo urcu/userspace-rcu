@@ -405,6 +405,7 @@ void *thr_reader(void *_count)
 		if (node == NULL) {
 			if (validate_lookup) {
 				printf("[ERROR] Lookup cannot find initial node.\n");
+				exit(-1);
 			}
 			lookup_fail++;
 		} else {
