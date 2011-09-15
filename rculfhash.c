@@ -1273,7 +1273,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 
 	size = rcu_dereference(ht->t.size);
 	ret = _cds_lfht_add(ht, size, node, 1, 0);
-	if (ret != node)
+	if (ret == node)
 		ht_count_add(ht, size);
 	return ret;
 }
