@@ -651,7 +651,7 @@ void call_rcu_after_fork_parent(void)
  */
 void call_rcu_after_fork_child(void)
 {
-	struct call_rcu_data *crdp;
+	struct call_rcu_data *crdp, *next;
 
 	/* Release the mutex. */
 	call_rcu_unlock(&call_rcu_mutex);
@@ -664,12 +664,9 @@ void call_rcu_after_fork_child(void)
 	(void)get_default_call_rcu_data();
 
 	/* Dispose of all of the rest of the call_rcu_data structures. */
-	while (call_rcu_data_list.next != call_rcu_data_list.prev) {
-		crdp = cds_list_entry(call_rcu_data_list.prev,
-				      struct call_rcu_data, list);
+	cds_list_for_each_entry_safe(crdp, next, &call_rcu_data_list, list) {
 		if (crdp == default_call_rcu_data)
-			crdp = cds_list_entry(crdp->list.prev,
-					      struct call_rcu_data, list);
+			continue;
 		uatomic_set(&crdp->flags, URCU_CALL_RCU_STOPPED);
 		call_rcu_data_free(crdp);
 	}
