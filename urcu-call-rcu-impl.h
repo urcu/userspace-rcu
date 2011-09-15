@@ -435,22 +435,17 @@ struct call_rcu_data *get_default_call_rcu_data(void)
  */
 struct call_rcu_data *get_call_rcu_data(void)
 {
-	int curcpu;
-	static int warned = 0;
+	struct call_rcu_data *crd;
 
 	if (thread_call_rcu_data != NULL)
 		return thread_call_rcu_data;
-	if (maxcpus <= 0)
-		return get_default_call_rcu_data();
-	curcpu = sched_getcpu();
-	if (!warned && (curcpu < 0 || maxcpus <= curcpu)) {
-		fprintf(stderr, "[error] liburcu: gcrd CPU # out of range\n");
-		warned = 1;
+
+	if (maxcpus > 0) {
+		crd = get_cpu_call_rcu_data(sched_getcpu());
+		if (crd)
+			return crd;
 	}
-	if (curcpu >= 0 && maxcpus > curcpu &&
-	    per_cpu_call_rcu_data != NULL &&
-	    per_cpu_call_rcu_data[curcpu] != NULL)
-	    	return per_cpu_call_rcu_data[curcpu];
+
 	return get_default_call_rcu_data();
 }
 
