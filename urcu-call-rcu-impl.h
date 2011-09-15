@@ -522,8 +522,13 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 		}
 		call_rcu_unlock(&call_rcu_mutex);
 		if ((ret = set_cpu_call_rcu_data(i, crdp)) != 0) {
-			/* FIXME: Leaks crdp for now. */
-			return ret; /* Can happen on race. */
+			call_rcu_data_free(crdp);
+
+			/* it has been created by other thread */
+			if (ret == -EEXIST)
+				continue;
+
+			return ret;
 		}
 	}
 	return 0;
