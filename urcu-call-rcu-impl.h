@@ -383,7 +383,7 @@ struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 
 int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 {
-	int warned = 0;
+	static int warned = 0;
 
 	call_rcu_lock(&call_rcu_mutex);
 	if (cpu < 0 || maxcpus <= cpu) {
