@@ -600,6 +600,7 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		*cbs_endprev = cbs;
 		uatomic_add(&default_call_rcu_data->qlen,
 			    uatomic_read(&crdp->qlen));
+		wake_call_rcu_thread(default_call_rcu_data);
 	}
 
 	cds_list_del(&crdp->list);
