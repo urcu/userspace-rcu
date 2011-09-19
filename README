@@ -187,6 +187,15 @@ Interaction with mutexes
 	mutex in its dependency chain) should not be acquired from within a RCU
 	read-side critical section.
 
+	This is especially important to understand in the context of the
+	QSBR flavor: a registered reader thread being "online" by
+	default should be considered as within a RCU read-side critical
+	section unless explicitly put "offline". Therefore, if
+	synchronize_rcu() is called with a mutex held, this mutex, as
+	well as any mutex which has this mutex in its dependency chain
+	should only be taken when the RCU reader thread is "offline"
+	(this can be performed by calling rcu_thread_offline()).
+
 Usage of DEBUG_RCU
 
 	DEBUG_RCU is used to add internal debugging self-checks to the

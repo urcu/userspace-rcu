@@ -167,14 +167,9 @@
 #define CHAIN_LEN_RESIZE_THRESHOLD	3
 
 /*
- * Define the minimum table size. Protects against hash table resize overload
- * when too many entries are added quickly before the resize can complete.
- * This is especially the case if the table could be shrinked to a size of 1.
- * TODO: we might want to make the add/remove operations help the resize to
- * add or remove dummy nodes when a resize is ongoing to ensure upper-bound on
- * chain length.
+ * Define the minimum table size.
  */
-#define MIN_TABLE_SIZE			128
+#define MIN_TABLE_SIZE			1
 
 #if (CAA_BITS_PER_LONG == 32)
 #define MAX_TABLE_ORDER			32
@@ -198,6 +193,9 @@
 #define REMOVED_FLAG		(1UL << 0)
 #define DUMMY_FLAG		(1UL << 1)
 #define FLAGS_MASK		((1UL << 2) - 1)
+
+/* Value of the end pointer. Should not interact with flags. */
+#define END_VALUE		NULL
 
 struct ht_items_count {
 	unsigned long add, remove;
@@ -245,6 +243,12 @@ struct rcu_resize_work {
 	struct rcu_head head;
 	struct cds_lfht *ht;
 };
+
+static
+struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
+				unsigned long size,
+				struct cds_lfht_node *node,
+				int unique, int dummy);
 
 /*
  * Algorithm to reverse bits in a word by lookup table, extended to
@@ -651,7 +655,19 @@ struct cds_lfht_node *flag_dummy(struct cds_lfht_node *node)
 {
 	return (struct cds_lfht_node *) (((unsigned long) node) | DUMMY_FLAG);
 }
- 
+
+static
+struct cds_lfht_node *get_end(void)
+{
+	return (struct cds_lfht_node *) END_VALUE;
+}
+
+static
+int is_end(struct cds_lfht_node *node)
+{
+	return clear_flag(node) == (struct cds_lfht_node *) END_VALUE;
+}
+
 static
 unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 {
@@ -699,7 +715,7 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 		 */
 		assert(dummy != node);
 		for (;;) {
-			if (unlikely(!clear_flag(iter)))
+			if (unlikely(is_end(iter)))
 				return;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				return;
@@ -716,6 +732,7 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 			new_next = clear_flag(next);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 	}
+	return;
 }
 
 static
@@ -733,7 +750,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 	assert(!is_removed(node));
 	if (!size) {
 		assert(dummy);
-		node->p.next = flag_dummy(NULL);
+		node->p.next = flag_dummy(get_end());
 		return node;	/* Initial first add (head) */
 	}
 	hash = bit_reverse_ulong(node->p.reverse_hash);
@@ -752,7 +769,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		iter = rcu_dereference(iter_prev->p.next);
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
-			if (unlikely(!clear_flag(iter)))
+			if (unlikely(is_end(iter)))
 				goto insert;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
@@ -796,6 +813,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
+		assert(new_next != NULL);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 		/* retry */
 	}
@@ -831,6 +849,7 @@ int _cds_lfht_remove(struct cds_lfht *ht, unsigned long size,
 			assert(is_dummy(next));
 		else
 			assert(!is_dummy(next));
+		assert(next != NULL);
 		old = uatomic_cmpxchg(&node->p.next, next,
 				      flag_removed(next));
 	} while (old != next);
@@ -940,11 +959,11 @@ void init_table(struct cds_lfht *ht,
 		init_table_link(ht, i, len);
 
 		/*
-		 * Update table size (after init for now, because no
-		 * concurrent updater help (TODO)).
+		 * Update table size.
 		 */
 		cmm_smp_wmb();	/* populate data before RCU size */
 		CMM_STORE_SHARED(ht->t.size, !i ? 1 : (1UL << i));
+
 		dbg_printf("init new size: %lu\n", !i ? 1 : (1UL << i));
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
@@ -1087,7 +1106,7 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 
 struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len)
 {
-	struct cds_lfht_node *node, *next;
+	struct cds_lfht_node *node, *next, *dummy_node;
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, reverse_hash, index, order, size;
 
@@ -1100,10 +1119,15 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1))) - 1)];
 	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
 		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
-	node = (struct cds_lfht_node *) lookup;
+	dummy_node = (struct cds_lfht_node *) lookup;
+	/* We can always skip the dummy node initially */
+	node = rcu_dereference(dummy_node->p.next);
+	node = clear_flag(node);
 	for (;;) {
-		if (unlikely(!node))
+		if (unlikely(is_end(node))) {
+			node = NULL;
 			break;
+		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
@@ -1135,8 +1159,10 @@ struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
 	node = clear_flag(next);
 
 	for (;;) {
-		if (unlikely(!node))
+		if (unlikely(is_end(node))) {
+			node = NULL;
 			break;
+		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
 			node = NULL;
 			break;
@@ -1176,7 +1202,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 
 	size = rcu_dereference(ht->t.size);
 	ret = _cds_lfht_add(ht, size, node, 1, 0);
-	if (ret != node)
+	if (ret == node)
 		ht_count_add(ht, size);
 	return ret;
 }
@@ -1208,7 +1234,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 		if (!is_dummy(node))
 			return -EPERM;
 		assert(!is_removed(node));
-	} while (clear_flag(node));
+	} while (!is_end(node));
 	/*
 	 * size accessed without rcu_dereference because hash table is
 	 * being destroyed.
@@ -1274,7 +1300,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		else
 			(nr_dummy)++;
 		node = clear_flag(next);
-	} while (node);
+	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
 }
 
