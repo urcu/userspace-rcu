@@ -80,12 +80,9 @@ enum {
 };
 
 /*
- * cds_lfht_new - allocate a hash table.
- *
- * init_size must be power of two.
- * Return NULL on error.
+ * _cds_lfht_new - API used by cds_lfht_new wrapper. Do not use directly.
  */
-struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
+struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
@@ -97,6 +94,27 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			void (*cds_lfht_rcu_read_unlock)(void),
 			void (*cds_lfht_rcu_thread_offline)(void),
 			void (*cds_lfht_rcu_thread_online)(void));
+
+/*
+ * cds_lfht_new - allocate a hash table.
+ *
+ * init_size must be power of two.
+ * Return NULL on error.
+ * Note: the RCU flavor must be already included before the hash table header.
+ */
+static inline
+struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
+			cds_lfht_compare_fct compare_fct,
+			unsigned long hash_seed,
+			unsigned long init_size,
+			int flags)
+{
+	return _cds_lfht_new(hash_fct, compare_fct, hash_seed,
+			init_size, flags,
+			call_rcu, synchronize_rcu, rcu_read_lock,
+			rcu_read_unlock, rcu_thread_offline,
+			rcu_thread_online);
+}
 
 /*
  * cds_lfht_destroy - destroy a hash table.

@@ -750,10 +750,7 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			init_hash_size,
-			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0,
-			call_rcu, synchronize_rcu, rcu_read_lock,
-			rcu_read_unlock, rcu_thread_offline,
-			rcu_thread_online);
+			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0);
 	ret = populate_hash();
 	assert(!ret);
         err = create_all_cpu_call_rcu_data(0);

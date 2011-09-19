@@ -1050,7 +1050,7 @@ void fini_table(struct cds_lfht *ht,
 	}
 }
 
-struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
+struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
