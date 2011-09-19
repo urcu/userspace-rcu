@@ -99,8 +99,14 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 
 /*
  * cds_lfht_new - allocate a hash table.
+ * @hash_fct: the hashing function.
+ * @compare_fct: the key comparison function.
+ * @hash_seed: the seed for hash function.
+ * @init_size: number of nodes to allocate initially. Must be power of two.
+ * @flags: hash table creation flags (can be combined with bitwise or: '|').
+ *           0: no flags.
+ *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
  *
- * init_size must be power of two.
  * Return NULL on error.
  * Note: the RCU flavor must be already included before the hash table header.
  */
