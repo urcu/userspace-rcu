@@ -813,7 +813,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
-		assert(new_next != NULL);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 		/* retry */
 	}
@@ -849,7 +848,6 @@ int _cds_lfht_remove(struct cds_lfht *ht, unsigned long size,
 			assert(is_dummy(next));
 		else
 			assert(!is_dummy(next));
-		assert(next != NULL);
 		old = uatomic_cmpxchg(&node->p.next, next,
 				      flag_removed(next));
 	} while (old != next);
