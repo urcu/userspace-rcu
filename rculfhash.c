@@ -881,32 +881,13 @@ end:
 		return -ENOENT;
 }
 
-static
-void init_table_hash(struct cds_lfht *ht, unsigned long i,
-		unsigned long len)
-{
-	unsigned long j;
-
-	for (j = 0; j < len; j++) {
-		struct cds_lfht_node *new_node =
-			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
-
-		dbg_printf("init hash entry: i %lu j %lu hash %lu\n",
-			   i, j, !i ? 0 : (1UL << (i - 1)) + j);
-		new_node->p.reverse_hash =
-			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
-			break;
-	}
-}
-
 /*
  * Holding RCU read lock to protect _cds_lfht_add against memory
  * reclaim that could be performed by other call_rcu worker threads (ABA
  * problem).
  */
 static
-void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
+void init_table_populate(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
 	unsigned long j;
 
@@ -916,8 +897,10 @@ void init_table_link(struct cds_lfht *ht, unsigned long i, unsigned long len)
 		struct cds_lfht_node *new_node =
 			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
 
-		dbg_printf("init link: i %lu j %lu hash %lu\n",
+		dbg_printf("init populate: i %lu j %lu hash %lu\n",
 			   i, j, !i ? 0 : (1UL << (i - 1)) + j);
+		new_node->p.reverse_hash =
+			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
 		(void) _cds_lfht_add(ht, !i ? 0 : (1UL << (i - 1)),
 				new_node, 0, 1);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
@@ -949,14 +932,11 @@ void init_table(struct cds_lfht *ht,
 		ht->t.tbl[i] = calloc(1, sizeof(struct rcu_level)
 				+ (len * sizeof(struct _cds_lfht_node)));
 
-		/* Set all dummy nodes reverse hash values for a level */
-		init_table_hash(ht, i, len);
-
 		/*
-		 * Link all dummy nodes into the table. Concurrent
-		 * add/remove are helping us.
+		 * Set all dummy nodes reverse hash values for a level and
+		 * link all dummy nodes into the table.
 		 */
-		init_table_link(ht, i, len);
+		init_table_populate(ht, i, len);
 
 		/*
 		 * Update table size.
