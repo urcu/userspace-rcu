@@ -883,6 +883,12 @@ end:
  * Holding RCU read lock to protect _cds_lfht_add against memory
  * reclaim that could be performed by other call_rcu worker threads (ABA
  * problem).
+ *
+ * TODO: when we reach a certain length, we can split this population phase over
+ * many worker threads, based on the number of CPUs available in the system.
+ * This should therefore take care of not having the expand lagging behind too
+ * many concurrent insertion threads by using the scheduler's ability to
+ * schedule dummy node population fairly with insertions.
  */
 static
 void init_table_populate(struct cds_lfht *ht, unsigned long i, unsigned long len)
@@ -967,6 +973,11 @@ void init_table(struct cds_lfht *ht,
  *
  * Logical removal and garbage collection can therefore be done in batch or on a
  * node-per-node basis, as long as the guarantee above holds.
+ *
+ * TODO: when we reach a certain length, we can split this removal over many
+ * worker threads, based on the number of CPUs available in the system. This
+ * should take care of not letting resize process lag behind too many concurrent
+ * updater threads actively inserting into the hash table.
  */
 static
 void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
