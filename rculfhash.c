@@ -169,7 +169,6 @@
 /*
  * Define the minimum table size.
  */
-//#define MIN_TABLE_SIZE			128
 #define MIN_TABLE_SIZE			1
 
 #if (CAA_BITS_PER_LONG == 32)
@@ -196,7 +195,7 @@
 #define FLAGS_MASK		((1UL << 2) - 1)
 
 /* Value of the end pointer. Should not interact with flags. */
-#define END_VALUE		0x4
+#define END_VALUE		NULL
 
 struct ht_items_count {
 	unsigned long add, remove;
@@ -695,7 +694,7 @@ void cds_lfht_free_level(struct rcu_head *head)
  * Remove all logically deleted nodes from a bucket up to a certain node key.
  */
 static
-int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
+void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
 
@@ -707,15 +706,6 @@ int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
-		if (unlikely(iter == NULL)) {
-			/*
-			 * We are executing concurrently with a hash table
-			 * expand, so we see a dummy node with NULL next value.
-			 * Help expand by linking this node into the list and
-			 * retry.
-			 */
-			return 1;
-		}
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		/*
 		 * We should never be called with dummy (start of chain)
@@ -725,11 +715,10 @@ int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 		 */
 		assert(dummy != node);
 		for (;;) {
-			assert(iter != NULL);
 			if (unlikely(is_end(iter)))
-				return 0;
+				return;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
-				return 0;
+				return;
 			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (likely(is_removed(next)))
 				break;
@@ -741,10 +730,9 @@ int _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
-		assert(new_next != NULL);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 	}
-	return 0;
+	return;
 }
 
 static
@@ -757,7 +745,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			*dummy_node;
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, index, order;
-	int force_dummy = 0;
 
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
@@ -780,26 +767,8 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		iter_prev = (struct cds_lfht_node *) lookup;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
-		if (unlikely(iter == NULL)) {
-			/*
-			 * We are executing concurrently with a hash table
-			 * expand, so we see a dummy node with NULL next value.
-			 * Help expand by linking this node into the list and
-			 * retry.
-			 */
-			(void) _cds_lfht_add(ht, size >> 1, iter_prev, 0, 1);
-			continue;	/* retry */
-		}
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		for (;;) {
-			assert(iter != NULL);
-			/*
-			 * When adding a dummy node, we allow concurrent
-			 * add/removal to help. If we find the dummy node in
-			 * place, skip its insertion.
-			 */
-			if (unlikely(dummy && clear_flag(iter) == node))
-				return node;
 			if (unlikely(is_end(iter)))
 				goto insert;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
@@ -825,31 +794,14 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_removed(iter_prev));
 		assert(!is_removed(iter));
 		assert(iter_prev != node);
-		if (!dummy) {
+		if (!dummy)
 			node->p.next = clear_flag(iter);
-		} else {
-			/*
-			 * Dummy node insertion is performed concurrently (help
-			 * scheme). We try to link its next node, and if this
-			 * succeeds, it _means_ it's us who link this dummy node
-			 * into the table. force_dummy is set as soon as we
-			 * succeed this cmpxchg within this function.
-			 */
-			if (!force_dummy) {
-				if (uatomic_cmpxchg(&node->p.next, NULL,
-						flag_dummy(clear_flag(iter))) != NULL) {
-					return NULL;
-				}
-				force_dummy = 1;
-			} else {
-				node->p.next = flag_dummy(clear_flag(iter));
-			}
-		}
+		else
+			node->p.next = flag_dummy(clear_flag(iter));
 		if (is_dummy(iter))
 			new_node = flag_dummy(node);
 		else
 			new_node = node;
-		assert(new_node != NULL);
 		if (uatomic_cmpxchg(&iter_prev->p.next, iter,
 				    new_node) != iter)
 			continue;	/* retry */
@@ -871,11 +823,7 @@ gc_end:
 	order = get_count_order_ulong(index + 1);
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy_node = (struct cds_lfht_node *) lookup;
-	if (_cds_lfht_gc_bucket(dummy_node, node)) {
-		/* Help expand */
-		(void) _cds_lfht_add(ht, size >> 1, dummy_node, 0, 1);
-		goto gc_end;	/* retry */
-	}
+	_cds_lfht_gc_bucket(dummy_node, node);
 	return node;
 }
 
@@ -914,18 +862,13 @@ int _cds_lfht_remove(struct cds_lfht *ht, unsigned long size,
 	 * the node, and remove it (along with any other logically removed node)
 	 * if found.
 	 */
-gc_retry:
 	hash = bit_reverse_ulong(node->p.reverse_hash);
 	assert(size > 0);
 	index = hash & (size - 1);
 	order = get_count_order_ulong(index + 1);
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy = (struct cds_lfht_node *) lookup;
-	if (_cds_lfht_gc_bucket(dummy, node)) {
-		/* Help expand */
-		(void) _cds_lfht_add(ht, size >> 1, dummy, 0, 1);
-		goto gc_retry;	/* retry */
-	}
+	_cds_lfht_gc_bucket(dummy, node);
 end:
 	/*
 	 * Only the flagging action indicated that we (and no other)
@@ -1010,19 +953,16 @@ void init_table(struct cds_lfht *ht,
 		init_table_hash(ht, i, len);
 
 		/*
-		 * Update table size. At this point, concurrent add/remove see
-		 * dummy nodes with correctly initialized reverse hash value,
-		 * but with NULL next pointers. If they do, they can help us
-		 * link the dummy nodes into the list and retry.
-		 */
-		cmm_smp_wmb();	/* populate data before RCU size */
-		CMM_STORE_SHARED(ht->t.size, !i ? 1 : (1UL << i));
-
-		/*
 		 * Link all dummy nodes into the table. Concurrent
 		 * add/remove are helping us.
 		 */
 		init_table_link(ht, i, len);
+
+		/*
+		 * Update table size.
+		 */
+		cmm_smp_wmb();	/* populate data before RCU size */
+		CMM_STORE_SHARED(ht->t.size, !i ? 1 : (1UL << i));
 
 		dbg_printf("init new size: %lu\n", !i ? 1 : (1UL << i));
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
@@ -1173,7 +1113,6 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 	hash = ht->hash_fct(key, key_len, ht->hash_seed);
 	reverse_hash = bit_reverse_ulong(hash);
 
-restart:
 	size = rcu_dereference(ht->t.size);
 	index = hash & (size - 1);
 	order = get_count_order_ulong(index + 1);
@@ -1183,16 +1122,6 @@ restart:
 	dummy_node = (struct cds_lfht_node *) lookup;
 	/* We can always skip the dummy node initially */
 	node = rcu_dereference(dummy_node->p.next);
-	if (unlikely(node == NULL)) {
-		/*
-		 * We are executing concurrently with a hash table
-		 * expand, so we see a dummy node with NULL next value.
-		 * Help expand by linking this node into the list and
-		 * retry.
-		 */
-		(void) _cds_lfht_add(ht, size >> 1, dummy_node, 0, 1);
-		goto restart;	/* retry */
-	}
 	node = clear_flag(node);
 	for (;;) {
 		if (unlikely(is_end(node))) {
