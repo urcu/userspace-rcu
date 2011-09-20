@@ -204,7 +204,7 @@
 #define END_VALUE		NULL
 
 struct ht_items_count {
-	unsigned long add, remove;
+	unsigned long add, del;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 struct rcu_level {
@@ -565,7 +565,7 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size)
 }
 
 static
-void ht_count_remove(struct cds_lfht *ht, unsigned long size)
+void ht_count_del(struct cds_lfht *ht, unsigned long size)
 {
 	unsigned long percpu_count;
 	int cpu;
@@ -575,18 +575,18 @@ void ht_count_remove(struct cds_lfht *ht, unsigned long size)
 	cpu = ht_get_cpu();
 	if (unlikely(cpu < 0))
 		return;
-	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].remove, -1);
+	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].del, -1);
 	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		unsigned long count;
 
-		dbg_printf("remove percpu %lu\n", percpu_count);
+		dbg_printf("del percpu %lu\n", percpu_count);
 		count = uatomic_add_return(&ht->count,
 					   -(1UL << COUNT_COMMIT_ORDER));
 		/* If power of 2 */
 		if (!(count & (count - 1))) {
 			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) >= size)
 				return;
-			dbg_printf("remove set global %lu\n", count);
+			dbg_printf("del set global %lu\n", count);
 			cds_lfht_resize_lazy_count(ht, size,
 				count >> (CHAIN_LEN_TARGET - 1));
 		}
@@ -614,7 +614,7 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size)
 }
 
 static
-void ht_count_remove(struct cds_lfht *ht, unsigned long size)
+void ht_count_del(struct cds_lfht *ht, unsigned long size)
 {
 }
 
@@ -844,7 +844,7 @@ gc_end:
 }
 
 static
-int _cds_lfht_remove(struct cds_lfht *ht, unsigned long size,
+int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *node,
 		int dummy_removal)
 {
@@ -1077,7 +1077,7 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 			   i, j, !i ? 0 : (1UL << (i - 1)) + j);
 		fini_node->p.reverse_hash =
 			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-		(void) _cds_lfht_remove(ht, !i ? 0 : (1UL << (i - 1)),
+		(void) _cds_lfht_del(ht, !i ? 0 : (1UL << (i - 1)),
 				fini_node, 1);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
@@ -1299,15 +1299,15 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	return ret;
 }
 
-int cds_lfht_remove(struct cds_lfht *ht, struct cds_lfht_node *node)
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	unsigned long size;
 	int ret;
 
 	size = rcu_dereference(ht->t.size);
-	ret = _cds_lfht_remove(ht, size, node, 0);
+	ret = _cds_lfht_del(ht, size, node, 0);
 	if (!ret)
-		ht_count_remove(ht, size);
+		ht_count_del(ht, size);
 	return ret;
 }
 

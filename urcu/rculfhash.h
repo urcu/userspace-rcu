@@ -171,8 +171,8 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
  *
  * Return NULL if no following node exists with same key.
  * RCU read-side lock must be held across cds_lfht_lookup and cds_lfht_next calls, and also
- * between cds_lfht_next calls using the node returned by a previous cds_lfht_next.
- * Call with rcu_read_lock held.
+ * between cds_lfht_next calls using the node returned by a previous
+ * cds_lfht_next.  Call with rcu_read_lock held.
  */
 struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_node *node);
 
@@ -187,20 +187,21 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
  * cds_lfht_add_unique - add a node to hash table, if key is not present.
  *
  * Return the node added upon success.
- * Return the unique node already present upon failure. If cds_lfht_add_unique fails,
- * the node passed as parameter should be freed by the caller.
+ * Return the unique node already present upon failure. If
+ * cds_lfht_add_unique fails, the node passed as parameter should be
+ * freed by the caller.
  * Call with rcu_read_lock held.
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
- * cds_lfht_remove - remove node from hash table.
+ * cds_lfht_del - remove node from hash table.
  *
- * Node can be looked up with cds_lfht_lookup. RCU read-side lock must be held between
- * lookup and removal.
+ * Node can be looked up with cds_lfht_lookup. RCU read-side lock must
+ * be held between lookup and removal.
  * Call with rcu_read_lock held.
  */
-int cds_lfht_remove(struct cds_lfht *ht, struct cds_lfht_node *node);
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
  * cds_lfht_resize - Force a hash table resize

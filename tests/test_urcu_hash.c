@@ -484,7 +484,7 @@ void *thr_writer(void *_count)
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			if (node)
-				ret = cds_lfht_remove(test_ht, node);
+				ret = cds_lfht_del(test_ht, node);
 			else
 				ret = -ENOENT;
 			rcu_read_unlock();
