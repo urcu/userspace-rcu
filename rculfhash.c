@@ -180,7 +180,8 @@
 /*
  * Minimum number of dummy nodes to touch per thread to parallelize grow/shrink.
  */
-#define MIN_PARTITION_PER_THREAD	4096
+#define MIN_PARTITION_PER_THREAD_ORDER	12
+#define MIN_PARTITION_PER_THREAD	(1UL << MIN_PARTITION_PER_THREAD_ORDER)
 
 #ifndef min
 #define min(a, b)	((a) < (b) ? (a) : (b))
@@ -914,26 +915,33 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long partition_len;
 	struct partition_resize_work *work;
-	int cpu, ret;
+	int thread, ret;
+	unsigned long nr_threads;
 	pthread_t *thread_id;
 
-	/* Note: nr_cpus_mask + 1 is always power of 2 */
-	partition_len = len >> get_count_order_ulong(nr_cpus_mask + 1);
-	work = calloc(nr_cpus_mask + 1, sizeof(*work));
-	thread_id = calloc(nr_cpus_mask + 1, sizeof(*thread_id));
+	/*
+	 * Note: nr_cpus_mask + 1 is always power of 2.
+	 * We spawn just the number of threads we need to satisfy the minimum
+	 * partition size, up to the number of CPUs in the system.
+	 */
+	nr_threads = min(nr_cpus_mask + 1,
+			 len >> MIN_PARTITION_PER_THREAD_ORDER);
+	partition_len = len >> get_count_order_ulong(nr_threads);
+	work = calloc(nr_threads, sizeof(*work));
+	thread_id = calloc(nr_threads, sizeof(*thread_id));
 	assert(work);
-	for (cpu = 0; cpu < nr_cpus_mask + 1; cpu++) {
-		work[cpu].ht = ht;
-		work[cpu].i = i;
-		work[cpu].len = partition_len;
-		work[cpu].start = cpu * partition_len;
-		work[cpu].fct = fct;
-		ret = pthread_create(&thread_id[cpu], ht->resize_attr,
-			partition_resize_thread, &work[cpu]);
+	for (thread = 0; thread < nr_threads; thread++) {
+		work[thread].ht = ht;
+		work[thread].i = i;
+		work[thread].len = partition_len;
+		work[thread].start = thread * partition_len;
+		work[thread].fct = fct;
+		ret = pthread_create(&thread_id[thread], ht->resize_attr,
+			partition_resize_thread, &work[thread]);
 		assert(!ret);
 	}
-	for (cpu = 0; cpu < nr_cpus_mask + 1; cpu++) {
-		ret = pthread_join(thread_id[cpu], NULL);
+	for (thread = 0; thread < nr_threads; thread++) {
+		ret = pthread_join(thread_id[thread], NULL);
 		assert(!ret);
 	}
 	free(work);
@@ -979,7 +987,7 @@ void init_table_populate(struct cds_lfht *ht, unsigned long i,
 			 unsigned long len)
 {
 	assert(nr_cpus_mask != -1);
-	if (nr_cpus_mask < 0 || len < (nr_cpus_mask + 1) * MIN_PARTITION_PER_THREAD) {
+	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD) {
 		ht->cds_lfht_rcu_thread_online();
 		init_table_populate_partition(ht, i, 0, len);
 		ht->cds_lfht_rcu_thread_offline();
@@ -1082,7 +1090,7 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
 
 	assert(nr_cpus_mask != -1);
-	if (nr_cpus_mask < 0 || len < (nr_cpus_mask + 1) * MIN_PARTITION_PER_THREAD) {
+	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD) {
 		ht->cds_lfht_rcu_thread_online();
 		remove_table_partition(ht, i, 0, len);
 		ht->cds_lfht_rcu_thread_offline();
