@@ -750,7 +750,7 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			init_hash_size,
-			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0);
+			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0, NULL);
 	ret = populate_hash();
 	assert(!ret);
         err = create_all_cpu_call_rcu_data(0);
@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 	if (count || removed)
 		printf("WARNING: nodes left in the hash table upon destroy: "
 			"%lu nodes + %lu logically removed.\n", count, removed);
-	ret = cds_lfht_destroy(test_ht);
+	ret = cds_lfht_destroy(test_ht, NULL);
 
 	if (ret)
 		printf_verbose("final delete aborted\n");

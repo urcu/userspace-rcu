@@ -95,7 +95,10 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			void (*cds_lfht_rcu_read_lock)(void),
 			void (*cds_lfht_rcu_read_unlock)(void),
 			void (*cds_lfht_rcu_thread_offline)(void),
-			void (*cds_lfht_rcu_thread_online)(void));
+			void (*cds_lfht_rcu_thread_online)(void),
+			void (*cds_lfht_rcu_register_thread)(void),
+			void (*cds_lfht_rcu_unregister_thread)(void),
+			pthread_attr_t *attr);
 
 /*
  * cds_lfht_new - allocate a hash table.
@@ -106,30 +109,45 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
  * @flags: hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
  *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
+ * @attr: optional resize worker thread attributes. NULL for default.
  *
  * Return NULL on error.
  * Note: the RCU flavor must be already included before the hash table header.
+ *
+ * The programmer is responsible for ensuring that resize operation has a
+ * priority equal to hash table updater threads. It should be performed by
+ * specifying the appropriate priority in the pthread "attr" argument, and,
+ * for CDS_LFHT_AUTO_RESIZE, by ensuring that call_rcu worker threads also have
+ * this priority level. Having lower priority for call_rcu and resize threads
+ * does not pose any correctness issue, but the resize operations could be
+ * starved by updates, thus leading to long hash table bucket chains.
  */
 static inline
 struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
-			int flags)
+			int flags,
+			pthread_attr_t *attr)
 {
 	return _cds_lfht_new(hash_fct, compare_fct, hash_seed,
 			init_size, flags,
 			call_rcu, synchronize_rcu, rcu_read_lock,
 			rcu_read_unlock, rcu_thread_offline,
-			rcu_thread_online);
+			rcu_thread_online, rcu_register_thread,
+			rcu_unregister_thread, attr);
 }
 
 /*
  * cds_lfht_destroy - destroy a hash table.
+ * @ht: the hash table to destroy.
+ * @attr: (output) resize worker thread attributes, as received by cds_lfht_new.
+ *        The caller will typically want to free this pointer if dynamically
+ *        allocated.
  *
  * Return 0 on success, negative error value on error.
  */
-int cds_lfht_destroy(struct cds_lfht *ht);
+int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
 
 /*
  * cds_lfht_count_nodes - count the number of nodes in the hash table.
