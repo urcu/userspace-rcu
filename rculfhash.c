@@ -246,7 +246,7 @@ struct cds_lfht {
 	void (*cds_lfht_rcu_register_thread)(void);
 	void (*cds_lfht_rcu_unregister_thread)(void);
 	pthread_attr_t *resize_attr;	/* Resize threads attributes */
-	unsigned long count;		/* global approximate item count */
+	long count;			/* global approximate item count */
 	struct ht_items_count *percpu_count;	/* per-cpu item count */
 };
 
