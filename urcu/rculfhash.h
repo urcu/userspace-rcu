@@ -34,11 +34,11 @@ extern "C" {
 
 /*
  * struct cds_lfht_node and struct _cds_lfht_node should be aligned on
- * 8-bytes boundaries because the two lower bits are used as flags.
+ * 4-bytes boundaries because the two lower bits are used as flags.
  */
 
 struct _cds_lfht_node {
-	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | GC_FLAG | REMOVED_FLAG */
+	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
 } __attribute__((aligned(8)));
 
