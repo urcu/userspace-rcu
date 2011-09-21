@@ -51,6 +51,16 @@ struct cds_lfht_node {
 	struct rcu_head head;
 };
 
+struct cds_lfht_iter {
+	struct cds_lfht_node *node, *next;
+};
+
+static inline
+struct cds_lfht_node *cds_lfht_iter_get_node(struct cds_lfht_iter *iter)
+{
+	return iter->node;
+}
+
 struct cds_lfht;
 
 /*
@@ -155,26 +165,30 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
  * Call with rcu_read_lock held.
  */
 void cds_lfht_count_nodes(struct cds_lfht *ht,
-			unsigned long *count,
-			unsigned long *removed);
+		unsigned long *count,
+		unsigned long *removed);
 
 /*
  * cds_lfht_lookup - lookup a node by key.
  *
- * Return NULL if not found.
+ * Output in "*iter". *iter->node set to NULL if not found.
  * Call with rcu_read_lock held.
  */
-struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len);
+void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
+		struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_next - get the next item with same key (after a lookup).
  *
- * Return NULL if no following node exists with same key.
- * RCU read-side lock must be held across cds_lfht_lookup and cds_lfht_next calls, and also
- * between cds_lfht_next calls using the node returned by a previous
- * cds_lfht_next.  Call with rcu_read_lock held.
+ * Uses an iterator initialized by a lookup.
+ * Sets *iter-node to the following node with same key.
+ * Sets *iter->node to NULL if no following node exists with same key.
+ * RCU read-side lock must be held across cds_lfht_lookup and
+ * cds_lfht_next calls, and also between cds_lfht_next calls using the
+ * node returned by a previous cds_lfht_next.
+ * Call with rcu_read_lock held.
  */
-struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_node *node);
+void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_add - add a node to the hash table.
@@ -198,7 +212,8 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
  * observable in the table. The same guarantee apply for combination of
  * add_unique and replace (see below).
  */
-struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht, struct cds_lfht_node *node);
+struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
+		struct cds_lfht_node *node);
 
 /*
  * cds_lfht_replace - replace a node within hash table.
@@ -213,19 +228,15 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht, struct cds_lfht_n
  * The semantic of replacement vs lookups is the following: if lookups
  * are performed between a key insertion and its removal, we guarantee
  * that the lookups will always find the key if it is replaced
- * concurrently with the lookups. Providing this guarantee require us to
- * pin the node to remove in place (disallowing any insertion after this
- * node temporarily) before we can proceed to its exchange with the new
- * node atomically. This renders the "replace" operation not strictly
- * lock-free, because a thread crashing in the middle of the replace
- * operation could stop progress for other updaters.
+ * concurrently with the lookups.
  *
  * Providing this semantic allows us to ensure that replacement-only
  * schemes will never generate duplicated keys. It also allows us to
  * guarantee that a combination of replacement and add_unique updates
  * will never generate duplicated keys.
  */
-struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_node *node);
+struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht,
+		struct cds_lfht_node *node);
 
 /*
  * cds_lfht_del - remove node from hash table.

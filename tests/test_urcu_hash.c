@@ -384,6 +384,7 @@ void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
 	struct cds_lfht_node *node;
+	struct cds_lfht_iter iter;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
@@ -399,9 +400,10 @@ void *thr_reader(void *_count)
 
 	for (;;) {
 		rcu_read_lock();
-		node = cds_lfht_lookup(test_ht,
+		cds_lfht_lookup(test_ht,
 			(void *)(((unsigned long) rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
-			sizeof(void *));
+			sizeof(void *), &iter);
+		node = cds_lfht_iter_get_node(&iter);
 		if (node == NULL) {
 			if (validate_lookup) {
 				printf("[ERROR] Lookup cannot find initial node.\n");
@@ -444,6 +446,7 @@ void free_node_cb(struct rcu_head *head)
 void *thr_writer(void *_count)
 {
 	struct cds_lfht_node *node, *ret_node;
+	struct cds_lfht_iter iter;
 	struct wr_count *count = _count;
 	int ret;
 
@@ -490,9 +493,10 @@ void *thr_writer(void *_count)
 		} else {
 			/* May delete */
 			rcu_read_lock();
-			node = cds_lfht_lookup(test_ht,
+			cds_lfht_lookup(test_ht,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
-				sizeof(void *));
+				sizeof(void *), &iter);
+			node = cds_lfht_iter_get_node(&iter);
 			if (node)
 				ret = cds_lfht_del(test_ht, node);
 			else

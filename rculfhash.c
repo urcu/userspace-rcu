@@ -196,8 +196,6 @@
  * It indicates that no node must attach to the node scheduled for
  * removal. The gc flag also needs to be updated atomically with the
  * pointer. It indicates that node garbage collection must be performed.
- * "removed" and "gc" flags are separate for the benefit of replacement
- * operation.
  * The dummy flag does not require to be updated atomically with the
  * pointer, but it is added as a pointer low bit flag to save space.
  */
@@ -792,7 +790,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				enum add_mode mode, int dummy)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
-			*dummy_node, *return_node, *replace_pinned = NULL;
+			*dummy_node, *return_node;
 	struct _cds_lfht_node *lookup;
 	unsigned long hash, index, order;
 
@@ -806,10 +804,8 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 	}
 	hash = bit_reverse_ulong(node->p.reverse_hash);
 	for (;;) {
-		uint32_t chain_len;
+		uint32_t chain_len = 0;
 
-	retry:
-		chain_len = 0;
 		/*
 		 * iter_prev points to the non-removed node prior to the
 		 * insert location.
@@ -829,25 +825,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (unlikely(is_gc(next)))
 				goto gc_node;
-			if (unlikely(replace_pinned)) {
-				/*
-				 * We're in the retry of a node
-				 * replacement. Only get exact iter
-				 * pointer match. We own it, so it
-				 * _needs_ to be there at some point.
-				 */
-				if (clear_flag(iter) == replace_pinned)
-					goto replace;
-			}
-			/*
-			 * Next is removed but not gc'd. We need to
-			 * busy-loop, because a concurrent replacement
-			 * is keeping it temporarily pinned there but we
-			 * cannot attach to it. The easiest solution is
-			 * to retry.
-			 */
-			if (unlikely(is_removed(next)))
-				goto retry;
+			assert(!is_removed(next));
 			if ((mode == ADD_UNIQUE || mode == ADD_REPLACE)
 			    && !is_dummy(next)
 			    && !ht->compare_fct(node->key, node->key_len,
@@ -873,7 +851,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_gc(iter_prev));
 		assert(!is_gc(iter));
 		assert(iter_prev != node);
-		assert(!replace_pinned);
 		if (!dummy)
 			node->p.next = clear_flag(iter);
 		else
@@ -894,6 +871,9 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		}
 
 	replace:
+		/* Insert after node to be replaced */
+		iter_prev = clear_flag(iter);
+		iter = next;
 		assert(node != clear_flag(iter));
 		assert(!is_removed(iter_prev));
 		assert(!is_removed(iter));
@@ -901,53 +881,29 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_gc(iter));
 		assert(iter_prev != node);
 		assert(!dummy);
-		node->p.next = clear_flag(next);
+		node->p.next = clear_flag(iter);
 		if (is_dummy(iter))
 			new_node = flag_dummy(node);
 		else
 			new_node = node;
 		/*
-		 * Try to delete to-be-replaced node. Don't gc yet. Not
-		 * performing gc here is important, because this lets
-		 * concurrent lookups see the old node until we
-		 * atomically swap the new node into its place.
-		 *
-		 * This algorithm is _not_ strictly lock-free between
-		 * _cds_lfht_del and the uatomic_cmpxchg of the
-		 * replacement operation, so a replacement should _not_
-		 * crash here (which means: don't do replacements if you
-		 * need strict lock-free guarantees).
+		 * Here is the whole trick for lock-free replace: we add
+		 * the replacement node _after_ the node we want to
+		 * replace by atomically setting its next pointer at the
+		 * same time we set its removal and gc flags. Given that
+		 * the lookups/get next use an iterator aware of the
+		 * next pointer, they will either skip the old node due
+		 * to the removal/gc flag and see the new node, or use
+		 * the old new, but will not see the new one.
 		 */
-		if (!replace_pinned) {
-			if (_cds_lfht_del(ht, size, clear_flag(iter), 0, 0))
-				continue;	/* concurrently removed. retry. */
-		}
-		/*
-		 * After _cds_lfht_del succeeds, we have pinned the
-		 * to-be-removed node in place by setting its removed
-		 * flag, but not its gc flag. If we fail to cmpxchg our
-		 * new node with this node, we need to retry everything
-		 * from the initial lookup, and only stop when we reach
-		 * the node we pinned into place.
-		 */
-		return_node = uatomic_cmpxchg(&iter_prev->p.next,
-					      iter, new_node);
-		if (return_node != iter) {
-			/*
-			 * If cmpxchg fails, we need to do path
-			 * compression, but end it by placing our own
-			 * node into place.
-			 */
-			replace_pinned = clear_flag(iter);
+		new_node = flag_removed(new_node);
+		new_node = flag_gc(new_node);
+		if (uatomic_cmpxchg(&iter_prev->p.next,
+			      iter, new_node) != iter) {
 			continue;	/* retry */
 		} else {
-			/*
-			 * cmpxchg succeeded. gc unnecessary, because we
-			 * unlinked the return_node ourself with the
-			 * cmpxchg.
-			 */
-			return_node = clear_flag(return_node);
-			goto end;
+			return_node = iter_prev;
+			goto gc_end;
 		}
 
 	gc_node:
@@ -967,7 +923,6 @@ gc_end:
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy_node = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy_node, node);
-end:
 	return return_node;
 }
 
@@ -1332,7 +1287,8 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	return ht;
 }
 
-struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len)
+void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
+		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next, *dummy_node;
 	struct _cds_lfht_node *lookup;
@@ -1361,11 +1317,7 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 			break;
 		}
 		next = rcu_dereference(node->p.next);
-		/*
-		 * We consider return nodes marked removed but not gc as
-		 * hits for lookup vs replacement consistency.
-		 */
-		if (likely(!is_gc(next))
+		if (likely(!is_removed(next))
 		    && !is_dummy(next)
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
@@ -1373,21 +1325,22 @@ struct cds_lfht_node *cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key
 		node = clear_flag(next);
 	}
 	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
-	return node;
+	iter->node = node;
+	iter->next = next;
 }
 
-struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
-				struct cds_lfht_node *node)
+void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
-	struct cds_lfht_node *next;
+	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
 	void *key;
 	size_t key_len;
 
+	node = iter->node;
 	reverse_hash = node->p.reverse_hash;
 	key = node->key;
 	key_len = node->key_len;
-	next = rcu_dereference(node->p.next);
+	next = iter->next;
 	node = clear_flag(next);
 
 	for (;;) {
@@ -1400,11 +1353,7 @@ struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
 			break;
 		}
 		next = rcu_dereference(node->p.next);
-		/*
-		 * We consider return nodes marked removed but not gc as
-		 * hits for lookup vs replacement consistency.
-		 */
-		if (likely(!is_gc(next))
+		if (likely(!is_removed(next))
 		    && !is_dummy(next)
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
@@ -1412,7 +1361,8 @@ struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht,
 		node = clear_flag(next);
 	}
 	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
-	return node;
+	iter->node = node;
+	iter->next = next;
 }
 
 void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
