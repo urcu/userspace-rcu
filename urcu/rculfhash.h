@@ -34,13 +34,13 @@ extern "C" {
 
 /*
  * struct cds_lfht_node and struct _cds_lfht_node should be aligned on
- * 4-bytes boundaries because the two lower bits are used as flags.
+ * 8-bytes boundaries because the two lower bits are used as flags.
  */
 
 struct _cds_lfht_node {
-	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
+	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | GC_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
-};
+} __attribute__((aligned(8)));
 
 struct cds_lfht_node {
 	/* cache-hot for iteration */
@@ -180,6 +180,7 @@ struct cds_lfht_node *cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_node *n
  * cds_lfht_add - add a node to the hash table.
  *
  * Call with rcu_read_lock held.
+ * This function supports adding redundant keys into the table.
  */
 void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
 
@@ -191,15 +192,50 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
  * cds_lfht_add_unique fails, the node passed as parameter should be
  * freed by the caller.
  * Call with rcu_read_lock held.
+ *
+ * The semantic of this function is that if only this function is used
+ * to add keys into the table, no duplicated keys should ever be
+ * observable in the table. The same guarantee apply for combination of
+ * add_unique and replace (see below).
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
+ * cds_lfht_replace - replace a node within hash table.
+ *
+ * Return the node replaced upon success. If no node matching the key
+ * was present, return NULL, which also means the operation succeeded.
+ * This replacement operation should never fail.
+ * Call with rcu_read_lock held.
+ * After successful replacement, a grace period must be waited for before
+ * freeing the memory reserved for the returned node.
+ *
+ * The semantic of replacement vs lookups is the following: if lookups
+ * are performed between a key insertion and its removal, we guarantee
+ * that the lookups will always find the key if it is replaced
+ * concurrently with the lookups. Providing this guarantee require us to
+ * pin the node to remove in place (disallowing any insertion after this
+ * node temporarily) before we can proceed to its exchange with the new
+ * node atomically. This renders the "replace" operation not strictly
+ * lock-free, because a thread crashing in the middle of the replace
+ * operation could stop progress for other updaters.
+ *
+ * Providing this semantic allows us to ensure that replacement-only
+ * schemes will never generate duplicated keys. It also allows us to
+ * guarantee that a combination of replacement and add_unique updates
+ * will never generate duplicated keys.
+ */
+struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_node *node);
+
+/*
  * cds_lfht_del - remove node from hash table.
  *
+ * Return 0 if the node is successfully removed.
  * Node can be looked up with cds_lfht_lookup. RCU read-side lock must
  * be held between lookup and removal.
  * Call with rcu_read_lock held.
+ * After successful removal, a grace period must be waited for before
+ * freeing the memory reserved for node.
  */
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 

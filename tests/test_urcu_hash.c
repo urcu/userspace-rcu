@@ -116,7 +116,7 @@ static unsigned long rduration;
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
 static unsigned long init_populate;
 static int opt_auto_resize;
-static int add_only, add_unique;
+static int add_only, add_unique, add_replace;
 
 static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
 static unsigned long init_pool_size = DEFAULT_RAND_POOL,
@@ -467,16 +467,26 @@ void *thr_writer(void *_count)
 			cds_lfht_node_init(node,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
-			if (add_unique)
+			if (add_unique) {
 				ret_node = cds_lfht_add_unique(test_ht, node);
-			else
-				cds_lfht_add(test_ht, node);
+			} else {
+				if (add_replace)
+					ret_node = cds_lfht_replace(test_ht, node);
+				else
+					cds_lfht_add(test_ht, node);
+			}
 			rcu_read_unlock();
 			if (add_unique && ret_node != node) {
 				free(node);
 				nr_addexist++;
-			} else
-				nr_add++;
+			} else {
+				if (add_replace && ret_node) {
+					call_rcu(&ret_node->head, free_node_cb);
+					nr_addexist++;
+				} else {
+					nr_add++;
+				}
+			}
 		} else {
 			/* May delete */
 			rcu_read_lock();
@@ -536,9 +546,9 @@ static int populate_hash(void)
 	if (!init_populate)
 		return 0;
 
-	if (add_unique && init_populate * 10 > init_pool_size) {
+	if ((add_unique || add_replace) && init_populate * 10 > init_pool_size) {
 		printf("WARNING: required to populate %lu nodes (-k), but random "
-"pool is quite small (%lu values) and we are in add_unique (-u) mode. Try with a "
+"pool is quite small (%lu values) and we are in add_unique (-u) or add_replace (-s) mode. Try with a "
 "larger random pool (-p option). This may take a while...\n", init_populate, init_pool_size);
 	}
 
@@ -547,15 +557,27 @@ static int populate_hash(void)
 		cds_lfht_node_init(node,
 			(void *)(((unsigned long) rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
 			sizeof(void *));
-		if (add_unique)
+		rcu_read_lock();
+		if (add_unique) {
 			ret_node = cds_lfht_add_unique(test_ht, node);
-		else
-			cds_lfht_add(test_ht, node);
+		} else {
+			if (add_replace)
+				ret_node = cds_lfht_replace(test_ht, node);
+			else
+				cds_lfht_add(test_ht, node);
+		}
+		rcu_read_unlock();
 		if (add_unique && ret_node != node) {
 			free(node);
 			nr_addexist++;
-		} else
-			nr_add++;
+		} else {
+			if (add_replace && ret_node) {
+				call_rcu(&ret_node->head, free_node_cb);
+				nr_addexist++;
+			} else {
+				nr_add++;
+			}
+		}
 		nr_writes++;
 	}
 	return 0;
@@ -563,27 +585,29 @@ static int populate_hash(void)
 
 void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s nr_readers nr_writers duration (s)", argv[0]);
+	printf("Usage : %s nr_readers nr_writers duration (s)\n", argv[0]);
 #ifdef DEBUG_YIELD
-	printf(" [-r] [-w] (yield reader and/or writer)");
+	printf("        [-r] [-w] (yield reader and/or writer)\n");
 #endif
-	printf(" [-d delay] (writer period (us))");
-	printf(" [-c duration] (reader C.S. duration (in loops))");
-	printf(" [-v] (verbose output)");
-	printf(" [-a cpu#] [-a cpu#]... (affinity)");
-	printf(" [-h size] (initial hash table size)");
-	printf(" [-u] Uniquify add.");
-	printf(" [-i] Add only (no removal).");
-	printf(" [-k nr_nodes] Number of nodes to insert initially.");
-	printf(" [-A] Automatically resize hash table.");
-	printf(" [-R offset] Lookup pool offset.");
-	printf(" [-S offset] Write pool offset.");
-	printf(" [-T offset] Init pool offset.");
-	printf(" [-M size] Lookup pool size.");
-	printf(" [-N size] Write pool size.");
-	printf(" [-O size] Init pool size.");
-	printf(" [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).");
-	printf("\n");
+	printf("        [-d delay] (writer period (us))\n");
+	printf("        [-c duration] (reader C.S. duration (in loops))\n");
+	printf("        [-v] (verbose output)\n");
+	printf("        [-a cpu#] [-a cpu#]... (affinity)\n");
+	printf("        [-h size] (initial hash table size)\n");
+	printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
+	printf("        [-u] Uniquify add (no redundant keys).\n");
+	printf("        [-s] Replace (swap) entries.\n");
+	printf("        [-i] Add only (no removal).\n");
+	printf("        [-k nr_nodes] Number of nodes to insert initially.\n");
+	printf("        [-A] Automatically resize hash table.\n");
+	printf("        [-R offset] Lookup pool offset.\n");
+	printf("        [-S offset] Write pool offset.\n");
+	printf("        [-T offset] Init pool offset.\n");
+	printf("        [-M size] Lookup pool size.\n");
+	printf("        [-N size] Write pool size.\n");
+	printf("        [-O size] Init pool size.\n");
+	printf("        [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).\n");
+	printf("\n\n");
 }
 
 int main(int argc, char **argv)
@@ -670,7 +694,18 @@ int main(int argc, char **argv)
 			init_hash_size = atol(argv[++i]);
 			break;
 		case 'u':
+			if (add_replace) {
+				printf("Please specify at most one of -s or -u.\n");
+				exit(-1);
+			}
 			add_unique = 1;
+			break;
+		case 's':
+			if (add_unique) {
+				printf("Please specify at most one of -s or -u.\n");
+				exit(-1);
+			}
+			add_replace = 1;
 			break;
 		case 'i':
 			add_only = 1;
@@ -733,7 +768,7 @@ int main(int argc, char **argv)
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
 	printf_verbose("Mode:%s%s.\n",
 		add_only ? " add only" : " add/remove",
-		add_unique ? " uniquify" : "");
+		add_unique ? " uniquify" : ( add_replace ? " replace" : " insert"));
 	printf_verbose("Initial hash table size: %lu buckets.\n", init_hash_size);
 	printf_verbose("Init pool size offset %lu size %lu.\n",
 		init_pool_offset, init_pool_size);
@@ -748,13 +783,21 @@ int main(int argc, char **argv)
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
 	count_reader = malloc(sizeof(*count_reader) * nr_readers);
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+
+	err = create_all_cpu_call_rcu_data(0);
+        assert(!err);
+
+	/*
+	 * Hash creation and population needs to be seen as a RCU reader
+	 * thread from the point of view of resize.
+	 */
+	rcu_register_thread();
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			init_hash_size,
 			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0, NULL);
-	ret = populate_hash();
+      	ret = populate_hash();
 	assert(!ret);
-        err = create_all_cpu_call_rcu_data(0);
-        assert(!err);
+	rcu_unregister_thread();
 
 	next_aff = 0;
 
