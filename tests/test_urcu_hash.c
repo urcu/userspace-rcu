@@ -872,7 +872,8 @@ int main(int argc, char **argv)
 			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0, NULL);
       	ret = populate_hash();
 	assert(!ret);
-	rcu_unregister_thread();
+
+	rcu_thread_offline();
 
 	next_aff = 0;
 
@@ -934,8 +935,12 @@ int main(int argc, char **argv)
 
 	printf("Counting nodes... ");
 	fflush(stdout);
+	rcu_thread_online();
+	rcu_read_lock();
 	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
 		&approx_after);
+	rcu_read_unlock();
+	rcu_thread_offline();
 	printf("done.\n");
 	if (count || removed) {
 		printf("Approximation before node accounting: %ld nodes.\n",
@@ -947,7 +952,6 @@ int main(int argc, char **argv)
 			approx_after);
 	}
 	ret = cds_lfht_destroy(test_ht, NULL);
-
 	if (ret)
 		printf_verbose("final delete aborted\n");
 	else
@@ -962,6 +966,7 @@ int main(int argc, char **argv)
 		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes, tot_add, tot_add_exist, tot_remove,
 		(long long) tot_add + init_populate - tot_remove - count);
+	rcu_unregister_thread();
 	free_all_cpu_call_rcu_data();
 	free(tid_reader);
 	free(tid_writer);
