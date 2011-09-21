@@ -40,7 +40,7 @@ extern "C" {
 struct _cds_lfht_node {
 	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
-} __attribute__((aligned(8)));
+} __attribute__((aligned(4)));
 
 struct cds_lfht_node {
 	/* cache-hot for iteration */
