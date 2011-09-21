@@ -124,6 +124,8 @@ static unsigned long init_pool_size = DEFAULT_RAND_POOL,
 	write_pool_size = DEFAULT_RAND_POOL;
 static int validate_lookup;
 
+static int count_pipe[2];
+
 static inline void loop_sleep(unsigned long l)
 {
 	while(l-- != 0)
@@ -197,21 +199,8 @@ void sigusr1_handler(int signo)
 static
 void sigusr2_handler(int signo)
 {
-	unsigned long count, removed, approx_before, approx_after;
-
-	/* Accounting */
-	printf("Counting nodes... ");
-	fflush(stdout);
-	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
-			&approx_after);
-	printf("done.\n");
-	printf("Approximation before node accounting: %lu nodes.\n",
-		approx_before);
-	printf("Accounting of nodes in the hash table: "
-		"%lu nodes + %lu logically removed.\n",
-		count, removed);
-	printf("Approximation after node accounting: %lu nodes.\n",
-		approx_after);
+	char msg[1] = { 0x42 };
+	write(count_pipe[1], msg, 1);	/* wakeup thread */
 }
 
 /*
@@ -398,6 +387,45 @@ unsigned long test_compare(void *key1, size_t key1_len,
 		return 0;
 	else
 		return 1;
+}
+
+void *thr_count(void *arg)
+{
+	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
+			"counter", pthread_self(), (unsigned long)gettid());
+
+	rcu_register_thread();
+
+	for (;;) {
+		unsigned long count, removed, approx_before, approx_after;
+		ssize_t len;
+		char buf[1];
+
+		rcu_thread_offline();
+		len = read(count_pipe[0], buf, 1);
+		rcu_thread_online();
+		if (unlikely(!test_duration_read()))
+			break;
+		if (len != 1)
+			continue;
+		/* Accounting */
+		printf("Counting nodes... ");
+		fflush(stdout);
+		rcu_read_lock();
+		cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
+				&approx_after);
+		rcu_read_unlock();
+		printf("done.\n");
+		printf("Approximation before node accounting: %lu nodes.\n",
+			approx_before);
+		printf("Accounting of nodes in the hash table: "
+			"%lu nodes + %lu logically removed.\n",
+			count, removed);
+		printf("Approximation after node accounting: %lu nodes.\n",
+			approx_after);
+	}
+	rcu_unregister_thread();
+	return NULL;
 }
 
 void *thr_reader(void *_count)
@@ -638,6 +666,7 @@ int main(int argc, char **argv)
 {
 	int err;
 	pthread_t *tid_reader, *tid_writer;
+	pthread_t tid_count;
 	void *tret;
 	unsigned long long *count_reader;
 	struct wr_count *count_writer;
@@ -785,6 +814,19 @@ int main(int argc, char **argv)
 		perror("sigaction");
 		return -1;
 	}
+
+	ret = pipe(count_pipe);
+	if (ret == -1) {
+		perror("pipe");
+		return -1;
+	}
+
+	/* spawn counter thread */
+	err = pthread_create(&tid_count, NULL, thr_count,
+			     NULL);
+	if (err != 0)
+		exit(1);
+
 	act.sa_handler = sigusr2_handler;
 	act.sa_flags = SA_RESTART;
 	ret = sigaction(SIGUSR2, &act, NULL);
@@ -871,6 +913,23 @@ int main(int argc, char **argv)
 		tot_add_exist += count_writer[i].add_exist;
 		tot_remove += count_writer[i].remove;
 	}
+
+	/* teardown counter thread */
+	act.sa_handler = SIG_IGN;
+	act.sa_flags = SA_RESTART;
+	ret = sigaction(SIGUSR2, &act, NULL);
+	if (ret == -1) {
+		perror("sigaction");
+		return -1;
+	}
+	{
+		char msg[1] = { 0x42 };
+		write(count_pipe[1], msg, 1);	/* wakeup thread */
+	}
+	err = pthread_join(tid_count, &tret);
+	if (err != 0)
+		exit(1);
+
 	printf("Counting nodes... ");
 	fflush(stdout);
 	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,

@@ -1455,7 +1455,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	struct _cds_lfht_node *lookup;
 	unsigned long nr_dummy = 0;
 
-	*approx_before = uatomic_read(&ht->count);
+	*approx_before = 0;
 	if (nr_cpus_mask >= 0) {
 		int i;
 
@@ -1485,7 +1485,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		node = clear_flag(next);
 	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
-	*approx_after = uatomic_read(&ht->count);
+	*approx_after = 0;
 	if (nr_cpus_mask >= 0) {
 		int i;
 
