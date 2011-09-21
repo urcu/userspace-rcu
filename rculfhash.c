@@ -566,12 +566,6 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size)
 			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) < size)
 				return;
 			dbg_printf("add set global %ld\n", count);
-			/*
-			 * Don't resize table if the number of nodes is below a
-			 * certain threshold.
-			 */
-			if (count < (1UL << COUNT_COMMIT_ORDER))
-				return;
 			cds_lfht_resize_lazy_count(ht, size,
 				count >> (CHAIN_LEN_TARGET - 1));
 		}
@@ -602,10 +596,10 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 				return;
 			dbg_printf("del set global %ld\n", count);
 			/*
-			 * Don't resize table if the number of nodes is below a
+			 * Don't shrink table if the number of nodes is below a
 			 * certain threshold.
 			 */
-			if (count < (1UL << COUNT_COMMIT_ORDER))
+			if (count < (1UL << COUNT_COMMIT_ORDER) * (nr_cpus_mask + 1))
 				return;
 			cds_lfht_resize_lazy_count(ht, size,
 				count >> (CHAIN_LEN_TARGET - 1));
