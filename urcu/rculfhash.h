@@ -165,10 +165,10 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
  * Call with rcu_read_lock held.
  */
 void cds_lfht_count_nodes(struct cds_lfht *ht,
-		unsigned long *approx_before,
+		long *approx_before,
 		unsigned long *count,
 		unsigned long *removed,
-		unsigned long *approx_after);
+		long *approx_after);
 
 /*
  * cds_lfht_lookup - lookup a node by key.

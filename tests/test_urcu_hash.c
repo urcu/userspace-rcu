@@ -397,7 +397,8 @@ void *thr_count(void *arg)
 	rcu_register_thread();
 
 	for (;;) {
-		unsigned long count, removed, approx_before, approx_after;
+		unsigned long count, removed;
+		long approx_before, approx_after;
 		ssize_t len;
 		char buf[1];
 
@@ -416,12 +417,12 @@ void *thr_count(void *arg)
 				&approx_after);
 		rcu_read_unlock();
 		printf("done.\n");
-		printf("Approximation before node accounting: %lu nodes.\n",
+		printf("Approximation before node accounting: %ld nodes.\n",
 			approx_before);
 		printf("Accounting of nodes in the hash table: "
 			"%lu nodes + %lu logically removed.\n",
 			count, removed);
-		printf("Approximation after node accounting: %lu nodes.\n",
+		printf("Approximation after node accounting: %ld nodes.\n",
 			approx_after);
 	}
 	rcu_unregister_thread();
@@ -672,7 +673,8 @@ int main(int argc, char **argv)
 	struct wr_count *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0,
 		tot_add = 0, tot_add_exist = 0, tot_remove = 0;
-	unsigned long count, removed, approx_before, approx_after;
+	unsigned long count, removed;
+	long approx_before, approx_after;
 	int i, a, ret;
 	struct sigaction act;
 	unsigned int remain;
@@ -936,12 +938,12 @@ int main(int argc, char **argv)
 		&approx_after);
 	printf("done.\n");
 	if (count || removed) {
-		printf("Approximation before node accounting: %lu nodes.\n",
+		printf("Approximation before node accounting: %ld nodes.\n",
 			approx_before);
 		printf("WARNING: nodes left in the hash table upon destroy: "
 			"%lu nodes + %lu logically removed.\n",
 			count, removed);
-		printf("Approximation after node accounting: %lu nodes.\n",
+		printf("Approximation after node accounting: %ld nodes.\n",
 			approx_after);
 	}
 	ret = cds_lfht_destroy(test_ht, NULL);

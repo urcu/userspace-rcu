@@ -1452,10 +1452,10 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 }
 
 void cds_lfht_count_nodes(struct cds_lfht *ht,
-		unsigned long *approx_before,
+		long *approx_before,
 		unsigned long *count,
 		unsigned long *removed,
-		unsigned long *approx_after)
+		long *approx_after)
 {
 	struct cds_lfht_node *node, *next;
 	struct _cds_lfht_node *lookup;
