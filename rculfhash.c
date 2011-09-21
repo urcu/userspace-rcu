@@ -1446,12 +1446,24 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 }
 
 void cds_lfht_count_nodes(struct cds_lfht *ht,
+		unsigned long *approx_before,
 		unsigned long *count,
-		unsigned long *removed)
+		unsigned long *removed,
+		unsigned long *approx_after)
 {
 	struct cds_lfht_node *node, *next;
 	struct _cds_lfht_node *lookup;
 	unsigned long nr_dummy = 0;
+
+	*approx_before = uatomic_read(&ht->count);
+	if (nr_cpus_mask >= 0) {
+		int i;
+
+		for (i = 0; i < nr_cpus_mask + 1; i++) {
+			*approx_before += uatomic_read(&ht->percpu_count[i].add);
+			*approx_before -= uatomic_read(&ht->percpu_count[i].del);
+		}
+	}
 
 	*count = 0;
 	*removed = 0;
@@ -1462,8 +1474,10 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	do {
 		next = rcu_dereference(node->p.next);
 		if (is_removed(next)) {
-			assert(!is_dummy(next));
-			(*removed)++;
+			if (!is_dummy(next))
+				(*removed)++;
+			else
+				(nr_dummy)++;
 		} else if (!is_dummy(next))
 			(*count)++;
 		else
@@ -1471,6 +1485,15 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		node = clear_flag(next);
 	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
+	*approx_after = uatomic_read(&ht->count);
+	if (nr_cpus_mask >= 0) {
+		int i;
+
+		for (i = 0; i < nr_cpus_mask + 1; i++) {
+			*approx_after += uatomic_read(&ht->percpu_count[i].add);
+			*approx_after -= uatomic_read(&ht->percpu_count[i].del);
+		}
+	}
 }
 
 /* called with resize mutex held */

@@ -194,6 +194,26 @@ void sigusr1_handler(int signo)
 	}
 }
 
+static
+void sigusr2_handler(int signo)
+{
+	unsigned long count, removed, approx_before, approx_after;
+
+	/* Accounting */
+	printf("Counting nodes... ");
+	fflush(stdout);
+	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
+			&approx_after);
+	printf("done.\n");
+	printf("Approximation before node accounting: %lu nodes.\n",
+		approx_before);
+	printf("Accounting of nodes in the hash table: "
+		"%lu nodes + %lu logically removed.\n",
+		count, removed);
+	printf("Approximation after node accounting: %lu nodes.\n",
+		approx_after);
+}
+
 /*
  * returns 0 if test should end.
  */
@@ -623,7 +643,7 @@ int main(int argc, char **argv)
 	struct wr_count *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0,
 		tot_add = 0, tot_add_exist = 0, tot_remove = 0;
-	unsigned long count, removed;
+	unsigned long count, removed, approx_before, approx_after;
 	int i, a, ret;
 	struct sigaction act;
 	unsigned int remain;
@@ -765,6 +785,13 @@ int main(int argc, char **argv)
 		perror("sigaction");
 		return -1;
 	}
+	act.sa_handler = sigusr2_handler;
+	act.sa_flags = SA_RESTART;
+	ret = sigaction(SIGUSR2, &act, NULL);
+	if (ret == -1) {
+		perror("sigaction");
+		return -1;
+	}
 
 	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
@@ -846,11 +873,18 @@ int main(int argc, char **argv)
 	}
 	printf("Counting nodes... ");
 	fflush(stdout);
-	cds_lfht_count_nodes(test_ht, &count, &removed);
+	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
+		&approx_after);
 	printf("done.\n");
-	if (count || removed)
+	if (count || removed) {
+		printf("Approximation before node accounting: %lu nodes.\n",
+			approx_before);
 		printf("WARNING: nodes left in the hash table upon destroy: "
-			"%lu nodes + %lu logically removed.\n", count, removed);
+			"%lu nodes + %lu logically removed.\n",
+			count, removed);
+		printf("Approximation after node accounting: %lu nodes.\n",
+			approx_after);
+	}
 	ret = cds_lfht_destroy(test_ht, NULL);
 
 	if (ret)
