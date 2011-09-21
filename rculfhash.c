@@ -583,7 +583,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 	cpu = ht_get_cpu();
 	if (unlikely(cpu < 0))
 		return;
-	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].del, -1);
+	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].del, 1);
 	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		unsigned long count;
 
