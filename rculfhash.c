@@ -1280,11 +1280,11 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 	node = clear_flag(node);
 	for (;;) {
 		if (unlikely(is_end(node))) {
-			node = NULL;
+			node = next = NULL;
 			break;
 		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
-			node = NULL;
+			node = next = NULL;
 			break;
 		}
 		next = rcu_dereference(node->p.next);
@@ -1316,11 +1316,11 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 
 	for (;;) {
 		if (unlikely(is_end(node))) {
-			node = NULL;
+			node = next = NULL;
 			break;
 		}
 		if (unlikely(node->p.reverse_hash > reverse_hash)) {
-			node = NULL;
+			node = next = NULL;
 			break;
 		}
 		next = rcu_dereference(node->p.next);
