@@ -523,7 +523,7 @@ void *thr_writer(void *_count)
 				ret_node = cds_lfht_add_unique(test_ht, node);
 			} else {
 				if (add_replace)
-					ret_node = cds_lfht_replace(test_ht, node);
+					ret_node = cds_lfht_add_replace(test_ht, node);
 				else
 					cds_lfht_add(test_ht, node);
 			}
@@ -545,13 +545,10 @@ void *thr_writer(void *_count)
 			cds_lfht_lookup(test_ht,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *), &iter);
-			node = cds_lfht_iter_get_node(&iter);
-			if (node)
-				ret = cds_lfht_del(test_ht, node);
-			else
-				ret = -ENOENT;
+			ret = cds_lfht_del(test_ht, &iter);
 			rcu_read_unlock();
 			if (ret == 0) {
+				node = cds_lfht_iter_get_node(&iter);
 				call_rcu(&node->head, free_node_cb);
 				nr_del++;
 			} else
@@ -615,7 +612,7 @@ static int populate_hash(void)
 			ret_node = cds_lfht_add_unique(test_ht, node);
 		} else {
 			if (add_replace)
-				ret_node = cds_lfht_replace(test_ht, node);
+				ret_node = cds_lfht_add_replace(test_ht, node);
 			else
 				cds_lfht_add(test_ht, node);
 		}

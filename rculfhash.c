@@ -769,6 +769,80 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 }
 
 static
+int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
+		struct cds_lfht_node *old_node,
+		struct cds_lfht_node *ret_next,
+		struct cds_lfht_node *new_node)
+{
+	struct cds_lfht_node *dummy, *old_next;
+	struct _cds_lfht_node *lookup;
+	int flagged = 0;
+	unsigned long hash, index, order;
+
+	if (!old_node)	/* Return -ENOENT if asked to replace NULL node */
+		goto end;
+
+	assert(!is_removed(old_node));
+	assert(!is_dummy(old_node));
+	assert(!is_removed(new_node));
+	assert(!is_dummy(new_node));
+	assert(new_node != old_node);
+	do {
+		/* Insert after node to be replaced */
+		old_next = ret_next;
+		if (is_removed(old_next)) {
+			/*
+			 * Too late, the old node has been removed under us
+			 * between lookup and replace. Fail.
+			 */
+			goto end;
+		}
+		assert(!is_dummy(old_next));
+		assert(new_node != clear_flag(old_next));
+		new_node->p.next = clear_flag(old_next);
+		/*
+		 * Here is the whole trick for lock-free replace: we add
+		 * the replacement node _after_ the node we want to
+		 * replace by atomically setting its next pointer at the
+		 * same time we set its removal flag. Given that
+		 * the lookups/get next use an iterator aware of the
+		 * next pointer, they will either skip the old node due
+		 * to the removal flag and see the new node, or use
+		 * the old node, but will not see the new one.
+		 */
+		ret_next = uatomic_cmpxchg(&old_node->p.next,
+			      old_next, flag_removed(new_node));
+	} while (ret_next != old_next);
+
+	/* We performed the replacement. */
+	flagged = 1;
+
+	/*
+	 * Ensure that the old node is not visible to readers anymore:
+	 * lookup for the node, and remove it (along with any other
+	 * logically removed node) if found.
+	 */
+	hash = bit_reverse_ulong(old_node->p.reverse_hash);
+	assert(size > 0);
+	index = hash & (size - 1);
+	order = get_count_order_ulong(index + 1);
+	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
+	dummy = (struct cds_lfht_node *) lookup;
+	_cds_lfht_gc_bucket(dummy, new_node);
+end:
+	/*
+	 * Only the flagging action indicated that we (and no other)
+	 * replaced the node from the hash table.
+	 */
+	if (flagged) {
+		assert(is_removed(rcu_dereference(old_node->p.next)));
+		return 0;
+	} else {
+		return -ENOENT;
+	}
+}
+
+static
 struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				unsigned long size,
 				struct cds_lfht_node *node,
@@ -852,36 +926,13 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		}
 
 	replace:
-		/* Insert after node to be replaced */
-		iter_prev = clear_flag(iter);
-		iter = next;
-		assert(node != clear_flag(iter));
-		assert(!is_removed(iter_prev));
-		assert(!is_removed(iter));
-		assert(iter_prev != node);
-		assert(!dummy);
-		node->p.next = clear_flag(iter);
-		if (is_dummy(iter))
-			new_node = flag_dummy(node);
-		else
-			new_node = node;
-		/*
-		 * Here is the whole trick for lock-free replace: we add
-		 * the replacement node _after_ the node we want to
-		 * replace by atomically setting its next pointer at the
-		 * same time we set its removal flag. Given that
-		 * the lookups/get next use an iterator aware of the
-		 * next pointer, they will either skip the old node due
-		 * to the removal flag and see the new node, or use
-		 * the old node, but will not see the new one.
-		 */
-		new_node = flag_removed(new_node);
-		if (uatomic_cmpxchg(&iter_prev->p.next,
-			      iter, new_node) != iter) {
-			continue;	/* retry */
+
+		if (!_cds_lfht_replace(ht, size, clear_flag(iter), next,
+				    node)) {
+			return_node = clear_flag(iter);
+			goto end;	/* gc already done */
 		} else {
-			return_node = iter_prev;
-			goto gc_end;
+			continue;	/* retry */
 		}
 
 	gc_node:
@@ -900,6 +951,7 @@ gc_end:
 	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy_node = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy_node, node);
+end:
 	return return_node;
 }
 
@@ -912,6 +964,9 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	struct _cds_lfht_node *lookup;
 	int flagged = 0;
 	unsigned long hash, index, order;
+
+	if (!node)	/* Return -ENOENT if asked to delete NULL node */
+		goto end;
 
 	/* logically delete the node */
 	assert(!is_dummy(node));
@@ -954,8 +1009,9 @@ end:
 	if (flagged) {
 		assert(is_removed(rcu_dereference(node->p.next)));
 		return 0;
-	} else
+	} else {
 		return -ENOENT;
+	}
 }
 
 static
@@ -1364,7 +1420,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	return ret;
 }
 
-struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht,
+struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 				struct cds_lfht_node *node)
 {
 	unsigned long hash, size;
@@ -1380,13 +1436,23 @@ struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht,
 	return ret;
 }
 
-int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
+int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
+		struct cds_lfht_node *new_node)
+{
+	unsigned long size;
+
+	size = rcu_dereference(ht->t.size);
+	return _cds_lfht_replace(ht, size, old_iter->node, old_iter->next,
+			new_node);
+}
+
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
 	unsigned long size;
 	int ret;
 
 	size = rcu_dereference(ht->t.size);
-	ret = _cds_lfht_del(ht, size, node, 0);
+	ret = _cds_lfht_del(ht, size, iter->node, 0);
 	if (!ret)
 		ht_count_del(ht, size);
 	return ret;

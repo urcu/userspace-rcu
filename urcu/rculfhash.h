@@ -212,13 +212,13 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node);
  * The semantic of this function is that if only this function is used
  * to add keys into the table, no duplicated keys should ever be
  * observable in the table. The same guarantee apply for combination of
- * add_unique and replace (see below).
+ * add_unique and add_replace (see below).
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_replace - replace a node within hash table.
+ * cds_lfht_add_replace - replace or add a node within hash table.
  *
  * Return the node replaced upon success. If no node matching the key
  * was present, return NULL, which also means the operation succeeded.
@@ -228,29 +228,60 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * freeing the memory reserved for the returned node.
  *
  * The semantic of replacement vs lookups is the following: if lookups
- * are performed between a key insertion and its removal, we guarantee
- * that the lookups will always find the key if it is replaced
- * concurrently with the lookups.
+ * are performed between a key unique insertion and its removal, we
+ * guarantee that the lookups and get next will always find exactly one
+ * instance of the key if it is replaced concurrently with the lookups.
  *
  * Providing this semantic allows us to ensure that replacement-only
  * schemes will never generate duplicated keys. It also allows us to
- * guarantee that a combination of replacement and add_unique updates
+ * guarantee that a combination of add_replace and add_unique updates
  * will never generate duplicated keys.
  */
-struct cds_lfht_node *cds_lfht_replace(struct cds_lfht *ht,
+struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_del - remove node from hash table.
+ * cds_lfht_replace - replace a node pointer to by iter within hash table.
  *
- * Return 0 if the node is successfully removed.
- * Node can be looked up with cds_lfht_lookup. RCU read-side lock must
- * be held between lookup and removal.
+ * Return 0 if replacement is successful, negative value otherwise.
+ * Replacing a NULL old node or an already removed node will fail with a
+ * negative value.
+ * Old node can be looked up with cds_lfht_lookup and cds_lfht_next.
+ * RCU read-side lock must be held between lookup and replacement.
+ * Call with rcu_read_lock held.
+ * After successful replacement, a grace period must be waited for before
+ * freeing the memory reserved for the old node (which can be accessed
+ * with cds_lfht_iter_get_node).
+ *
+ * The semantic of replacement vs lookups is the following: if lookups
+ * are performed between a key unique insertion and its removal, we
+ * guarantee that the lookups and get next will always find exactly one
+ * instance of the key if it is replaced concurrently with the lookups.
+ *
+ * Providing this semantic allows us to ensure that replacement-only
+ * schemes will never generate duplicated keys. It also allows us to
+ * guarantee that a combination of add_replace and add_unique updates
+ * will never generate duplicated keys.
+ */
+int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
+		struct cds_lfht_node *new_node);
+
+/*
+ * cds_lfht_del - remove node pointed to by iterator from hash table.
+ *
+ * Return 0 if the node is successfully removed, negative value
+ * otherwise.
+ * Replacing a NULL node or an already removed node will fail with a
+ * negative value.
+ * Node can be looked up with cds_lfht_lookup and cds_lfht_next.
+ * cds_lfht_iter_get_node.
+ * RCU read-side lock must be held between lookup and removal.
  * Call with rcu_read_lock held.
  * After successful removal, a grace period must be waited for before
- * freeing the memory reserved for node.
+ * freeing the memory reserved for old node (which can be accessed with
+ * cds_lfht_iter_get_node).
  */
-int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_resize - Force a hash table resize
