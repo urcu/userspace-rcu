@@ -32,6 +32,12 @@ extern "C" {
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
 #define CAA_CACHE_LINE_SIZE	256
 
+#ifdef __NO_LWSYNC__
+#define LWSYNC_OPCODE	"sync\n"
+#else
+#define LWSYNC_OPCODE	"lwsync\n"
+#endif
+
 /*
  * Use sync for all cmm_mb/rmb/wmb barriers because lwsync does not
  * preserve ordering of cacheable vs. non-cacheable accesses, so it
@@ -48,8 +54,8 @@ extern "C" {
  * Therefore, use it for barriers ordering accesses to cacheable memory
  * only.
  */
-#define cmm_smp_rmb()    asm volatile("lwsync":::"memory")
-#define cmm_smp_wmb()    asm volatile("lwsync":::"memory")
+#define cmm_smp_rmb()    asm volatile(LWSYNC_OPCODE:::"memory")
+#define cmm_smp_wmb()    asm volatile(LWSYNC_OPCODE:::"memory")
 
 #define mftbl()						\
 	({ 						\

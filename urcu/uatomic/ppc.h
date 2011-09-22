@@ -27,12 +27,6 @@
 extern "C" {
 #endif 
 
-#ifdef __NO_LWSYNC__
-#define LWSYNC_OPCODE	"sync\n"
-#else
-#define LWSYNC_OPCODE	"lwsync\n"
-#endif
-
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
 /*
