@@ -36,10 +36,26 @@ extern "C" {
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
 /*
- * Using a isync as second barrier for exchange to provide acquire semantic.
- * According to uatomic_ops/sysdeps/gcc/powerpc.h, the documentation is "fairly
- * explicit that this also has acquire semantics."
- * Derived from AO_compare_and_swap(), but removed the comparison.
+ * Providing sequential consistency semantic with respect to other
+ * instructions for cmpxchg and add_return family of atomic primitives.
+ *
+ * This is achieved with:
+ *   lwsync (prior loads can be reordered after following load)
+ *   lwarx
+ *   stwcx.
+ *   test if success (retry)
+ *   sync
+ *
+ * Explanation of the sequential consistency provided by this scheme
+ * from Paul E. McKenney:
+ *
+ * The reason we can get away with the lwsync before is that if a prior
+ * store reorders with the lwarx, then you have to store to the atomic
+ * variable from some other CPU to detect it.
+ *
+ * And if you do that, the lwarx will lose its reservation, so the stwcx
+ * will fail.  The atomic operation will retry, so that the caller won't be
+ * able to see the misordering.
  */
 
 /* xchg */
@@ -57,7 +73,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 		"1:\t"	"lwarx %0,0,%1\n"	/* load and reserve */
 			"stwcx. %2,0,%1\n"	/* else store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 				: "=&r"(result)
 				: "r"(addr), "r"(val)
 				: "memory", "cc");
@@ -74,7 +90,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 		"1:\t"	"ldarx %0,0,%1\n"	/* load and reserve */
 			"stdcx. %2,0,%1\n"	/* else store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 				: "=&r"(result)
 				: "r"(addr), "r"(val)
 				: "memory", "cc");
@@ -110,7 +126,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			"bne 2f\n"		/* old, fail */
 			"stwcx. %2,0,%1\n"	/* else store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 		"2:\n"
 				: "=&r"(old_val)
 				: "r"(addr), "r"((unsigned int)_new),
@@ -131,7 +147,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			"bne 2f\n"		/* old, fail */
 			"stdcx. %2,0,%1\n"	/* else store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 		"2:\n"
 				: "=&r"(old_val)
 				: "r"(addr), "r"((unsigned long)_new),
@@ -171,7 +187,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 			"add %0,%2,%0\n"	/* add val to value loaded */
 			"stwcx. %0,0,%1\n"	/* store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 				: "=&r"(result)
 				: "r"(addr), "r"(val)
 				: "memory", "cc");
@@ -189,7 +205,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 			"add %0,%2,%0\n"	/* add val to value loaded */
 			"stdcx. %0,0,%1\n"	/* store conditional */
 			"bne- 1b\n"	 	/* retry if lost reservation */
-			"isync\n"
+			"sync\n"
 				: "=&r"(result)
 				: "r"(addr), "r"(val)
 				: "memory", "cc");
