@@ -79,4 +79,10 @@
  */
 #define __rcu
 
+#ifdef __cplusplus
+#define URCU_FORCE_CAST(type, arg)	(reinterpret_cast<type>(arg))
+#else
+#define URCU_FORCE_CAST(type, arg)	((type) (arg))
+#endif
+
 #endif /* _URCU_COMPILER_H */

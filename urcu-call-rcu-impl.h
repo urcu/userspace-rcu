@@ -386,6 +386,7 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 	static int warned = 0;
 
 	call_rcu_lock(&call_rcu_mutex);
+	alloc_cpu_call_rcu_data();
 	if (cpu < 0 || maxcpus <= cpu) {
 		if (!warned) {
 			fprintf(stderr, "[error] liburcu: set CPU # out of range\n");
@@ -395,13 +396,21 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 		errno = EINVAL;
 		return -EINVAL;
 	}
-	alloc_cpu_call_rcu_data();
-	call_rcu_unlock(&call_rcu_mutex);
+
 	if (per_cpu_call_rcu_data == NULL) {
+		call_rcu_unlock(&call_rcu_mutex);
 		errno = ENOMEM;
 		return -ENOMEM;
 	}
+
+	if (per_cpu_call_rcu_data[cpu] != NULL && crdp != NULL) {
+		call_rcu_unlock(&call_rcu_mutex);
+		errno = EEXIST;
+		return -EEXIST;
+	}
+
 	per_cpu_call_rcu_data[cpu] = crdp;
+	call_rcu_unlock(&call_rcu_mutex);
 	return 0;
 }
 
@@ -435,22 +444,17 @@ struct call_rcu_data *get_default_call_rcu_data(void)
  */
 struct call_rcu_data *get_call_rcu_data(void)
 {
-	int curcpu;
-	static int warned = 0;
+	struct call_rcu_data *crd;
 
 	if (thread_call_rcu_data != NULL)
 		return thread_call_rcu_data;
-	if (maxcpus <= 0)
-		return get_default_call_rcu_data();
-	curcpu = sched_getcpu();
-	if (!warned && (curcpu < 0 || maxcpus <= curcpu)) {
-		fprintf(stderr, "[error] liburcu: gcrd CPU # out of range\n");
-		warned = 1;
+
+	if (maxcpus > 0) {
+		crd = get_cpu_call_rcu_data(sched_getcpu());
+		if (crd)
+			return crd;
 	}
-	if (curcpu >= 0 && maxcpus > curcpu &&
-	    per_cpu_call_rcu_data != NULL &&
-	    per_cpu_call_rcu_data[curcpu] != NULL)
-	    	return per_cpu_call_rcu_data[curcpu];
+
 	return get_default_call_rcu_data();
 }
 
@@ -518,8 +522,13 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 		}
 		call_rcu_unlock(&call_rcu_mutex);
 		if ((ret = set_cpu_call_rcu_data(i, crdp)) != 0) {
-			/* FIXME: Leaks crdp for now. */
-			return ret; /* Can happen on race. */
+			call_rcu_data_free(crdp);
+
+			/* it has been created by other thread */
+			if (ret == -EEXIST)
+				continue;
+
+			return ret;
 		}
 	}
 	return 0;
@@ -605,9 +614,11 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		*cbs_endprev = cbs;
 		uatomic_add(&default_call_rcu_data->qlen,
 			    uatomic_read(&crdp->qlen));
-		cds_list_del(&crdp->list);
-		free(crdp);
+		wake_call_rcu_thread(default_call_rcu_data);
 	}
+
+	cds_list_del(&crdp->list);
+	free(crdp);
 }
 
 /*
@@ -656,7 +667,7 @@ void call_rcu_after_fork_parent(void)
  */
 void call_rcu_after_fork_child(void)
 {
-	struct call_rcu_data *crdp;
+	struct call_rcu_data *crdp, *next;
 
 	/* Release the mutex. */
 	call_rcu_unlock(&call_rcu_mutex);
@@ -669,12 +680,9 @@ void call_rcu_after_fork_child(void)
 	(void)get_default_call_rcu_data();
 
 	/* Dispose of all of the rest of the call_rcu_data structures. */
-	while (call_rcu_data_list.next != call_rcu_data_list.prev) {
-		crdp = cds_list_entry(call_rcu_data_list.prev,
-				      struct call_rcu_data, list);
+	cds_list_for_each_entry_safe(crdp, next, &call_rcu_data_list, list) {
 		if (crdp == default_call_rcu_data)
-			crdp = cds_list_entry(crdp->list.prev,
-					      struct call_rcu_data, list);
+			continue;
 		uatomic_set(&crdp->flags, URCU_CALL_RCU_STOPPED);
 		call_rcu_data_free(crdp);
 	}

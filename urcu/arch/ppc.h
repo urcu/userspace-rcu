@@ -32,7 +32,24 @@ extern "C" {
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
 #define CAA_CACHE_LINE_SIZE	256
 
-#define cmm_mb()    asm volatile("sync":::"memory")
+/*
+ * Use sync for all cmm_mb/rmb/wmb barriers because lwsync does not
+ * preserve ordering of cacheable vs. non-cacheable accesses, so it
+ * should not be used to order with respect to MMIO operations.  An
+ * eieio+lwsync pair is also not enough for cmm_rmb, because it will
+ * order cacheable and non-cacheable memory operations separately---i.e.
+ * not the latter against the former.
+ */
+#define cmm_mb()         asm volatile("sync":::"memory")
+
+/*
+ * lwsync orders loads in cacheable memory with respect to other loads,
+ * and stores in cacheable memory with respect to other stores.
+ * Therefore, use it for barriers ordering accesses to cacheable memory
+ * only.
+ */
+#define cmm_smp_rmb()    asm volatile("lwsync":::"memory")
+#define cmm_smp_wmb()    asm volatile("lwsync":::"memory")
 
 #define mftbl()						\
 	({ 						\

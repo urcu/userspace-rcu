@@ -67,37 +67,40 @@ extern "C" {
 extern void *rcu_dereference_sym(void *p);
 #define rcu_dereference(p)						     \
 	({								     \
-		typeof(p) _________p1 =					     \
-			rcu_dereference_sym((void *)(p));		     \
+		typeof(p) _________p1 =	URCU_FORCE_CAST(typeof(p),	     \
+			rcu_dereference_sym(URCU_FORCE_CAST(void *, p)));    \
 		(_________p1);						     \
 	})
 
 extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer(p, old, _new)				     \
 	({								     \
-		typeof(*p) _________pold = (old);			     \
-		typeof(*p) _________pnew = (_new);			     \
-		typeof(*p) _________p1 =				     \
-			rcu_cmpxchg_pointer_sym((void **)(p), _________pold, \
-						_________pnew);		     \
+		typeof(*(p)) _________pold = (old);			     \
+		typeof(*(p)) _________pnew = (_new);			     \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_cmpxchg_pointer_sym(URCU_FORCE_CAST(void **, p),\
+						_________pold,		     \
+						_________pnew));	     \
 		(_________p1);						     \
 	})
 
 extern void *rcu_xchg_pointer_sym(void **p, void *v);
 #define rcu_xchg_pointer(p, v)						     \
 	({								     \
-		typeof(*p) _________pv = (v);			             \
-		typeof(*p) _________p1 =				     \
-			rcu_xchg_pointer_sym((void **)(p), _________pv);     \
+		typeof(*(p)) _________pv = (v);			             \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_xchg_pointer_sym(URCU_FORCE_CAST(void **, p),    \
+					     _________pv));		     \
 		(_________p1);						     \
 	})
 
 extern void *rcu_set_pointer_sym(void **p, void *v);
 #define rcu_set_pointer(p, v)						     \
 	({								     \
-		typeof(*p) _________pv = (v);			             \
-		typeof(*p) _________p1 =				     \
-			rcu_set_pointer_sym((void **)(p), _________pv);	     \
+		typeof(*(p)) _________pv = (v);			             \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_set_pointer_sym(URCU_FORCE_CAST(void **, p),     \
+					    _________pv));		     \
 	})
 
 #endif /* !_LGPL_SOURCE */
