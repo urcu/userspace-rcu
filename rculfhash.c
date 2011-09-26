@@ -139,12 +139,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "config.h"
+#include <urcu/config.h>
 #include <urcu.h>
 #include <urcu-call-rcu.h>
 #include <urcu/arch.h>
 #include <urcu/uatomic.h>
-#include <urcu/jhash.h>
 #include <urcu/compiler.h>
 #include <urcu/rculfhash.h>
 #include <stdio.h>
