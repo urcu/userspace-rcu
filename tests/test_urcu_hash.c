@@ -515,10 +515,10 @@ void *thr_writer(void *_count)
 		if ((addremove == AR_ADD || add_only)
 				|| (addremove == AR_RANDOM && rand_r(&rand_lookup) & 1)) {
 			node = malloc(sizeof(struct cds_lfht_node));
-			rcu_read_lock();
 			cds_lfht_node_init(node,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
+			rcu_read_lock();
 			if (add_unique) {
 				ret_node = cds_lfht_add_unique(test_ht, node);
 			} else {
