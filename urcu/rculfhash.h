@@ -185,7 +185,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 		struct cds_lfht_iter *iter);
 
 /*
- * cds_lfht_next - get the next item with same key (after a lookup).
+ * cds_lfht_next_duplicate - get the next item with same key (after a lookup).
  *
  * Uses an iterator initialized by a lookup.
  * Sets *iter-node to the following node with same key.
@@ -195,7 +195,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
  * node returned by a previous cds_lfht_next.
  * Call with rcu_read_lock held.
  */
-void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
+void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_add - add a node to the hash table.

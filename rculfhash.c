@@ -1355,7 +1355,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 	iter->next = next;
 }
 
-void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
