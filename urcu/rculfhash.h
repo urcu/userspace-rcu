@@ -42,6 +42,11 @@ struct _cds_lfht_node {
 	unsigned long reverse_hash;
 } __attribute__((aligned(4)));
 
+/*
+ * struct cds_lfht_node can be embedded into a structure (as a field).
+ * caa_container_of() can be used to get the structure from the struct
+ * cds_lfht_node after a lookup.
+ */
 struct cds_lfht_node {
 	/* cache-hot for iteration */
 	struct _cds_lfht_node p;          /* needs to be first field */
