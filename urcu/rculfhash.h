@@ -198,6 +198,23 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
+ * cds_lfht_first - get the first node in the table.
+ *
+ * Output in "*iter". *iter->node set to NULL if table is empty.
+ * Call with rcu_read_lock held.
+ */
+void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
+
+/*
+ * cds_lfht_next - get the next node in the table.
+ *
+ * Input/Output in "*iter". *iter->node set to NULL if *iter was
+ * pointing to the last table node.
+ * Call with rcu_read_lock held.
+ */
+void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
+
+/*
  * cds_lfht_add - add a node to the hash table.
  *
  * Call with rcu_read_lock held.

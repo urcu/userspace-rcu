@@ -1391,6 +1391,44 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	iter->next = next;
 }
 
+void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+{
+	struct cds_lfht_node *node, *next;
+
+	node = iter->node;
+	next = iter->next;
+	node = clear_flag(next);
+
+	for (;;) {
+		if (unlikely(is_end(node))) {
+			node = next = NULL;
+			break;
+		}
+		next = rcu_dereference(node->p.next);
+		if (likely(!is_removed(next))
+		    && !is_dummy(next)) {
+				break;
+		}
+		node = clear_flag(next);
+	}
+	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
+	iter->node = node;
+	iter->next = next;
+}
+
+void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+{
+	struct _cds_lfht_node *lookup;
+
+	/*
+	 * Get next after first dummy node. The first dummy node is the
+	 * first node of the linked list.
+	 */
+	lookup = &ht->t.tbl[0]->nodes[0];
+	iter->node = (struct cds_lfht_node *) lookup;
+	cds_lfht_next(ht, iter);
+}
+
 void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	unsigned long hash, size;
