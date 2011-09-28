@@ -1399,10 +1399,7 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 
-	node = iter->node;
-	next = iter->next;
-	node = clear_flag(next);
-
+	node = clear_flag(iter->next);
 	for (;;) {
 		if (unlikely(is_end(node))) {
 			node = next = NULL;
@@ -1429,7 +1426,7 @@ void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	 * first node of the linked list.
 	 */
 	lookup = &ht->t.tbl[0]->nodes[0];
-	iter->node = (struct cds_lfht_node *) lookup;
+	iter->next = lookup->next;
 	cds_lfht_next(ht, iter);
 }
 
