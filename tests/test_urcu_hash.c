@@ -633,6 +633,26 @@ static int populate_hash(void)
 	return 0;
 }
 
+static
+void test_delete_all_nodes(struct cds_lfht *ht)
+{
+	struct cds_lfht_iter iter;
+	struct cds_lfht_node *node;
+	unsigned long count = 0;
+
+	cds_lfht_first(ht, &iter);
+	while ((node = cds_lfht_iter_get_node(&iter)) != NULL) {
+		int ret;
+
+		ret = cds_lfht_del(test_ht, &iter);
+		assert(!ret);
+		call_rcu(&node->head, free_node_cb);
+		cds_lfht_next(ht, &iter);
+		count++;
+	}
+	printf("deleted %lu nodes.\n", count);
+}
+
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s)\n", argv[0]);
@@ -930,19 +950,20 @@ int main(int argc, char **argv)
 	if (err != 0)
 		exit(1);
 
-	printf("Counting nodes... ");
 	fflush(stdout);
 	rcu_thread_online();
 	rcu_read_lock();
+	printf("Counting nodes... ");
 	cds_lfht_count_nodes(test_ht, &approx_before, &count, &removed,
 		&approx_after);
+	printf("done.\n");
+	test_delete_all_nodes(test_ht);
 	rcu_read_unlock();
 	rcu_thread_offline();
-	printf("done.\n");
 	if (count || removed) {
 		printf("Approximation before node accounting: %ld nodes.\n",
 			approx_before);
-		printf("WARNING: nodes left in the hash table upon destroy: "
+		printf("Nodes deleted from hash table before destroy: "
 			"%lu nodes + %lu logically removed.\n",
 			count, removed);
 		printf("Approximation after node accounting: %ld nodes.\n",
