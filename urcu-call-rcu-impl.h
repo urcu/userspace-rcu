@@ -609,6 +609,8 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		_CMM_STORE_SHARED(crdp->cbs.head, NULL);
 		cbs_tail = (struct cds_wfq_node **)
 			uatomic_xchg(&crdp->cbs.tail, &crdp->cbs.head);
+		/* Create default call rcu data if need be */
+		(void) get_default_call_rcu_data();
 		cbs_endprev = (struct cds_wfq_node **)
 			uatomic_xchg(&default_call_rcu_data, cbs_tail);
 		*cbs_endprev = cbs;
