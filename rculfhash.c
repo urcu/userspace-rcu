@@ -608,7 +608,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 
 #else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
 
-static const long nr_cpus_mask = -1;
+static const long nr_cpus_mask = -2;
 
 static
 struct ht_items_count *alloc_per_cpu_items_count(void)
@@ -1041,8 +1041,12 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	 * We spawn just the number of threads we need to satisfy the minimum
 	 * partition size, up to the number of CPUs in the system.
 	 */
-	nr_threads = min(nr_cpus_mask + 1,
-			 len >> MIN_PARTITION_PER_THREAD_ORDER);
+	if (nr_cpus_mask > 0) {
+		nr_threads = min(nr_cpus_mask + 1,
+				 len >> MIN_PARTITION_PER_THREAD_ORDER);
+	} else {
+		nr_threads = 1;
+	}
 	partition_len = len >> get_count_order_ulong(nr_threads);
 	work = calloc(nr_threads, sizeof(*work));
 	thread_id = calloc(nr_threads, sizeof(*thread_id));
