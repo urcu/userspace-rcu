@@ -350,10 +350,9 @@ static
 unsigned long test_hash(void *_key, size_t length, unsigned long seed)
 {
 	unsigned long key = (unsigned long) _key;
-	unsigned long v;
 
 	assert(length == sizeof(unsigned long));
-	return hash_u32(&v, 1, seed);
+	return hash_u32(&key, 1, seed);
 }
 #else
 static
