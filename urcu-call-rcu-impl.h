@@ -669,6 +669,7 @@ void free_all_cpu_call_rcu_data(void)
 			fprintf(stderr, "[error] liburcu: unable to allocate per-CPU pointer array\n");
 		}
 		warned = 1;
+		return;
 	}
 
 	for (cpu = 0; cpu < maxcpus; cpu++) {
