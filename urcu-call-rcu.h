@@ -62,16 +62,28 @@ struct rcu_head {
 /*
  * Exported functions
  */
+
+/*
+ * get_cpu_call_rcu_data should be called with RCU read-side lock held.
+ * Callers should be registered RCU read-side threads.
+ */
 struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
 pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
 struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 					   int cpu_affinity);
 int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
 struct call_rcu_data *get_default_call_rcu_data(void);
+/*
+ * get_call_rcu_data should be called from registered RCU read-side
+ * threads.
+ */
 struct call_rcu_data *get_call_rcu_data(void);
 struct call_rcu_data *get_thread_call_rcu_data(void);
 void set_thread_call_rcu_data(struct call_rcu_data *crdp);
 int create_all_cpu_call_rcu_data(unsigned long flags);
+/*
+ * call_rcu should be called from registered RCU read-side threads.
+ */
 void call_rcu(struct rcu_head *head,
 	      void (*func)(struct rcu_head *head));
 void call_rcu_data_free(struct call_rcu_data *crdp);

@@ -39,6 +39,7 @@
 #include "urcu/wfqueue.h"
 #include "urcu/map/urcu.h"
 #include "urcu/static/urcu.h"
+#include "urcu-pointer.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
