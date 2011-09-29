@@ -122,6 +122,7 @@ static pthread_mutex_t rcu_defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t defer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int32_t defer_thread_futex;
+static int32_t defer_thread_stop;
 
 /*
  * Written to only by each individual deferer. Read by both the deferer and
@@ -148,7 +149,6 @@ static void mutex_lock_defer(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		pthread_testcancel();
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
@@ -186,7 +186,13 @@ static unsigned long rcu_defer_num_callbacks(void)
 static void wait_defer(void)
 {
 	uatomic_dec(&defer_thread_futex);
-	cmm_smp_mb();	/* Write futex before read queue */
+	/* Write futex before read queue */
+	/* Write futex before read defer_thread_stop */
+	cmm_smp_mb();
+	if (_CMM_LOAD_SHARED(defer_thread_stop)) {
+		uatomic_set(&defer_thread_futex, 0);
+		pthread_exit(0);
+	}
 	if (rcu_defer_num_callbacks()) {
 		cmm_smp_mb();	/* Read queue before write futex */
 		/* Callbacks are queued, don't wait. */
@@ -359,7 +365,6 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 void *thr_defer(void *args)
 {
 	for (;;) {
-		pthread_testcancel();
 		/*
 		 * "Be green". Don't wake up the CPU if there is no RCU work
 		 * to perform whatsoever. Aims at saving laptop battery life by
@@ -396,10 +401,17 @@ static void stop_defer_thread(void)
 	int ret;
 	void *tret;
 
-	pthread_cancel(tid_defer);
+	_CMM_STORE_SHARED(defer_thread_stop, 1);
+	/* Store defer_thread_stop before testing futex */
+	cmm_smp_mb();
 	wake_up_defer();
+
 	ret = pthread_join(tid_defer, &tret);
 	assert(!ret);
+
+	CMM_STORE_SHARED(defer_thread_stop, 0);
+	/* defer thread should always exit when futex value is 0 */
+	assert(uatomic_read(&defer_thread_futex) == 0);
 }
 
 int rcu_defer_register_thread(void)
