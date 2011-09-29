@@ -75,7 +75,7 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
 struct call_rcu_data *get_default_call_rcu_data(void);
 /*
  * get_call_rcu_data should be called from registered RCU read-side
- * threads.
+ * threads. For the QSBR flavor, the caller should be online.
  */
 struct call_rcu_data *get_call_rcu_data(void);
 struct call_rcu_data *get_thread_call_rcu_data(void);
@@ -83,6 +83,7 @@ void set_thread_call_rcu_data(struct call_rcu_data *crdp);
 int create_all_cpu_call_rcu_data(unsigned long flags);
 /*
  * call_rcu should be called from registered RCU read-side threads.
+ * For the QSBR flavor, the caller should be online.
  */
 void call_rcu(struct rcu_head *head,
 	      void (*func)(struct rcu_head *head));
