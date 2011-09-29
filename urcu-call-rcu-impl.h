@@ -677,6 +677,10 @@ void call_rcu_after_fork_child(void)
 	/* Release the mutex. */
 	call_rcu_unlock(&call_rcu_mutex);
 
+	/* Do nothing when call_rcu() has not been used */
+	if (cds_list_empty(&call_rcu_data_list))
+		return;
+
 	/*
 	 * Allocate a new default call_rcu_data structure in order
 	 * to get a working call_rcu thread to go with it.
