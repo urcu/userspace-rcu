@@ -619,7 +619,10 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		wake_call_rcu_thread(default_call_rcu_data);
 	}
 
+	call_rcu_lock(&call_rcu_mutex);
 	cds_list_del(&crdp->list);
+	call_rcu_unlock(&call_rcu_mutex);
+
 	free(crdp);
 }
 
