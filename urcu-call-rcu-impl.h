@@ -88,6 +88,11 @@ static struct call_rcu_data *default_call_rcu_data;
 static struct call_rcu_data **per_cpu_call_rcu_data;
 static long maxcpus;
 
+static void maxcpus_reset(void)
+{
+	maxcpus = 0;
+}
+
 /* Allocate the array if it has not already been allocated. */
 
 static void alloc_cpu_call_rcu_data(void)
@@ -122,6 +127,10 @@ static void alloc_cpu_call_rcu_data(void)
  */
 static struct call_rcu_data **per_cpu_call_rcu_data = NULL;
 static const long maxcpus = -1;
+
+static void maxcpus_reset(void)
+{
+}
 
 static void alloc_cpu_call_rcu_data(void)
 {
@@ -687,6 +696,12 @@ void call_rcu_after_fork_child(void)
 	 */
 	default_call_rcu_data = NULL;
 	(void)get_default_call_rcu_data();
+
+	/* Cleanup call_rcu_data pointers before use */
+	maxcpus_reset();
+	free(per_cpu_call_rcu_data);
+	per_cpu_call_rcu_data = NULL;
+	thread_call_rcu_data = NULL;
 
 	/* Dispose of all of the rest of the call_rcu_data structures. */
 	cds_list_for_each_entry_safe(crdp, next, &call_rcu_data_list, list) {
