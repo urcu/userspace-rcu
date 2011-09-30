@@ -1651,6 +1651,9 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 	 * Resize table, re-do if the target size has changed under us.
 	 */
 	do {
+		assert(uatomic_read(&ht->in_progress_resize));
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+			break;
 		ht->t.resize_initiated = 1;
 		old_size = ht->t.size;
 		new_size = CMM_LOAD_SHARED(ht->t.resize_target);
