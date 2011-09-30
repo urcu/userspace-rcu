@@ -1542,7 +1542,8 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	int ret;
 
 	/* Wait for in-flight resize operations to complete */
-	CMM_STORE_SHARED(ht->in_progress_destroy, 1);
+	_CMM_STORE_SHARED(ht->in_progress_destroy, 1);
+	cmm_smp_mb();	/* Store destroy before load resize */
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
 	ret = cds_lfht_delete_dummy(ht);
@@ -1650,6 +1651,8 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 	 * Resize table, re-do if the target size has changed under us.
 	 */
 	do {
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+			break;
 		ht->t.resize_initiated = 1;
 		old_size = ht->t.size;
 		new_size = CMM_LOAD_SHARED(ht->t.resize_target);
