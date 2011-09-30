@@ -1720,8 +1720,10 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth)
 	if (!CMM_LOAD_SHARED(ht->t.resize_initiated) && size < target_size) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before load destroy */
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy)) {
+			uatomic_dec(&ht->in_progress_resize);
 			return;
+		}
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
@@ -1745,8 +1747,10 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	if (!CMM_LOAD_SHARED(ht->t.resize_initiated)) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before load destroy */
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy)) {
+			uatomic_dec(&ht->in_progress_resize);
 			return;
+		}
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
