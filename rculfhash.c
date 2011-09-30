@@ -1097,8 +1097,6 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
 		(void) _cds_lfht_add(ht, !i ? 0 : (1UL << (i - 1)),
 				new_node, ADD_DEFAULT, 1);
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
-			break;
 	}
 	ht->cds_lfht_rcu_read_unlock();
 }
@@ -1200,8 +1198,6 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
 		(void) _cds_lfht_del(ht, !i ? 0 : (1UL << (i - 1)),
 				fini_node, 1);
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
-			break;
 	}
 	ht->cds_lfht_rcu_read_unlock();
 }
