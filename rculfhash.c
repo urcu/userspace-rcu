@@ -1651,8 +1651,6 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 	 * Resize table, re-do if the target size has changed under us.
 	 */
 	do {
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
-			break;
 		ht->t.resize_initiated = 1;
 		old_size = ht->t.size;
 		new_size = CMM_LOAD_SHARED(ht->t.resize_target);
@@ -1721,7 +1719,9 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth)
 	cmm_smp_mb();
 	if (!CMM_LOAD_SHARED(ht->t.resize_initiated) && size < target_size) {
 		uatomic_inc(&ht->in_progress_resize);
-		cmm_smp_mb();	/* increment resize count before calling it */
+		cmm_smp_mb();	/* increment resize count before load destroy */
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+			return;
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
@@ -1744,7 +1744,9 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	cmm_smp_mb();
 	if (!CMM_LOAD_SHARED(ht->t.resize_initiated)) {
 		uatomic_inc(&ht->in_progress_resize);
-		cmm_smp_mb();	/* increment resize count before calling it */
+		cmm_smp_mb();	/* increment resize count before load destroy */
+		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+			return;
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
