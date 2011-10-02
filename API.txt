@@ -16,14 +16,14 @@ void rcu_read_unlock(void);
 
 	End an RCU read-side critical section.
 
-void rcu_register_thread(void)
+void rcu_register_thread(void);
 
 	Each thread must invoke this function before its first call to
 	rcu_read_lock().  Threads that never call rcu_read_lock() need
 	not invoke this function.  In addition, rcu-bp ("bullet proof"
 	RCU) does not require any thread to invoke rcu_register_thread().
 
-void rcu_unregister_thread(void)
+void rcu_unregister_thread(void);
 
 	Each thread that invokes rcu_register_thread() must invoke
 	rcu_unregister_thread() before invoking pthread_exit()
@@ -59,6 +59,9 @@ void call_rcu(struct rcu_head *head,
 
 		call_rcu(&p->rcu, func);
 
+	call_rcu should be called from registered RCU read-side threads.
+	For the QSBR flavor, the caller should be online.
+
 struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 					   int cpu_affinity);
 
@@ -77,12 +80,46 @@ struct call_rcu_data *get_call_rcu_data(void);
 
 	Returns the handle of the current thread's call_rcu() helper
 	thread, which might well be the default helper thread.
+	get_call_rcu_data should be called from registered RCU read-side
+	threads.  For the QSBR flavor, the caller should be online.
+
+void call_rcu_data_free(struct call_rcu_data *crdp);
+
+	Terminates a call_rcu() helper thread and frees its associated
+	data.  The caller must have ensured that this thread is no longer
+	in use, for example, by passing NULL to set_thread_call_rcu_data()
+	and set_cpu_call_rcu_data() as required.
+
+struct call_rcu_data *get_default_call_rcu_data(void);
+
+	Returns the handle for the default call_rcu() helper thread.
+	Creates it if necessary.
+
+struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
+
+	Returns the handle for the current cpu's call_rcu() helper
+	thread, or NULL if the current CPU has no helper thread
+	currently assigned. The call to this function and use of the
+	returned call_rcu_data should be protected by RCU read-side
+	lock.
 
 struct call_rcu_data *get_thread_call_rcu_data(void);
 
 	Returns the handle for the current thread's hard-assigned
 	call_rcu() helper thread, or NULL if the current thread is
 	instead using a per-CPU or the default helper thread.
+
+struct call_rcu_data *get_call_rcu_data(void);
+
+	Returns the handle for the current thread's call_rcu() helper
+	thread, which is either, in increasing order of preference:
+	per-thread hard-assigned helper thread, per-cpu helper thread,
+	or default helper thread.
+
+pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
+
+	Returns the helper thread's pthread identifier linked to a call
+	rcu helper thread data.
 
 void set_thread_call_rcu_data(struct call_rcu_data *crdp);
 
@@ -100,7 +137,10 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
 	this CPU from its helper thread.  Once a CPU has been
 	disassociated from its helper, further call_rcu() invocations
 	that would otherwise have used this CPU's helper will instead
-	use the default helper.
+	use the default helper.  The caller must wait for a grace-period
+	to pass between return from set_cpu_call_rcu_data() and call to
+	call_rcu_data_free() passing the previous call rcu data as
+	argument.
 
 int create_all_cpu_call_rcu_data(unsigned long flags)
 
@@ -115,9 +155,17 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 	then that executable will have only the single global default
 	call_rcu() helper thread.  This will suffice in most cases.
 
-void call_rcu_data_free(struct call_rcu_data *crdp)
+void free_all_cpu_call_rcu_data(void);
 
-	Terminates a call_rcu() helper thread and frees its associated
-	data.  The caller must have ensured that this thread is no longer
-	in use, for example, by passing NULL to set_thread_call_rcu_data()
-	and set_cpu_call_rcu_data() as required.
+	Clean up all the per-CPU call_rcu threads. Should be paired with
+	create_all_cpu_call_rcu_data() to perform teardown. Note that
+	this function invokes synchronize_rcu() internally, so the
+	caller should be careful not to hold mutexes (or mutexes within a
+	dependency chain) that are also taken within a RCU read-side
+	critical section, or in a section where QSBR threads are online.
+
+void call_rcu_after_fork_child(void);
+
+	Should be used as pthread_atfork() handler for programs using
+	call_rcu and performing fork() or clone() without a following
+	exec().

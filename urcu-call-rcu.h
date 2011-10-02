@@ -61,34 +61,31 @@ struct rcu_head {
 
 /*
  * Exported functions
+ *
+ * Important: see userspace RCU API.txt for call_rcu family of functions
+ * usage detail, including the surrounding RCU usage required when using
+ * these primitives.
  */
 
-/*
- * get_cpu_call_rcu_data should be called with RCU read-side lock held.
- * Callers should be registered RCU read-side threads.
- */
-struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
-pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
-struct call_rcu_data *create_call_rcu_data(unsigned long flags,
-					   int cpu_affinity);
-int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
-struct call_rcu_data *get_default_call_rcu_data(void);
-/*
- * get_call_rcu_data should be called from registered RCU read-side
- * threads. For the QSBR flavor, the caller should be online.
- */
-struct call_rcu_data *get_call_rcu_data(void);
-struct call_rcu_data *get_thread_call_rcu_data(void);
-void set_thread_call_rcu_data(struct call_rcu_data *crdp);
-int create_all_cpu_call_rcu_data(unsigned long flags);
-/*
- * call_rcu should be called from registered RCU read-side threads.
- * For the QSBR flavor, the caller should be online.
- */
 void call_rcu(struct rcu_head *head,
 	      void (*func)(struct rcu_head *head));
+
+struct call_rcu_data *create_call_rcu_data(unsigned long flags,
+					   int cpu_affinity);
 void call_rcu_data_free(struct call_rcu_data *crdp);
+
+struct call_rcu_data *get_default_call_rcu_data(void);
+struct call_rcu_data *get_cpu_call_rcu_data(int cpu);
+struct call_rcu_data *get_thread_call_rcu_data(void);
+struct call_rcu_data *get_call_rcu_data(void);
+pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
+
+void set_thread_call_rcu_data(struct call_rcu_data *crdp);
+int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
+
+int create_all_cpu_call_rcu_data(unsigned long flags);
 void free_all_cpu_call_rcu_data(void);
+
 void call_rcu_after_fork_child(void);
 
 #ifdef __cplusplus 
