@@ -101,6 +101,7 @@ extern void *rcu_set_pointer_sym(void **p, void *v);
 		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
 			rcu_set_pointer_sym(URCU_FORCE_CAST(void **, p),     \
 					    _________pv));		     \
+		(_________p1);						     \
 	})
 
 #endif /* !_LGPL_SOURCE */
