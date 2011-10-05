@@ -349,9 +349,9 @@ void hashword2(
 static
 unsigned long test_hash(void *_key, size_t length, unsigned long seed)
 {
-	unsigned long key = (unsigned long) _key;
+	unsigned int key = (unsigned int) _key;
 
-	assert(length == sizeof(unsigned long));
+	assert(length == sizeof(unsigned int));
 	return hash_u32(&key, 1, seed);
 }
 #else
