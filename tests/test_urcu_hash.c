@@ -200,7 +200,11 @@ static
 void sigusr2_handler(int signo)
 {
 	char msg[1] = { 0x42 };
-	write(count_pipe[1], msg, 1);	/* wakeup thread */
+	ssize_t ret;
+
+	do {
+		ret = write(count_pipe[1], msg, 1);	/* wakeup thread */
+	} while (ret == -1L && errno == EINTR);
 }
 
 /*
@@ -943,7 +947,11 @@ int main(int argc, char **argv)
 	}
 	{
 		char msg[1] = { 0x42 };
-		write(count_pipe[1], msg, 1);	/* wakeup thread */
+		ssize_t ret;
+
+		do {
+			ret = write(count_pipe[1], msg, 1);	/* wakeup thread */
+		} while (ret == -1L && errno == EINTR);
 	}
 	err = pthread_join(tid_count, &tret);
 	if (err != 0)
