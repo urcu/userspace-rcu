@@ -1609,8 +1609,8 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 
 	old_order = get_count_order_ulong(old_size) + 1;
 	new_order = get_count_order_ulong(new_size) + 1;
-	printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
-	       old_size, old_order, new_size, new_order);
+	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
+		   old_size, old_order, new_size, new_order);
 	assert(new_size > old_size);
 	init_table(ht, old_order, new_order - old_order);
 }
@@ -1625,8 +1625,8 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	new_size = max(new_size, MIN_TABLE_SIZE);
 	old_order = get_count_order_ulong(old_size) + 1;
 	new_order = get_count_order_ulong(new_size) + 1;
-	printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
-	       old_size, old_order, new_size, new_order);
+	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
+		   old_size, old_order, new_size, new_order);
 	assert(new_size < old_size);
 
 	/* Remove and unlink all dummy nodes to remove. */
