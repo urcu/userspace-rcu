@@ -255,6 +255,7 @@ struct rcu_resize_work {
 };
 
 struct partition_resize_work {
+	pthread_t thread_id;
 	struct cds_lfht *ht;
 	unsigned long i, start, len;
 	void (*fct)(struct cds_lfht *ht, unsigned long i,
@@ -1033,7 +1034,6 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	struct partition_resize_work *work;
 	int thread, ret;
 	unsigned long nr_threads;
-	pthread_t *thread_id;
 
 	/*
 	 * Note: nr_cpus_mask + 1 is always power of 2.
@@ -1048,7 +1048,6 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	}
 	partition_len = len >> get_count_order_ulong(nr_threads);
 	work = calloc(nr_threads, sizeof(*work));
-	thread_id = calloc(nr_threads, sizeof(*thread_id));
 	assert(work);
 	for (thread = 0; thread < nr_threads; thread++) {
 		work[thread].ht = ht;
@@ -1056,16 +1055,15 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		work[thread].len = partition_len;
 		work[thread].start = thread * partition_len;
 		work[thread].fct = fct;
-		ret = pthread_create(&thread_id[thread], ht->resize_attr,
+		ret = pthread_create(&(work[thread].thread_id), ht->resize_attr,
 			partition_resize_thread, &work[thread]);
 		assert(!ret);
 	}
 	for (thread = 0; thread < nr_threads; thread++) {
-		ret = pthread_join(thread_id[thread], NULL);
+		ret = pthread_join(work[thread].thread_id, NULL);
 		assert(!ret);
 	}
 	free(work);
-	free(thread_id);
 }
 
 /*
