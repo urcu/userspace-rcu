@@ -255,7 +255,6 @@ struct rcu_resize_work {
 };
 
 struct partition_resize_work {
-	struct rcu_head head;
 	struct cds_lfht *ht;
 	unsigned long i, start, len;
 	void (*fct)(struct cds_lfht *ht, unsigned long i,
