@@ -5,12 +5,12 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \
         test_rwlock_timing test_rwlock test_perthreadlock_timing \
         test_perthreadlock test_urcu_yield test_urcu_signal_yield test_urcu_mb \
-        test_qsbr_timing test_qsbr rcutorture_urcu rcutorture_urcu_signal \
-        rcutorture_urcu_mb rcutorture_urcu_bp rcutorture_qsbr \
+        test_urcu_qsbr_timing test_urcu_qsbr rcutorture_urcu rcutorture_urcu_signal \
+        rcutorture_urcu_mb rcutorture_urcu_bp rcutorture_urcu_qsbr \
 	test_mutex test_looplen test_urcu_gc test_urcu_signal_gc \
 	test_urcu_lgc \
-        test_urcu_mb_gc test_qsbr_gc test_qsbr_lgc test_urcu_signal_lgc \
-        test_urcu_mb_lgc test_qsbr_dynamic_link test_urcu_defer \
+        test_urcu_mb_gc test_urcu_qsbr_gc test_urcu_qsbr_lgc test_urcu_signal_lgc \
+        test_urcu_mb_lgc test_urcu_qsbr_dynamic_link test_urcu_defer \
         test_uatomic test_urcu_assign test_urcu_assign_dynamic_link \
         test_urcu_bp test_urcu_bp_dynamic_link test_cycles_per_loop \
 	test_urcu_lfq test_urcu_wfq test_urcu_lfs test_urcu_wfs \
@@ -58,9 +58,9 @@ test_urcu_yield_SOURCES = test_urcu.c $(URCU)
 test_urcu_yield_CFLAGS = -DDEBUG_YIELD $(AM_CFLAGS)
 
 
-test_qsbr_SOURCES = test_qsbr.c $(URCU_QSBR)
+test_urcu_qsbr_SOURCES = test_urcu_qsbr.c $(URCU_QSBR)
 
-test_qsbr_timing_SOURCES = test_qsbr_timing.c $(URCU_QSBR)
+test_urcu_qsbr_timing_SOURCES = test_urcu_qsbr_timing.c $(URCU_QSBR)
 
 
 test_urcu_mb_SOURCES = test_urcu.c $(URCU_MB)
@@ -98,9 +98,9 @@ rcutorture_urcu_mb_SOURCES = urcutorture.c
 rcutorture_urcu_mb_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 rcutorture_urcu_mb_LDADD = $(URCU_MB_LIB)
 
-rcutorture_qsbr_SOURCES = urcutorture.c
-rcutorture_qsbr_CFLAGS = -DTORTURE_QSBR -DRCU_QSBR $(AM_CFLAGS)
-rcutorture_qsbr_LDADD = $(URCU_QSBR_LIB)
+rcutorture_urcu_qsbr_SOURCES = urcutorture.c
+rcutorture_urcu_qsbr_CFLAGS = -DTORTURE_QSBR -DRCU_QSBR $(AM_CFLAGS)
+rcutorture_urcu_qsbr_LDADD = $(URCU_QSBR_LIB)
 
 rcutorture_urcu_signal_SOURCES = urcutorture.c
 rcutorture_urcu_signal_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
@@ -122,10 +122,10 @@ test_urcu_signal_gc_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 test_urcu_mb_gc_SOURCES = test_urcu_gc.c $(URCU_MB)
 test_urcu_mb_gc_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
-test_qsbr_gc_SOURCES = test_qsbr_gc.c $(URCU_QSBR)
+test_urcu_qsbr_gc_SOURCES = test_urcu_qsbr_gc.c $(URCU_QSBR)
 
-test_qsbr_lgc_SOURCES = test_qsbr_gc.c $(URCU_QSBR)
-test_qsbr_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
+test_urcu_qsbr_lgc_SOURCES = test_urcu_qsbr_gc.c $(URCU_QSBR)
+test_urcu_qsbr_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
 test_urcu_lgc_SOURCES = test_urcu_gc.c $(URCU)
 test_urcu_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
@@ -136,8 +136,8 @@ test_urcu_signal_lgc_CFLAGS = -DRCU_SIGNAL -DTEST_LOCAL_GC $(AM_CFLAGS)
 test_urcu_mb_lgc_SOURCES = test_urcu_gc.c $(URCU_MB)
 test_urcu_mb_lgc_CFLAGS = -DTEST_LOCAL_GC -DRCU_MB $(AM_CFLAGS)
 
-test_qsbr_dynamic_link_SOURCES = test_qsbr.c $(URCU_QSBR)
-test_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
+test_urcu_qsbr_dynamic_link_SOURCES = test_urcu_qsbr.c $(URCU_QSBR)
+test_urcu_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_defer_SOURCES = test_urcu_defer.c $(URCU_DEFER)
 
