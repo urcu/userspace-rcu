@@ -446,24 +446,28 @@ unsigned int fls_ulong(unsigned long x)
 #endif
 }
 
+/*
+ * Return the minimum order for which x <= (1UL << order).
+ * Return -1 if x is 0.
+ */
 int get_count_order_u32(uint32_t x)
 {
-	int order;
+	if (!x)
+		return -1;
 
-	order = fls_u32(x) - 1;
-	if (x & (x - 1))
-		order++;
-	return order;
+	return fls_u32(x - 1);
 }
 
+/*
+ * Return the minimum order for which x <= (1UL << order).
+ * Return -1 if x is 0.
+ */
 int get_count_order_ulong(unsigned long x)
 {
-	int order;
+	if (!x)
+		return -1;
 
-	order = fls_ulong(x) - 1;
-	if (x & (x - 1))
-		order++;
-	return order;
+	return fls_ulong(x - 1);
 }
 
 #ifdef POISON_FREE
