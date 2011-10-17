@@ -716,6 +716,22 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 	return v;
 }
 
+static
+struct _cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
+		unsigned long hash)
+{
+	unsigned long index, order;
+
+	assert(size > 0);
+	index = hash & (size - 1);
+	order = get_count_order_ulong(index + 1);
+
+	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
+		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
+
+	return &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
+}
+
 /*
  * Remove all logically deleted nodes from a bucket up to a certain node key.
  */
@@ -772,7 +788,6 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	struct cds_lfht_node *dummy, *old_next;
 	struct _cds_lfht_node *lookup;
 	int flagged = 0;
-	unsigned long hash, index, order;
 
 	if (!old_node)	/* Return -ENOENT if asked to replace NULL node */
 		goto end;
@@ -817,11 +832,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	 * lookup for the node, and remove it (along with any other
 	 * logically removed node) if found.
 	 */
-	hash = bit_reverse_ulong(old_node->p.reverse_hash);
-	assert(size > 0);
-	index = hash & (size - 1);
-	order = get_count_order_ulong(index + 1);
-	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
+	lookup = lookup_bucket(ht, size, bit_reverse_ulong(old_node->p.reverse_hash));
 	dummy = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy, new_node);
 end:
@@ -846,7 +857,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
 			*dummy_node, *return_node;
 	struct _cds_lfht_node *lookup;
-	unsigned long hash, index, order;
 
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
@@ -855,7 +865,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		node->p.next = flag_dummy(get_end());
 		return node;	/* Initial first add (head) */
 	}
-	hash = bit_reverse_ulong(node->p.reverse_hash);
+	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
 	for (;;) {
 		uint32_t chain_len = 0;
 
@@ -863,9 +873,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		 * iter_prev points to the non-removed node prior to the
 		 * insert location.
 		 */
-		index = hash & (size - 1);
-		order = get_count_order_ulong(index + 1);
-		lookup = &ht->t.tbl[order]->nodes[index & ((!order ? 0 : (1UL << (order - 1))) - 1)];
 		iter_prev = (struct cds_lfht_node *) lookup;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
@@ -941,9 +948,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 	}
 gc_end:
 	/* Garbage collect logically removed nodes in the bucket */
-	index = hash & (size - 1);
-	order = get_count_order_ulong(index + 1);
-	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
 	dummy_node = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy_node, node);
 end:
@@ -958,7 +962,6 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	struct cds_lfht_node *dummy, *next, *old;
 	struct _cds_lfht_node *lookup;
 	int flagged = 0;
-	unsigned long hash, index, order;
 
 	if (!node)	/* Return -ENOENT if asked to delete NULL node */
 		goto end;
@@ -989,11 +992,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	 * the node, and remove it (along with any other logically removed node)
 	 * if found.
 	 */
-	hash = bit_reverse_ulong(node->p.reverse_hash);
-	assert(size > 0);
-	index = hash & (size - 1);
-	order = get_count_order_ulong(index + 1);
-	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1)) - 1))];
+	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
 	dummy = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy, node);
 end:
@@ -1318,17 +1317,13 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 {
 	struct cds_lfht_node *node, *next, *dummy_node;
 	struct _cds_lfht_node *lookup;
-	unsigned long hash, reverse_hash, index, order, size;
+	unsigned long hash, reverse_hash, size;
 
 	hash = ht->hash_fct(key, key_len, ht->hash_seed);
 	reverse_hash = bit_reverse_ulong(hash);
 
 	size = rcu_dereference(ht->t.size);
-	index = hash & (size - 1);
-	order = get_count_order_ulong(index + 1);
-	lookup = &ht->t.tbl[order]->nodes[index & (!order ? 0 : ((1UL << (order - 1))) - 1)];
-	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
-		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
+	lookup = lookup_bucket(ht, size, hash);
 	dummy_node = (struct cds_lfht_node *) lookup;
 	/* We can always skip the dummy node initially */
 	node = rcu_dereference(dummy_node->p.next);
