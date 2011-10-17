@@ -855,7 +855,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				enum add_mode mode, int dummy)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
-			*dummy_node, *return_node;
+			*return_node;
 	struct _cds_lfht_node *lookup;
 
 	assert(!is_dummy(node));
@@ -924,7 +924,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				return_node = NULL;
 			else	/* ADD_DEFAULT and ADD_UNIQUE */
 				return_node = node;
-			goto gc_end;
+			goto end;
 		}
 
 	replace:
@@ -946,10 +946,6 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 		/* retry */
 	}
-gc_end:
-	/* Garbage collect logically removed nodes in the bucket */
-	dummy_node = (struct cds_lfht_node *) lookup;
-	_cds_lfht_gc_bucket(dummy_node, node);
 end:
 	return return_node;
 }
