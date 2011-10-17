@@ -787,10 +787,10 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 static
 int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *old_node,
-		struct cds_lfht_node *ret_next,
+		struct cds_lfht_node *old_next,
 		struct cds_lfht_node *new_node)
 {
-	struct cds_lfht_node *dummy, *old_next;
+	struct cds_lfht_node *dummy, *ret_next;
 	struct _cds_lfht_node *lookup;
 	int flagged = 0;
 
@@ -802,9 +802,8 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	assert(!is_removed(new_node));
 	assert(!is_dummy(new_node));
 	assert(new_node != old_node);
-	do {
+	for (;;) {
 		/* Insert after node to be replaced */
-		old_next = ret_next;
 		if (is_removed(old_next)) {
 			/*
 			 * Too late, the old node has been removed under us
@@ -827,7 +826,10 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		 */
 		ret_next = uatomic_cmpxchg(&old_node->p.next,
 			      old_next, flag_removed(new_node));
-	} while (ret_next != old_next);
+		if (ret_next == old_next)
+			break;
+		old_next = ret_next;
+	}
 
 	/* We performed the replacement. */
 	flagged = 1;
