@@ -724,7 +724,12 @@ struct _cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
 
 	assert(size > 0);
 	index = hash & (size - 1);
-	order = get_count_order_ulong(index + 1);
+	/*
+	 * equivalent to get_count_order_ulong(index + 1), but optimizes
+	 * away the non-existing 0 special-case for
+	 * get_count_order_ulong.
+	 */
+	order = fls_ulong(index);
 
 	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
 		   hash, index, order, index & (!order ? 0 : ((1UL << (order - 1)) - 1)));
