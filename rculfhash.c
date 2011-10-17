@@ -892,6 +892,7 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				goto gc_node;
 			if ((mode == ADD_UNIQUE || mode == ADD_REPLACE)
 			    && !is_dummy(next)
+			    && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash
 			    && !ht->compare_fct(node->key, node->key_len,
 						clear_flag(iter)->key,
 						clear_flag(iter)->key_len)) {
@@ -1341,6 +1342,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 		next = rcu_dereference(node->p.next);
 		if (likely(!is_removed(next))
 		    && !is_dummy(next)
+		    && clear_flag(node)->p.reverse_hash == reverse_hash
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
 		}
