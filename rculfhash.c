@@ -887,6 +887,9 @@ struct cds_lfht_node *_cds_lfht_add(struct cds_lfht *ht,
 				goto insert;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
+			/* dummy node is the first node of the identical-hash-value chain */
+			if (dummy && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash)
+				goto insert;
 			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (unlikely(is_removed(next)))
 				goto gc_node;
