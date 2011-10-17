@@ -209,7 +209,7 @@ struct ht_items_count {
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 struct rcu_level {
-	struct rcu_head head;
+	/* Note: manually update allocation length when adding a field */
 	struct _cds_lfht_node nodes[0];
 };
 
@@ -716,14 +716,6 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 	return v;
 }
 
-static
-void cds_lfht_free_level(struct rcu_head *head)
-{
-	struct rcu_level *l =
-		caa_container_of(head, struct rcu_level, head);
-	poison_free(l);
-}
-
 /*
  * Remove all logically deleted nodes from a bucket up to a certain node key.
  */
@@ -1135,8 +1127,7 @@ void init_table(struct cds_lfht *ht,
 		if (CMM_LOAD_SHARED(ht->t.resize_target) < (!i ? 1 : (1UL << i)))
 			break;
 
-		ht->t.tbl[i] = calloc(1, sizeof(struct rcu_level)
-				+ (len * sizeof(struct _cds_lfht_node)));
+		ht->t.tbl[i] = calloc(1, len * sizeof(struct _cds_lfht_node));
 		assert(ht->t.tbl[i]);
 
 		/*
@@ -1222,6 +1213,7 @@ void fini_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long len_order)
 {
 	long i, end_order;
+	void *free_by_rcu = NULL;
 
 	dbg_printf("fini table: first_order %lu end_order %lu\n",
 		   first_order, first_order + len_order);
@@ -1247,6 +1239,8 @@ void fini_table(struct cds_lfht *ht,
 		 * return a logically removed node as insert position.
 		 */
 		ht->cds_lfht_synchronize_rcu();
+		if (free_by_rcu)
+			free(free_by_rcu);
 
 		/*
 		 * Set "removed" flag in dummy nodes about to be removed.
@@ -1256,11 +1250,16 @@ void fini_table(struct cds_lfht *ht,
 		 */
 		remove_table(ht, i, len);
 
-		ht->cds_lfht_call_rcu(&ht->t.tbl[i]->head, cds_lfht_free_level);
+		free_by_rcu = ht->t.tbl[i];
 
 		dbg_printf("fini new size: %lu\n", 1UL << i);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
+	}
+
+	if (free_by_rcu) {
+		ht->cds_lfht_synchronize_rcu();
+		free(free_by_rcu);
 	}
 }
 
