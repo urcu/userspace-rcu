@@ -945,10 +945,9 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 {
 	struct cds_lfht_node *dummy, *next, *old;
 	struct _cds_lfht_node *lookup;
-	int flagged = 0;
 
 	if (!node)	/* Return -ENOENT if asked to delete NULL node */
-		goto end;
+		return -ENOENT;
 
 	/* logically delete the node */
 	assert(!is_dummy(node));
@@ -959,7 +958,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 
 		next = old;
 		if (unlikely(is_removed(next)))
-			goto end;
+			return -ENOENT;
 		if (dummy_removal)
 			assert(is_dummy(next));
 		else
@@ -967,9 +966,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		new_next = flag_removed(next);
 		old = uatomic_cmpxchg(&node->p.next, next, new_next);
 	} while (old != next);
-
 	/* We performed the (logical) deletion. */
-	flagged = 1;
 
 	/*
 	 * Ensure that the node is not visible to readers anymore: lookup for
@@ -979,17 +976,9 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
 	dummy = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy, node);
-end:
-	/*
-	 * Only the flagging action indicated that we (and no other)
-	 * removed the node from the hash.
-	 */
-	if (flagged) {
-		assert(is_removed(rcu_dereference(node->p.next)));
-		return 0;
-	} else {
-		return -ENOENT;
-	}
+
+	assert(is_removed(rcu_dereference(node->p.next)));
+	return 0;
 }
 
 static
