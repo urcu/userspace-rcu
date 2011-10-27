@@ -786,10 +786,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 {
 	struct cds_lfht_node *dummy, *ret_next;
 	struct _cds_lfht_node *lookup;
-	int flagged = 0;
 
 	if (!old_node)	/* Return -ENOENT if asked to replace NULL node */
-		goto end;
+		return -ENOENT;
 
 	assert(!is_removed(old_node));
 	assert(!is_dummy(old_node));
@@ -803,7 +802,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 			 * Too late, the old node has been removed under us
 			 * between lookup and replace. Fail.
 			 */
-			goto end;
+			return -ENOENT;
 		}
 		assert(!is_dummy(old_next));
 		assert(new_node != clear_flag(old_next));
@@ -821,12 +820,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		ret_next = uatomic_cmpxchg(&old_node->p.next,
 			      old_next, flag_removed(new_node));
 		if (ret_next == old_next)
-			break;
+			break;		/* We performed the replacement. */
 		old_next = ret_next;
 	}
-
-	/* We performed the replacement. */
-	flagged = 1;
 
 	/*
 	 * Ensure that the old node is not visible to readers anymore:
@@ -836,17 +832,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	lookup = lookup_bucket(ht, size, bit_reverse_ulong(old_node->p.reverse_hash));
 	dummy = (struct cds_lfht_node *) lookup;
 	_cds_lfht_gc_bucket(dummy, new_node);
-end:
-	/*
-	 * Only the flagging action indicated that we (and no other)
-	 * replaced the node from the hash table.
-	 */
-	if (flagged) {
-		assert(is_removed(rcu_dereference(old_node->p.next)));
-		return 0;
-	} else {
-		return -ENOENT;
-	}
+
+	assert(is_removed(rcu_dereference(old_node->p.next)));
+	return 0;
 }
 
 /*
