@@ -748,6 +748,7 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
 		iter = rcu_dereference(iter_prev->p.next);
+		assert(!is_removed(iter));
 		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
 		/*
 		 * We should never be called with dummy (start of chain)
@@ -772,8 +773,6 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
-		if (is_removed(iter))
-			new_next = flag_removed(new_next);
 		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
 	}
 	return;
