@@ -53,7 +53,7 @@
  *   operation.
  * - The resize operation for larger tables (and available through an
  *   API) allows both expanding and shrinking the hash table.
- * - Per-CPU Split-counters are used to keep track of the number of
+ * - Split-counters are used to keep track of the number of
  *   nodes within the hash table for automatic resize triggering.
  * - Resize operation initiated by long chain detection is executed by a
  *   call_rcu thread, which keeps lock-freedom of add and remove.
@@ -173,7 +173,7 @@
 #endif
 
 /*
- * Per-CPU split-counters lazily update the global counter each 1024
+ * Split-counters lazily update the global counter each 1024
  * addition/removal. It automatically keeps track of resize required.
  * We use the bucket length as indicator for need to expand for small
  * tables and machines lacking per-cpu data suppport.
@@ -265,7 +265,7 @@ struct cds_lfht {
 	void (*cds_lfht_rcu_unregister_thread)(void);
 	pthread_attr_t *resize_attr;	/* Resize threads attributes */
 	long count;			/* global approximate item count */
-	struct ht_items_count *percpu_count;	/* per-cpu item count */
+	struct ht_items_count *split_count;	/* split item count */
 };
 
 struct rcu_resize_work {
@@ -510,72 +510,76 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count);
 
 static long nr_cpus_mask = -1;
+static long split_count_mask = -1;
 
-static
-struct ht_items_count *alloc_per_cpu_items_count(void)
+static void ht_init_nr_cpus_mask(void)
 {
-	struct ht_items_count *count;
+	long maxcpus;
 
-	switch (nr_cpus_mask) {
-	case -2:
-		return NULL;
-	case -1:
-	{
-		long maxcpus;
-
-		maxcpus = sysconf(_SC_NPROCESSORS_CONF);
-		if (maxcpus <= 0) {
-			nr_cpus_mask = -2;
-			return NULL;
-		}
-		/*
-		 * round up number of CPUs to next power of two, so we
-		 * can use & for modulo.
-		 */
-		maxcpus = 1UL << get_count_order_ulong(maxcpus);
-		nr_cpus_mask = maxcpus - 1;
+	maxcpus = sysconf(_SC_NPROCESSORS_CONF);
+	if (maxcpus <= 0) {
+		nr_cpus_mask = -2;
+		return;
 	}
-		/* Fall-through */
-	default:
-		return calloc(nr_cpus_mask + 1, sizeof(*count));
-	}
+	/*
+	 * round up number of CPUs to next power of two, so we
+	 * can use & for modulo.
+	 */
+	maxcpus = 1UL << get_count_order_ulong(maxcpus);
+	nr_cpus_mask = maxcpus - 1;
 }
 
 static
-void free_per_cpu_items_count(struct ht_items_count *count)
+struct ht_items_count *alloc_split_items_count(void)
+{
+	struct ht_items_count *count;
+
+	if (nr_cpus_mask == -1)	{
+		ht_init_nr_cpus_mask();
+		split_count_mask = nr_cpus_mask;
+	}
+
+	if (split_count_mask < 0)
+		return NULL;
+	else
+		return calloc(split_count_mask + 1, sizeof(*count));
+}
+
+static
+void free_split_items_count(struct ht_items_count *count)
 {
 	poison_free(count);
 }
 
 static
-int ht_get_cpu(void)
+int ht_get_split_count_index(void)
 {
 	int cpu;
 
-	assert(nr_cpus_mask >= 0);
+	assert(split_count_mask >= 0);
 	cpu = sched_getcpu();
 	if (unlikely(cpu < 0))
 		return cpu;
 	else
-		return cpu & nr_cpus_mask;
+		return cpu & split_count_mask;
 }
 
 static
 void ht_count_add(struct cds_lfht *ht, unsigned long size)
 {
-	unsigned long percpu_count;
-	int cpu;
+	unsigned long split_count;
+	int index;
 
-	if (unlikely(!ht->percpu_count))
+	if (unlikely(!ht->split_count))
 		return;
-	cpu = ht_get_cpu();
-	if (unlikely(cpu < 0))
+	index = ht_get_split_count_index();
+	if (unlikely(index < 0))
 		return;
-	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].add, 1);
-	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
+	split_count = uatomic_add_return(&ht->split_count[index].add, 1);
+	if (unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		long count;
 
-		dbg_printf("add percpu %lu\n", percpu_count);
+		dbg_printf("add split count %lu\n", split_count);
 		count = uatomic_add_return(&ht->count,
 					   1UL << COUNT_COMMIT_ORDER);
 		/* If power of 2 */
@@ -592,19 +596,19 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size)
 static
 void ht_count_del(struct cds_lfht *ht, unsigned long size)
 {
-	unsigned long percpu_count;
-	int cpu;
+	unsigned long split_count;
+	int index;
 
-	if (unlikely(!ht->percpu_count))
+	if (unlikely(!ht->split_count))
 		return;
-	cpu = ht_get_cpu();
-	if (unlikely(cpu < 0))
+	index = ht_get_split_count_index();
+	if (unlikely(index < 0))
 		return;
-	percpu_count = uatomic_add_return(&ht->percpu_count[cpu].del, 1);
-	if (unlikely(!(percpu_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
+	split_count = uatomic_add_return(&ht->split_count[index].del, 1);
+	if (unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		long count;
 
-		dbg_printf("del percpu %lu\n", percpu_count);
+		dbg_printf("del split count %lu\n", split_count);
 		count = uatomic_add_return(&ht->count,
 					   -(1UL << COUNT_COMMIT_ORDER));
 		/* If power of 2 */
@@ -616,7 +620,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 			 * Don't shrink table if the number of nodes is below a
 			 * certain threshold.
 			 */
-			if (count < (1UL << COUNT_COMMIT_ORDER) * (nr_cpus_mask + 1))
+			if (count < (1UL << COUNT_COMMIT_ORDER) * (split_count_mask + 1))
 				return;
 			cds_lfht_resize_lazy_count(ht, size,
 				count >> (CHAIN_LEN_TARGET - 1));
@@ -627,15 +631,16 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 #else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
 
 static const long nr_cpus_mask = -2;
+static const long split_count_mask = -2;
 
 static
-struct ht_items_count *alloc_per_cpu_items_count(void)
+struct ht_items_count *alloc_split_items_count(void)
 {
 	return NULL;
 }
 
 static
-void free_per_cpu_items_count(struct ht_items_count *count)
+void free_split_items_count(struct ht_items_count *count)
 {
 }
 
@@ -1353,7 +1358,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->cds_lfht_rcu_register_thread = cds_lfht_rcu_register_thread;
 	ht->cds_lfht_rcu_unregister_thread = cds_lfht_rcu_unregister_thread;
 	ht->resize_attr = attr;
-	ht->percpu_count = alloc_per_cpu_items_count();
+	ht->split_count = alloc_split_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->flags = flags;
@@ -1606,7 +1611,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	ret = cds_lfht_delete_dummy(ht);
 	if (ret)
 		return ret;
-	free_per_cpu_items_count(ht->percpu_count);
+	free_split_items_count(ht->split_count);
 	if (attr)
 		*attr = ht->resize_attr;
 	poison_free(ht);
@@ -1624,12 +1629,12 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	unsigned long nr_dummy = 0;
 
 	*approx_before = 0;
-	if (nr_cpus_mask >= 0) {
+	if (split_count_mask >= 0) {
 		int i;
 
-		for (i = 0; i < nr_cpus_mask + 1; i++) {
-			*approx_before += uatomic_read(&ht->percpu_count[i].add);
-			*approx_before -= uatomic_read(&ht->percpu_count[i].del);
+		for (i = 0; i < split_count_mask + 1; i++) {
+			*approx_before += uatomic_read(&ht->split_count[i].add);
+			*approx_before -= uatomic_read(&ht->split_count[i].del);
 		}
 	}
 
@@ -1654,12 +1659,12 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
 	*approx_after = 0;
-	if (nr_cpus_mask >= 0) {
+	if (split_count_mask >= 0) {
 		int i;
 
-		for (i = 0; i < nr_cpus_mask + 1; i++) {
-			*approx_after += uatomic_read(&ht->percpu_count[i].add);
-			*approx_after -= uatomic_read(&ht->percpu_count[i].del);
+		for (i = 0; i < split_count_mask + 1; i++) {
+			*approx_after += uatomic_read(&ht->split_count[i].add);
+			*approx_after -= uatomic_read(&ht->split_count[i].del);
 		}
 	}
 }
