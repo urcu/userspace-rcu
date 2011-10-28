@@ -103,6 +103,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
+			unsigned long min_alloc_size,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head)),
@@ -121,6 +122,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
  * @compare_fct: the key comparison function.
  * @hash_seed: the seed for hash function.
  * @init_size: number of nodes to allocate initially. Must be power of two.
+ * @min_alloc_size: the smallest allocation size to use. Must be power of two.
  * @flags: hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
  *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
@@ -143,11 +145,12 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
+			unsigned long min_alloc_size,
 			int flags,
 			pthread_attr_t *attr)
 {
 	return _cds_lfht_new(hash_fct, compare_fct, hash_seed,
-			init_size, flags,
+			init_size, min_alloc_size, flags,
 			call_rcu, synchronize_rcu, rcu_read_lock,
 			rcu_read_unlock, rcu_thread_offline,
 			rcu_thread_online, rcu_register_thread,

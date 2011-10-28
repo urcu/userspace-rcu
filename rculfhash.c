@@ -241,6 +241,8 @@ struct cds_lfht {
 	struct rcu_table t;
 	cds_lfht_hash_fct hash_fct;
 	cds_lfht_compare_fct compare_fct;
+	unsigned long min_alloc_order;
+	unsigned long min_alloc_size;
 	unsigned long hash_seed;
 	int flags;
 	/*
@@ -1078,7 +1080,7 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j;
 
-	assert(i > 0);
+	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
 		struct cds_lfht_node *new_node =
@@ -1116,7 +1118,7 @@ void init_table(struct cds_lfht *ht,
 
 	dbg_printf("init table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > 0);
+	assert(first_order > ht->min_alloc_order);
 	for (i = first_order; i <= last_order; i++) {
 		unsigned long len;
 
@@ -1179,7 +1181,7 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j;
 
-	assert(i > 0);
+	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
 		struct cds_lfht_node *fini_node =
@@ -1217,7 +1219,7 @@ void fini_table(struct cds_lfht *ht,
 
 	dbg_printf("fini table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > 0);
+	assert(first_order > ht->min_alloc_order);
 	for (i = last_order; i >= first_order; i--) {
 		unsigned long len;
 
@@ -1268,7 +1270,7 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 	struct _cds_lfht_node *prev, *node;
 	unsigned long order, len, i, j;
 
-	ht->t.tbl[0] = calloc(1, sizeof(struct _cds_lfht_node));
+	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct _cds_lfht_node));
 	assert(ht->t.tbl[0]);
 
 	dbg_printf("create dummy: order %lu index %lu hash %lu\n", 0, 0, 0);
@@ -1277,8 +1279,12 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 
 	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
 		len = 1UL << (order - 1);
-		ht->t.tbl[order] = calloc(1, len * sizeof(struct _cds_lfht_node));
-		assert(ht->t.tbl[order]);
+		if (order <= ht->min_alloc_order) {
+			ht->t.tbl[order] = (void *)(ht->t.tbl[0]->nodes + len);
+		} else {
+			ht->t.tbl[order] = calloc(1, len * sizeof(struct _cds_lfht_node));
+			assert(ht->t.tbl[order]);
+		}
 
 		i = 0;
 		prev = ht->t.tbl[i]->nodes;
@@ -1305,6 +1311,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
 			unsigned long init_size,
+			unsigned long min_alloc_size,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 					void (*func)(struct rcu_head *head)),
@@ -1320,9 +1327,14 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	struct cds_lfht *ht;
 	unsigned long order;
 
-	/* init_size must be power of two */
-	if (init_size && (init_size & (init_size - 1)))
+	/* min_alloc_size must be power of two */
+	if (!min_alloc_size || (min_alloc_size & (min_alloc_size - 1)))
 		return NULL;
+	/* init_size must be power of two */
+	if (!init_size || (init_size & (init_size - 1)))
+		return NULL;
+	min_alloc_size = max(min_alloc_size, MIN_TABLE_SIZE);
+	init_size = max(init_size, min_alloc_size);
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
 	ht->hash_fct = hash_fct;
@@ -1341,10 +1353,12 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->flags = flags;
-	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE));
+	order = get_count_order_ulong(init_size);
 	ht->t.resize_target = 1UL << order;
 	cds_lfht_create_dummy(ht, 1UL << order);
 	ht->t.size = 1UL << order;
+	ht->min_alloc_size = min_alloc_size;
+	ht->min_alloc_order = get_count_order_ulong(min_alloc_size);
 	return ht;
 }
 
@@ -1562,7 +1576,12 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 				bit_reverse_ulong(ht->t.tbl[order]->nodes[i].reverse_hash));
 			assert(is_dummy(ht->t.tbl[order]->nodes[i].next));
 		}
-		poison_free(ht->t.tbl[order]);
+
+		if (order == ht->min_alloc_order)
+			poison_free(ht->t.tbl[0]);
+		else if (order > ht->min_alloc_order)
+			poison_free(ht->t.tbl[order]);
+		/* Nothing to delete for order < ht->min_alloc_order */
 	}
 	return 0;
 }
@@ -1663,7 +1682,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 {
 	unsigned long old_order, new_order;
 
-	new_size = max(new_size, MIN_TABLE_SIZE);
+	new_size = max(new_size, ht->min_alloc_size);
 	old_order = get_count_order_ulong(old_size);
 	new_order = get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
@@ -1713,7 +1732,7 @@ static
 void resize_target_update_count(struct cds_lfht *ht,
 				unsigned long count)
 {
-	count = max(count, MIN_TABLE_SIZE);
+	count = max(count, ht->min_alloc_size);
 	uatomic_set(&ht->t.resize_target, count);
 }
 
