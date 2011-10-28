@@ -91,12 +91,32 @@
  *   the "dummy node" tables.
  * - There is one dummy node table per hash index order. The size of
  *   each dummy node table is half the number of hashes contained in
- *   this order.
- * - call_rcu is used to garbage-collect the old order table.
+ *   this order (except for order 0).
+ * - synchronzie_rcu is used to garbage-collect the old dummy node table.
  * - The per-order dummy node tables contain a compact version of the
  *   hash table nodes. These tables are invariant after they are
  *   populated into the hash table.
- * 
+ *
+ * Dummy node tables:
+ *
+ * hash table	hash table	the last	all dummy node tables
+ * order	size		dummy node	0   1   2   3   4   5   6(index)
+ * 				table size
+ * 0		1		1		1
+ * 1		2		1		1   1
+ * 2		4		2		1   1   2
+ * 3		8		4		1   1   2   4
+ * 4		16		8		1   1   2   4   8
+ * 5		32		16		1   1   2   4   8  16
+ * 6		64		32		1   1   2   4   8  16  32
+ *
+ * When growing/shrinking, we only focus on the last dummy node table
+ * which size is (!order ? 1 : (1 << (order -1))).
+ *
+ * Example for growing/shrinking:
+ * grow hash table from order 5 to 6: init the index=6 dummy node table
+ * shrink hash table from order 6 to 5: fini the index=6 dummy node table
+ *
  * A bit of ascii art explanation:
  * 
  * Order index is the off-by-one compare to the actual power of 2 because 
@@ -1079,14 +1099,13 @@ void init_table_populate(struct cds_lfht *ht, unsigned long i,
 
 static
 void init_table(struct cds_lfht *ht,
-		unsigned long first_order, unsigned long len_order)
+		unsigned long first_order, unsigned long last_order)
 {
-	unsigned long i, end_order;
+	unsigned long i;
 
-	dbg_printf("init table: first_order %lu end_order %lu\n",
-		   first_order, first_order + len_order);
-	end_order = first_order + len_order;
-	for (i = first_order; i < end_order; i++) {
+	dbg_printf("init table: first_order %lu last_order %lu\n",
+		   first_order, last_order);
+	for (i = first_order; i <= last_order; i++) {
 		unsigned long len;
 
 		len = !i ? 1 : 1UL << (i - 1);
@@ -1179,16 +1198,15 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 
 static
 void fini_table(struct cds_lfht *ht,
-		unsigned long first_order, unsigned long len_order)
+		unsigned long first_order, unsigned long last_order)
 {
-	long i, end_order;
+	long i;
 	void *free_by_rcu = NULL;
 
-	dbg_printf("fini table: first_order %lu end_order %lu\n",
-		   first_order, first_order + len_order);
-	end_order = first_order + len_order;
+	dbg_printf("fini table: first_order %lu last_order %lu\n",
+		   first_order, last_order);
 	assert(first_order > 0);
-	for (i = end_order - 1; i >= first_order; i--) {
+	for (i = last_order; i >= first_order; i--) {
 		unsigned long len;
 
 		len = !i ? 1 : 1UL << (i - 1);
@@ -1271,11 +1289,11 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE)) + 1;
+	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE));
 	ht->flags = flags;
 	ht->cds_lfht_rcu_thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
-	ht->t.resize_target = 1UL << (order - 1);
+	ht->t.resize_target = 1UL << order;
 	init_table(ht, 0, order);
 	pthread_mutex_unlock(&ht->resize_mutex);
 	ht->cds_lfht_rcu_thread_online();
@@ -1582,12 +1600,12 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 {
 	unsigned long old_order, new_order;
 
-	old_order = get_count_order_ulong(old_size) + 1;
-	new_order = get_count_order_ulong(new_size) + 1;
+	old_order = get_count_order_ulong(old_size);
+	new_order = get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
 	assert(new_size > old_size);
-	init_table(ht, old_order, new_order - old_order);
+	init_table(ht, old_order + 1, new_order);
 }
 
 /* called with resize mutex held */
@@ -1598,14 +1616,14 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	unsigned long old_order, new_order;
 
 	new_size = max(new_size, MIN_TABLE_SIZE);
-	old_order = get_count_order_ulong(old_size) + 1;
-	new_order = get_count_order_ulong(new_size) + 1;
+	old_order = get_count_order_ulong(old_size);
+	new_order = get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
 	assert(new_size < old_size);
 
 	/* Remove and unlink all dummy nodes to remove. */
-	fini_table(ht, new_order, old_order - new_order);
+	fini_table(ht, new_order + 1, old_order);
 }
 
 
