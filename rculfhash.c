@@ -894,22 +894,38 @@ void _cds_lfht_add(struct cds_lfht *ht,
 				goto insert;
 			if (likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
 				goto insert;
+
 			/* dummy node is the first node of the identical-hash-value chain */
 			if (dummy && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash)
 				goto insert;
+
 			next = rcu_dereference(clear_flag(iter)->p.next);
 			if (unlikely(is_removed(next)))
 				goto gc_node;
+
+			/* uniquely add */
 			if (unique_ret
 			    && !is_dummy(next)
-			    && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash
-			    && !ht->compare_fct(node->key, node->key_len,
-						clear_flag(iter)->key,
-						clear_flag(iter)->key_len)) {
-				unique_ret->node = clear_flag(iter);
-				unique_ret->next = next;
+			    && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash) {
+				struct cds_lfht_iter d_iter = { .node = node, .next = iter, };
+
+				/*
+				 * uniquely adding inserts the node as the first
+				 * node of the identical-hash-value node chain.
+				 *
+				 * This semantic ensures no duplicated keys
+				 * should ever be observable in the table
+				 * (including observe one node by one node
+				 * by forward iterations)
+				 */
+				cds_lfht_next_duplicate(ht, &d_iter);
+				if (!d_iter.node)
+					goto insert;
+
+				*unique_ret = d_iter;
 				return;
 			}
+
 			/* Only account for identical reverse hash once */
 			if (iter_prev->p.reverse_hash != clear_flag(iter)->p.reverse_hash
 			    && !is_dummy(next))
