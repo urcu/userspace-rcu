@@ -503,7 +503,7 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth);
  * In the unfortunate event the number of CPUs reported would be
  * inaccurate, we use modulo arithmetic on the number of CPUs we got.
  */
-#if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+#if defined(HAVE_SYSCONF)
 
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
@@ -551,30 +551,36 @@ void free_split_items_count(struct ht_items_count *count)
 	poison_free(count);
 }
 
+#if defined(HAVE_SCHED_GETCPU)
 static
-int ht_get_split_count_index(void)
+int ht_get_split_count_index(unsigned long hash)
 {
 	int cpu;
 
 	assert(split_count_mask >= 0);
 	cpu = sched_getcpu();
 	if (unlikely(cpu < 0))
-		return cpu;
+		return hash & split_count_mask;
 	else
 		return cpu & split_count_mask;
 }
+#else /* #if defined(HAVE_SCHED_GETCPU) */
+static
+int ht_get_split_count_index(unsigned long hash)
+{
+	return hash & split_count_mask;
+}
+#endif /* #else #if defined(HAVE_SCHED_GETCPU) */
 
 static
-void ht_count_add(struct cds_lfht *ht, unsigned long size)
+void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 	unsigned long split_count;
 	int index;
 
 	if (unlikely(!ht->split_count))
 		return;
-	index = ht_get_split_count_index();
-	if (unlikely(index < 0))
-		return;
+	index = ht_get_split_count_index(hash);
 	split_count = uatomic_add_return(&ht->split_count[index].add, 1);
 	if (unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		long count;
@@ -594,16 +600,14 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size)
 }
 
 static
-void ht_count_del(struct cds_lfht *ht, unsigned long size)
+void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 	unsigned long split_count;
 	int index;
 
 	if (unlikely(!ht->split_count))
 		return;
-	index = ht_get_split_count_index();
-	if (unlikely(index < 0))
-		return;
+	index = ht_get_split_count_index(hash);
 	split_count = uatomic_add_return(&ht->split_count[index].del, 1);
 	if (unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
 		long count;
@@ -628,7 +632,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size)
 	}
 }
 
-#else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+#else /* #if defined(HAVE_SYSCONF) */
 
 static const long nr_cpus_mask = -2;
 static const long split_count_mask = -2;
@@ -645,16 +649,16 @@ void free_split_items_count(struct ht_items_count *count)
 }
 
 static
-void ht_count_add(struct cds_lfht *ht, unsigned long size)
+void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 }
 
 static
-void ht_count_del(struct cds_lfht *ht, unsigned long size)
+void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 }
 
-#endif /* #else #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+#endif /* #else #if defined(HAVE_SYSCONF) */
 
 
 static
@@ -1490,7 +1494,7 @@ void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
 
 	size = rcu_dereference(ht->t.size);
 	_cds_lfht_add(ht, size, node, NULL, 0);
-	ht_count_add(ht, size);
+	ht_count_add(ht, size, hash);
 }
 
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
@@ -1505,7 +1509,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	size = rcu_dereference(ht->t.size);
 	_cds_lfht_add(ht, size, node, &iter, 0);
 	if (iter.node == node)
-		ht_count_add(ht, size);
+		ht_count_add(ht, size, hash);
 	return iter.node;
 }
 
@@ -1522,7 +1526,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	for (;;) {
 		_cds_lfht_add(ht, size, node, &iter, 0);
 		if (iter.node == node) {
-			ht_count_add(ht, size);
+			ht_count_add(ht, size, hash);
 			return NULL;
 		}
 
@@ -1543,13 +1547,15 @@ int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
 
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
-	unsigned long size;
+	unsigned long size, hash;
 	int ret;
 
 	size = rcu_dereference(ht->t.size);
 	ret = _cds_lfht_del(ht, size, iter->node, 0);
-	if (!ret)
-		ht_count_del(ht, size);
+	if (!ret) {
+		hash = bit_reverse_ulong(iter->node->p.reverse_hash);
+		ht_count_del(ht, size, hash);
+	}
 	return ret;
 }
 
@@ -1796,7 +1802,7 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth)
 	}
 }
 
-#if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+#if defined(HAVE_SYSCONF)
 
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
