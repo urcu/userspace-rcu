@@ -1266,6 +1266,45 @@ void fini_table(struct cds_lfht *ht,
 	}
 }
 
+static
+void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
+{
+	struct _cds_lfht_node *prev, *node;
+	unsigned long order, len, i, j;
+
+	ht->t.tbl[0] = calloc(1, sizeof(struct _cds_lfht_node));
+	assert(ht->t.tbl[0]);
+
+	dbg_printf("create dummy: order %lu index %lu hash %lu\n", 0, 0, 0);
+	ht->t.tbl[0]->nodes[0].next = flag_dummy(get_end());
+	ht->t.tbl[0]->nodes[0].reverse_hash = 0;
+
+	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
+		len = 1UL << (order - 1);
+		ht->t.tbl[order] = calloc(1, len * sizeof(struct _cds_lfht_node));
+		assert(ht->t.tbl[order]);
+
+		i = 0;
+		prev = ht->t.tbl[i]->nodes;
+		for (j = 0; j < len; j++) {
+			if (j & (j - 1)) {	/* Between power of 2 */
+				prev++;
+			} else if (j) {		/* At each power of 2 */
+				i++;
+				prev = ht->t.tbl[i]->nodes;
+			}
+
+			node = &ht->t.tbl[order]->nodes[j];
+			dbg_printf("create dummy: order %lu index %lu hash %lu\n",
+				   order, j, j + len);
+			node->next = prev->next;
+			assert(is_dummy(node->next));
+			node->reverse_hash = bit_reverse_ulong(j + len);
+			prev->next = flag_dummy((struct cds_lfht_node *)node);
+		}
+	}
+}
+
 struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 			cds_lfht_compare_fct compare_fct,
 			unsigned long hash_seed,
@@ -1305,14 +1344,11 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->percpu_count = alloc_per_cpu_items_count();
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE));
 	ht->flags = flags;
-	ht->cds_lfht_rcu_thread_offline();
-	pthread_mutex_lock(&ht->resize_mutex);
+	order = get_count_order_ulong(max(init_size, MIN_TABLE_SIZE));
 	ht->t.resize_target = 1UL << order;
-	init_table(ht, 0, order);
-	pthread_mutex_unlock(&ht->resize_mutex);
-	ht->cds_lfht_rcu_thread_online();
+	cds_lfht_create_dummy(ht, 1UL << order);
+	ht->t.size = 1UL << order;
 	return ht;
 }
 
