@@ -179,6 +179,7 @@
  * tables and machines lacking per-cpu data suppport.
  */
 #define COUNT_COMMIT_ORDER		10
+#define DEFAULT_SPLIT_COUNT_MASK	0xFUL
 #define CHAIN_LEN_TARGET		1
 #define CHAIN_LEN_RESIZE_THRESHOLD	3
 
@@ -497,14 +498,6 @@ int get_count_order_ulong(unsigned long x)
 static
 void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth);
 
-/*
- * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
- * available, then we support hash table item accounting.
- * In the unfortunate event the number of CPUs reported would be
- * inaccurate, we use modulo arithmetic on the number of CPUs we got.
- */
-#if defined(HAVE_SYSCONF)
-
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count);
@@ -512,6 +505,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 static long nr_cpus_mask = -1;
 static long split_count_mask = -1;
 
+#if defined(HAVE_SYSCONF)
 static void ht_init_nr_cpus_mask(void)
 {
 	long maxcpus;
@@ -528,6 +522,12 @@ static void ht_init_nr_cpus_mask(void)
 	maxcpus = 1UL << get_count_order_ulong(maxcpus);
 	nr_cpus_mask = maxcpus - 1;
 }
+#else /* #if defined(HAVE_SYSCONF) */
+static void ht_init_nr_cpus_mask(void)
+{
+	nr_cpus_mask = -2;
+}
+#endif /* #else #if defined(HAVE_SYSCONF) */
 
 static
 struct ht_items_count *alloc_split_items_count(void)
@@ -536,13 +536,14 @@ struct ht_items_count *alloc_split_items_count(void)
 
 	if (nr_cpus_mask == -1)	{
 		ht_init_nr_cpus_mask();
-		split_count_mask = nr_cpus_mask;
+		if (nr_cpus_mask < 0)
+			split_count_mask = DEFAULT_SPLIT_COUNT_MASK;
+		else
+			split_count_mask = nr_cpus_mask;
 	}
 
-	if (split_count_mask < 0)
-		return NULL;
-	else
-		return calloc(split_count_mask + 1, sizeof(*count));
+	assert(split_count_mask >= 0);
+	return calloc(split_count_mask + 1, sizeof(*count));
 }
 
 static
@@ -631,35 +632,6 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 		}
 	}
 }
-
-#else /* #if defined(HAVE_SYSCONF) */
-
-static const long nr_cpus_mask = -2;
-static const long split_count_mask = -2;
-
-static
-struct ht_items_count *alloc_split_items_count(void)
-{
-	return NULL;
-}
-
-static
-void free_split_items_count(struct ht_items_count *count)
-{
-}
-
-static
-void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
-{
-}
-
-static
-void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
-{
-}
-
-#endif /* #else #if defined(HAVE_SYSCONF) */
-
 
 static
 void check_resize(struct cds_lfht *ht, unsigned long size, uint32_t chain_len)
@@ -1802,8 +1774,6 @@ void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth)
 	}
 }
 
-#if defined(HAVE_SYSCONF)
-
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count)
@@ -1828,5 +1798,3 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 		CMM_STORE_SHARED(ht->t.resize_initiated, 1);
 	}
 }
-
-#endif
