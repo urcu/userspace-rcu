@@ -1284,7 +1284,7 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
 		len = 1UL << (order - 1);
 		if (order <= ht->min_alloc_order) {
-			ht->t.tbl[order] = (void *)(ht->t.tbl[0]->nodes + len);
+			ht->t.tbl[order] = (struct rcu_level *) (ht->t.tbl[0]->nodes + len);
 		} else {
 			ht->t.tbl[order] = calloc(1, len * sizeof(struct _cds_lfht_node));
 			assert(ht->t.tbl[order]);
