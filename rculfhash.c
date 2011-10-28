@@ -486,10 +486,12 @@ int get_count_order_ulong(unsigned long x)
 }
 
 #ifdef POISON_FREE
-#define poison_free(ptr)				\
-	do {						\
-		memset(ptr, 0x42, sizeof(*(ptr)));	\
-		free(ptr);				\
+#define poison_free(ptr)					\
+	do {							\
+		if (ptr) {					\
+			memset(ptr, 0x42, sizeof(*(ptr)));	\
+			free(ptr);				\
+		}						\
 	} while (0)
 #else
 #define poison_free(ptr)	free(ptr)
@@ -530,7 +532,7 @@ static void ht_init_nr_cpus_mask(void)
 #endif /* #else #if defined(HAVE_SYSCONF) */
 
 static
-struct ht_items_count *alloc_split_items_count(void)
+void alloc_split_items_count(struct cds_lfht *ht)
 {
 	struct ht_items_count *count;
 
@@ -543,13 +545,19 @@ struct ht_items_count *alloc_split_items_count(void)
 	}
 
 	assert(split_count_mask >= 0);
-	return calloc(split_count_mask + 1, sizeof(*count));
+
+	if (ht->flags & CDS_LFHT_ACCOUNTING) {
+		ht->split_count = calloc(split_count_mask + 1, sizeof(*count));
+		assert(ht->split_count);
+	} else {
+		ht->split_count = NULL;
+	}
 }
 
 static
-void free_split_items_count(struct ht_items_count *count)
+void free_split_items_count(struct cds_lfht *ht)
 {
-	poison_free(count);
+	poison_free(ht->split_count);
 }
 
 #if defined(HAVE_SCHED_GETCPU)
@@ -1334,7 +1342,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht->cds_lfht_rcu_register_thread = cds_lfht_rcu_register_thread;
 	ht->cds_lfht_rcu_unregister_thread = cds_lfht_rcu_unregister_thread;
 	ht->resize_attr = attr;
-	ht->split_count = alloc_split_items_count();
+	alloc_split_items_count(ht);
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	ht->flags = flags;
@@ -1589,7 +1597,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	ret = cds_lfht_delete_dummy(ht);
 	if (ret)
 		return ret;
-	free_split_items_count(ht->split_count);
+	free_split_items_count(ht);
 	if (attr)
 		*attr = ht->resize_attr;
 	poison_free(ht);
@@ -1607,7 +1615,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	unsigned long nr_dummy = 0;
 
 	*approx_before = 0;
-	if (split_count_mask >= 0) {
+	if (ht->split_count) {
 		int i;
 
 		for (i = 0; i < split_count_mask + 1; i++) {
@@ -1637,7 +1645,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	} while (!is_end(node));
 	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
 	*approx_after = 0;
-	if (split_count_mask >= 0) {
+	if (ht->split_count) {
 		int i;
 
 		for (i = 0; i < split_count_mask + 1; i++) {

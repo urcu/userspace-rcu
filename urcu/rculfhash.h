@@ -94,6 +94,7 @@ void cds_lfht_node_init(struct cds_lfht_node *node, void *key,
  */
 enum {
 	CDS_LFHT_AUTO_RESIZE = (1U << 0),
+	CDS_LFHT_ACCOUNTING = (1U << 1),
 };
 
 /*

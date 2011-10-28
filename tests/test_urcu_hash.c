@@ -889,7 +889,8 @@ int main(int argc, char **argv)
 	rcu_register_thread();
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
 			init_hash_size, 1,
-			opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0, NULL);
+			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
+			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();
 	assert(!ret);
 
