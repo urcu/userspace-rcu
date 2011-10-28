@@ -871,12 +871,6 @@ void _cds_lfht_add(struct cds_lfht *ht,
 
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
-	if (!size) {
-		assert(dummy);
-		assert(!unique_ret);
-		node->p.next = flag_dummy(get_end());
-		return;		/* Initial first add (head) */
-	}
 	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
 	for (;;) {
 		uint32_t chain_len = 0;
@@ -1084,16 +1078,17 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j;
 
+	assert(i > 0);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
 		struct cds_lfht_node *new_node =
 			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
 
 		dbg_printf("init populate: i %lu j %lu hash %lu\n",
-			   i, j, !i ? 0 : (1UL << (i - 1)) + j);
+			   i, j, (1UL << (i - 1)) + j);
 		new_node->p.reverse_hash =
-			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-		_cds_lfht_add(ht, !i ? 0 : (1UL << (i - 1)),
+				bit_reverse_ulong((1UL << (i - 1)) + j);
+		_cds_lfht_add(ht, 1UL << (i - 1),
 				new_node, NULL, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
@@ -1121,14 +1116,15 @@ void init_table(struct cds_lfht *ht,
 
 	dbg_printf("init table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
+	assert(first_order > 0);
 	for (i = first_order; i <= last_order; i++) {
 		unsigned long len;
 
-		len = !i ? 1 : 1UL << (i - 1);
+		len = 1UL << (i - 1);
 		dbg_printf("init order %lu len: %lu\n", i, len);
 
 		/* Stop expand if the resize target changes under us */
-		if (CMM_LOAD_SHARED(ht->t.resize_target) < (!i ? 1 : (1UL << i)))
+		if (CMM_LOAD_SHARED(ht->t.resize_target) < (1UL << i))
 			break;
 
 		ht->t.tbl[i] = calloc(1, len * sizeof(struct _cds_lfht_node));
@@ -1144,9 +1140,9 @@ void init_table(struct cds_lfht *ht,
 		 * Update table size.
 		 */
 		cmm_smp_wmb();	/* populate data before RCU size */
-		CMM_STORE_SHARED(ht->t.size, !i ? 1 : (1UL << i));
+		CMM_STORE_SHARED(ht->t.size, 1UL << i);
 
-		dbg_printf("init new size: %lu\n", !i ? 1 : (1UL << i));
+		dbg_printf("init new size: %lu\n", 1UL << i);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
 	}
@@ -1183,17 +1179,17 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j;
 
+	assert(i > 0);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
 		struct cds_lfht_node *fini_node =
 			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
 
 		dbg_printf("remove entry: i %lu j %lu hash %lu\n",
-			   i, j, !i ? 0 : (1UL << (i - 1)) + j);
+			   i, j, (1UL << (i - 1)) + j);
 		fini_node->p.reverse_hash =
-			bit_reverse_ulong(!i ? 0 : (1UL << (i - 1)) + j);
-		(void) _cds_lfht_del(ht, !i ? 0 : (1UL << (i - 1)),
-				fini_node, 1);
+			bit_reverse_ulong((1UL << (i - 1)) + j);
+		(void) _cds_lfht_del(ht, 1UL << (i - 1), fini_node, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
 }
@@ -1225,7 +1221,7 @@ void fini_table(struct cds_lfht *ht,
 	for (i = last_order; i >= first_order; i--) {
 		unsigned long len;
 
-		len = !i ? 1 : 1UL << (i - 1);
+		len = 1UL << (i - 1);
 		dbg_printf("fini order %lu len: %lu\n", i, len);
 
 		/* Stop shrink if the resize target changes under us */
