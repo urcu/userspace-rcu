@@ -454,7 +454,7 @@ unsigned int fls_u32(uint32_t x)
 
 unsigned int fls_ulong(unsigned long x)
 {
-#if (CAA_BITS_PER_lONG == 32)
+#if (CAA_BITS_PER_LONG == 32)
 	return fls_u32(x);
 #else
 	return fls_u64(x);
