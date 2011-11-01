@@ -214,14 +214,14 @@ void *thr_reader(void *_count)
 		debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		_rcu_read_unlock();
 		nr_reads++;
 		/* QS each 1024 reads */
-		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
+		if (caa_unlikely((nr_reads & ((1 << 10) - 1)) == 0))
 			_rcu_quiescent_state();
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -258,7 +258,7 @@ static void rcu_gc_reclaim(unsigned long wtidx, void *old)
 	*pending_reclaims[wtidx].head = old;
 	pending_reclaims[wtidx].head++;
 
-	if (likely(pending_reclaims[wtidx].head - pending_reclaims[wtidx].queue
+	if (caa_likely(pending_reclaims[wtidx].head - pending_reclaims[wtidx].queue
 			< reclaim_batch))
 		return;
 
@@ -290,13 +290,13 @@ void *thr_writer(void *data)
 		new->a = 8;
 		old = _rcu_xchg_pointer(&test_rcu_pointer, new);
 #endif
-		if (unlikely(wduration))
+		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		rcu_gc_reclaim(wtidx, old);
 		nr_writes++;
-		if (unlikely(!test_duration_write()))
+		if (caa_unlikely(!test_duration_write()))
 			break;
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 	}
 

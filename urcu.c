@@ -144,7 +144,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 #ifdef RCU_MEMBARRIER
 static void smp_mb_master(int group)
 {
-	if (likely(has_sys_membarrier))
+	if (caa_likely(has_sys_membarrier))
 		membarrier(MEMBARRIER_EXPEDITED);
 	else
 		cmm_smp_mb();

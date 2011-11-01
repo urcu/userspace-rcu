@@ -161,7 +161,7 @@ static void mutex_lock_defer(pthread_mutex_t *mutex)
  */
 static void wake_up_defer(void)
 {
-	if (unlikely(uatomic_read(&defer_thread_futex) == -1)) {
+	if (caa_unlikely(uatomic_read(&defer_thread_futex) == -1)) {
 		uatomic_set(&defer_thread_futex, 0);
 		futex_noasync(&defer_thread_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
@@ -225,11 +225,11 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 	for (i = queue->tail; i != head;) {
 		cmm_smp_rmb();       /* read head before q[]. */
 		p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
-		if (unlikely(DQ_IS_FCT_BIT(p))) {
+		if (caa_unlikely(DQ_IS_FCT_BIT(p))) {
 			DQ_CLEAR_FCT_BIT(p);
 			queue->last_fct_out = p;
 			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
-		} else if (unlikely(p == DQ_FCT_MARK)) {
+		} else if (caa_unlikely(p == DQ_FCT_MARK)) {
 			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
 			queue->last_fct_out = p;
 			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
@@ -247,7 +247,7 @@ static void _rcu_defer_barrier_thread(void)
 
 	head = defer_queue.head;
 	num_items = head - defer_queue.tail;
-	if (unlikely(!num_items))
+	if (caa_unlikely(!num_items))
 		return;
 	synchronize_rcu();
 	rcu_defer_barrier_queue(&defer_queue, head);
@@ -286,7 +286,7 @@ void rcu_defer_barrier(void)
 		index->last_head = CMM_LOAD_SHARED(index->head);
 		num_items += index->last_head - index->tail;
 	}
-	if (likely(!num_items)) {
+	if (caa_likely(!num_items)) {
 		/*
 		 * We skip the grace period because there are no queued
 		 * callbacks to execute.
@@ -318,7 +318,7 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * If queue is full, or reached threshold. Empty queue ourself.
 	 * Worse-case: must allow 2 supplementary entries for fct pointer.
 	 */
-	if (unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
+	if (caa_unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
 		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
 		assert(head - CMM_LOAD_SHARED(defer_queue.tail) == 0);
@@ -340,11 +340,11 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * Decode: see the comments before 'struct defer_queue'
 	 *         or the code in rcu_defer_barrier_queue().
 	 */
-	if (unlikely(defer_queue.last_fct_in != fct
+	if (caa_unlikely(defer_queue.last_fct_in != fct
 			|| DQ_IS_FCT_BIT(p)
 			|| p == DQ_FCT_MARK)) {
 		defer_queue.last_fct_in = fct;
-		if (unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
+		if (caa_unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
 			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
 				      DQ_FCT_MARK);
 			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],

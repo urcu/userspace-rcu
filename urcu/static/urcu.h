@@ -176,7 +176,7 @@ extern int has_sys_membarrier;
 
 static inline void smp_mb_slave(int group)
 {
-	if (likely(has_sys_membarrier))
+	if (caa_likely(has_sys_membarrier))
 		cmm_barrier();
 	else
 		cmm_smp_mb();
@@ -231,7 +231,7 @@ extern int32_t gp_futex;
  */
 static inline void wake_up_gp(void)
 {
-	if (unlikely(uatomic_read(&gp_futex) == -1)) {
+	if (caa_unlikely(uatomic_read(&gp_futex) == -1)) {
 		uatomic_set(&gp_futex, 0);
 		futex_async(&gp_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
@@ -261,7 +261,7 @@ static inline void _rcu_read_lock(void)
 	 * rcu_gp_ctr is
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
-	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
+	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
 		_CMM_STORE_SHARED(rcu_reader.ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
@@ -282,7 +282,7 @@ static inline void _rcu_read_unlock(void)
 	 * Finish using rcu before decrementing the pointer.
 	 * See smp_mb_master().
 	 */
-	if (likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
+	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		smp_mb_slave(RCU_MB_GROUP);
 		_CMM_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
 		/* write rcu_reader.ctr before read futex */

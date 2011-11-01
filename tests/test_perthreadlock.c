@@ -209,11 +209,11 @@ void *thr_reader(void *data)
 	for (;;) {
 		pthread_mutex_lock(&per_thread_lock[tidx].lock);
 		assert(test_array.a == 8);
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		nr_reads++;
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -245,15 +245,15 @@ void *thr_writer(void *data)
 		}
 		test_array.a = 0;
 		test_array.a = 8;
-		if (unlikely(wduration))
+		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		for (tidx = (long)nr_readers - 1; tidx >= 0; tidx--) {
 			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
 		nr_writes++;
-		if (unlikely(!test_duration_write()))
+		if (caa_unlikely(!test_duration_write()))
 			break;
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 	}
 

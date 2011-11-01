@@ -189,11 +189,11 @@ void *thr_enqueuer(void *_count)
 		cds_lfs_push_rcu(&s, &node->list);
 		nr_successful_enqueues++;
 
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 fail:
 		nr_enqueues++;
-		if (unlikely(!test_duration_enqueue()))
+		if (caa_unlikely(!test_duration_enqueue()))
 			break;
 	}
 
@@ -252,9 +252,9 @@ void *thr_dequeuer(void *_count)
 			nr_successful_dequeues++;
 		}
 		nr_dequeues++;
-		if (unlikely(!test_duration_dequeue()))
+		if (caa_unlikely(!test_duration_dequeue()))
 			break;
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 	}
 

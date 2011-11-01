@@ -166,7 +166,7 @@ static inline void _rcu_read_lock(void)
 	long tmp;
 
 	/* Check if registered */
-	if (unlikely(!rcu_reader))
+	if (caa_unlikely(!rcu_reader))
 		rcu_bp_register();
 
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
@@ -175,7 +175,7 @@ static inline void _rcu_read_lock(void)
 	 * rcu_gp_ctr is
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
-	if (likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
+	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
 		_CMM_STORE_SHARED(rcu_reader->ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before

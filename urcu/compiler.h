@@ -20,8 +20,8 @@
 
 #include <stddef.h>	/* for offsetof */
 
-#define likely(x)	__builtin_expect(!!(x), 1)
-#define unlikely(x)	__builtin_expect(!!(x), 0)
+#define caa_likely(x)	__builtin_expect(!!(x), 1)
+#define caa_unlikely(x)	__builtin_expect(!!(x), 0)
 
 #define	cmm_barrier()	asm volatile("" : : : "memory")
 

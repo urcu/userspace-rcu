@@ -239,11 +239,11 @@ void *thr_reader(void *_count)
 		debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		rcu_read_unlock();
 		nr_reads++;
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -276,7 +276,7 @@ void *thr_writer(void *_count)
 		new = test_array_alloc();
 		new->a = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
-		if (unlikely(wduration))
+		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		synchronize_rcu();
 		if (old)
@@ -284,9 +284,9 @@ void *thr_writer(void *_count)
 		test_array_free(old);
 		rcu_copy_mutex_unlock();
 		nr_writes++;
-		if (unlikely(!test_duration_write()))
+		if (caa_unlikely(!test_duration_write()))
 			break;
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 	}
 
