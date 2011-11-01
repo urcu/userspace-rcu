@@ -1330,6 +1330,7 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	init_size = max(init_size, min_alloc_size);
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
+	ht->flags = flags;
 	ht->hash_fct = hash_fct;
 	ht->compare_fct = compare_fct;
 	ht->hash_seed = hash_seed;
@@ -1345,7 +1346,6 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	alloc_split_items_count(ht);
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	ht->flags = flags;
 	order = get_count_order_ulong(init_size);
 	ht->t.resize_target = 1UL << order;
 	cds_lfht_create_dummy(ht, 1UL << order);
