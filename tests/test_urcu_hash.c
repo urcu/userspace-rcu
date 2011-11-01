@@ -38,6 +38,7 @@
 #endif
 
 #define DEFAULT_HASH_SIZE	32
+#define DEFAULT_MIN_ALLOC_SIZE	1
 #define DEFAULT_RAND_POOL	1000000
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
@@ -114,6 +115,7 @@ static unsigned long duration;
 static unsigned long rduration;
 
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
+static unsigned long min_hash_alloc_size = DEFAULT_MIN_ALLOC_SIZE;
 static unsigned long init_populate;
 static int opt_auto_resize;
 static int add_only, add_unique, add_replace;
@@ -667,6 +669,7 @@ void show_usage(int argc, char **argv)
 	printf("        [-v] (verbose output)\n");
 	printf("        [-a cpu#] [-a cpu#]... (affinity)\n");
 	printf("        [-h size] (initial hash table size)\n");
+	printf("        [-m size] (minimum hash alloc size)\n");
 	printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
 	printf("        [-u] Uniquify add (no redundant keys).\n");
 	printf("        [-s] Replace (swap) entries.\n");
@@ -768,6 +771,13 @@ int main(int argc, char **argv)
 			}
 			init_hash_size = atol(argv[++i]);
 			break;
+		case 'm':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			min_hash_alloc_size = atol(argv[++i]);
+			break;
 		case 'u':
 			if (add_replace) {
 				printf("Please specify at most one of -s or -u.\n");
@@ -823,6 +833,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	if (min_hash_alloc_size && min_hash_alloc_size * (min_hash_alloc_size - 1)) {
+		printf("Error: Min hash alloc size %lu is not a power of 2.\n",
+			min_hash_alloc_size);
+		return -1;
+	}
+
 	memset(&act, 0, sizeof(act));
 	ret = sigemptyset(&act.sa_mask);
 	if (ret == -1) {
@@ -865,6 +881,7 @@ int main(int argc, char **argv)
 		add_only ? " add only" : " add/remove",
 		add_unique ? " uniquify" : ( add_replace ? " replace" : " insert"));
 	printf_verbose("Initial hash table size: %lu buckets.\n", init_hash_size);
+	printf_verbose("Minimum hash alloc size: %lu buckets.\n", min_hash_alloc_size);
 	printf_verbose("Init pool size offset %lu size %lu.\n",
 		init_pool_offset, init_pool_size);
 	printf_verbose("Lookup pool size offset %lu size %lu.\n",
@@ -888,7 +905,7 @@ int main(int argc, char **argv)
 	 */
 	rcu_register_thread();
 	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
-			init_hash_size, 1,
+			init_hash_size, min_hash_alloc_size,
 			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
 			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();
