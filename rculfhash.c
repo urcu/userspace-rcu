@@ -1348,10 +1348,10 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(init_size);
 	ht->t.resize_target = 1UL << order;
-	cds_lfht_create_dummy(ht, 1UL << order);
-	ht->t.size = 1UL << order;
 	ht->min_alloc_size = min_alloc_size;
 	ht->min_alloc_order = get_count_order_ulong(min_alloc_size);
+	cds_lfht_create_dummy(ht, 1UL << order);
+	ht->t.size = 1UL << order;
 	return ht;
 }
 
