@@ -37,12 +37,22 @@ extern "C" {
  * 4-bytes boundaries because the two lower bits are used as flags.
  */
 
+/*
+ * _cds_lfht_node: Contains the internal pointers and reverse-hash
+ * value required for lookup and traversal of the hash table.
+ */
 struct _cds_lfht_node {
 	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
 } __attribute__((aligned(4)));
 
 /*
+ * cds_lfht_node: Contains the full key and length required to check for
+ * an actual match, and also contains an rcu_head structure that is used
+ * by RCU to track a node through a given RCU grace period.  There is an
+ * instance of _cds_lfht_node enclosed as a field within each
+ * _cds_lfht_node structure.
+ *
  * struct cds_lfht_node can be embedded into a structure (as a field).
  * caa_container_of() can be used to get the structure from the struct
  * cds_lfht_node after a lookup.
@@ -56,6 +66,7 @@ struct cds_lfht_node {
 	struct rcu_head head;
 };
 
+/* cds_lfht_iter: Used to track state while traversing a hash chain. */
 struct cds_lfht_iter {
 	struct cds_lfht_node *node, *next;
 };
@@ -163,7 +174,8 @@ struct cds_lfht *cds_lfht_new(cds_lfht_hash_fct hash_fct,
  * @ht: the hash table to destroy.
  * @attr: (output) resize worker thread attributes, as received by cds_lfht_new.
  *        The caller will typically want to free this pointer if dynamically
- *        allocated.
+ *        allocated. The attr point can be NULL if the caller does not
+ *        need to be informed of the value passed to cds_lfht_new().
  *
  * Return 0 on success, negative error value on error.
  * Threads calling this API need to be registered RCU read-side threads.
@@ -172,15 +184,19 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
 
 /*
  * cds_lfht_count_nodes - count the number of nodes in the hash table.
- *
+ * @ht: the hash table.
+ * @split_count_before: Sample the node count split-counter before traversal.
+ * @count: Traverse the hash table, count the number of nodes observed.
+ * @removed: Number of logically removed nodes observed during traversal.
+ * @split_count_after: Sample the node count split-counter after traversal.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  */
 void cds_lfht_count_nodes(struct cds_lfht *ht,
-		long *approx_before,
+		long *split_count_before,
 		unsigned long *count,
 		unsigned long *removed,
-		long *approx_after);
+		long *split_count_after);
 
 /*
  * cds_lfht_lookup - lookup a node by key.

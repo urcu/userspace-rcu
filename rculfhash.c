@@ -222,15 +222,37 @@
 /* Value of the end pointer. Should not interact with flags. */
 #define END_VALUE		NULL
 
+/*
+ * ht_items_count: Split-counters counting the number of node addition
+ * and removal in the table. Only used if the CDS_LFHT_ACCOUNTING flag
+ * is set at hash table creation.
+ *
+ * These are free-running counters, never reset to zero. They count the
+ * number of add/remove, and trigger every (1 << COUNT_COMMIT_ORDER)
+ * operations to update the global counter. We choose a power-of-2 value
+ * for the trigger to deal with 32 or 64-bit overflow of the counter.
+ */
 struct ht_items_count {
 	unsigned long add, del;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
+/*
+ * rcu_level: Contains the per order-index-level dummy node table. The
+ * size of each dummy node table is half the number of hashes contained
+ * in this order (except for order 0). The minimum allocation size
+ * parameter allows combining the dummy node arrays of the lowermost
+ * levels to improve cache locality for small index orders.
+ */
 struct rcu_level {
 	/* Note: manually update allocation length when adding a field */
 	struct _cds_lfht_node nodes[0];
 };
 
+/*
+ * rcu_table: Contains the size and desired new size if a resize
+ * operation is in progress, as well as the statically-sized array of
+ * rcu_level pointers.
+ */
 struct rcu_table {
 	unsigned long size;	/* always a power of 2, shared (RCU) */
 	unsigned long resize_target;
@@ -238,6 +260,11 @@ struct rcu_table {
 	struct rcu_level *tbl[MAX_TABLE_ORDER];
 };
 
+/*
+ * cds_lfht: Top-level data structure representing a lock-free hash
+ * table. Defined in the implementation file to make it be an opaque
+ * cookie to users.
+ */
 struct cds_lfht {
 	struct rcu_table t;
 	cds_lfht_hash_fct hash_fct;
@@ -269,11 +296,20 @@ struct cds_lfht {
 	struct ht_items_count *split_count;	/* split item count */
 };
 
+/*
+ * rcu_resize_work: Contains arguments passed to RCU worker thread
+ * responsible for performing lazy resize.
+ */
 struct rcu_resize_work {
 	struct rcu_head head;
 	struct cds_lfht *ht;
 };
 
+/*
+ * partition_resize_work: Contains arguments passed to worker threads
+ * executing the hash table resize on partitions of the hash table
+ * assigned to each processor's worker thread.
+ */
 struct partition_resize_work {
 	pthread_t thread_id;
 	struct cds_lfht *ht;
@@ -1381,9 +1417,10 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 			break;
 		}
 		next = rcu_dereference(node->p.next);
+		assert(node == clear_flag(node));
 		if (likely(!is_removed(next))
 		    && !is_dummy(next)
-		    && clear_flag(node)->p.reverse_hash == reverse_hash
+		    && node->p.reverse_hash == reverse_hash
 		    && likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
 				break;
 		}
