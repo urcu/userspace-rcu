@@ -1827,13 +1827,36 @@ void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int grow
 	__cds_lfht_resize_lazy_launch(ht);
 }
 
+/*
+ * We favor grow operations over shrink. A shrink operation never occurs
+ * if a grow operation is queued for lazy execution. A grow operation
+ * cancels any pending shrink lazy execution.
+ */
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count)
 {
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
+	count = max(count, ht->min_alloc_size);
+	if (count == size)
+		return;		/* Already the right size, no resize needed */
+	if (count > size) {	/* lazy grow */
+		if (resize_target_grow(ht, count) >= count)
+			return;
+	} else {		/* lazy shrink */
+		for (;;) {
+			unsigned long s;
 
-	resize_target_update_count(ht, count);
+			s = uatomic_cmpxchg(&ht->t.resize_target, size, count);
+			if (s == size)
+				break;	/* no resize needed */
+			if (s > size)
+				return;	/* growing is/(was just) in progress */
+			if (s <= count)
+				return;	/* some other thread do shrink */
+			size = s;
+		}
+	}
 	__cds_lfht_resize_lazy_launch(ht);
 }
