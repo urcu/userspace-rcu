@@ -105,6 +105,29 @@ struct test_data {
 	int b;
 };
 
+struct lfht_test_node {
+	struct cds_lfht_node node;
+};
+
+static inline struct lfht_test_node *
+to_test_node(struct cds_lfht_node *node)
+{
+	return caa_container_of(node, struct lfht_test_node, node);
+}
+
+static inline
+void lfht_test_node_init(struct lfht_test_node *node, void *key,
+			size_t key_len)
+{
+	cds_lfht_node_init(&node->node, key, key_len);
+}
+
+static inline struct lfht_test_node *
+cds_lfht_iter_get_test_node(struct cds_lfht_iter *iter)
+{
+	return to_test_node(cds_lfht_iter_get_node(iter));
+}
+
 static volatile int test_go, test_stop;
 
 static unsigned long wdelay;
@@ -437,7 +460,7 @@ void *thr_count(void *arg)
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
-	struct cds_lfht_node *node;
+	struct lfht_test_node *node;
 	struct cds_lfht_iter iter;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -457,7 +480,7 @@ void *thr_reader(void *_count)
 		cds_lfht_lookup(test_ht,
 			(void *)(((unsigned long) rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
 			sizeof(void *), &iter);
-		node = cds_lfht_iter_get_node(&iter);
+		node = cds_lfht_iter_get_test_node(&iter);
 		if (node == NULL) {
 			if (validate_lookup) {
 				printf("[ERROR] Lookup cannot find initial node.\n");
@@ -492,14 +515,15 @@ void *thr_reader(void *_count)
 static
 void free_node_cb(struct rcu_head *head)
 {
-	struct cds_lfht_node *node =
-		caa_container_of(head, struct cds_lfht_node, head);
+	struct lfht_test_node *node =
+		caa_container_of(head, struct lfht_test_node, node.head);
 	free(node);
 }
 
 void *thr_writer(void *_count)
 {
-	struct cds_lfht_node *node, *ret_node;
+	struct lfht_test_node *node;
+	struct cds_lfht_node *ret_node;
 	struct cds_lfht_iter iter;
 	struct wr_count *count = _count;
 	int ret;
@@ -519,26 +543,27 @@ void *thr_writer(void *_count)
 	for (;;) {
 		if ((addremove == AR_ADD || add_only)
 				|| (addremove == AR_RANDOM && rand_r(&rand_lookup) & 1)) {
-			node = malloc(sizeof(struct cds_lfht_node));
-			cds_lfht_node_init(node,
+			node = malloc(sizeof(struct lfht_test_node));
+			lfht_test_node_init(node,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			rcu_read_lock();
 			if (add_unique) {
-				ret_node = cds_lfht_add_unique(test_ht, node);
+				ret_node = cds_lfht_add_unique(test_ht, &node->node);
 			} else {
 				if (add_replace)
-					ret_node = cds_lfht_add_replace(test_ht, node);
+					ret_node = cds_lfht_add_replace(test_ht, &node->node);
 				else
-					cds_lfht_add(test_ht, node);
+					cds_lfht_add(test_ht, &node->node);
 			}
 			rcu_read_unlock();
-			if (add_unique && ret_node != node) {
+			if (add_unique && ret_node != &node->node) {
 				free(node);
 				nr_addexist++;
 			} else {
 				if (add_replace && ret_node) {
-					call_rcu(&ret_node->head, free_node_cb);
+					call_rcu(&to_test_node(ret_node)->node.head,
+							free_node_cb);
 					nr_addexist++;
 				} else {
 					nr_add++;
@@ -553,8 +578,8 @@ void *thr_writer(void *_count)
 			ret = cds_lfht_del(test_ht, &iter);
 			rcu_read_unlock();
 			if (ret == 0) {
-				node = cds_lfht_iter_get_node(&iter);
-				call_rcu(&node->head, free_node_cb);
+				node = cds_lfht_iter_get_test_node(&iter);
+				call_rcu(&node->node.head, free_node_cb);
 				nr_del++;
 			} else
 				nr_delnoent++;
@@ -596,7 +621,8 @@ void *thr_writer(void *_count)
 
 static int populate_hash(void)
 {
-	struct cds_lfht_node *node, *ret_node;
+	struct lfht_test_node *node;
+	struct cds_lfht_node *ret_node;
 
 	if (!init_populate)
 		return 0;
@@ -608,26 +634,26 @@ static int populate_hash(void)
 	}
 
 	while (nr_add < init_populate) {
-		node = malloc(sizeof(struct cds_lfht_node));
-		cds_lfht_node_init(node,
+		node = malloc(sizeof(struct lfht_test_node));
+		lfht_test_node_init(node,
 			(void *)(((unsigned long) rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
 			sizeof(void *));
 		rcu_read_lock();
 		if (add_unique) {
-			ret_node = cds_lfht_add_unique(test_ht, node);
+			ret_node = cds_lfht_add_unique(test_ht, &node->node);
 		} else {
 			if (add_replace)
-				ret_node = cds_lfht_add_replace(test_ht, node);
+				ret_node = cds_lfht_add_replace(test_ht, &node->node);
 			else
-				cds_lfht_add(test_ht, node);
+				cds_lfht_add(test_ht, &node->node);
 		}
 		rcu_read_unlock();
-		if (add_unique && ret_node != node) {
+		if (add_unique && ret_node != &node->node) {
 			free(node);
 			nr_addexist++;
 		} else {
 			if (add_replace && ret_node) {
-				call_rcu(&ret_node->head, free_node_cb);
+				call_rcu(&to_test_node(ret_node)->node.head, free_node_cb);
 				nr_addexist++;
 			} else {
 				nr_add++;
@@ -642,16 +668,16 @@ static
 void test_delete_all_nodes(struct cds_lfht *ht)
 {
 	struct cds_lfht_iter iter;
-	struct cds_lfht_node *node;
+	struct lfht_test_node *node;
 	unsigned long count = 0;
 
 	cds_lfht_first(ht, &iter);
-	while ((node = cds_lfht_iter_get_node(&iter)) != NULL) {
+	while ((node = cds_lfht_iter_get_test_node(&iter)) != NULL) {
 		int ret;
 
 		ret = cds_lfht_del(test_ht, &iter);
 		assert(!ret);
-		call_rcu(&node->head, free_node_cb);
+		call_rcu(&node->node.head, free_node_cb);
 		cds_lfht_next(ht, &iter);
 		count++;
 	}
