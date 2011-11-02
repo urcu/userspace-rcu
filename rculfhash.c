@@ -1796,13 +1796,9 @@ void do_resize_cb(struct rcu_head *head)
 }
 
 static
-void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int growth)
+void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 {
 	struct rcu_resize_work *work;
-	unsigned long target_size = size << growth;
-
-	if (resize_target_grow(ht, target_size) >= target_size)
-		return;
 
 	/* Store resize_target before read resize_initiated */
 	cmm_smp_mb();
@@ -1821,26 +1817,23 @@ void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int grow
 }
 
 static
+void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int growth)
+{
+	unsigned long target_size = size << growth;
+
+	if (resize_target_grow(ht, target_size) >= target_size)
+		return;
+
+	__cds_lfht_resize_lazy_launch(ht);
+}
+
+static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count)
 {
-	struct rcu_resize_work *work;
-
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
+
 	resize_target_update_count(ht, count);
-	/* Store resize_target before read resize_initiated */
-	cmm_smp_mb();
-	if (!CMM_LOAD_SHARED(ht->t.resize_initiated)) {
-		uatomic_inc(&ht->in_progress_resize);
-		cmm_smp_mb();	/* increment resize count before load destroy */
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy)) {
-			uatomic_dec(&ht->in_progress_resize);
-			return;
-		}
-		work = malloc(sizeof(*work));
-		work->ht = ht;
-		ht->cds_lfht_call_rcu(&work->head, do_resize_cb);
-		CMM_STORE_SHARED(ht->t.resize_initiated, 1);
-	}
+	__cds_lfht_resize_lazy_launch(ht);
 }
