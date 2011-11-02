@@ -62,8 +62,6 @@ struct cds_lfht_node {
 	struct _cds_lfht_node p;          /* needs to be first field */
 	void *key;
 	unsigned int key_len;
-	/* cache-cold for iteration */
-	struct rcu_head head;
 };
 
 /* cds_lfht_iter: Used to track state while traversing a hash chain. */

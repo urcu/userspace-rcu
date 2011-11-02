@@ -107,6 +107,8 @@ struct test_data {
 
 struct lfht_test_node {
 	struct cds_lfht_node node;
+	/* cache-cold for iteration */
+	struct rcu_head head;
 };
 
 static inline struct lfht_test_node *
@@ -516,7 +518,7 @@ static
 void free_node_cb(struct rcu_head *head)
 {
 	struct lfht_test_node *node =
-		caa_container_of(head, struct lfht_test_node, node.head);
+		caa_container_of(head, struct lfht_test_node, head);
 	free(node);
 }
 
@@ -562,7 +564,7 @@ void *thr_writer(void *_count)
 				nr_addexist++;
 			} else {
 				if (add_replace && ret_node) {
-					call_rcu(&to_test_node(ret_node)->node.head,
+					call_rcu(&to_test_node(ret_node)->head,
 							free_node_cb);
 					nr_addexist++;
 				} else {
@@ -579,7 +581,7 @@ void *thr_writer(void *_count)
 			rcu_read_unlock();
 			if (ret == 0) {
 				node = cds_lfht_iter_get_test_node(&iter);
-				call_rcu(&node->node.head, free_node_cb);
+				call_rcu(&node->head, free_node_cb);
 				nr_del++;
 			} else
 				nr_delnoent++;
@@ -653,7 +655,7 @@ static int populate_hash(void)
 			nr_addexist++;
 		} else {
 			if (add_replace && ret_node) {
-				call_rcu(&to_test_node(ret_node)->node.head, free_node_cb);
+				call_rcu(&to_test_node(ret_node)->head, free_node_cb);
 				nr_addexist++;
 			} else {
 				nr_add++;
@@ -677,7 +679,7 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 
 		ret = cds_lfht_del(test_ht, &iter);
 		assert(!ret);
-		call_rcu(&node->node.head, free_node_cb);
+		call_rcu(&node->head, free_node_cb);
 		cds_lfht_next(ht, &iter);
 		count++;
 	}
