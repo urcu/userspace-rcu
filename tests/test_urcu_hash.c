@@ -385,7 +385,7 @@ static
 unsigned long test_compare(void *key1, size_t key1_len,
                            void *key2, size_t key2_len)
 {
-	if (unlikely(key1_len != key2_len))
+	if (caa_unlikely(key1_len != key2_len))
 		return -1;
 	assert(key1_len == sizeof(unsigned long));
 	if (key1 == key2)
@@ -410,7 +410,7 @@ void *thr_count(void *arg)
 		rcu_thread_offline();
 		len = read(count_pipe[0], buf, 1);
 		rcu_thread_online();
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
 		if (len != 1)
 			continue;
@@ -468,13 +468,13 @@ void *thr_reader(void *_count)
 			lookup_ok++;
 		}
 		debug_yield_read();
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		rcu_read_unlock();
 		nr_reads++;
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
-		if (unlikely((nr_reads & ((1 << 10) - 1)) == 0))
+		if (caa_unlikely((nr_reads & ((1 << 10) - 1)) == 0))
 			rcu_quiescent_state();
 	}
 
@@ -572,11 +572,11 @@ void *thr_writer(void *_count)
 		}
 #endif //0
 		nr_writes++;
-		if (unlikely(!test_duration_write()))
+		if (caa_unlikely(!test_duration_write()))
 			break;
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
-		if (unlikely((nr_writes & ((1 << 10) - 1)) == 0))
+		if (caa_unlikely((nr_writes & ((1 << 10) - 1)) == 0))
 			rcu_quiescent_state();
 	}
 
