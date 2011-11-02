@@ -534,7 +534,7 @@ int get_count_order_ulong(unsigned long x)
 #endif
 
 static
-void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth);
+void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int growth);
 
 static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
@@ -695,7 +695,7 @@ void check_resize(struct cds_lfht *ht, unsigned long size, uint32_t chain_len)
 		dbg_printf("WARNING: large chain length: %u.\n",
 			   chain_len);
 	if (chain_len >= CHAIN_LEN_RESIZE_THRESHOLD)
-		cds_lfht_resize_lazy(ht, size,
+		cds_lfht_resize_lazy_grow(ht, size,
 			get_count_order_u32(chain_len - (CHAIN_LEN_TARGET - 1)));
 }
 
@@ -742,7 +742,8 @@ int is_end(struct cds_lfht_node *node)
 }
 
 static
-unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
+unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
+		unsigned long v)
 {
 	unsigned long old1, old2;
 
@@ -752,7 +753,7 @@ unsigned long _uatomic_max(unsigned long *ptr, unsigned long v)
 		if (old2 >= v)
 			return old2;
 	} while ((old1 = uatomic_cmpxchg(ptr, old2, v)) != old2);
-	return v;
+	return old2;
 }
 
 static
@@ -1753,11 +1754,9 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 }
 
 static
-unsigned long resize_target_update(struct cds_lfht *ht, unsigned long size,
-				   int growth_order)
+unsigned long resize_target_grow(struct cds_lfht *ht, unsigned long new_size)
 {
-	return _uatomic_max(&ht->t.resize_target,
-			    size << growth_order);
+	return _uatomic_xchg_monotonic_increase(&ht->t.resize_target, new_size);
 }
 
 static
@@ -1797,15 +1796,17 @@ void do_resize_cb(struct rcu_head *head)
 }
 
 static
-void cds_lfht_resize_lazy(struct cds_lfht *ht, unsigned long size, int growth)
+void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int growth)
 {
 	struct rcu_resize_work *work;
-	unsigned long target_size;
+	unsigned long target_size = size << growth;
 
-	target_size = resize_target_update(ht, size, growth);
+	if (resize_target_grow(ht, target_size) >= target_size)
+		return;
+
 	/* Store resize_target before read resize_initiated */
 	cmm_smp_mb();
-	if (!CMM_LOAD_SHARED(ht->t.resize_initiated) && size < target_size) {
+	if (!CMM_LOAD_SHARED(ht->t.resize_initiated)) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before load destroy */
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy)) {
