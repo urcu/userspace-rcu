@@ -137,7 +137,7 @@ extern int32_t gp_futex;
  */
 static inline void wake_up_gp(void)
 {
-	if (unlikely(_CMM_LOAD_SHARED(rcu_reader.waiting))) {
+	if (caa_unlikely(_CMM_LOAD_SHARED(rcu_reader.waiting))) {
 		_CMM_STORE_SHARED(rcu_reader.waiting, 0);
 		cmm_smp_mb();
 		if (uatomic_read(&gp_futex) != -1)

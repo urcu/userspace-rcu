@@ -204,7 +204,7 @@ static void call_rcu_wake_up(struct call_rcu_data *crdp)
 {
 	/* Write to call_rcu list before reading/writing futex */
 	cmm_smp_mb();
-	if (unlikely(uatomic_read(&crdp->futex) == -1)) {
+	if (caa_unlikely(uatomic_read(&crdp->futex) == -1)) {
 		uatomic_set(&crdp->futex, 0);
 		futex_async(&crdp->futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);

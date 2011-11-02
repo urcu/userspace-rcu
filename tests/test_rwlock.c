@@ -201,11 +201,11 @@ void *thr_reader(void *_count)
 	for (;;) {
 		pthread_rwlock_rdlock(&lock);
 		assert(test_array.a == 8);
-		if (unlikely(rduration))
+		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		pthread_rwlock_unlock(&lock);
 		nr_reads++;
-		if (unlikely(!test_duration_read()))
+		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
@@ -234,13 +234,13 @@ void *thr_writer(void *_count)
 		pthread_rwlock_wrlock(&lock);
 		test_array.a = 0;
 		test_array.a = 8;
-		if (unlikely(wduration))
+		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		pthread_rwlock_unlock(&lock);
 		nr_writes++;
-		if (unlikely(!test_duration_write()))
+		if (caa_unlikely(!test_duration_write()))
 			break;
-		if (unlikely(wdelay))
+		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 	}
 

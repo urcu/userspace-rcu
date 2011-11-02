@@ -505,9 +505,9 @@ extern int __rcu_cas_avail;
 extern int __rcu_cas_init(void);
 
 #define UATOMIC_COMPAT(insn)							\
-	((likely(__rcu_cas_avail > 0))						\
+	((caa_likely(__rcu_cas_avail > 0))						\
 	? (_uatomic_##insn)							\
-		: ((unlikely(__rcu_cas_avail < 0)				\
+		: ((caa_unlikely(__rcu_cas_avail < 0)				\
 			? ((__rcu_cas_init() > 0)				\
 				? (_uatomic_##insn)				\
 				: (compat_uatomic_##insn))			\
