@@ -1,3 +1,11 @@
+2011-11-03 Userspace RCU 0.6.6
+	* qsbr vs call_rcu : remove exit assertion
+	* Rename likely/unlikely to caa_likely/caa_unlikely
+	* Reinsert missing test_urcu_*.c files (missing in rename)
+	* rename test_qsbr to test_urcu_qsbr
+	* urcu-pointer: fix rcu_set_pointer unset return value
+	* Enhance API.txt documentation, add to Makefile as EXTRA_DIST
+
 2011-09-29 Userspace RCU 0.6.5
 	* call_rcu: Document call_rcu requirements
 	* call_rcu: fix error handling of malloc error
