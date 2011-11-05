@@ -109,6 +109,8 @@ struct test_data {
 
 struct lfht_test_node {
 	struct cds_lfht_node node;
+	void *key;
+	unsigned int key_len;
 	/* cache-cold for iteration */
 	struct rcu_head head;
 };
@@ -123,7 +125,9 @@ static inline
 void lfht_test_node_init(struct lfht_test_node *node, void *key,
 			size_t key_len)
 {
-	cds_lfht_node_init(&node->node, key, key_len);
+	cds_lfht_node_init(&node->node);
+	node->key = key;
+	node->key_len = key_len;
 }
 
 static inline struct lfht_test_node *
@@ -422,10 +426,12 @@ unsigned long test_compare(void *key1, size_t key1_len,
 }
 
 static
-int test_match(struct cds_lfht_node *node, void *arg)
+int test_match(struct cds_lfht_node *node, void *key)
 {
-	return !test_compare(node->key, node->key_len,
-			arg, sizeof(unsigned long));
+	struct lfht_test_node *test_node = to_test_node(node);
+
+	return !test_compare(test_node->key, test_node->key_len,
+			key, sizeof(unsigned long));
 }
 
 static
@@ -571,17 +577,17 @@ void *thr_writer(void *_count)
 				sizeof(void *));
 			rcu_read_lock();
 			if (add_unique) {
-				ret_node = cds_lfht_add_unique(test_ht, test_match,
-					test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+				ret_node = cds_lfht_add_unique(test_ht, test_match, node->key,
+					test_hash(node->key, node->key_len, TEST_HASH_SEED),
 					&node->node);
 			} else {
 				if (add_replace)
-					ret_node = cds_lfht_add_replace(test_ht, test_match,
-							test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+					ret_node = cds_lfht_add_replace(test_ht, test_match, node->key,
+							test_hash(node->key, node->key_len, TEST_HASH_SEED),
 							&node->node);
 				else
 					cds_lfht_add(test_ht,
-						test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+						test_hash(node->key, node->key_len, TEST_HASH_SEED),
 						&node->node);
 			}
 			rcu_read_unlock();
@@ -668,17 +674,17 @@ static int populate_hash(void)
 			sizeof(void *));
 		rcu_read_lock();
 		if (add_unique) {
-			ret_node = cds_lfht_add_unique(test_ht, test_match,
-				test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+			ret_node = cds_lfht_add_unique(test_ht, test_match, node->key,
+				test_hash(node->key, node->key_len, TEST_HASH_SEED),
 				&node->node);
 		} else {
 			if (add_replace)
-				ret_node = cds_lfht_add_replace(test_ht, test_match,
-						test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+				ret_node = cds_lfht_add_replace(test_ht, test_match, node->key,
+						test_hash(node->key, node->key_len, TEST_HASH_SEED),
 						&node->node);
 			else
 				cds_lfht_add(test_ht,
-					test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+					test_hash(node->key, node->key_len, TEST_HASH_SEED),
 					&node->node);
 		}
 		rcu_read_unlock();

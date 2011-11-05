@@ -32,37 +32,26 @@
 extern "C" {
 #endif
 
-/*
- * struct cds_lfht_node and struct _cds_lfht_node should be aligned on
- * 4-bytes boundaries because the two lower bits are used as flags.
- */
 
 /*
- * _cds_lfht_node: Contains the internal pointers and reverse-hash
+ * cds_lfht_node: Contains the next pointers and reverse-hash
  * value required for lookup and traversal of the hash table.
- */
-struct _cds_lfht_node {
-	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
-	unsigned long reverse_hash;
-} __attribute__((aligned(4)));
-
-/*
- * cds_lfht_node: Contains the full key and length required to check for
- * an actual match, and also contains an rcu_head structure that is used
- * by RCU to track a node through a given RCU grace period.  There is an
- * instance of _cds_lfht_node enclosed as a field within each
- * _cds_lfht_node structure.
+ *
+ * struct cds_lfht_node should be aligned on 4-bytes boundaries because
+ * the two lower bits are used as flags.
  *
  * struct cds_lfht_node can be embedded into a structure (as a field).
  * caa_container_of() can be used to get the structure from the struct
  * cds_lfht_node after a lookup.
+ *
+ * The structure which embeds it typically holds the key (or key-value
+ * pair) of the object. The caller code is responsible for calculation
+ * of the hash value for cds_lfht APIs.
  */
 struct cds_lfht_node {
-	/* cache-hot for iteration */
-	struct _cds_lfht_node p;          /* needs to be first field */
-	void *key;
-	unsigned int key_len;
-};
+	struct cds_lfht_node *next;	/* ptr | DUMMY_FLAG | REMOVED_FLAG */
+	unsigned long reverse_hash;
+} __attribute__((aligned(4)));
 
 /* cds_lfht_iter: Used to track state while traversing a hash chain. */
 struct cds_lfht_iter {
@@ -89,15 +78,13 @@ typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, void *key);
 /*
  * cds_lfht_node_init - initialize a hash table node
  * @node: the node to initialize.
- * @key: pointer to the key to use.
- * @key_len: the length of the key, in bytes.
+ *
+ * This function is kept to be eventually used for debugging purposes
+ * (detection of memory corruption).
  */
 static inline
-void cds_lfht_node_init(struct cds_lfht_node *node, void *key,
-			size_t key_len)
+void cds_lfht_node_init(struct cds_lfht_node *node)
 {
-	node->key = key;
-	node->key_len = key_len;
 }
 
 /*
@@ -206,6 +193,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
  * cds_lfht_next_duplicate - get the next item with same key (after a lookup).
  * @ht: the hash table.
  * @match: the key match function.
+ * @key: the current node key.
  * @iter: Node, if found (output). *iter->node set to NULL if not found.
  *
  * Uses an iterator initialized by a lookup.
@@ -218,7 +206,8 @@ void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
  * Threads calling this API need to be registered RCU read-side threads.
  */
 void cds_lfht_next_duplicate(struct cds_lfht *ht,
-		cds_lfht_match_fct match, struct cds_lfht_iter *iter);
+		cds_lfht_match_fct match, void *key,
+		struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_first - get the first node in the table.
@@ -260,6 +249,8 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  * cds_lfht_add_unique - add a node to hash table, if key is not present.
  * @ht: the hash table.
  * @match: the key match function.
+ * @key: the node's key.
+ * @hash: the node's hash.
  * @node: the node to try adding.
  *
  * Return the node added upon success.
@@ -276,6 +267,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
+		void *key,
 		unsigned long hash,
 		struct cds_lfht_node *node);
 
@@ -283,6 +275,8 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * cds_lfht_add_replace - replace or add a node within hash table.
  * @ht: the hash table.
  * @match: the key match function.
+ * @key: the node's key.
+ * @hash: the node's hash.
  * @node: the node to add.
  *
  * Return the node replaced upon success. If no node matching the key
@@ -305,6 +299,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  */
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
+		void *key,
 		unsigned long hash,
 		struct cds_lfht_node *node);
 

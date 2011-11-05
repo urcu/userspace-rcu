@@ -245,7 +245,7 @@ struct ht_items_count {
  */
 struct rcu_level {
 	/* Note: manually update allocation length when adding a field */
-	struct _cds_lfht_node nodes[0];
+	struct cds_lfht_node nodes[0];
 };
 
 /*
@@ -318,6 +318,7 @@ struct partition_resize_work {
 static
 void _cds_lfht_add(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
+		void *key,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -755,7 +756,7 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 }
 
 static
-struct _cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
+struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
 		unsigned long hash)
 {
 	unsigned long index, order;
@@ -794,9 +795,9 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 	for (;;) {
 		iter_prev = dummy;
 		/* We can always skip the dummy node initially */
-		iter = rcu_dereference(iter_prev->p.next);
+		iter = rcu_dereference(iter_prev->next);
 		assert(!is_removed(iter));
-		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
+		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		/*
 		 * We should never be called with dummy (start of chain)
 		 * and logically removed node (end of path compression
@@ -807,9 +808,9 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 		for (;;) {
 			if (caa_unlikely(is_end(iter)))
 				return;
-			if (caa_likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
+			if (caa_likely(clear_flag(iter)->reverse_hash > node->reverse_hash))
 				return;
-			next = rcu_dereference(clear_flag(iter)->p.next);
+			next = rcu_dereference(clear_flag(iter)->next);
 			if (caa_likely(is_removed(next)))
 				break;
 			iter_prev = clear_flag(iter);
@@ -820,7 +821,7 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
-		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
+		(void) uatomic_cmpxchg(&iter_prev->next, iter, new_next);
 	}
 	return;
 }
@@ -831,8 +832,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *old_next,
 		struct cds_lfht_node *new_node)
 {
-	struct cds_lfht_node *dummy, *ret_next;
-	struct _cds_lfht_node *lookup;
+	struct cds_lfht_node *bucket, *ret_next;
 
 	if (!old_node)	/* Return -ENOENT if asked to replace NULL node */
 		return -ENOENT;
@@ -853,7 +853,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		}
 		assert(!is_dummy(old_next));
 		assert(new_node != clear_flag(old_next));
-		new_node->p.next = clear_flag(old_next);
+		new_node->next = clear_flag(old_next);
 		/*
 		 * Here is the whole trick for lock-free replace: we add
 		 * the replacement node _after_ the node we want to
@@ -864,7 +864,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		 * to the removal flag and see the new node, or use
 		 * the old node, but will not see the new one.
 		 */
-		ret_next = uatomic_cmpxchg(&old_node->p.next,
+		ret_next = uatomic_cmpxchg(&old_node->next,
 			      old_next, flag_removed(new_node));
 		if (ret_next == old_next)
 			break;		/* We performed the replacement. */
@@ -876,11 +876,10 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	 * lookup for the node, and remove it (along with any other
 	 * logically removed node) if found.
 	 */
-	lookup = lookup_bucket(ht, size, bit_reverse_ulong(old_node->p.reverse_hash));
-	dummy = (struct cds_lfht_node *) lookup;
-	_cds_lfht_gc_bucket(dummy, new_node);
+	bucket = lookup_bucket(ht, size, bit_reverse_ulong(old_node->reverse_hash));
+	_cds_lfht_gc_bucket(bucket, new_node);
 
-	assert(is_removed(rcu_dereference(old_node->p.next)));
+	assert(is_removed(rcu_dereference(old_node->next)));
 	return 0;
 }
 
@@ -891,6 +890,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 static
 void _cds_lfht_add(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
+		void *key,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -898,11 +898,11 @@ void _cds_lfht_add(struct cds_lfht *ht,
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
 			*return_node;
-	struct _cds_lfht_node *lookup;
+	struct cds_lfht_node *bucket;
 
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
-	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
+	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
 	for (;;) {
 		uint32_t chain_len = 0;
 
@@ -910,28 +910,28 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		 * iter_prev points to the non-removed node prior to the
 		 * insert location.
 		 */
-		iter_prev = (struct cds_lfht_node *) lookup;
+		iter_prev = bucket;
 		/* We can always skip the dummy node initially */
-		iter = rcu_dereference(iter_prev->p.next);
-		assert(iter_prev->p.reverse_hash <= node->p.reverse_hash);
+		iter = rcu_dereference(iter_prev->next);
+		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
 			if (caa_unlikely(is_end(iter)))
 				goto insert;
-			if (caa_likely(clear_flag(iter)->p.reverse_hash > node->p.reverse_hash))
+			if (caa_likely(clear_flag(iter)->reverse_hash > node->reverse_hash))
 				goto insert;
 
 			/* dummy node is the first node of the identical-hash-value chain */
-			if (dummy && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash)
+			if (dummy && clear_flag(iter)->reverse_hash == node->reverse_hash)
 				goto insert;
 
-			next = rcu_dereference(clear_flag(iter)->p.next);
+			next = rcu_dereference(clear_flag(iter)->next);
 			if (caa_unlikely(is_removed(next)))
 				goto gc_node;
 
 			/* uniquely add */
 			if (unique_ret
 			    && !is_dummy(next)
-			    && clear_flag(iter)->p.reverse_hash == node->p.reverse_hash) {
+			    && clear_flag(iter)->reverse_hash == node->reverse_hash) {
 				struct cds_lfht_iter d_iter = { .node = node, .next = iter, };
 
 				/*
@@ -943,7 +943,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 				 * (including observe one node by one node
 				 * by forward iterations)
 				 */
-				cds_lfht_next_duplicate(ht, match, &d_iter);
+				cds_lfht_next_duplicate(ht, match, key, &d_iter);
 				if (!d_iter.node)
 					goto insert;
 
@@ -952,7 +952,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 			}
 
 			/* Only account for identical reverse hash once */
-			if (iter_prev->p.reverse_hash != clear_flag(iter)->p.reverse_hash
+			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash
 			    && !is_dummy(next))
 				check_resize(ht, size, ++chain_len);
 			iter_prev = clear_flag(iter);
@@ -965,14 +965,14 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_removed(iter));
 		assert(iter_prev != node);
 		if (!dummy)
-			node->p.next = clear_flag(iter);
+			node->next = clear_flag(iter);
 		else
-			node->p.next = flag_dummy(clear_flag(iter));
+			node->next = flag_dummy(clear_flag(iter));
 		if (is_dummy(iter))
 			new_node = flag_dummy(node);
 		else
 			new_node = node;
-		if (uatomic_cmpxchg(&iter_prev->p.next, iter,
+		if (uatomic_cmpxchg(&iter_prev->next, iter,
 				    new_node) != iter) {
 			continue;	/* retry */
 		} else {
@@ -986,7 +986,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 			new_next = flag_dummy(clear_flag(next));
 		else
 			new_next = clear_flag(next);
-		(void) uatomic_cmpxchg(&iter_prev->p.next, iter, new_next);
+		(void) uatomic_cmpxchg(&iter_prev->next, iter, new_next);
 		/* retry */
 	}
 end:
@@ -1001,8 +1001,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *node,
 		int dummy_removal)
 {
-	struct cds_lfht_node *dummy, *next, *old;
-	struct _cds_lfht_node *lookup;
+	struct cds_lfht_node *bucket, *next, *old;
 
 	if (!node)	/* Return -ENOENT if asked to delete NULL node */
 		return -ENOENT;
@@ -1010,7 +1009,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	/* logically delete the node */
 	assert(!is_dummy(node));
 	assert(!is_removed(node));
-	old = rcu_dereference(node->p.next);
+	old = rcu_dereference(node->next);
 	do {
 		struct cds_lfht_node *new_next;
 
@@ -1022,7 +1021,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		else
 			assert(!is_dummy(next));
 		new_next = flag_removed(next);
-		old = uatomic_cmpxchg(&node->p.next, next, new_next);
+		old = uatomic_cmpxchg(&node->next, next, new_next);
 	} while (old != next);
 	/* We performed the (logical) deletion. */
 
@@ -1031,11 +1030,10 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	 * the node, and remove it (along with any other logically removed node)
 	 * if found.
 	 */
-	lookup = lookup_bucket(ht, size, bit_reverse_ulong(node->p.reverse_hash));
-	dummy = (struct cds_lfht_node *) lookup;
-	_cds_lfht_gc_bucket(dummy, node);
+	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
+	_cds_lfht_gc_bucket(bucket, node);
 
-	assert(is_removed(rcu_dereference(node->p.next)));
+	assert(is_removed(rcu_dereference(node->next)));
 	return 0;
 }
 
@@ -1112,14 +1110,13 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
-		struct cds_lfht_node *new_node =
-			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
+		struct cds_lfht_node *new_node = &ht->t.tbl[i]->nodes[j];
 
 		dbg_printf("init populate: i %lu j %lu hash %lu\n",
 			   i, j, (1UL << (i - 1)) + j);
-		new_node->p.reverse_hash =
+		new_node->reverse_hash =
 				bit_reverse_ulong((1UL << (i - 1)) + j);
-		_cds_lfht_add(ht, NULL, 1UL << (i - 1),
+		_cds_lfht_add(ht, NULL, NULL, 1UL << (i - 1),
 				new_node, NULL, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
@@ -1158,7 +1155,7 @@ void init_table(struct cds_lfht *ht,
 		if (CMM_LOAD_SHARED(ht->t.resize_target) < (1UL << i))
 			break;
 
-		ht->t.tbl[i] = calloc(1, len * sizeof(struct _cds_lfht_node));
+		ht->t.tbl[i] = calloc(1, len * sizeof(struct cds_lfht_node));
 		assert(ht->t.tbl[i]);
 
 		/*
@@ -1213,12 +1210,11 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = start; j < start + len; j++) {
-		struct cds_lfht_node *fini_node =
-			(struct cds_lfht_node *) &ht->t.tbl[i]->nodes[j];
+		struct cds_lfht_node *fini_node = &ht->t.tbl[i]->nodes[j];
 
 		dbg_printf("remove entry: i %lu j %lu hash %lu\n",
 			   i, j, (1UL << (i - 1)) + j);
-		fini_node->p.reverse_hash =
+		fini_node->reverse_hash =
 			bit_reverse_ulong((1UL << (i - 1)) + j);
 		(void) _cds_lfht_del(ht, 1UL << (i - 1), fini_node, 1);
 	}
@@ -1296,10 +1292,10 @@ void fini_table(struct cds_lfht *ht,
 static
 void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 {
-	struct _cds_lfht_node *prev, *node;
+	struct cds_lfht_node *prev, *node;
 	unsigned long order, len, i, j;
 
-	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct _cds_lfht_node));
+	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct cds_lfht_node));
 	assert(ht->t.tbl[0]);
 
 	dbg_printf("create dummy: order %lu index %lu hash %lu\n", 0, 0, 0);
@@ -1311,7 +1307,7 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 		if (order <= ht->min_alloc_order) {
 			ht->t.tbl[order] = (struct rcu_level *) (ht->t.tbl[0]->nodes + len);
 		} else {
-			ht->t.tbl[order] = calloc(1, len * sizeof(struct _cds_lfht_node));
+			ht->t.tbl[order] = calloc(1, len * sizeof(struct cds_lfht_node));
 			assert(ht->t.tbl[order]);
 		}
 
@@ -1331,7 +1327,7 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 			node->next = prev->next;
 			assert(is_dummy(node->next));
 			node->reverse_hash = bit_reverse_ulong(j + len);
-			prev->next = flag_dummy((struct cds_lfht_node *)node);
+			prev->next = flag_dummy(node);
 		}
 	}
 }
@@ -1388,52 +1384,48 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
 		unsigned long hash, void *key, struct cds_lfht_iter *iter)
 {
-	struct cds_lfht_node *node, *next, *dummy_node;
-	struct _cds_lfht_node *lookup;
+	struct cds_lfht_node *node, *next, *bucket;
 	unsigned long reverse_hash, size;
 
 	reverse_hash = bit_reverse_ulong(hash);
 
 	size = rcu_dereference(ht->t.size);
-	lookup = lookup_bucket(ht, size, hash);
-	dummy_node = (struct cds_lfht_node *) lookup;
+	bucket = lookup_bucket(ht, size, hash);
 	/* We can always skip the dummy node initially */
-	node = rcu_dereference(dummy_node->p.next);
+	node = rcu_dereference(bucket->next);
 	node = clear_flag(node);
 	for (;;) {
 		if (caa_unlikely(is_end(node))) {
 			node = next = NULL;
 			break;
 		}
-		if (caa_unlikely(node->p.reverse_hash > reverse_hash)) {
+		if (caa_unlikely(node->reverse_hash > reverse_hash)) {
 			node = next = NULL;
 			break;
 		}
-		next = rcu_dereference(node->p.next);
+		next = rcu_dereference(node->next);
 		assert(node == clear_flag(node));
 		if (caa_likely(!is_removed(next))
 		    && !is_dummy(next)
-		    && node->p.reverse_hash == reverse_hash
+		    && node->reverse_hash == reverse_hash
 		    && caa_likely(match(node, key))) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
+	assert(!node || !is_dummy(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
 
 void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
-		struct cds_lfht_iter *iter)
+		void *key, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
-	void *key;
 
 	node = iter->node;
-	reverse_hash = node->p.reverse_hash;
-	key = node->key;
+	reverse_hash = node->reverse_hash;
 	next = iter->next;
 	node = clear_flag(next);
 
@@ -1442,19 +1434,19 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
 			node = next = NULL;
 			break;
 		}
-		if (caa_unlikely(node->p.reverse_hash > reverse_hash)) {
+		if (caa_unlikely(node->reverse_hash > reverse_hash)) {
 			node = next = NULL;
 			break;
 		}
-		next = rcu_dereference(node->p.next);
+		next = rcu_dereference(node->next);
 		if (caa_likely(!is_removed(next))
 		    && !is_dummy(next)
-		    && caa_likely(match(node->key, key))) {
+		    && caa_likely(match(node, key))) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
+	assert(!node || !is_dummy(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1469,21 +1461,21 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 			node = next = NULL;
 			break;
 		}
-		next = rcu_dereference(node->p.next);
+		next = rcu_dereference(node->next);
 		if (caa_likely(!is_removed(next))
 		    && !is_dummy(next)) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->p.next)));
+	assert(!node || !is_dummy(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
 
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
-	struct _cds_lfht_node *lookup;
+	struct cds_lfht_node *lookup;
 
 	/*
 	 * Get next after first dummy node. The first dummy node is the
@@ -1499,23 +1491,24 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 {
 	unsigned long size;
 
-	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
 	size = rcu_dereference(ht->t.size);
-	_cds_lfht_add(ht, NULL, size, node, NULL, 0);
+	_cds_lfht_add(ht, NULL, NULL, size, node, NULL, 0);
 	ht_count_add(ht, size, hash);
 }
 
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 				cds_lfht_match_fct match,
+				void *key,
 				unsigned long hash,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
 	size = rcu_dereference(ht->t.size);
-	_cds_lfht_add(ht, match, size, node, &iter, 0);
+	_cds_lfht_add(ht, match, key, size, node, &iter, 0);
 	if (iter.node == node)
 		ht_count_add(ht, size, hash);
 	return iter.node;
@@ -1523,16 +1516,17 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 				cds_lfht_match_fct match,
+				void *key,
 				unsigned long hash,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
 	size = rcu_dereference(ht->t.size);
 	for (;;) {
-		_cds_lfht_add(ht, match, size, node, &iter, 0);
+		_cds_lfht_add(ht, match, key, size, node, &iter, 0);
 		if (iter.node == node) {
 			ht_count_add(ht, size, hash);
 			return NULL;
@@ -1561,7 +1555,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	size = rcu_dereference(ht->t.size);
 	ret = _cds_lfht_del(ht, size, iter->node, 0);
 	if (!ret) {
-		hash = bit_reverse_ulong(iter->node->p.reverse_hash);
+		hash = bit_reverse_ulong(iter->node->reverse_hash);
 		ht_count_del(ht, size, hash);
 	}
 	return ret;
@@ -1571,14 +1565,12 @@ static
 int cds_lfht_delete_dummy(struct cds_lfht *ht)
 {
 	struct cds_lfht_node *node;
-	struct _cds_lfht_node *lookup;
 	unsigned long order, i, size;
 
 	/* Check that the table is empty */
-	lookup = &ht->t.tbl[0]->nodes[0];
-	node = (struct cds_lfht_node *) lookup;
+	node = &ht->t.tbl[0]->nodes[0];
 	do {
-		node = clear_flag(node)->p.next;
+		node = clear_flag(node)->next;
 		if (!is_dummy(node))
 			return -EPERM;
 		assert(!is_removed(node));
@@ -1639,7 +1631,6 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *approx_after)
 {
 	struct cds_lfht_node *node, *next;
-	struct _cds_lfht_node *lookup;
 	unsigned long nr_dummy = 0;
 
 	*approx_before = 0;
@@ -1656,10 +1647,9 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	*removed = 0;
 
 	/* Count non-dummy nodes in the table */
-	lookup = &ht->t.tbl[0]->nodes[0];
-	node = (struct cds_lfht_node *) lookup;
+	node = &ht->t.tbl[0]->nodes[0];
 	do {
-		next = rcu_dereference(node->p.next);
+		next = rcu_dereference(node->next);
 		if (is_removed(next)) {
 			if (!is_dummy(next))
 				(*removed)++;
