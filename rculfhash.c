@@ -267,8 +267,6 @@ struct rcu_table {
  */
 struct cds_lfht {
 	struct rcu_table t;
-	cds_lfht_hash_fct hash_fct;
-	cds_lfht_compare_fct compare_fct;
 	unsigned long min_alloc_order;
 	unsigned long min_alloc_size;
 	unsigned long hash_seed;
@@ -320,6 +318,7 @@ struct partition_resize_work {
 
 static
 void _cds_lfht_add(struct cds_lfht *ht,
+		cds_lfht_match_fct match,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -892,6 +891,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
  */
 static
 void _cds_lfht_add(struct cds_lfht *ht,
+		cds_lfht_match_fct match,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -944,7 +944,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 				 * (including observe one node by one node
 				 * by forward iterations)
 				 */
-				cds_lfht_next_duplicate(ht, &d_iter);
+				cds_lfht_next_duplicate(ht, match, &d_iter);
 				if (!d_iter.node)
 					goto insert;
 
@@ -1120,7 +1120,7 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 			   i, j, (1UL << (i - 1)) + j);
 		new_node->p.reverse_hash =
 				bit_reverse_ulong((1UL << (i - 1)) + j);
-		_cds_lfht_add(ht, 1UL << (i - 1),
+		_cds_lfht_add(ht, NULL, 1UL << (i - 1),
 				new_node, NULL, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
@@ -1337,10 +1337,7 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 	}
 }
 
-struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
-			cds_lfht_compare_fct compare_fct,
-			unsigned long hash_seed,
-			unsigned long init_size,
+struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_alloc_size,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
@@ -1368,9 +1365,6 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
 	ht->flags = flags;
-	ht->hash_fct = hash_fct;
-	ht->compare_fct = compare_fct;
-	ht->hash_seed = hash_seed;
 	ht->cds_lfht_call_rcu = cds_lfht_call_rcu;
 	ht->cds_lfht_synchronize_rcu = cds_lfht_synchronize_rcu;
 	ht->cds_lfht_rcu_read_lock = cds_lfht_rcu_read_lock;
@@ -1392,14 +1386,13 @@ struct cds_lfht *_cds_lfht_new(cds_lfht_hash_fct hash_fct,
 	return ht;
 }
 
-void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
-		struct cds_lfht_iter *iter)
+void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
+		unsigned long hash, void *key, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next, *dummy_node;
 	struct _cds_lfht_node *lookup;
-	unsigned long hash, reverse_hash, size;
+	unsigned long reverse_hash, size;
 
-	hash = ht->hash_fct(key, key_len, ht->hash_seed);
 	reverse_hash = bit_reverse_ulong(hash);
 
 	size = rcu_dereference(ht->t.size);
@@ -1422,7 +1415,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 		if (caa_likely(!is_removed(next))
 		    && !is_dummy(next)
 		    && node->p.reverse_hash == reverse_hash
-		    && caa_likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
+		    && caa_likely(match(node, key))) {
 				break;
 		}
 		node = clear_flag(next);
@@ -1432,17 +1425,16 @@ void cds_lfht_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 	iter->next = next;
 }
 
-void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
+		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
 	void *key;
-	size_t key_len;
 
 	node = iter->node;
 	reverse_hash = node->p.reverse_hash;
 	key = node->key;
-	key_len = node->key_len;
 	next = iter->next;
 	node = clear_flag(next);
 
@@ -1458,7 +1450,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 		next = rcu_dereference(node->p.next);
 		if (caa_likely(!is_removed(next))
 		    && !is_dummy(next)
-		    && caa_likely(!ht->compare_fct(node->key, node->key_len, key, key_len))) {
+		    && caa_likely(match(node->key, key))) {
 				break;
 		}
 		node = clear_flag(next);
@@ -1503,46 +1495,45 @@ void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	cds_lfht_next(ht, iter);
 }
 
-void cds_lfht_add(struct cds_lfht *ht, struct cds_lfht_node *node)
+void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
+		struct cds_lfht_node *node)
 {
-	unsigned long hash, size;
+	unsigned long size;
 
-	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
-
 	size = rcu_dereference(ht->t.size);
-	_cds_lfht_add(ht, size, node, NULL, 0);
+	_cds_lfht_add(ht, NULL, size, node, NULL, 0);
 	ht_count_add(ht, size, hash);
 }
 
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
+				cds_lfht_match_fct match,
+				unsigned long hash,
 				struct cds_lfht_node *node)
 {
-	unsigned long hash, size;
+	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
-
 	size = rcu_dereference(ht->t.size);
-	_cds_lfht_add(ht, size, node, &iter, 0);
+	_cds_lfht_add(ht, match, size, node, &iter, 0);
 	if (iter.node == node)
 		ht_count_add(ht, size, hash);
 	return iter.node;
 }
 
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
+				cds_lfht_match_fct match,
+				unsigned long hash,
 				struct cds_lfht_node *node)
 {
-	unsigned long hash, size;
+	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	hash = ht->hash_fct(node->key, node->key_len, ht->hash_seed);
 	node->p.reverse_hash = bit_reverse_ulong((unsigned long) hash);
-
 	size = rcu_dereference(ht->t.size);
 	for (;;) {
-		_cds_lfht_add(ht, size, node, &iter, 0);
+		_cds_lfht_add(ht, match, size, node, &iter, 0);
 		if (iter.node == node) {
 			ht_count_add(ht, size, hash);
 			return NULL;

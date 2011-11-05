@@ -41,6 +41,8 @@
 #define DEFAULT_MIN_ALLOC_SIZE	1
 #define DEFAULT_RAND_POOL	1000000
 
+#define TEST_HASH_SEED	0x42UL
+
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
 #define CACHE_LINE_SIZE 4096
 
@@ -419,6 +421,24 @@ unsigned long test_compare(void *key1, size_t key1_len,
 		return 1;
 }
 
+static
+int test_match(struct cds_lfht_node *node, void *arg)
+{
+	return !test_compare(node->key, node->key_len,
+			arg, sizeof(unsigned long));
+}
+
+static
+void cds_lfht_test_lookup(struct cds_lfht *ht, void *key, size_t key_len,
+		struct cds_lfht_iter *iter)
+{
+	assert(key_len == sizeof(unsigned long));
+
+	cds_lfht_lookup(ht, test_match,
+			test_hash(key, key_len, TEST_HASH_SEED),
+			key, iter);
+}
+
 void *thr_count(void *arg)
 {
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
@@ -479,7 +499,7 @@ void *thr_reader(void *_count)
 
 	for (;;) {
 		rcu_read_lock();
-		cds_lfht_lookup(test_ht,
+		cds_lfht_test_lookup(test_ht,
 			(void *)(((unsigned long) rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
 			sizeof(void *), &iter);
 		node = cds_lfht_iter_get_test_node(&iter);
@@ -551,12 +571,18 @@ void *thr_writer(void *_count)
 				sizeof(void *));
 			rcu_read_lock();
 			if (add_unique) {
-				ret_node = cds_lfht_add_unique(test_ht, &node->node);
+				ret_node = cds_lfht_add_unique(test_ht, test_match,
+					test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+					&node->node);
 			} else {
 				if (add_replace)
-					ret_node = cds_lfht_add_replace(test_ht, &node->node);
+					ret_node = cds_lfht_add_replace(test_ht, test_match,
+							test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+							&node->node);
 				else
-					cds_lfht_add(test_ht, &node->node);
+					cds_lfht_add(test_ht,
+						test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+						&node->node);
 			}
 			rcu_read_unlock();
 			if (add_unique && ret_node != &node->node) {
@@ -574,7 +600,7 @@ void *thr_writer(void *_count)
 		} else {
 			/* May delete */
 			rcu_read_lock();
-			cds_lfht_lookup(test_ht,
+			cds_lfht_test_lookup(test_ht,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *), &iter);
 			ret = cds_lfht_del(test_ht, &iter);
@@ -642,12 +668,18 @@ static int populate_hash(void)
 			sizeof(void *));
 		rcu_read_lock();
 		if (add_unique) {
-			ret_node = cds_lfht_add_unique(test_ht, &node->node);
+			ret_node = cds_lfht_add_unique(test_ht, test_match,
+				test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+				&node->node);
 		} else {
 			if (add_replace)
-				ret_node = cds_lfht_add_replace(test_ht, &node->node);
+				ret_node = cds_lfht_add_replace(test_ht, test_match,
+						test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+						&node->node);
 			else
-				cds_lfht_add(test_ht, &node->node);
+				cds_lfht_add(test_ht,
+					test_hash(node->node.key, node->node.key_len, TEST_HASH_SEED),
+					&node->node);
 		}
 		rcu_read_unlock();
 		if (add_unique && ret_node != &node->node) {
@@ -932,8 +964,7 @@ int main(int argc, char **argv)
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-	test_ht = cds_lfht_new(test_hash, test_compare, 0x42UL,
-			init_hash_size, min_hash_alloc_size,
+	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size,
 			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
 			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();
