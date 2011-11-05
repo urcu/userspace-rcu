@@ -45,7 +45,7 @@
  * - The resize operation executes concurrently with add/remove/lookup.
  * - Hash table nodes are contained within a split-ordered list. This
  *   list is ordered by incrementing reversed-bits-hash value.
- * - An index of dummy nodes is kept. These dummy nodes are the hash
+ * - An index of bucket nodes is kept. These bucket nodes are the hash
  *   table "buckets", and they are also chained together in the
  *   split-ordered list, which allows recursive expansion.
  * - The resize operation for small tables only allows expanding the hash table.
@@ -74,7 +74,7 @@
  *   successfully set the "removed" flag (with a cmpxchg) into a node's
  *   next pointer is considered to have succeeded its removal (and thus
  *   owns the node to reclaim). Because we garbage-collect starting from
- *   an invariant node (the start-of-bucket dummy node) up to the
+ *   an invariant node (the start-of-bucket bucket node) up to the
  *   "removed" node (or find a reverse-hash that is higher), we are sure
  *   that a successful traversal of the chain leads to a chain that is
  *   present in the linked-list (the start node is never removed) and
@@ -88,19 +88,19 @@
  *   for it do to so.
  * - A RCU "order table" indexed by log2(hash index) is copied and
  *   expanded by the resize operation. This order table allows finding
- *   the "dummy node" tables.
- * - There is one dummy node table per hash index order. The size of
- *   each dummy node table is half the number of hashes contained in
+ *   the "bucket node" tables.
+ * - There is one bucket node table per hash index order. The size of
+ *   each bucket node table is half the number of hashes contained in
  *   this order (except for order 0).
- * - synchronzie_rcu is used to garbage-collect the old dummy node table.
- * - The per-order dummy node tables contain a compact version of the
+ * - synchronzie_rcu is used to garbage-collect the old bucket node table.
+ * - The per-order bucket node tables contain a compact version of the
  *   hash table nodes. These tables are invariant after they are
  *   populated into the hash table.
  *
- * Dummy node tables:
+ * Bucket node tables:
  *
- * hash table	hash table	the last	all dummy node tables
- * order	size		dummy node	0   1   2   3   4   5   6(index)
+ * hash table	hash table	the last	all bucket node tables
+ * order	size		bucket node	0   1   2   3   4   5   6(index)
  * 				table size
  * 0		1		1		1
  * 1		2		1		1   1
@@ -110,12 +110,12 @@
  * 5		32		16		1   1   2   4   8  16
  * 6		64		32		1   1   2   4   8  16  32
  *
- * When growing/shrinking, we only focus on the last dummy node table
+ * When growing/shrinking, we only focus on the last bucket node table
  * which size is (!order ? 1 : (1 << (order -1))).
  *
  * Example for growing/shrinking:
- * grow hash table from order 5 to 6: init the index=6 dummy node table
- * shrink hash table from order 6 to 5: fini the index=6 dummy node table
+ * grow hash table from order 5 to 6: init the index=6 bucket node table
+ * shrink hash table from order 6 to 5: fini the index=6 bucket node table
  *
  * A bit of ascii art explanation:
  * 
@@ -195,7 +195,7 @@
 #endif
 
 /*
- * Minimum number of dummy nodes to touch per thread to parallelize grow/shrink.
+ * Minimum number of bucket nodes to touch per thread to parallelize grow/shrink.
  */
 #define MIN_PARTITION_PER_THREAD_ORDER	12
 #define MIN_PARTITION_PER_THREAD	(1UL << MIN_PARTITION_PER_THREAD_ORDER)
@@ -212,11 +212,11 @@
  * The removed flag needs to be updated atomically with the pointer.
  * It indicates that no node must attach to the node scheduled for
  * removal, and that node garbage collection must be performed.
- * The dummy flag does not require to be updated atomically with the
+ * The bucket flag does not require to be updated atomically with the
  * pointer, but it is added as a pointer low bit flag to save space.
  */
 #define REMOVED_FLAG		(1UL << 0)
-#define DUMMY_FLAG		(1UL << 1)
+#define BUCKET_FLAG		(1UL << 1)
 #define FLAGS_MASK		((1UL << 2) - 1)
 
 /* Value of the end pointer. Should not interact with flags. */
@@ -237,10 +237,10 @@ struct ht_items_count {
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 /*
- * rcu_level: Contains the per order-index-level dummy node table. The
- * size of each dummy node table is half the number of hashes contained
+ * rcu_level: Contains the per order-index-level bucket node table. The
+ * size of each bucket node table is half the number of hashes contained
  * in this order (except for order 0). The minimum allocation size
- * parameter allows combining the dummy node arrays of the lowermost
+ * parameter allows combining the bucket node arrays of the lowermost
  * levels to improve cache locality for small index orders.
  */
 struct rcu_level {
@@ -322,7 +322,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
-		int dummy);
+		int bucket);
 
 /*
  * Algorithm to reverse bits in a word by lookup table, extended to
@@ -717,15 +717,15 @@ struct cds_lfht_node *flag_removed(struct cds_lfht_node *node)
 }
 
 static
-int is_dummy(struct cds_lfht_node *node)
+int is_bucket(struct cds_lfht_node *node)
 {
-	return ((unsigned long) node) & DUMMY_FLAG;
+	return ((unsigned long) node) & BUCKET_FLAG;
 }
 
 static
-struct cds_lfht_node *flag_dummy(struct cds_lfht_node *node)
+struct cds_lfht_node *flag_bucket(struct cds_lfht_node *node)
 {
-	return (struct cds_lfht_node *) (((unsigned long) node) | DUMMY_FLAG);
+	return (struct cds_lfht_node *) (((unsigned long) node) | BUCKET_FLAG);
 }
 
 static
@@ -784,27 +784,27 @@ struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
  * Remove all logically deleted nodes from a bucket up to a certain node key.
  */
 static
-void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node)
+void _cds_lfht_gc_bucket(struct cds_lfht_node *bucket, struct cds_lfht_node *node)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
 
-	assert(!is_dummy(dummy));
-	assert(!is_removed(dummy));
-	assert(!is_dummy(node));
+	assert(!is_bucket(bucket));
+	assert(!is_removed(bucket));
+	assert(!is_bucket(node));
 	assert(!is_removed(node));
 	for (;;) {
-		iter_prev = dummy;
-		/* We can always skip the dummy node initially */
+		iter_prev = bucket;
+		/* We can always skip the bucket node initially */
 		iter = rcu_dereference(iter_prev->next);
 		assert(!is_removed(iter));
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		/*
-		 * We should never be called with dummy (start of chain)
+		 * We should never be called with bucket (start of chain)
 		 * and logically removed node (end of path compression
 		 * marker) being the actual same node. This would be a
 		 * bug in the algorithm implementation.
 		 */
-		assert(dummy != node);
+		assert(bucket != node);
 		for (;;) {
 			if (caa_unlikely(is_end(iter)))
 				return;
@@ -817,8 +817,8 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *dummy, struct cds_lfht_node *node
 			iter = next;
 		}
 		assert(!is_removed(iter));
-		if (is_dummy(iter))
-			new_next = flag_dummy(clear_flag(next));
+		if (is_bucket(iter))
+			new_next = flag_bucket(clear_flag(next));
 		else
 			new_next = clear_flag(next);
 		(void) uatomic_cmpxchg(&iter_prev->next, iter, new_next);
@@ -838,9 +838,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		return -ENOENT;
 
 	assert(!is_removed(old_node));
-	assert(!is_dummy(old_node));
+	assert(!is_bucket(old_node));
 	assert(!is_removed(new_node));
-	assert(!is_dummy(new_node));
+	assert(!is_bucket(new_node));
 	assert(new_node != old_node);
 	for (;;) {
 		/* Insert after node to be replaced */
@@ -851,7 +851,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 			 */
 			return -ENOENT;
 		}
-		assert(!is_dummy(old_next));
+		assert(!is_bucket(old_next));
 		assert(new_node != clear_flag(old_next));
 		new_node->next = clear_flag(old_next);
 		/*
@@ -894,13 +894,13 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
-		int dummy)
+		int bucket_flag)
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_node, *new_next,
 			*return_node;
 	struct cds_lfht_node *bucket;
 
-	assert(!is_dummy(node));
+	assert(!is_bucket(node));
 	assert(!is_removed(node));
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
 	for (;;) {
@@ -911,7 +911,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		 * insert location.
 		 */
 		iter_prev = bucket;
-		/* We can always skip the dummy node initially */
+		/* We can always skip the bucket node initially */
 		iter = rcu_dereference(iter_prev->next);
 		assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
@@ -920,8 +920,8 @@ void _cds_lfht_add(struct cds_lfht *ht,
 			if (caa_likely(clear_flag(iter)->reverse_hash > node->reverse_hash))
 				goto insert;
 
-			/* dummy node is the first node of the identical-hash-value chain */
-			if (dummy && clear_flag(iter)->reverse_hash == node->reverse_hash)
+			/* bucket node is the first node of the identical-hash-value chain */
+			if (bucket_flag && clear_flag(iter)->reverse_hash == node->reverse_hash)
 				goto insert;
 
 			next = rcu_dereference(clear_flag(iter)->next);
@@ -930,7 +930,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 
 			/* uniquely add */
 			if (unique_ret
-			    && !is_dummy(next)
+			    && !is_bucket(next)
 			    && clear_flag(iter)->reverse_hash == node->reverse_hash) {
 				struct cds_lfht_iter d_iter = { .node = node, .next = iter, };
 
@@ -953,7 +953,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 
 			/* Only account for identical reverse hash once */
 			if (iter_prev->reverse_hash != clear_flag(iter)->reverse_hash
-			    && !is_dummy(next))
+			    && !is_bucket(next))
 				check_resize(ht, size, ++chain_len);
 			iter_prev = clear_flag(iter);
 			iter = next;
@@ -964,12 +964,12 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		assert(!is_removed(iter_prev));
 		assert(!is_removed(iter));
 		assert(iter_prev != node);
-		if (!dummy)
+		if (!bucket_flag)
 			node->next = clear_flag(iter);
 		else
-			node->next = flag_dummy(clear_flag(iter));
-		if (is_dummy(iter))
-			new_node = flag_dummy(node);
+			node->next = flag_bucket(clear_flag(iter));
+		if (is_bucket(iter))
+			new_node = flag_bucket(node);
 		else
 			new_node = node;
 		if (uatomic_cmpxchg(&iter_prev->next, iter,
@@ -982,8 +982,8 @@ void _cds_lfht_add(struct cds_lfht *ht,
 
 	gc_node:
 		assert(!is_removed(iter));
-		if (is_dummy(iter))
-			new_next = flag_dummy(clear_flag(next));
+		if (is_bucket(iter))
+			new_next = flag_bucket(clear_flag(next));
 		else
 			new_next = clear_flag(next);
 		(void) uatomic_cmpxchg(&iter_prev->next, iter, new_next);
@@ -999,7 +999,7 @@ end:
 static
 int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *node,
-		int dummy_removal)
+		int bucket_removal)
 {
 	struct cds_lfht_node *bucket, *next, *old;
 
@@ -1007,7 +1007,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		return -ENOENT;
 
 	/* logically delete the node */
-	assert(!is_dummy(node));
+	assert(!is_bucket(node));
 	assert(!is_removed(node));
 	old = rcu_dereference(node->next);
 	do {
@@ -1016,10 +1016,10 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		next = old;
 		if (caa_unlikely(is_removed(next)))
 			return -ENOENT;
-		if (dummy_removal)
-			assert(is_dummy(next));
+		if (bucket_removal)
+			assert(is_bucket(next));
 		else
-			assert(!is_dummy(next));
+			assert(!is_bucket(next));
 		new_next = flag_removed(next);
 		old = uatomic_cmpxchg(&node->next, next, new_next);
 	} while (old != next);
@@ -1099,7 +1099,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
  * many worker threads, based on the number of CPUs available in the system.
  * This should therefore take care of not having the expand lagging behind too
  * many concurrent insertion threads by using the scheduler's ability to
- * schedule dummy node population fairly with insertions.
+ * schedule bucket node population fairly with insertions.
  */
 static
 void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
@@ -1159,8 +1159,8 @@ void init_table(struct cds_lfht *ht,
 		assert(ht->t.tbl[i]);
 
 		/*
-		 * Set all dummy nodes reverse hash values for a level and
-		 * link all dummy nodes into the table.
+		 * Set all bucket nodes reverse hash values for a level and
+		 * link all bucket nodes into the table.
 		 */
 		init_table_populate(ht, i, len);
 
@@ -1191,7 +1191,7 @@ void init_table(struct cds_lfht *ht,
  * Concurrent removal and add operations are helping us perform garbage
  * collection of logically removed nodes. We guarantee that all logically
  * removed nodes have been garbage-collected (unlinked) before call_rcu is
- * invoked to free a hole level of dummy nodes (after a grace period).
+ * invoked to free a hole level of bucket nodes (after a grace period).
  *
  * Logical removal and garbage collection can therefore be done in batch or on a
  * node-per-node basis, as long as the guarantee above holds.
@@ -1261,7 +1261,7 @@ void fini_table(struct cds_lfht *ht,
 		/*
 		 * We need to wait for all add operations to reach Q.S. (and
 		 * thus use the new table for lookups) before we can start
-		 * releasing the old dummy nodes. Otherwise their lookup will
+		 * releasing the old bucket nodes. Otherwise their lookup will
 		 * return a logically removed node as insert position.
 		 */
 		ht->cds_lfht_synchronize_rcu();
@@ -1269,8 +1269,8 @@ void fini_table(struct cds_lfht *ht,
 			free(free_by_rcu);
 
 		/*
-		 * Set "removed" flag in dummy nodes about to be removed.
-		 * Unlink all now-logically-removed dummy node pointers.
+		 * Set "removed" flag in bucket nodes about to be removed.
+		 * Unlink all now-logically-removed bucket node pointers.
 		 * Concurrent add/remove operation are helping us doing
 		 * the gc.
 		 */
@@ -1290,7 +1290,7 @@ void fini_table(struct cds_lfht *ht,
 }
 
 static
-void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
+void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 {
 	struct cds_lfht_node *prev, *node;
 	unsigned long order, len, i, j;
@@ -1298,8 +1298,8 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct cds_lfht_node));
 	assert(ht->t.tbl[0]);
 
-	dbg_printf("create dummy: order %lu index %lu hash %lu\n", 0, 0, 0);
-	ht->t.tbl[0]->nodes[0].next = flag_dummy(get_end());
+	dbg_printf("create bucket: order %lu index %lu hash %lu\n", 0, 0, 0);
+	ht->t.tbl[0]->nodes[0].next = flag_bucket(get_end());
 	ht->t.tbl[0]->nodes[0].reverse_hash = 0;
 
 	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
@@ -1322,12 +1322,12 @@ void cds_lfht_create_dummy(struct cds_lfht *ht, unsigned long size)
 			}
 
 			node = &ht->t.tbl[order]->nodes[j];
-			dbg_printf("create dummy: order %lu index %lu hash %lu\n",
+			dbg_printf("create bucket: order %lu index %lu hash %lu\n",
 				   order, j, j + len);
 			node->next = prev->next;
-			assert(is_dummy(node->next));
+			assert(is_bucket(node->next));
 			node->reverse_hash = bit_reverse_ulong(j + len);
-			prev->next = flag_dummy(node);
+			prev->next = flag_bucket(node);
 		}
 	}
 }
@@ -1376,7 +1376,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	ht->t.resize_target = 1UL << order;
 	ht->min_alloc_size = min_alloc_size;
 	ht->min_alloc_order = get_count_order_ulong(min_alloc_size);
-	cds_lfht_create_dummy(ht, 1UL << order);
+	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->t.size = 1UL << order;
 	return ht;
 }
@@ -1391,7 +1391,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
 
 	size = rcu_dereference(ht->t.size);
 	bucket = lookup_bucket(ht, size, hash);
-	/* We can always skip the dummy node initially */
+	/* We can always skip the bucket node initially */
 	node = rcu_dereference(bucket->next);
 	node = clear_flag(node);
 	for (;;) {
@@ -1406,14 +1406,14 @@ void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
 		next = rcu_dereference(node->next);
 		assert(node == clear_flag(node));
 		if (caa_likely(!is_removed(next))
-		    && !is_dummy(next)
+		    && !is_bucket(next)
 		    && node->reverse_hash == reverse_hash
 		    && caa_likely(match(node, key))) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1440,13 +1440,13 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
 		}
 		next = rcu_dereference(node->next);
 		if (caa_likely(!is_removed(next))
-		    && !is_dummy(next)
+		    && !is_bucket(next)
 		    && caa_likely(match(node, key))) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1463,12 +1463,12 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 		}
 		next = rcu_dereference(node->next);
 		if (caa_likely(!is_removed(next))
-		    && !is_dummy(next)) {
+		    && !is_bucket(next)) {
 				break;
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_dummy(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(rcu_dereference(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1478,7 +1478,7 @@ void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	struct cds_lfht_node *lookup;
 
 	/*
-	 * Get next after first dummy node. The first dummy node is the
+	 * Get next after first bucket node. The first bucket node is the
 	 * first node of the linked list.
 	 */
 	lookup = &ht->t.tbl[0]->nodes[0];
@@ -1562,7 +1562,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 }
 
 static
-int cds_lfht_delete_dummy(struct cds_lfht *ht)
+int cds_lfht_delete_bucket(struct cds_lfht *ht)
 {
 	struct cds_lfht_node *node;
 	unsigned long order, i, size;
@@ -1571,7 +1571,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 	node = &ht->t.tbl[0]->nodes[0];
 	do {
 		node = clear_flag(node)->next;
-		if (!is_dummy(node))
+		if (!is_bucket(node))
 			return -EPERM;
 		assert(!is_removed(node));
 	} while (!is_end(node));
@@ -1580,7 +1580,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 	 * being destroyed.
 	 */
 	size = ht->t.size;
-	/* Internal sanity check: all nodes left should be dummy */
+	/* Internal sanity check: all nodes left should be bucket */
 	for (order = 0; order < get_count_order_ulong(size) + 1; order++) {
 		unsigned long len;
 
@@ -1589,7 +1589,7 @@ int cds_lfht_delete_dummy(struct cds_lfht *ht)
 			dbg_printf("delete order %lu i %lu hash %lu\n",
 				order, i,
 				bit_reverse_ulong(ht->t.tbl[order]->nodes[i].reverse_hash));
-			assert(is_dummy(ht->t.tbl[order]->nodes[i].next));
+			assert(is_bucket(ht->t.tbl[order]->nodes[i].next));
 		}
 
 		if (order == ht->min_alloc_order)
@@ -1614,7 +1614,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	cmm_smp_mb();	/* Store destroy before load resize */
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
-	ret = cds_lfht_delete_dummy(ht);
+	ret = cds_lfht_delete_bucket(ht);
 	if (ret)
 		return ret;
 	free_split_items_count(ht);
@@ -1631,7 +1631,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *approx_after)
 {
 	struct cds_lfht_node *node, *next;
-	unsigned long nr_dummy = 0;
+	unsigned long nr_bucket = 0;
 
 	*approx_before = 0;
 	if (ht->split_count) {
@@ -1646,22 +1646,22 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	*count = 0;
 	*removed = 0;
 
-	/* Count non-dummy nodes in the table */
+	/* Count non-bucket nodes in the table */
 	node = &ht->t.tbl[0]->nodes[0];
 	do {
 		next = rcu_dereference(node->next);
 		if (is_removed(next)) {
-			if (!is_dummy(next))
+			if (!is_bucket(next))
 				(*removed)++;
 			else
-				(nr_dummy)++;
-		} else if (!is_dummy(next))
+				(nr_bucket)++;
+		} else if (!is_bucket(next))
 			(*count)++;
 		else
-			(nr_dummy)++;
+			(nr_bucket)++;
 		node = clear_flag(next);
 	} while (!is_end(node));
-	dbg_printf("number of dummy nodes: %lu\n", nr_dummy);
+	dbg_printf("number of bucket nodes: %lu\n", nr_bucket);
 	*approx_after = 0;
 	if (ht->split_count) {
 		int i;
@@ -1702,7 +1702,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 		   old_size, old_order, new_size, new_order);
 	assert(new_size < old_size);
 
-	/* Remove and unlink all dummy nodes to remove. */
+	/* Remove and unlink all bucket nodes to remove. */
 	fini_table(ht, new_order + 1, old_order);
 }
 
