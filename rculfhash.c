@@ -269,7 +269,6 @@ struct cds_lfht {
 	struct rcu_table t;
 	unsigned long min_alloc_order;
 	unsigned long min_alloc_size;
-	unsigned long hash_seed;
 	int flags;
 	/*
 	 * We need to put the work threads offline (QSBR) when taking this
