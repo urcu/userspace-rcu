@@ -711,14 +711,12 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 	struct lfht_test_node *node;
 	unsigned long count = 0;
 
-	cds_lfht_first(ht, &iter);
-	while ((node = cds_lfht_iter_get_test_node(&iter)) != NULL) {
+	cds_lfht_for_each_entry(ht, &iter, node, node) {
 		int ret;
 
 		ret = cds_lfht_del(test_ht, &iter);
 		assert(!ret);
 		call_rcu(&node->head, free_node_cb);
-		cds_lfht_next(ht, &iter);
 		count++;
 	}
 	printf("deleted %lu nodes.\n", count);

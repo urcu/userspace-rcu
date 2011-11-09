@@ -26,6 +26,7 @@
  */
 
 #include <stdint.h>
+#include <urcu/compiler.h>
 #include <urcu-call-rcu.h>
 
 #ifdef __cplusplus
@@ -360,6 +361,43 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter);
  * Threads calling this API need to be registered RCU read-side threads.
  */
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
+
+/*
+ * Note: cds_lfht_for_each are safe for element removal during
+ * iteration.
+ */
+#define cds_lfht_for_each(ht, iter, node)				\
+	for (cds_lfht_first(ht, iter),					\
+			node = cds_lfht_iter_get_node(iter);		\
+		node != NULL;						\
+		cds_lfht_next(ht, iter),				\
+			node = cds_lfht_iter_get_node(iter))
+
+#define cds_lfht_for_each_duplicate(ht, match, hash, key, iter, node)	\
+	for (cds_lfht_lookup(ht, match, hash, key, iter),		\
+			node = cds_lfht_iter_get_node(iter);		\
+		node != NULL;						\
+		cds_lfht_next_duplicate(ht, match, key, iter),		\
+			node = cds_lfht_iter_get_node(iter))
+
+#define cds_lfht_for_each_entry(ht, iter, pos, member)			\
+	for (cds_lfht_first(ht, iter),					\
+			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
+					typeof(*(pos)), member);	\
+		&pos->member != NULL;					\
+		cds_lfht_next(ht, iter),				\
+			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
+					typeof(*(pos)), member))
+
+#define cds_lfht_for_each_entry_duplicate(ht, match, hash, key,		\
+				iter, pos, member)			\
+	for (cds_lfht_lookup(ht, match, hash, key, iter),		\
+			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
+					typeof(*(pos)), member);	\
+		&pos->member != NULL;					\
+		cds_lfht_next_duplicate(ht, match, key, iter),		\
+			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
+					typeof(*(pos)), member))
 
 #ifdef __cplusplus
 }
