@@ -32,7 +32,6 @@
 extern "C" {
 #endif
 
-
 /*
  * cds_lfht_node: Contains the next pointers and reverse-hash
  * value required for lookup and traversal of the hash table.
