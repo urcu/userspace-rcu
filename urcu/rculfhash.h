@@ -384,7 +384,7 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 	for (cds_lfht_first(ht, iter),					\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member);	\
-		&pos->member != NULL;					\
+		&(pos)->member != NULL;					\
 		cds_lfht_next(ht, iter),				\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member))
@@ -394,7 +394,7 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 	for (cds_lfht_lookup(ht, match, hash, key, iter),		\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member);	\
-		&pos->member != NULL;					\
+		&(pos)->member != NULL;					\
 		cds_lfht_next_duplicate(ht, match, key, iter),		\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member))
