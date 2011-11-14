@@ -1381,8 +1381,9 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	return ht;
 }
 
-void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
-		unsigned long hash, void *key, struct cds_lfht_iter *iter)
+void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
+		cds_lfht_match_fct match, void *key,
+		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next, *bucket;
 	unsigned long reverse_hash, size;
@@ -1498,9 +1499,9 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 }
 
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
+				unsigned long hash,
 				cds_lfht_match_fct match,
 				void *key,
-				unsigned long hash,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;
@@ -1515,9 +1516,9 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 }
 
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
+				unsigned long hash,
 				cds_lfht_match_fct match,
 				void *key,
-				unsigned long hash,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;

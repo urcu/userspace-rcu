@@ -71,8 +71,6 @@ struct cds_lfht;
  * Ensure reader and writer threads are registered as urcu readers.
  */
 
-typedef unsigned long (*cds_lfht_hash_fct)(void *key, size_t length,
-					unsigned long seed);
 typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, void *key);
 
 /*
@@ -179,15 +177,17 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 /*
  * cds_lfht_lookup - lookup a node by key.
  * @ht: the hash table.
- * @match: the key match function.
  * @hash: the key hash.
+ * @match: the key match function.
+ * @key: the current node key.
  * @iter: Node, if found (output). *iter->node set to NULL if not found.
  *
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  */
-void cds_lfht_lookup(struct cds_lfht *ht, cds_lfht_match_fct match,
-		unsigned long hash, void *key, struct cds_lfht_iter *iter);
+void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
+		cds_lfht_match_fct match, void *key,
+		struct cds_lfht_iter *iter);
 
 /*
  * cds_lfht_next_duplicate - get the next item with same key (after a lookup).
@@ -248,9 +248,9 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 /*
  * cds_lfht_add_unique - add a node to hash table, if key is not present.
  * @ht: the hash table.
+ * @hash: the node's hash.
  * @match: the key match function.
  * @key: the node's key.
- * @hash: the node's hash.
  * @node: the node to try adding.
  *
  * Return the node added upon success.
@@ -266,17 +266,17 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  * add_unique and add_replace (see below).
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
+		unsigned long hash,
 		cds_lfht_match_fct match,
 		void *key,
-		unsigned long hash,
 		struct cds_lfht_node *node);
 
 /*
  * cds_lfht_add_replace - replace or add a node within hash table.
  * @ht: the hash table.
+ * @hash: the node's hash.
  * @match: the key match function.
  * @key: the node's key.
- * @hash: the node's hash.
  * @node: the node to add.
  *
  * Return the node replaced upon success. If no node matching the key
@@ -298,9 +298,9 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * will never generate duplicated keys.
  */
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
+		unsigned long hash,
 		cds_lfht_match_fct match,
 		void *key,
-		unsigned long hash,
 		struct cds_lfht_node *node);
 
 /*
@@ -373,8 +373,8 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 		cds_lfht_next(ht, iter),				\
 			node = cds_lfht_iter_get_node(iter))
 
-#define cds_lfht_for_each_duplicate(ht, match, hash, key, iter, node)	\
-	for (cds_lfht_lookup(ht, match, hash, key, iter),		\
+#define cds_lfht_for_each_duplicate(ht, hash, match, key, iter, node)	\
+	for (cds_lfht_lookup(ht, hash, match, key, iter),		\
 			node = cds_lfht_iter_get_node(iter);		\
 		node != NULL;						\
 		cds_lfht_next_duplicate(ht, match, key, iter),		\
@@ -389,9 +389,9 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member))
 
-#define cds_lfht_for_each_entry_duplicate(ht, match, hash, key,		\
+#define cds_lfht_for_each_entry_duplicate(ht, hash, match, key,		\
 				iter, pos, member)			\
-	for (cds_lfht_lookup(ht, match, hash, key, iter),		\
+	for (cds_lfht_lookup(ht, hash, match, key, iter),		\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
 					typeof(*(pos)), member);	\
 		&(pos)->member != NULL;					\
