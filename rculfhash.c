@@ -318,7 +318,7 @@ struct partition_resize_work {
 static
 void _cds_lfht_add(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
-		void *key,
+		const void *key,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -890,7 +890,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 static
 void _cds_lfht_add(struct cds_lfht *ht,
 		cds_lfht_match_fct match,
-		void *key,
+		const void *key,
 		unsigned long size,
 		struct cds_lfht_node *node,
 		struct cds_lfht_iter *unique_ret,
@@ -1382,7 +1382,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 }
 
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
-		cds_lfht_match_fct match, void *key,
+		cds_lfht_match_fct match, const void *key,
 		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next, *bucket;
@@ -1420,7 +1420,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 }
 
 void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
-		void *key, struct cds_lfht_iter *iter)
+		const void *key, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
@@ -1501,7 +1501,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 				unsigned long hash,
 				cds_lfht_match_fct match,
-				void *key,
+				const void *key,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;
@@ -1518,7 +1518,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 				unsigned long hash,
 				cds_lfht_match_fct match,
-				void *key,
+				const void *key,
 				struct cds_lfht_node *node)
 {
 	unsigned long size;

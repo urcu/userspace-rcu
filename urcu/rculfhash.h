@@ -71,7 +71,7 @@ struct cds_lfht;
  * Ensure reader and writer threads are registered as urcu readers.
  */
 
-typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, void *key);
+typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, const void *key);
 
 /*
  * cds_lfht_node_init - initialize a hash table node
@@ -186,7 +186,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
  * Threads calling this API need to be registered RCU read-side threads.
  */
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
-		cds_lfht_match_fct match, void *key,
+		cds_lfht_match_fct match, const void *key,
 		struct cds_lfht_iter *iter);
 
 /*
@@ -206,7 +206,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
  * Threads calling this API need to be registered RCU read-side threads.
  */
 void cds_lfht_next_duplicate(struct cds_lfht *ht,
-		cds_lfht_match_fct match, void *key,
+		cds_lfht_match_fct match, const void *key,
 		struct cds_lfht_iter *iter);
 
 /*
@@ -268,7 +268,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		unsigned long hash,
 		cds_lfht_match_fct match,
-		void *key,
+		const void *key,
 		struct cds_lfht_node *node);
 
 /*
@@ -300,7 +300,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		unsigned long hash,
 		cds_lfht_match_fct match,
-		void *key,
+		const void *key,
 		struct cds_lfht_node *node);
 
 /*

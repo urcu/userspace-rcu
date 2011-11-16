@@ -384,7 +384,7 @@ void hashword2(
 
 #if (CAA_BITS_PER_LONG == 32)
 static
-unsigned long test_hash(void *_key, size_t length, unsigned long seed)
+unsigned long test_hash(const void *_key, size_t length, unsigned long seed)
 {
 	unsigned int key = (unsigned int) _key;
 
@@ -393,7 +393,7 @@ unsigned long test_hash(void *_key, size_t length, unsigned long seed)
 }
 #else
 static
-unsigned long test_hash(void *_key, size_t length, unsigned long seed)
+unsigned long test_hash(const void *_key, size_t length, unsigned long seed)
 {
 	union {
 		uint64_t v64;
@@ -413,8 +413,8 @@ unsigned long test_hash(void *_key, size_t length, unsigned long seed)
 #endif
 
 static
-unsigned long test_compare(void *key1, size_t key1_len,
-                           void *key2, size_t key2_len)
+unsigned long test_compare(const void *key1, size_t key1_len,
+                           const void *key2, size_t key2_len)
 {
 	if (caa_unlikely(key1_len != key2_len))
 		return -1;
@@ -426,7 +426,7 @@ unsigned long test_compare(void *key1, size_t key1_len,
 }
 
 static
-int test_match(struct cds_lfht_node *node, void *key)
+int test_match(struct cds_lfht_node *node, const void *key)
 {
 	struct lfht_test_node *test_node = to_test_node(node);
 
