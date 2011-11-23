@@ -4,6 +4,7 @@
  * Userspace RCU library - Lock-Free Resizable RCU Hash Table
  *
  * Copyright 2010-2011 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright 2011 - Lai Jiangshan <laijs@cn.fujitsu.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
