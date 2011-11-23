@@ -117,6 +117,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
  * @flags: hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
  *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
+ *           CDS_LFHT_ACCOUNTING: count the number of node addition
+ *                                and removal in the table
  * @attr: optional resize worker thread attributes. NULL for default.
  *
  * Return NULL on error.
@@ -129,7 +131,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
  * this priority level. Having lower priority for call_rcu and resize threads
  * does not pose any correctness issue, but the resize operations could be
  * starved by updates, thus leading to long hash table bucket chains.
- * Threads calling this API need to be registered RCU read-side threads.
+ * Threads calling this API are NOT required to be registered RCU read-side
+ * threads. It can be called very early.(before rcu is initialized ...etc.)
  */
 static inline
 struct cds_lfht *cds_lfht_new(unsigned long init_size,
