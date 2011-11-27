@@ -421,6 +421,11 @@ void rcu_bp_after_fork_child(void)
 	assert(!ret);
 }
 
+void *rcu_dereference_sym_bp(void *p)
+{
+	return _rcu_dereference(p);
+}
+
 void *rcu_set_pointer_sym_bp(void **p, void *v)
 {
 	cmm_wmb();
