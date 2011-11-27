@@ -37,12 +37,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-/*
- * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
- * publication headers.
- */
-#include <urcu-pointer.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,6 +50,12 @@ extern "C" {
  * with rcu_register_thread() before calling rcu_read_lock().
  * rcu_unregister_thread() should be called before the thread exits.
  */
+
+/*
+ * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
+ * publication headers.
+ */
+#include <urcu-pointer.h>
 
 #ifdef _LGPL_SOURCE
 
@@ -75,6 +75,11 @@ extern "C" {
 #define rcu_read_lock_bp		_rcu_read_lock
 #define rcu_read_unlock_bp		_rcu_read_unlock
 
+#define rcu_dereference_bp		rcu_dereference
+#define rcu_cmpxchg_pointer_bp		rcu_cmpxchg_pointer
+#define rcu_xchg_pointer_bp		rcu_xchg_pointer
+#define rcu_set_pointer_bp		rcu_set_pointer
+
 #else /* !_LGPL_SOURCE */
 
 /*
@@ -82,8 +87,54 @@ extern "C" {
  * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
-extern void rcu_read_lock(void);
-extern void rcu_read_unlock(void);
+extern void rcu_read_lock(void)
+	__attribute__((weak));
+extern void rcu_read_unlock(void)
+	__attribute__((weak));
+
+extern void *rcu_dereference_sym_bp(void *p)
+	__attribute__((weak));
+#define rcu_dereference_bp(p)						     \
+	({								     \
+		typeof(p) _________p1 =	URCU_FORCE_CAST(typeof(p),	     \
+			rcu_dereference_sym_bp(URCU_FORCE_CAST(void *, p))); \
+		(_________p1);						     \
+	})
+
+extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new)
+	__attribute__((weak));
+#define rcu_cmpxchg_pointer_bp(p, old, _new)				     \
+	({								     \
+		typeof(*(p)) _________pold = (old);			     \
+		typeof(*(p)) _________pnew = (_new);			     \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_cmpxchg_pointer_sym_bp(URCU_FORCE_CAST(void **, p),\
+						_________pold,		     \
+						_________pnew));	     \
+		(_________p1);						     \
+	})
+
+extern void *rcu_xchg_pointer_sym_bp(void **p, void *v)
+	__attribute__((weak));
+#define rcu_xchg_pointer_bp(p, v)					     \
+	({								     \
+		typeof(*(p)) _________pv = (v);			             \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_xchg_pointer_sym_bp(URCU_FORCE_CAST(void **, p), \
+					     _________pv));		     \
+		(_________p1);						     \
+	})
+
+extern void *rcu_set_pointer_sym_bp(void **p, void *v)
+	__attribute__((weak));
+#define rcu_set_pointer_bp(p, v)					     \
+	({								     \
+		typeof(*(p)) _________pv = (v);			             \
+		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+			rcu_set_pointer_sym_bp(URCU_FORCE_CAST(void **, p),  \
+					    _________pv));		     \
+		(_________p1);						     \
+	})
 
 #endif /* !_LGPL_SOURCE */
 
