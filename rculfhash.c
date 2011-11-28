@@ -239,27 +239,23 @@ struct ht_items_count {
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 /*
- * rcu_level: Contains the per order-index-level bucket node table. The
- * size of each bucket node table is half the number of hashes contained
- * in this order (except for order 0). The minimum allocation size
- * parameter allows combining the bucket node arrays of the lowermost
- * levels to improve cache locality for small index orders.
- */
-struct rcu_level {
-	/* Note: manually update allocation length when adding a field */
-	struct cds_lfht_node nodes[0];
-};
-
-/*
  * rcu_table: Contains the size and desired new size if a resize
  * operation is in progress, as well as the statically-sized array of
- * rcu_level pointers.
+ * bucket table pointers.
  */
 struct rcu_table {
 	unsigned long size;	/* always a power of 2, shared (RCU) */
 	unsigned long resize_target;
 	int resize_initiated;
-	struct rcu_level *tbl[MAX_TABLE_ORDER];
+
+	/*
+	 * Contains the per order-index-level bucket node table. The size
+	 * of each bucket node table is half the number of hashes contained
+	 * in this order (except for order 0). The minimum allocation size
+	 * parameter allows combining the bucket node arrays of the lowermost
+	 * levels to improve cache locality for small index orders.
+	 */
+	struct cds_lfht_node *tbl[MAX_TABLE_ORDER];
 };
 
 /*
@@ -795,7 +791,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 	if ((__builtin_constant_p(index) && index == 0)
 			|| index < ht->min_alloc_size) {
 		dbg_printf("bucket index %lu order 0 aridx 0\n", index);
-		return &ht->t.tbl[0]->nodes[index];
+		return &ht->t.tbl[0][index];
 	}
 	/*
 	 * equivalent to get_count_order_ulong(index + 1), but optimizes
@@ -805,7 +801,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 	order = fls_ulong(index);
 	dbg_printf("bucket index %lu order %lu aridx %lu\n",
 		   index, order, index & ((1UL << (order - 1)) - 1));
-	return &ht->t.tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+	return &ht->t.tbl[order][index & ((1UL << (order - 1)) - 1)];
 }
 
 static inline
