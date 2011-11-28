@@ -756,18 +756,14 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 	return old2;
 }
 
-static
-struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
-		unsigned long hash)
+static inline
+struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 {
-	unsigned long index, order;
+	unsigned long order;
 
-	assert(size > 0);
-	index = hash & (size - 1);
-
-	if (index < ht->min_alloc_size) {
-		dbg_printf("lookup hash %lu index %lu order 0 aridx 0\n",
-			   hash, index);
+	if ((__builtin_constant_p(index) && index == 0)
+			|| index < ht->min_alloc_size) {
+		dbg_printf("bucket index %lu order 0 aridx 0\n", index);
 		return &ht->t.tbl[0]->nodes[index];
 	}
 	/*
@@ -776,9 +772,17 @@ struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
 	 * get_count_order_ulong.
 	 */
 	order = fls_ulong(index);
-	dbg_printf("lookup hash %lu index %lu order %lu aridx %lu\n",
-		   hash, index, order, index & ((1UL << (order - 1)) - 1));
+	dbg_printf("bucket index %lu order %lu aridx %lu\n",
+		   index, order, index & ((1UL << (order - 1)) - 1));
 	return &ht->t.tbl[order]->nodes[index & ((1UL << (order - 1)) - 1)];
+}
+
+static inline
+struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
+		unsigned long hash)
+{
+	assert(size > 0);
+	return bucket_at(ht, hash & (size - 1));
 }
 
 /*
@@ -1106,19 +1110,18 @@ static
 void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 				   unsigned long start, unsigned long len)
 {
-	unsigned long j;
+	unsigned long j, size = 1UL << (i - 1);
 
 	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
-	for (j = start; j < start + len; j++) {
-		struct cds_lfht_node *new_node = &ht->t.tbl[i]->nodes[j];
+	for (j = size + start; j < size + start + len; j++) {
+		struct cds_lfht_node *new_node = bucket_at(ht, j);
 
-		dbg_printf("init populate: i %lu j %lu hash %lu\n",
-			   i, j, (1UL << (i - 1)) + j);
-		new_node->reverse_hash =
-				bit_reverse_ulong((1UL << (i - 1)) + j);
-		_cds_lfht_add(ht, NULL, NULL, 1UL << (i - 1),
-				new_node, NULL, 1);
+		assert(j >= size && j < (size << 1));
+		dbg_printf("init populate: order %lu index %lu hash %lu\n",
+			   i, j, j);
+		new_node->reverse_hash = bit_reverse_ulong(j);
+		_cds_lfht_add(ht, NULL, NULL, size, new_node, NULL, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
 }
@@ -1206,18 +1209,18 @@ static
 void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 			    unsigned long start, unsigned long len)
 {
-	unsigned long j;
+	unsigned long j, size = 1UL << (i - 1);
 
 	assert(i > ht->min_alloc_order);
 	ht->cds_lfht_rcu_read_lock();
-	for (j = start; j < start + len; j++) {
-		struct cds_lfht_node *fini_node = &ht->t.tbl[i]->nodes[j];
+	for (j = size + start; j < size + start + len; j++) {
+		struct cds_lfht_node *fini_node = bucket_at(ht, j);
 
-		dbg_printf("remove entry: i %lu j %lu hash %lu\n",
-			   i, j, (1UL << (i - 1)) + j);
-		fini_node->reverse_hash =
-			bit_reverse_ulong((1UL << (i - 1)) + j);
-		(void) _cds_lfht_del(ht, 1UL << (i - 1), fini_node, 1);
+		assert(j >= size && j < (size << 1));
+		dbg_printf("remove entry: order %lu index %lu hash %lu\n",
+			   i, j, j);
+		fini_node->reverse_hash = bit_reverse_ulong(j);
+		(void) _cds_lfht_del(ht, size, fini_node, 1);
 	}
 	ht->cds_lfht_rcu_read_unlock();
 }
@@ -1294,14 +1297,15 @@ static
 void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 {
 	struct cds_lfht_node *prev, *node;
-	unsigned long order, len, i, j;
+	unsigned long order, len, i;
 
 	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct cds_lfht_node));
 	assert(ht->t.tbl[0]);
 
-	dbg_printf("create bucket: order %lu index %lu hash %lu\n", 0, 0, 0);
-	ht->t.tbl[0]->nodes[0].next = flag_bucket(get_end());
-	ht->t.tbl[0]->nodes[0].reverse_hash = 0;
+	dbg_printf("create bucket: order 0 index 0 hash 0\n");
+	node = bucket_at(ht, 0);
+	node->next = flag_bucket(get_end());
+	node->reverse_hash = 0;
 
 	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
 		len = 1UL << (order - 1);
@@ -1312,22 +1316,28 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 			assert(ht->t.tbl[order]);
 		}
 
-		i = 0;
-		prev = ht->t.tbl[i]->nodes;
-		for (j = 0; j < len; j++) {
-			if (j & (j - 1)) {	/* Between power of 2 */
-				prev++;
-			} else if (j) {		/* At each power of 2 */
-				i++;
-				prev = ht->t.tbl[i]->nodes;
-			}
+		for (i = 0; i < len; i++) {
+			/*
+			 * Now, we are trying to init the node with the
+			 * hash=(len+i) (which is also a bucket with the
+			 * index=(len+i)) and insert it into the hash table,
+			 * so this node has to be inserted after the bucket
+			 * with the index=(len+i)&(len-1)=i. And because there
+			 * is no other non-bucket node nor bucket node with
+			 * larger index/hash inserted, so the bucket node
+			 * being inserted should be inserted directly linked
+			 * after the bucket node with index=i.
+			 */
+			prev = bucket_at(ht, i);
+			node = bucket_at(ht, len + i);
 
-			node = &ht->t.tbl[order]->nodes[j];
 			dbg_printf("create bucket: order %lu index %lu hash %lu\n",
-				   order, j, j + len);
+				   order, len + i, len + i);
+			node->reverse_hash = bit_reverse_ulong(len + i);
+
+			/* insert after prev */
+			assert(is_bucket(prev->next));
 			node->next = prev->next;
-			assert(is_bucket(node->next));
-			node->reverse_hash = bit_reverse_ulong(j + len);
 			prev->next = flag_bucket(node);
 		}
 	}
@@ -1477,14 +1487,11 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
-	struct cds_lfht_node *lookup;
-
 	/*
 	 * Get next after first bucket node. The first bucket node is the
 	 * first node of the linked list.
 	 */
-	lookup = &ht->t.tbl[0]->nodes[0];
-	iter->next = lookup->next;
+	iter->next = bucket_at(ht, 0)->next;
 	cds_lfht_next(ht, iter);
 }
 
@@ -1570,7 +1577,7 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 	unsigned long order, i, size;
 
 	/* Check that the table is empty */
-	node = &ht->t.tbl[0]->nodes[0];
+	node = bucket_at(ht, 0);
 	do {
 		node = clear_flag(node)->next;
 		if (!is_bucket(node))
@@ -1649,7 +1656,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	*removed = 0;
 
 	/* Count non-bucket nodes in the table */
-	node = &ht->t.tbl[0]->nodes[0];
+	node = bucket_at(ht, 0);
 	do {
 		next = rcu_dereference(node->next);
 		if (is_removed(next)) {
