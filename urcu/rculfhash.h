@@ -106,6 +106,7 @@ struct cds_lfht_mm_type {
 
 extern const struct cds_lfht_mm_type cds_lfht_mm_order;
 extern const struct cds_lfht_mm_type cds_lfht_mm_chunk;
+extern const struct cds_lfht_mm_type cds_lfht_mm_mmap;
 
 /*
  * _cds_lfht_new - API used by cds_lfht_new wrapper. Do not use directly.

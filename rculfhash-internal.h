@@ -108,6 +108,12 @@ struct cds_lfht {
 		 * memory addressing.
 		 */
 		struct cds_lfht_node *tbl_chunk[0];
+
+		/*
+		 * Memory mapping with room for all possible buckets.
+		 * Their memory is allocated when needed.
+		 */
+		struct cds_lfht_node *tbl_mmap;
 	};
 };
 

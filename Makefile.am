@@ -35,7 +35,8 @@ if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
 
-RCULFHASH=rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c
+RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
+		rculfhash-mm-mmap.c
 
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
