@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <urcu/compiler.h>
 #include <urcu-call-rcu.h>
+#include <urcu-flavor.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,15 +102,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets,
 			int flags,
-			void (*cds_lfht_call_rcu)(struct rcu_head *head,
-				void (*func)(struct rcu_head *head)),
-			void (*cds_lfht_synchronize_rcu)(void),
-			void (*cds_lfht_rcu_read_lock)(void),
-			void (*cds_lfht_rcu_read_unlock)(void),
-			void (*cds_lfht_rcu_thread_offline)(void),
-			void (*cds_lfht_rcu_thread_online)(void),
-			void (*cds_lfht_rcu_register_thread)(void),
-			void (*cds_lfht_rcu_unregister_thread)(void),
+			const struct rcu_flavor_struct *flavor,
 			pthread_attr_t *attr);
 
 /*
@@ -146,11 +139,8 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
 			int flags,
 			pthread_attr_t *attr)
 {
-	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets, flags,
-			call_rcu, synchronize_rcu, rcu_read_lock,
-			rcu_read_unlock, rcu_thread_offline,
-			rcu_thread_online, rcu_register_thread,
-			rcu_unregister_thread, attr);
+	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
+			flags, &rcu_flavor, attr);
 }
 
 /*
