@@ -536,26 +536,28 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 	unsigned long split_count;
 	int index;
+	long count;
 
 	if (caa_unlikely(!ht->split_count))
 		return;
 	index = ht_get_split_count_index(hash);
 	split_count = uatomic_add_return(&ht->split_count[index].add, 1);
-	if (caa_unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
-		long count;
+	if (caa_likely(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))
+		return;
+	/* Only if number of add multiple of 1UL << COUNT_COMMIT_ORDER */
 
-		dbg_printf("add split count %lu\n", split_count);
-		count = uatomic_add_return(&ht->count,
-					   1UL << COUNT_COMMIT_ORDER);
-		/* If power of 2 */
-		if (!(count & (count - 1))) {
-			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) < size)
-				return;
-			dbg_printf("add set global %ld\n", count);
-			cds_lfht_resize_lazy_count(ht, size,
-				count >> (CHAIN_LEN_TARGET - 1));
-		}
-	}
+	dbg_printf("add split count %lu\n", split_count);
+	count = uatomic_add_return(&ht->count,
+				   1UL << COUNT_COMMIT_ORDER);
+	if (likely(count & (count - 1)))
+		return;
+	/* Only if global count is power of 2 */
+
+	if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) < size)
+		return;
+	dbg_printf("add set global %ld\n", count);
+	cds_lfht_resize_lazy_count(ht, size,
+		count >> (CHAIN_LEN_TARGET - 1));
 }
 
 static
@@ -563,32 +565,34 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
 	unsigned long split_count;
 	int index;
+	long count;
 
 	if (caa_unlikely(!ht->split_count))
 		return;
 	index = ht_get_split_count_index(hash);
 	split_count = uatomic_add_return(&ht->split_count[index].del, 1);
-	if (caa_unlikely(!(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))) {
-		long count;
+	if (caa_likely(split_count & ((1UL << COUNT_COMMIT_ORDER) - 1)))
+		return;
+	/* Only if number of deletes multiple of 1UL << COUNT_COMMIT_ORDER */
 
-		dbg_printf("del split count %lu\n", split_count);
-		count = uatomic_add_return(&ht->count,
-					   -(1UL << COUNT_COMMIT_ORDER));
-		/* If power of 2 */
-		if (!(count & (count - 1))) {
-			if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) >= size)
-				return;
-			dbg_printf("del set global %ld\n", count);
-			/*
-			 * Don't shrink table if the number of nodes is below a
-			 * certain threshold.
-			 */
-			if (count < (1UL << COUNT_COMMIT_ORDER) * (split_count_mask + 1))
-				return;
-			cds_lfht_resize_lazy_count(ht, size,
-				count >> (CHAIN_LEN_TARGET - 1));
-		}
-	}
+	dbg_printf("del split count %lu\n", split_count);
+	count = uatomic_add_return(&ht->count,
+				   -(1UL << COUNT_COMMIT_ORDER));
+	if (likely(count & (count - 1)))
+		return;
+	/* Only if global count is power of 2 */
+
+	if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) >= size)
+		return;
+	dbg_printf("del set global %ld\n", count);
+	/*
+	 * Don't shrink table if the number of nodes is below a
+	 * certain threshold.
+	 */
+	if (count < (1UL << COUNT_COMMIT_ORDER) * (split_count_mask + 1))
+		return;
+	cds_lfht_resize_lazy_count(ht, size,
+		count >> (CHAIN_LEN_TARGET - 1));
 }
 
 static
