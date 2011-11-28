@@ -82,13 +82,12 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
 
-	ht->mm = &cds_lfht_mm_order;
-
-	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
-	ht->min_alloc_buckets_order = get_count_order_ulong(min_nr_alloc_buckets);
-	ht->max_nr_buckets = max_nr_buckets;
-
 	ht->bucket_at = bucket_at;
+	ht->mm = &cds_lfht_mm_order;
+	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
+	ht->min_alloc_buckets_order =
+		get_count_order_ulong(min_nr_alloc_buckets);
+	ht->max_nr_buckets = max_nr_buckets;
 
 	return ht;
 }
