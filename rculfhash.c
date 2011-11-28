@@ -549,7 +549,7 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 	dbg_printf("add split count %lu\n", split_count);
 	count = uatomic_add_return(&ht->count,
 				   1UL << COUNT_COMMIT_ORDER);
-	if (likely(count & (count - 1)))
+	if (caa_likely(count & (count - 1)))
 		return;
 	/* Only if global count is power of 2 */
 
@@ -578,7 +578,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 	dbg_printf("del split count %lu\n", split_count);
 	count = uatomic_add_return(&ht->count,
 				   -(1UL << COUNT_COMMIT_ORDER));
-	if (likely(count & (count - 1)))
+	if (caa_likely(count & (count - 1)))
 		return;
 	/* Only if global count is power of 2 */
 
