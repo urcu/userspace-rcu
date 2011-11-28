@@ -48,6 +48,7 @@ case $host_cpu in
 	i486) ARCHTYPE="x86";;
 	i586) ARCHTYPE="x86";;
 	i686) ARCHTYPE="x86";;
+	amd64) ARCHTYPE="x86";;
 	x86_64) ARCHTYPE="x86";;
 	powerpc) ARCHTYPE="ppc" ;;
 	ppc64) ARCHTYPE="ppc" ;;
