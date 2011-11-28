@@ -756,6 +756,36 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 	return old2;
 }
 
+static
+void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
+{
+	if (order == 0) {
+		ht->t.tbl[0] = calloc(ht->min_alloc_size,
+			sizeof(struct cds_lfht_node));
+		assert(ht->t.tbl[0]);
+	} else if (order > ht->min_alloc_order) {
+		ht->t.tbl[order] = calloc(1UL << (order -1),
+			sizeof(struct cds_lfht_node));
+		assert(ht->t.tbl[order]);
+	}
+	/* Nothing to do for 0 < order && order <= ht->min_alloc_order */
+}
+
+/*
+ * cds_lfht_free_bucket_table() should be called with decreasing order.
+ * When cds_lfht_free_bucket_table(0) is called, it means the whole
+ * lfht is destroyed.
+ */
+static
+void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
+{
+	if (order == 0)
+		poison_free(ht->t.tbl[0]);
+	else if (order > ht->min_alloc_order)
+		poison_free(ht->t.tbl[order]);
+	/* Nothing to do for 0 < order && order <= ht->min_alloc_order */
+}
+
 static inline
 struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 {
@@ -1159,8 +1189,7 @@ void init_table(struct cds_lfht *ht,
 		if (CMM_LOAD_SHARED(ht->t.resize_target) < (1UL << i))
 			break;
 
-		ht->t.tbl[i] = calloc(1, len * sizeof(struct cds_lfht_node));
-		assert(ht->t.tbl[i]);
+		cds_lfht_alloc_bucket_table(ht, i);
 
 		/*
 		 * Set all bucket nodes reverse hash values for a level and
@@ -1244,7 +1273,7 @@ void fini_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long last_order)
 {
 	long i;
-	void *free_by_rcu = NULL;
+	unsigned long free_by_rcu_order = 0;
 
 	dbg_printf("fini table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
@@ -1269,8 +1298,8 @@ void fini_table(struct cds_lfht *ht,
 		 * return a logically removed node as insert position.
 		 */
 		ht->cds_lfht_synchronize_rcu();
-		if (free_by_rcu)
-			free(free_by_rcu);
+		if (free_by_rcu_order)
+			cds_lfht_free_bucket_table(ht, free_by_rcu_order);
 
 		/*
 		 * Set "removed" flag in bucket nodes about to be removed.
@@ -1280,16 +1309,16 @@ void fini_table(struct cds_lfht *ht,
 		 */
 		remove_table(ht, i, len);
 
-		free_by_rcu = ht->t.tbl[i];
+		free_by_rcu_order = i;
 
 		dbg_printf("fini new size: %lu\n", 1UL << i);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
 	}
 
-	if (free_by_rcu) {
+	if (free_by_rcu_order) {
 		ht->cds_lfht_synchronize_rcu();
-		free(free_by_rcu);
+		cds_lfht_free_bucket_table(ht, free_by_rcu_order);
 	}
 }
 
@@ -1299,8 +1328,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 	struct cds_lfht_node *prev, *node;
 	unsigned long order, len, i;
 
-	ht->t.tbl[0] = calloc(1, ht->min_alloc_size * sizeof(struct cds_lfht_node));
-	assert(ht->t.tbl[0]);
+	cds_lfht_alloc_bucket_table(ht, 0);
 
 	dbg_printf("create bucket: order 0 index 0 hash 0\n");
 	node = bucket_at(ht, 0);
@@ -1309,12 +1337,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 
 	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
 		len = 1UL << (order - 1);
-		if (order <= ht->min_alloc_order) {
-			ht->t.tbl[order] = (struct rcu_level *) (ht->t.tbl[0]->nodes + len);
-		} else {
-			ht->t.tbl[order] = calloc(1, len * sizeof(struct cds_lfht_node));
-			assert(ht->t.tbl[order]);
-		}
+		cds_lfht_alloc_bucket_table(ht, order);
 
 		for (i = 0; i < len; i++) {
 			/*
@@ -1590,23 +1613,16 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 	 */
 	size = ht->t.size;
 	/* Internal sanity check: all nodes left should be bucket */
-	for (order = 0; order < get_count_order_ulong(size) + 1; order++) {
-		unsigned long len;
-
-		len = !order ? 1 : 1UL << (order - 1);
-		for (i = 0; i < len; i++) {
-			dbg_printf("delete order %lu i %lu hash %lu\n",
-				order, i,
-				bit_reverse_ulong(ht->t.tbl[order]->nodes[i].reverse_hash));
-			assert(is_bucket(ht->t.tbl[order]->nodes[i].next));
-		}
-
-		if (order == ht->min_alloc_order)
-			poison_free(ht->t.tbl[0]);
-		else if (order > ht->min_alloc_order)
-			poison_free(ht->t.tbl[order]);
-		/* Nothing to delete for order < ht->min_alloc_order */
+	for (i = 0; i < size; i++) {
+		node = bucket_at(ht, i);
+		dbg_printf("delete bucket: index %lu expected hash %lu hash %lu\n",
+			i, i, bit_reverse_ulong(node->reverse_hash));
+		assert(is_bucket(node->next));
 	}
+
+	for (order = get_count_order_ulong(size); (long)order >= 0; order--)
+		cds_lfht_free_bucket_table(ht, order);
+
 	return 0;
 }
 
