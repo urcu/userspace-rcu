@@ -967,7 +967,7 @@ int main(int argc, char **argv)
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size,
+	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size, (1UL << 18),
 			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
 			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();

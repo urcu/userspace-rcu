@@ -267,6 +267,7 @@ struct cds_lfht {
 	struct rcu_table t;
 	unsigned long min_alloc_buckets_order;
 	unsigned long min_nr_alloc_buckets;
+	unsigned long max_nr_buckets;
 	int flags;
 	/*
 	 * We need to put the work threads offline (QSBR) when taking this
@@ -1365,6 +1366,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 					void (*func)(struct rcu_head *head)),
@@ -1383,11 +1385,22 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	/* min_nr_alloc_buckets must be power of two */
 	if (!min_nr_alloc_buckets || (min_nr_alloc_buckets & (min_nr_alloc_buckets - 1)))
 		return NULL;
+
 	/* init_size must be power of two */
 	if (!init_size || (init_size & (init_size - 1)))
 		return NULL;
+
+	if (!max_nr_buckets)
+		max_nr_buckets = 1UL << (MAX_TABLE_ORDER - 1);
+
+	/* max_nr_buckets must be power of two */
+	if (!max_nr_buckets || (max_nr_buckets & (max_nr_buckets - 1)))
+		return NULL;
+
 	min_nr_alloc_buckets = max(min_nr_alloc_buckets, MIN_TABLE_SIZE);
 	init_size = max(init_size, MIN_TABLE_SIZE);
+	max_nr_buckets = max(max_nr_buckets, min_nr_alloc_buckets);
+	init_size = min(init_size, max_nr_buckets);
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
 	ht->flags = flags;
@@ -1407,6 +1420,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	ht->t.resize_target = 1UL << order;
 	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
 	ht->min_alloc_buckets_order = get_count_order_ulong(min_nr_alloc_buckets);
+	ht->max_nr_buckets = max_nr_buckets;
 	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->t.size = 1UL << order;
 	return ht;
@@ -1766,6 +1780,7 @@ void resize_target_update_count(struct cds_lfht *ht,
 				unsigned long count)
 {
 	count = max(count, MIN_TABLE_SIZE);
+	count = min(count, ht->max_nr_buckets);
 	uatomic_set(&ht->t.resize_target, count);
 }
 
@@ -1823,6 +1838,7 @@ void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int grow
 {
 	unsigned long target_size = size << growth;
 
+	target_size = min(target_size, ht->max_nr_buckets);
 	if (resize_target_grow(ht, target_size) >= target_size)
 		return;
 
@@ -1841,6 +1857,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
 	count = max(count, MIN_TABLE_SIZE);
+	count = min(count, ht->max_nr_buckets);
 	if (count == size)
 		return;		/* Already the right size, no resize needed */
 	if (count > size) {	/* lazy grow */

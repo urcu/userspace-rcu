@@ -99,6 +99,7 @@ enum {
  */
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head)),
@@ -113,8 +114,11 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 
 /*
  * cds_lfht_new - allocate a hash table.
- * @init_size: number of nodes to allocate initially. Must be power of two.
- * @min_nr_alloc_buckets: the smallest allocation size to use. Must be power of two.
+ * @init_size: number of buckets to allocate initially. Must be power of two.
+ * @min_nr_alloc_buckets: the minimum number of allocated buckets.
+ *                        (must be power of two)
+ * @max_nr_buckets: the maximum number of hash table buckets allowed.
+ *                  (must be power of two)
  * @flags: hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
  *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
@@ -138,10 +142,11 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 static inline
 struct cds_lfht *cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
 			int flags,
 			pthread_attr_t *attr)
 {
-	return _cds_lfht_new(init_size, min_nr_alloc_buckets, flags,
+	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets, flags,
 			call_rcu, synchronize_rcu, rcu_read_lock,
 			rcu_read_unlock, rcu_thread_offline,
 			rcu_thread_online, rcu_register_thread,
