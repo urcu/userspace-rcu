@@ -56,36 +56,10 @@ struct ht_items_count;
  * cookie to users.
  */
 struct cds_lfht {
-	unsigned long size;	/* always a power of 2, shared (RCU) */
-	int flags;
-
 	/*
-	 * We need to put the work threads offline (QSBR) when taking this
-	 * mutex, because we use synchronize_rcu within this mutex critical
-	 * section, which waits on read-side critical sections, and could
-	 * therefore cause grace-period deadlock if we hold off RCU G.P.
-	 * completion.
+	 * Variables needed for the lookup, add and remove fast-paths.
 	 */
-	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	pthread_attr_t *resize_attr;	/* Resize threads attributes */
-	unsigned int in_progress_resize, in_progress_destroy;
-	unsigned long resize_target;
-	int resize_initiated;
-	const struct rcu_flavor_struct *flavor;
-
-	long count;			/* global approximate item count */
-	struct ht_items_count *split_count;	/* split item count */
-
-	/* memory management related fields are located at the end */
-	const struct cds_lfht_mm_type *mm;
-
-	unsigned long min_alloc_buckets_order;
-	unsigned long min_nr_alloc_buckets;
-	unsigned long max_nr_buckets;
-
-	struct cds_lfht_node *(*bucket_at)(struct cds_lfht *ht,
-			unsigned long index);
-
+	unsigned long size;	/* always a power of 2, shared (RCU) */
 	union {
 		/*
 		 * Contains the per order-index-level bucket node table.
@@ -115,6 +89,43 @@ struct cds_lfht {
 		 */
 		struct cds_lfht_node *tbl_mmap;
 	};
+	/*
+	 * bucket_at pointer is kept here to skip the extra level of
+	 * dereference needed to get to "mm" (this is a fast-path).
+	 */
+	struct cds_lfht_node *(*bucket_at)(struct cds_lfht *ht,
+			unsigned long index);
+	/*
+	 * End of variables needed for lookup fast-path.
+	 */
+
+	struct ht_items_count *split_count;	/* split item count */
+	/*
+	 * End of variables needed for add/remove fast-path.
+	 */
+
+	/* Initial configuration items */
+	int flags;
+	unsigned long min_alloc_buckets_order;
+	unsigned long min_nr_alloc_buckets;
+	unsigned long max_nr_buckets;
+	const struct cds_lfht_mm_type *mm;	/* memory management plugin */
+	const struct rcu_flavor_struct *flavor;	/* RCU flavor */
+
+	long count;			/* global approximate item count */
+
+	/*
+	 * We need to put the work threads offline (QSBR) when taking this
+	 * mutex, because we use synchronize_rcu within this mutex critical
+	 * section, which waits on read-side critical sections, and could
+	 * therefore cause grace-period deadlock if we hold off RCU G.P.
+	 * completion.
+	 */
+	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
+	pthread_attr_t *resize_attr;	/* Resize threads attributes */
+	unsigned int in_progress_resize, in_progress_destroy;
+	unsigned long resize_target;
+	int resize_initiated;
 };
 
 extern unsigned int fls_ulong(unsigned long x);
