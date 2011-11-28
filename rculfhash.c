@@ -187,7 +187,8 @@
 /*
  * Define the minimum table size.
  */
-#define MIN_TABLE_SIZE			1
+#define MIN_TABLE_ORDER			0
+#define MIN_TABLE_SIZE			(1UL << MIN_TABLE_ORDER)
 
 #if (CAA_BITS_PER_LONG == 32)
 #define MAX_TABLE_ORDER			32
@@ -1142,7 +1143,7 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j, size = 1UL << (i - 1);
 
-	assert(i > ht->min_alloc_order);
+	assert(i > MIN_TABLE_ORDER);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = size + start; j < size + start + len; j++) {
 		struct cds_lfht_node *new_node = bucket_at(ht, j);
@@ -1178,7 +1179,7 @@ void init_table(struct cds_lfht *ht,
 
 	dbg_printf("init table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > ht->min_alloc_order);
+	assert(first_order > MIN_TABLE_ORDER);
 	for (i = first_order; i <= last_order; i++) {
 		unsigned long len;
 
@@ -1240,7 +1241,7 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j, size = 1UL << (i - 1);
 
-	assert(i > ht->min_alloc_order);
+	assert(i > MIN_TABLE_ORDER);
 	ht->cds_lfht_rcu_read_lock();
 	for (j = size + start; j < size + start + len; j++) {
 		struct cds_lfht_node *fini_node = bucket_at(ht, j);
@@ -1277,7 +1278,7 @@ void fini_table(struct cds_lfht *ht,
 
 	dbg_printf("fini table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > ht->min_alloc_order);
+	assert(first_order > MIN_TABLE_ORDER);
 	for (i = last_order; i >= first_order; i--) {
 		unsigned long len;
 
@@ -1390,7 +1391,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	if (!init_size || (init_size & (init_size - 1)))
 		return NULL;
 	min_alloc_size = max(min_alloc_size, MIN_TABLE_SIZE);
-	init_size = max(init_size, min_alloc_size);
+	init_size = max(init_size, MIN_TABLE_SIZE);
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
 	ht->flags = flags;
@@ -1720,7 +1721,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 {
 	unsigned long old_order, new_order;
 
-	new_size = max(new_size, ht->min_alloc_size);
+	new_size = max(new_size, MIN_TABLE_SIZE);
 	old_order = get_count_order_ulong(old_size);
 	new_order = get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
@@ -1768,7 +1769,7 @@ static
 void resize_target_update_count(struct cds_lfht *ht,
 				unsigned long count)
 {
-	count = max(count, ht->min_alloc_size);
+	count = max(count, MIN_TABLE_SIZE);
 	uatomic_set(&ht->t.resize_target, count);
 }
 
@@ -1843,7 +1844,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 {
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
-	count = max(count, ht->min_alloc_size);
+	count = max(count, MIN_TABLE_SIZE);
 	if (count == size)
 		return;		/* Already the right size, no resize needed */
 	if (count > size) {	/* lazy grow */

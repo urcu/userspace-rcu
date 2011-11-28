@@ -896,7 +896,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (min_hash_alloc_size && min_hash_alloc_size * (min_hash_alloc_size - 1)) {
+	if (min_hash_alloc_size && min_hash_alloc_size & (min_hash_alloc_size - 1)) {
 		printf("Error: Min hash alloc size %lu is not a power of 2.\n",
 			min_hash_alloc_size);
 		return -1;
