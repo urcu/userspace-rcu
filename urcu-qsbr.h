@@ -127,5 +127,6 @@ extern void rcu_unregister_thread(void);
 
 #include <urcu-call-rcu.h>
 #include <urcu-defer.h>
+#include <urcu-flavor.h>
 
 #endif /* _URCU_QSBR_H */

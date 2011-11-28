@@ -66,4 +66,6 @@
 #define	rcu_defer_barrier		rcu_defer_barrier_qsbr
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_qsbr
 
+#define rcu_flavor			rcu_flavor_qsbr
+
 #endif /* _URCU_QSBR_MAP_H */

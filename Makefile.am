@@ -8,7 +8,7 @@ AM_CFLAGS=-Wall
 SUBDIRS = . tests
 
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
-		urcu-pointer.h urcu-qsbr.h
+		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
 nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/rculist.h urcu/rcuhlist.h urcu/system.h urcu/futex.h \
 		urcu/uatomic/generic.h urcu/arch/generic.h urcu/wfstack.h \

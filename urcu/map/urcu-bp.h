@@ -64,4 +64,6 @@
 #define rcu_defer_barrier		rcu_defer_barrier_bp
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
 
+#define rcu_flavor			rcu_flavor_bp
+
 #endif /* _URCU_BP_MAP_H */
