@@ -240,36 +240,14 @@ struct ht_items_count {
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
 /*
- * rcu_table: Contains the size and desired new size if a resize
- * operation is in progress, as well as the statically-sized array of
- * bucket table pointers.
- */
-struct rcu_table {
-	unsigned long size;	/* always a power of 2, shared (RCU) */
-	unsigned long resize_target;
-	int resize_initiated;
-
-	/*
-	 * Contains the per order-index-level bucket node table. The size
-	 * of each bucket node table is half the number of hashes contained
-	 * in this order (except for order 0). The minimum allocation size
-	 * parameter allows combining the bucket node arrays of the lowermost
-	 * levels to improve cache locality for small index orders.
-	 */
-	struct cds_lfht_node *tbl[MAX_TABLE_ORDER];
-};
-
-/*
  * cds_lfht: Top-level data structure representing a lock-free hash
  * table. Defined in the implementation file to make it be an opaque
  * cookie to users.
  */
 struct cds_lfht {
-	struct rcu_table t;
-	unsigned long min_alloc_buckets_order;
-	unsigned long min_nr_alloc_buckets;
-	unsigned long max_nr_buckets;
+	unsigned long size;	/* always a power of 2, shared (RCU) */
 	int flags;
+
 	/*
 	 * We need to put the work threads offline (QSBR) when taking this
 	 * mutex, because we use synchronize_rcu within this mutex critical
@@ -278,11 +256,26 @@ struct cds_lfht {
 	 * completion.
 	 */
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	unsigned int in_progress_resize, in_progress_destroy;
-	const struct rcu_flavor_struct *flavor;
 	pthread_attr_t *resize_attr;	/* Resize threads attributes */
+	unsigned int in_progress_resize, in_progress_destroy;
+	unsigned long resize_target;
+	int resize_initiated;
+	const struct rcu_flavor_struct *flavor;
+
 	long count;			/* global approximate item count */
 	struct ht_items_count *split_count;	/* split item count */
+
+	unsigned long min_alloc_buckets_order;
+	unsigned long min_nr_alloc_buckets;
+	unsigned long max_nr_buckets;
+	/*
+	 * Contains the per order-index-level bucket node table. The size
+	 * of each bucket node table is half the number of hashes contained
+	 * in this order (except for order 0). The minimum allocation size
+	 * parameter allows combining the bucket node arrays of the lowermost
+	 * levels to improve cache locality for small index orders.
+	 */
+	struct cds_lfht_node *tbl[MAX_TABLE_ORDER];
 };
 
 /*
@@ -751,13 +744,13 @@ static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
-		ht->t.tbl[0] = calloc(ht->min_nr_alloc_buckets,
+		ht->tbl[0] = calloc(ht->min_nr_alloc_buckets,
 			sizeof(struct cds_lfht_node));
-		assert(ht->t.tbl[0]);
+		assert(ht->tbl[0]);
 	} else if (order > ht->min_alloc_buckets_order) {
-		ht->t.tbl[order] = calloc(1UL << (order -1),
+		ht->tbl[order] = calloc(1UL << (order -1),
 			sizeof(struct cds_lfht_node));
-		assert(ht->t.tbl[order]);
+		assert(ht->tbl[order]);
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
 }
@@ -771,9 +764,9 @@ static
 void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0)
-		poison_free(ht->t.tbl[0]);
+		poison_free(ht->tbl[0]);
 	else if (order > ht->min_alloc_buckets_order)
-		poison_free(ht->t.tbl[order]);
+		poison_free(ht->tbl[order]);
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
 }
 
@@ -785,7 +778,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 	if ((__builtin_constant_p(index) && index == 0)
 			|| index < ht->min_nr_alloc_buckets) {
 		dbg_printf("bucket index %lu order 0 aridx 0\n", index);
-		return &ht->t.tbl[0][index];
+		return &ht->tbl[0][index];
 	}
 	/*
 	 * equivalent to get_count_order_ulong(index + 1), but optimizes
@@ -795,7 +788,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 	order = fls_ulong(index);
 	dbg_printf("bucket index %lu order %lu aridx %lu\n",
 		   index, order, index & ((1UL << (order - 1)) - 1));
-	return &ht->t.tbl[order][index & ((1UL << (order - 1)) - 1)];
+	return &ht->tbl[order][index & ((1UL << (order - 1)) - 1)];
 }
 
 static inline
@@ -1177,7 +1170,7 @@ void init_table(struct cds_lfht *ht,
 		dbg_printf("init order %lu len: %lu\n", i, len);
 
 		/* Stop expand if the resize target changes under us */
-		if (CMM_LOAD_SHARED(ht->t.resize_target) < (1UL << i))
+		if (CMM_LOAD_SHARED(ht->resize_target) < (1UL << i))
 			break;
 
 		cds_lfht_alloc_bucket_table(ht, i);
@@ -1192,7 +1185,7 @@ void init_table(struct cds_lfht *ht,
 		 * Update table size.
 		 */
 		cmm_smp_wmb();	/* populate data before RCU size */
-		CMM_STORE_SHARED(ht->t.size, 1UL << i);
+		CMM_STORE_SHARED(ht->size, 1UL << i);
 
 		dbg_printf("init new size: %lu\n", 1UL << i);
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
@@ -1276,11 +1269,11 @@ void fini_table(struct cds_lfht *ht,
 		dbg_printf("fini order %lu len: %lu\n", i, len);
 
 		/* Stop shrink if the resize target changes under us */
-		if (CMM_LOAD_SHARED(ht->t.resize_target) > (1UL << (i - 1)))
+		if (CMM_LOAD_SHARED(ht->resize_target) > (1UL << (i - 1)))
 			break;
 
 		cmm_smp_wmb();	/* populate data before RCU size */
-		CMM_STORE_SHARED(ht->t.size, 1UL << (i - 1));
+		CMM_STORE_SHARED(ht->size, 1UL << (i - 1));
 
 		/*
 		 * We need to wait for all add operations to reach Q.S. (and
@@ -1395,12 +1388,12 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(init_size);
-	ht->t.resize_target = 1UL << order;
+	ht->resize_target = 1UL << order;
 	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
 	ht->min_alloc_buckets_order = get_count_order_ulong(min_nr_alloc_buckets);
 	ht->max_nr_buckets = max_nr_buckets;
 	cds_lfht_create_bucket(ht, 1UL << order);
-	ht->t.size = 1UL << order;
+	ht->size = 1UL << order;
 	return ht;
 }
 
@@ -1413,7 +1406,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 
 	reverse_hash = bit_reverse_ulong(hash);
 
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	bucket = lookup_bucket(ht, size, hash);
 	/* We can always skip the bucket node initially */
 	node = rcu_dereference(bucket->next);
@@ -1513,7 +1506,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 	unsigned long size;
 
 	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	_cds_lfht_add(ht, NULL, NULL, size, node, NULL, 0);
 	ht_count_add(ht, size, hash);
 }
@@ -1528,7 +1521,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	struct cds_lfht_iter iter;
 
 	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	_cds_lfht_add(ht, match, key, size, node, &iter, 0);
 	if (iter.node == node)
 		ht_count_add(ht, size, hash);
@@ -1545,7 +1538,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	struct cds_lfht_iter iter;
 
 	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	for (;;) {
 		_cds_lfht_add(ht, match, key, size, node, &iter, 0);
 		if (iter.node == node) {
@@ -1563,7 +1556,7 @@ int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
 {
 	unsigned long size;
 
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	return _cds_lfht_replace(ht, size, old_iter->node, old_iter->next,
 			new_node);
 }
@@ -1573,7 +1566,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	unsigned long size, hash;
 	int ret;
 
-	size = rcu_dereference(ht->t.size);
+	size = rcu_dereference(ht->size);
 	ret = _cds_lfht_del(ht, size, iter->node, 0);
 	if (!ret) {
 		hash = bit_reverse_ulong(iter->node->reverse_hash);
@@ -1600,7 +1593,7 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 	 * size accessed without rcu_dereference because hash table is
 	 * being destroyed.
 	 */
-	size = ht->t.size;
+	size = ht->size;
 	/* Internal sanity check: all nodes left should be bucket */
 	for (i = 0; i < size; i++) {
 		node = bucket_at(ht, i);
@@ -1734,23 +1727,23 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 		assert(uatomic_read(&ht->in_progress_resize));
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
-		ht->t.resize_initiated = 1;
-		old_size = ht->t.size;
-		new_size = CMM_LOAD_SHARED(ht->t.resize_target);
+		ht->resize_initiated = 1;
+		old_size = ht->size;
+		new_size = CMM_LOAD_SHARED(ht->resize_target);
 		if (old_size < new_size)
 			_do_cds_lfht_grow(ht, old_size, new_size);
 		else if (old_size > new_size)
 			_do_cds_lfht_shrink(ht, old_size, new_size);
-		ht->t.resize_initiated = 0;
+		ht->resize_initiated = 0;
 		/* write resize_initiated before read resize_target */
 		cmm_smp_mb();
-	} while (ht->t.size != CMM_LOAD_SHARED(ht->t.resize_target));
+	} while (ht->size != CMM_LOAD_SHARED(ht->resize_target));
 }
 
 static
 unsigned long resize_target_grow(struct cds_lfht *ht, unsigned long new_size)
 {
-	return _uatomic_xchg_monotonic_increase(&ht->t.resize_target, new_size);
+	return _uatomic_xchg_monotonic_increase(&ht->resize_target, new_size);
 }
 
 static
@@ -1759,13 +1752,13 @@ void resize_target_update_count(struct cds_lfht *ht,
 {
 	count = max(count, MIN_TABLE_SIZE);
 	count = min(count, ht->max_nr_buckets);
-	uatomic_set(&ht->t.resize_target, count);
+	uatomic_set(&ht->resize_target, count);
 }
 
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
 	resize_target_update_count(ht, new_size);
-	CMM_STORE_SHARED(ht->t.resize_initiated, 1);
+	CMM_STORE_SHARED(ht->resize_initiated, 1);
 	ht->flavor->thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
@@ -1797,7 +1790,7 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 
 	/* Store resize_target before read resize_initiated */
 	cmm_smp_mb();
-	if (!CMM_LOAD_SHARED(ht->t.resize_initiated)) {
+	if (!CMM_LOAD_SHARED(ht->resize_initiated)) {
 		uatomic_inc(&ht->in_progress_resize);
 		cmm_smp_mb();	/* increment resize count before load destroy */
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy)) {
@@ -1807,7 +1800,7 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 		work = malloc(sizeof(*work));
 		work->ht = ht;
 		ht->flavor->update_call_rcu(&work->head, do_resize_cb);
-		CMM_STORE_SHARED(ht->t.resize_initiated, 1);
+		CMM_STORE_SHARED(ht->resize_initiated, 1);
 	}
 }
 
@@ -1845,7 +1838,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 		for (;;) {
 			unsigned long s;
 
-			s = uatomic_cmpxchg(&ht->t.resize_target, size, count);
+			s = uatomic_cmpxchg(&ht->resize_target, size, count);
 			if (s == size)
 				break;	/* no resize needed */
 			if (s > size)
