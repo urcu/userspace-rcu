@@ -265,8 +265,8 @@ struct rcu_table {
  */
 struct cds_lfht {
 	struct rcu_table t;
-	unsigned long min_alloc_order;
-	unsigned long min_alloc_size;
+	unsigned long min_alloc_buckets_order;
+	unsigned long min_nr_alloc_buckets;
 	int flags;
 	/*
 	 * We need to put the work threads offline (QSBR) when taking this
@@ -757,15 +757,15 @@ static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
-		ht->t.tbl[0] = calloc(ht->min_alloc_size,
+		ht->t.tbl[0] = calloc(ht->min_nr_alloc_buckets,
 			sizeof(struct cds_lfht_node));
 		assert(ht->t.tbl[0]);
-	} else if (order > ht->min_alloc_order) {
+	} else if (order > ht->min_alloc_buckets_order) {
 		ht->t.tbl[order] = calloc(1UL << (order -1),
 			sizeof(struct cds_lfht_node));
 		assert(ht->t.tbl[order]);
 	}
-	/* Nothing to do for 0 < order && order <= ht->min_alloc_order */
+	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
 }
 
 /*
@@ -778,9 +778,9 @@ void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0)
 		poison_free(ht->t.tbl[0]);
-	else if (order > ht->min_alloc_order)
+	else if (order > ht->min_alloc_buckets_order)
 		poison_free(ht->t.tbl[order]);
-	/* Nothing to do for 0 < order && order <= ht->min_alloc_order */
+	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
 }
 
 static inline
@@ -789,7 +789,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 	unsigned long order;
 
 	if ((__builtin_constant_p(index) && index == 0)
-			|| index < ht->min_alloc_size) {
+			|| index < ht->min_nr_alloc_buckets) {
 		dbg_printf("bucket index %lu order 0 aridx 0\n", index);
 		return &ht->t.tbl[0][index];
 	}
@@ -1364,7 +1364,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 }
 
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
-			unsigned long min_alloc_size,
+			unsigned long min_nr_alloc_buckets,
 			int flags,
 			void (*cds_lfht_call_rcu)(struct rcu_head *head,
 					void (*func)(struct rcu_head *head)),
@@ -1380,13 +1380,13 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	struct cds_lfht *ht;
 	unsigned long order;
 
-	/* min_alloc_size must be power of two */
-	if (!min_alloc_size || (min_alloc_size & (min_alloc_size - 1)))
+	/* min_nr_alloc_buckets must be power of two */
+	if (!min_nr_alloc_buckets || (min_nr_alloc_buckets & (min_nr_alloc_buckets - 1)))
 		return NULL;
 	/* init_size must be power of two */
 	if (!init_size || (init_size & (init_size - 1)))
 		return NULL;
-	min_alloc_size = max(min_alloc_size, MIN_TABLE_SIZE);
+	min_nr_alloc_buckets = max(min_nr_alloc_buckets, MIN_TABLE_SIZE);
 	init_size = max(init_size, MIN_TABLE_SIZE);
 	ht = calloc(1, sizeof(struct cds_lfht));
 	assert(ht);
@@ -1405,8 +1405,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(init_size);
 	ht->t.resize_target = 1UL << order;
-	ht->min_alloc_size = min_alloc_size;
-	ht->min_alloc_order = get_count_order_ulong(min_alloc_size);
+	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
+	ht->min_alloc_buckets_order = get_count_order_ulong(min_nr_alloc_buckets);
 	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->t.size = 1UL << order;
 	return ht;
