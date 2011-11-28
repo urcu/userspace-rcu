@@ -1158,6 +1158,11 @@ void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 	partition_resize_helper(ht, i, len, remove_table_partition);
 }
 
+/*
+ * fini_table() is never called for first_order == 0, which is why
+ * free_by_rcu_order == 0 can be used as criterion to know if free must
+ * be called.
+ */
 static
 void fini_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long last_order)
