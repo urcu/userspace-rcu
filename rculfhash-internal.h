@@ -38,6 +38,8 @@
 #define MAX_TABLE_ORDER			64
 #endif
 
+#define MAX_CHUNK_TABLE			(1UL << 10)
+
 #ifndef min
 #define min(a, b)	((a) < (b) ? (a) : (b))
 #endif
@@ -94,6 +96,18 @@ struct cds_lfht {
 		 * levels to improve cache locality for small index orders.
 		 */
 		struct cds_lfht_node *tbl_order[MAX_TABLE_ORDER];
+
+		/*
+		 * Contains the bucket node chunks. The size of each
+		 * bucket node chunk is ->min_alloc_size (we avoid to
+		 * allocate chunks with different size). Chunks improve
+		 * cache locality for small index orders, and are more
+		 * friendly with environments where allocation of large
+		 * contiguous memory areas is challenging due to memory
+		 * fragmentation concerns or inability to use virtual
+		 * memory addressing.
+		 */
+		struct cds_lfht_node *tbl_chunk[0];
 	};
 };
 
