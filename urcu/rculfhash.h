@@ -95,6 +95,17 @@ enum {
 	CDS_LFHT_ACCOUNTING = (1U << 1),
 };
 
+struct cds_lfht_mm_type {
+	struct cds_lfht *(*alloc_cds_lfht)(unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets);
+	void (*alloc_bucket_table)(struct cds_lfht *ht, unsigned long order);
+	void (*free_bucket_table)(struct cds_lfht *ht, unsigned long order);
+	struct cds_lfht_node *(*bucket_at)(struct cds_lfht *ht,
+			unsigned long index);
+};
+
+extern const struct cds_lfht_mm_type cds_lfht_mm_order;
+
 /*
  * _cds_lfht_new - API used by cds_lfht_new wrapper. Do not use directly.
  */
@@ -102,6 +113,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets,
 			int flags,
+			const struct cds_lfht_mm_type *mm,
 			const struct rcu_flavor_struct *flavor,
 			pthread_attr_t *attr);
 
@@ -140,7 +152,7 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
 			pthread_attr_t *attr)
 {
 	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
-			flags, &rcu_flavor, attr);
+			flags, &cds_lfht_mm_order, &rcu_flavor, attr);
 }
 
 /*

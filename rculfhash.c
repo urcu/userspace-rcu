@@ -165,14 +165,9 @@
 #include <urcu/uatomic.h>
 #include <urcu/compiler.h>
 #include <urcu/rculfhash.h>
+#include <rculfhash-internal.h>
 #include <stdio.h>
 #include <pthread.h>
-
-#ifdef DEBUG
-#define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
-#else
-#define dbg_printf(fmt, args...)
-#endif
 
 /*
  * Split-counters lazily update the global counter each 1024
@@ -191,25 +186,11 @@
 #define MIN_TABLE_ORDER			0
 #define MIN_TABLE_SIZE			(1UL << MIN_TABLE_ORDER)
 
-#if (CAA_BITS_PER_LONG == 32)
-#define MAX_TABLE_ORDER			32
-#else
-#define MAX_TABLE_ORDER			64
-#endif
-
 /*
  * Minimum number of bucket nodes to touch per thread to parallelize grow/shrink.
  */
 #define MIN_PARTITION_PER_THREAD_ORDER	12
 #define MIN_PARTITION_PER_THREAD	(1UL << MIN_PARTITION_PER_THREAD_ORDER)
-
-#ifndef min
-#define min(a, b)	((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef max
-#define max(a, b)	((a) > (b) ? (a) : (b))
-#endif
 
 /*
  * The removed flag needs to be updated atomically with the pointer.
@@ -238,45 +219,6 @@
 struct ht_items_count {
 	unsigned long add, del;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
-
-/*
- * cds_lfht: Top-level data structure representing a lock-free hash
- * table. Defined in the implementation file to make it be an opaque
- * cookie to users.
- */
-struct cds_lfht {
-	unsigned long size;	/* always a power of 2, shared (RCU) */
-	int flags;
-
-	/*
-	 * We need to put the work threads offline (QSBR) when taking this
-	 * mutex, because we use synchronize_rcu within this mutex critical
-	 * section, which waits on read-side critical sections, and could
-	 * therefore cause grace-period deadlock if we hold off RCU G.P.
-	 * completion.
-	 */
-	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	pthread_attr_t *resize_attr;	/* Resize threads attributes */
-	unsigned int in_progress_resize, in_progress_destroy;
-	unsigned long resize_target;
-	int resize_initiated;
-	const struct rcu_flavor_struct *flavor;
-
-	long count;			/* global approximate item count */
-	struct ht_items_count *split_count;	/* split item count */
-
-	unsigned long min_alloc_buckets_order;
-	unsigned long min_nr_alloc_buckets;
-	unsigned long max_nr_buckets;
-	/*
-	 * Contains the per order-index-level bucket node table. The size
-	 * of each bucket node table is half the number of hashes contained
-	 * in this order (except for order 0). The minimum allocation size
-	 * parameter allows combining the bucket node arrays of the lowermost
-	 * levels to improve cache locality for small index orders.
-	 */
-	struct cds_lfht_node *tbl[MAX_TABLE_ORDER];
-};
 
 /*
  * rcu_resize_work: Contains arguments passed to RCU worker thread
@@ -505,18 +447,6 @@ int get_count_order_ulong(unsigned long x)
 	return fls_ulong(x - 1);
 }
 
-#ifdef POISON_FREE
-#define poison_free(ptr)					\
-	do {							\
-		if (ptr) {					\
-			memset(ptr, 0x42, sizeof(*(ptr)));	\
-			free(ptr);				\
-		}						\
-	} while (0)
-#else
-#define poison_free(ptr)	free(ptr)
-#endif
-
 static
 void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int growth);
 
@@ -743,16 +673,7 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
-	if (order == 0) {
-		ht->tbl[0] = calloc(ht->min_nr_alloc_buckets,
-			sizeof(struct cds_lfht_node));
-		assert(ht->tbl[0]);
-	} else if (order > ht->min_alloc_buckets_order) {
-		ht->tbl[order] = calloc(1UL << (order -1),
-			sizeof(struct cds_lfht_node));
-		assert(ht->tbl[order]);
-	}
-	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
+	return ht->mm->alloc_bucket_table(ht, order);
 }
 
 /*
@@ -763,32 +684,13 @@ void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 static
 void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
-	if (order == 0)
-		poison_free(ht->tbl[0]);
-	else if (order > ht->min_alloc_buckets_order)
-		poison_free(ht->tbl[order]);
-	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
+	return ht->mm->free_bucket_table(ht, order);
 }
 
 static inline
 struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 {
-	unsigned long order;
-
-	if ((__builtin_constant_p(index) && index == 0)
-			|| index < ht->min_nr_alloc_buckets) {
-		dbg_printf("bucket index %lu order 0 aridx 0\n", index);
-		return &ht->tbl[0][index];
-	}
-	/*
-	 * equivalent to get_count_order_ulong(index + 1), but optimizes
-	 * away the non-existing 0 special-case for
-	 * get_count_order_ulong.
-	 */
-	order = fls_ulong(index);
-	dbg_printf("bucket index %lu order %lu aridx %lu\n",
-		   index, order, index & ((1UL << (order - 1)) - 1));
-	return &ht->tbl[order][index & ((1UL << (order - 1)) - 1)];
+	return ht->bucket_at(ht, index);
 }
 
 static inline
@@ -1354,6 +1256,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets,
 			int flags,
+			const struct cds_lfht_mm_type *mm,
 			const struct rcu_flavor_struct *flavor,
 			pthread_attr_t *attr)
 {
@@ -1368,7 +1271,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	if (!init_size || (init_size & (init_size - 1)))
 		return NULL;
 
-	if (!max_nr_buckets)
+	/* max_nr_buckets == 0 for order based mm means infinite */
+	if (mm == &cds_lfht_mm_order && !max_nr_buckets)
 		max_nr_buckets = 1UL << (MAX_TABLE_ORDER - 1);
 
 	/* max_nr_buckets must be power of two */
@@ -1379,8 +1283,12 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	init_size = max(init_size, MIN_TABLE_SIZE);
 	max_nr_buckets = max(max_nr_buckets, min_nr_alloc_buckets);
 	init_size = min(init_size, max_nr_buckets);
-	ht = calloc(1, sizeof(struct cds_lfht));
+
+	ht = mm->alloc_cds_lfht(min_nr_alloc_buckets, max_nr_buckets);
 	assert(ht);
+	assert(ht->mm == mm);
+	assert(ht->bucket_at == mm->bucket_at);
+
 	ht->flags = flags;
 	ht->flavor = flavor;
 	ht->resize_attr = attr;
@@ -1389,9 +1297,6 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	pthread_mutex_init(&ht->resize_mutex, NULL);
 	order = get_count_order_ulong(init_size);
 	ht->resize_target = 1UL << order;
-	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
-	ht->min_alloc_buckets_order = get_count_order_ulong(min_nr_alloc_buckets);
-	ht->max_nr_buckets = max_nr_buckets;
 	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->size = 1UL << order;
 	return ht;

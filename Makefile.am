@@ -22,6 +22,7 @@ EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
 		README LICENSE compat_arch_x86.c \
 		urcu-call-rcu-impl.h urcu-defer-impl.h \
+		rculfhash-internal.h \
 		ChangeLog API.txt
 
 if COMPAT_ARCH
@@ -33,6 +34,8 @@ endif
 if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
+
+RCULFHASH=rculfhash.c rculfhash-mm-order.c
 
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
@@ -62,7 +65,7 @@ liburcu_signal_la_LIBADD = liburcu-common.la
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-common.la
 
-liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c rculfhash.c $(COMPAT)
+liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(RCULFHASH) $(COMPAT)
 liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig
