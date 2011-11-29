@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_INIT([userspace-rcu], [0.6.6], [mathieu dot desnoyers at efficios dot com])
+AC_INIT([userspace-rcu],[0.6.6],[mathieu dot desnoyers at efficios dot com])
 
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
@@ -30,7 +30,7 @@ AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction is available for
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+LT_INIT
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -65,21 +65,17 @@ esac
 
 if test "x$ARCHTYPE" = "xarm" ; then
 AC_MSG_CHECKING([checking for dmb instruction])
-AC_TRY_COMPILE(
-[
-],
-[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+]], [[
 asm volatile("dmb":::"memory");
-],
-[
+]])],[
 	AC_MSG_RESULT([yes])
 	AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
-]
-,
-[
+
+],[
 	AC_MSG_RESULT([no])
-]
-)
+
+])
 fi
 
 UATOMICSRC=urcu/uatomic/$ARCHTYPE.h
@@ -104,26 +100,22 @@ fi
 ]
 
 AC_MSG_CHECKING([sys_futex()])
-AC_TRY_COMPILE(
-[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/syscall.h>
-],
-[
+]], [[
 #ifndef __NR_futex
 #error "futexes not available"
 #endif
-],
-[
+]])],[
 	AC_MSG_RESULT([yes])
 	AC_DEFINE([CONFIG_RCU_HAVE_FUTEX], [1])
 	compat_futex_test=0
-]
-,
-[
+
+],[
 	AC_MSG_RESULT([no])
 	compat_futex_test=1
-]
-)
+
+])
 
 AM_CONDITIONAL([COMPAT_FUTEX], [ test "x$compat_futex_test" = "x1" ])
 
