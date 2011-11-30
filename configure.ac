@@ -30,7 +30,7 @@ AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction is available for
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
-LT_INIT
+m4_ifdef([LT_INIT], [LT_INIT], [AC_PROG_LIBTOOL])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
