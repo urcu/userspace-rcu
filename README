@@ -44,6 +44,21 @@ supported, with the following exceptions:
 - Alpha, ia64 and ARM architectures depend on 4.x gcc with atomic builtins
   support.
 
+For developers using the git tree:
+
+This source tree is based on the autotools suite from GNU to simplify
+portability. Here are some things you should have on your system in order to
+compile the git repository tree :
+
+- GNU autotools (automake >=1.10, autoconf >=2.50, autoheader >=2.50)
+  (make sure your system wide "automake" points to a recent version!)
+- GNU Libtool >=2.2
+  (for more information, go to http://www.gnu.org/software/autoconf/)
+
+If you get the tree from the repository, you will need to use the "bootstrap"
+script in the root of the tree. It calls all the GNU tools needed to prepare the
+tree configuration.
+
 
 QUICK START GUIDE
 -----------------
