@@ -147,6 +147,7 @@ static unsigned long rduration;
 
 static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
 static unsigned long min_hash_alloc_size = DEFAULT_MIN_ALLOC_SIZE;
+static unsigned long max_hash_buckets_size = (1UL << 20);
 static unsigned long init_populate;
 static int opt_auto_resize;
 static int add_only, add_unique, add_replace;
@@ -434,7 +435,7 @@ int test_match(struct cds_lfht_node *node, const void *key)
 			key, sizeof(unsigned long));
 }
 
-static
+static inline
 void cds_lfht_test_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 		struct cds_lfht_iter *iter)
 {
@@ -731,8 +732,9 @@ void show_usage(int argc, char **argv)
 	printf("        [-c duration] (reader C.S. duration (in loops))\n");
 	printf("        [-v] (verbose output)\n");
 	printf("        [-a cpu#] [-a cpu#]... (affinity)\n");
-	printf("        [-h size] (initial hash table size)\n");
-	printf("        [-m size] (minimum hash alloc size)\n");
+	printf("        [-h size] (initial number of buckets)\n");
+	printf("        [-m size] (minimum number of allocated buckets)\n");
+	printf("        [-n size] (maximum number of buckets)\n");
 	printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
 	printf("        [-u] Uniquify add (no redundant keys).\n");
 	printf("        [-s] Replace (swap) entries.\n");
@@ -841,6 +843,13 @@ int main(int argc, char **argv)
 			}
 			min_hash_alloc_size = atol(argv[++i]);
 			break;
+		case 'n':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			max_hash_buckets_size = atol(argv[++i]);
+			break;
 		case 'u':
 			if (add_replace) {
 				printf("Please specify at most one of -s or -u.\n");
@@ -891,14 +900,20 @@ int main(int argc, char **argv)
 
 	/* Check if hash size is power of 2 */
 	if (init_hash_size && init_hash_size & (init_hash_size - 1)) {
-		printf("Error: Hash table size %lu is not a power of 2.\n",
+		printf("Error: Initial number of buckets (%lu) is not a power of 2.\n",
 			init_hash_size);
 		return -1;
 	}
 
 	if (min_hash_alloc_size && min_hash_alloc_size & (min_hash_alloc_size - 1)) {
-		printf("Error: Min hash alloc size %lu is not a power of 2.\n",
+		printf("Error: Minimum number of allocated buckets (%lu) is not a power of 2.\n",
 			min_hash_alloc_size);
+		return -1;
+	}
+
+	if (max_hash_buckets_size && max_hash_buckets_size & (max_hash_buckets_size - 1)) {
+		printf("Error: Maximum number of buckets (%lu) is not a power of 2.\n",
+			max_hash_buckets_size);
 		return -1;
 	}
 
@@ -943,8 +958,9 @@ int main(int argc, char **argv)
 	printf_verbose("Mode:%s%s.\n",
 		add_only ? " add only" : " add/remove",
 		add_unique ? " uniquify" : ( add_replace ? " replace" : " insert"));
-	printf_verbose("Initial hash table size: %lu buckets.\n", init_hash_size);
-	printf_verbose("Minimum hash alloc size: %lu buckets.\n", min_hash_alloc_size);
+	printf_verbose("Initial number of buckets: %lu buckets.\n", init_hash_size);
+	printf_verbose("Minimum number of allocated buckets: %lu buckets.\n", min_hash_alloc_size);
+	printf_verbose("Maximum number of buckets: %lu buckets.\n", max_hash_buckets_size);
 	printf_verbose("Init pool size offset %lu size %lu.\n",
 		init_pool_offset, init_pool_size);
 	printf_verbose("Lookup pool size offset %lu size %lu.\n",
@@ -967,7 +983,8 @@ int main(int argc, char **argv)
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size, (1UL << 18),
+	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size,
+			max_hash_buckets_size,
 			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
 			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();
