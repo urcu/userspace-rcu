@@ -36,14 +36,18 @@ static void *memory_map(size_t length)
 
 static void memory_unmap(void *ptr, size_t length)
 {
-	int ret = munmap(ptr, length);
+	int ret __attribute__((unused));
+
+	ret = munmap(ptr, length);
 
 	assert(ret == 0);
 }
 
 static void memory_populate(void *ptr, size_t length)
 {
-	void *ret = mmap(ptr, length, PROT_READ | PROT_WRITE,
+	void *ret __attribute__((unused));
+
+	ret = mmap(ptr, length, PROT_READ | PROT_WRITE,
 			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 	assert(ret == ptr);
@@ -55,7 +59,9 @@ static void memory_populate(void *ptr, size_t length)
  */
 static void memory_discard(void *ptr, size_t length)
 {
-	void *ret = mmap(ptr, length, PROT_NONE,
+	void *ret __attribute__((unused));
+
+	ret = mmap(ptr, length, PROT_NONE,
 			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 	assert(ret == ptr);
