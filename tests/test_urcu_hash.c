@@ -151,6 +151,7 @@ static unsigned long max_hash_buckets_size = (1UL << 20);
 static unsigned long init_populate;
 static int opt_auto_resize;
 static int add_only, add_unique, add_replace;
+static const struct cds_lfht_mm_type *memory_backend;
 
 static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
 static unsigned long init_pool_size = DEFAULT_RAND_POOL,
@@ -741,6 +742,7 @@ void show_usage(int argc, char **argv)
 	printf("        [-i] Add only (no removal).\n");
 	printf("        [-k nr_nodes] Number of nodes to insert initially.\n");
 	printf("        [-A] Automatically resize hash table.\n");
+	printf("        [-B order|chunk|mmap] Specify the memory backend.\n");
 	printf("        [-R offset] Lookup pool offset.\n");
 	printf("        [-S offset] Write pool offset.\n");
 	printf("        [-T offset] Init pool offset.\n");
@@ -873,6 +875,23 @@ int main(int argc, char **argv)
 		case 'A':
 			opt_auto_resize = 1;
 			break;
+		case 'B':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			i++;
+			if (!strcmp("order", argv[i]))
+				memory_backend = &cds_lfht_mm_order;
+			else if (!strcmp("chunk", argv[i]))
+				memory_backend = &cds_lfht_mm_chunk;
+			else if (!strcmp("mmap", argv[i]))
+				memory_backend = &cds_lfht_mm_mmap;
+                        else {
+				printf("Please specify memory backend with order|chunk|mmap.\n");
+				exit(-1);
+			}
+			break;
 		case 'R':
 			lookup_pool_offset = atol(argv[++i]);
 			break;
@@ -978,15 +997,24 @@ int main(int argc, char **argv)
 	err = create_all_cpu_call_rcu_data(0);
         assert(!err);
 
+	if (memory_backend) {
+		test_ht = _cds_lfht_new(init_hash_size, min_hash_alloc_size,
+				max_hash_buckets_size,
+				(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
+				CDS_LFHT_ACCOUNTING, memory_backend,
+				&rcu_flavor, NULL);
+	} else {
+		test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size,
+				max_hash_buckets_size,
+				(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
+				CDS_LFHT_ACCOUNTING, NULL);
+	}
+
 	/*
-	 * Hash creation and population needs to be seen as a RCU reader
+	 * Hash Population needs to be seen as a RCU reader
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-	test_ht = cds_lfht_new(init_hash_size, min_hash_alloc_size,
-			max_hash_buckets_size,
-			(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
-			CDS_LFHT_ACCOUNTING, NULL);
       	ret = populate_hash();
 	assert(!ret);
 
