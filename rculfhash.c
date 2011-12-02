@@ -242,15 +242,6 @@ struct partition_resize_work {
 		    unsigned long start, unsigned long len);
 };
 
-static
-void _cds_lfht_add(struct cds_lfht *ht,
-		cds_lfht_match_fct match,
-		const void *key,
-		unsigned long size,
-		struct cds_lfht_node *node,
-		struct cds_lfht_iter *unique_ret,
-		int bucket);
-
 /*
  * Algorithm to reverse bits in a word by lookup table, extended to
  * 64-bit words.
