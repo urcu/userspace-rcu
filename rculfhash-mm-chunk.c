@@ -75,26 +75,18 @@ static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets)
 {
-	struct cds_lfht *ht;
 	unsigned long nr_chunks, cds_lfht_size;
 
 	min_nr_alloc_buckets = max(min_nr_alloc_buckets,
 				max_nr_buckets / MAX_CHUNK_TABLE);
 	nr_chunks = max_nr_buckets / min_nr_alloc_buckets;
 	cds_lfht_size = offsetof(struct cds_lfht, tbl_chunk) +
-			sizeof(ht->tbl_chunk[0]) * nr_chunks;
+			sizeof(struct cds_lfht_node *) * nr_chunks;
 	cds_lfht_size = max(cds_lfht_size, sizeof(struct cds_lfht));
-	ht = calloc(1, cds_lfht_size);
-	assert(ht);
 
-	ht->bucket_at = bucket_at;
-	ht->mm = &cds_lfht_mm_chunk;
-	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
-	ht->min_alloc_buckets_order =
-		get_count_order_ulong(min_nr_alloc_buckets);
-	ht->max_nr_buckets = max_nr_buckets;
-
-	return ht;
+	return __default_alloc_cds_lfht(
+			&cds_lfht_mm_chunk, cds_lfht_size,
+			min_nr_alloc_buckets, max_nr_buckets);
 }
 
 const struct cds_lfht_mm_type cds_lfht_mm_chunk = {

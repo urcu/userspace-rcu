@@ -77,19 +77,9 @@ static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets)
 {
-	struct cds_lfht *ht;
-
-	ht = calloc(1, sizeof(struct cds_lfht));
-	assert(ht);
-
-	ht->bucket_at = bucket_at;
-	ht->mm = &cds_lfht_mm_order;
-	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
-	ht->min_alloc_buckets_order =
-		get_count_order_ulong(min_nr_alloc_buckets);
-	ht->max_nr_buckets = max_nr_buckets;
-
-	return ht;
+	return __default_alloc_cds_lfht(
+			&cds_lfht_mm_order, sizeof(struct cds_lfht),
+			min_nr_alloc_buckets, max_nr_buckets);
 }
 
 const struct cds_lfht_mm_type cds_lfht_mm_order = {

@@ -152,4 +152,26 @@ extern int get_count_order_ulong(unsigned long x);
 #define poison_free(ptr)	free(ptr)
 #endif
 
+static inline
+struct cds_lfht *__default_alloc_cds_lfht(
+		const struct cds_lfht_mm_type *mm,
+		unsigned long cds_lfht_size,
+		unsigned long min_nr_alloc_buckets,
+		unsigned long max_nr_buckets)
+{
+	struct cds_lfht *ht;
+
+	ht = calloc(1, cds_lfht_size);
+	assert(ht);
+
+	ht->mm = mm;
+	ht->bucket_at = mm->bucket_at;
+	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
+	ht->min_alloc_buckets_order =
+		get_count_order_ulong(min_nr_alloc_buckets);
+	ht->max_nr_buckets = max_nr_buckets;
+
+	return ht;
+}
+
 #endif /* _URCU_RCULFHASH_INTERNAL_H */
