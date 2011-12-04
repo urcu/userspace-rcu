@@ -1275,14 +1275,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	 * Memory management plugin default.
 	 */
 	if (!mm) {
-		if (!max_nr_buckets) {
-			/*
-			 * If the maximum number of buckets is not
-			 * specified, we cannot use the mmap allocator,
-			 * so fallback on order allocator.
-			 */
-			mm = &cds_lfht_mm_order;
-		} else if (CAA_BITS_PER_LONG > 32
+		if (CAA_BITS_PER_LONG > 32
+				&& max_nr_buckets
 				&& max_nr_buckets <= (1ULL << 32)) {
 			/*
 			 * For 64-bit architectures, with max number of
