@@ -1271,6 +1271,36 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	if (!init_size || (init_size & (init_size - 1)))
 		return NULL;
 
+	/*
+	 * Memory management plugin default.
+	 */
+	if (!mm) {
+		if (!max_nr_buckets) {
+			/*
+			 * If the maximum number of buckets is not
+			 * specified, we cannot use the mmap allocator,
+			 * so fallback on order allocator.
+			 */
+			mm = &cds_lfht_mm_order;
+		} else if (CAA_BITS_PER_LONG > 32
+				&& max_nr_buckets <= (1ULL << 32)) {
+			/*
+			 * For 64-bit architectures, with max number of
+			 * buckets small enough not to use the entire
+			 * 64-bit memory mapping space (and allowing a
+			 * fair number of hash table instances), use the
+			 * mmap allocator, which is faster than the
+			 * order allocator.
+			 */
+			mm = &cds_lfht_mm_mmap;
+		} else {
+			/*
+			 * The fallback is to use the order allocator.
+			 */
+			mm = &cds_lfht_mm_order;
+		}
+	}
+
 	/* max_nr_buckets == 0 for order based mm means infinite */
 	if (mm == &cds_lfht_mm_order && !max_nr_buckets)
 		max_nr_buckets = 1UL << (MAX_TABLE_ORDER - 1);

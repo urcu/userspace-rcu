@@ -154,7 +154,7 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
 			pthread_attr_t *attr)
 {
 	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
-			flags, &cds_lfht_mm_order, &rcu_flavor, attr);
+			flags, NULL, &rcu_flavor, attr);
 }
 
 /*
