@@ -86,6 +86,8 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp);
 int create_all_cpu_call_rcu_data(unsigned long flags);
 void free_all_cpu_call_rcu_data(void);
 
+void call_rcu_before_fork(void);
+void call_rcu_after_fork_parent(void);
 void call_rcu_after_fork_child(void);
 
 #ifdef __cplusplus 
