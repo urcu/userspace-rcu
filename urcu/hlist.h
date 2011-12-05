@@ -16,6 +16,8 @@
  * published by the Free  Software Foundation.
  */
 
+#include <stddef.h>
+
 struct cds_hlist_head
 {
 	struct cds_hlist_node *next;
