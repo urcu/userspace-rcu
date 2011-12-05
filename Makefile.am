@@ -23,7 +23,8 @@ EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		README LICENSE compat_arch_x86.c \
 		urcu-call-rcu-impl.h urcu-defer-impl.h \
 		rculfhash-internal.h \
-		ChangeLog API.txt
+		ChangeLog API.txt \
+		$(top_srcdir)/tests/*.sh
 
 if COMPAT_ARCH
 COMPAT=compat_arch_@ARCHTYPE@.c

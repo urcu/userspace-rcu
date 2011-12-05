@@ -421,6 +421,29 @@ void rcu_bp_after_fork_child(void)
 	assert(!ret);
 }
 
+void *rcu_dereference_sym_bp(void *p)
+{
+	return _rcu_dereference(p);
+}
+
+void *rcu_set_pointer_sym_bp(void **p, void *v)
+{
+	cmm_wmb();
+	return uatomic_set(p, v);
+}
+
+void *rcu_xchg_pointer_sym_bp(void **p, void *v)
+{
+	cmm_wmb();
+	return uatomic_xchg(p, v);
+}
+
+void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new)
+{
+	cmm_wmb();
+	return uatomic_cmpxchg(p, old, _new);
+}
+
 DEFINE_RCU_FLAVOR()
 
 #include "urcu-call-rcu-impl.h"
