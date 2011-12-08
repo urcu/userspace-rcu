@@ -87,13 +87,10 @@ extern "C" {
  * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
-extern void rcu_read_lock(void)
-	__attribute__((weak));
-extern void rcu_read_unlock(void)
-	__attribute__((weak));
+extern void rcu_read_lock(void);
+extern void rcu_read_unlock(void);
 
-extern void *rcu_dereference_sym_bp(void *p)
-	__attribute__((weak));
+extern void *rcu_dereference_sym_bp(void *p);
 #define rcu_dereference_bp(p)						     \
 	({								     \
 		typeof(p) _________p1 =	URCU_FORCE_CAST(typeof(p),	     \
@@ -101,8 +98,7 @@ extern void *rcu_dereference_sym_bp(void *p)
 		(_________p1);						     \
 	})
 
-extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new)
-	__attribute__((weak));
+extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer_bp(p, old, _new)				     \
 	({								     \
 		typeof(*(p)) _________pold = (old);			     \
@@ -114,8 +110,7 @@ extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new)
 		(_________p1);						     \
 	})
 
-extern void *rcu_xchg_pointer_sym_bp(void **p, void *v)
-	__attribute__((weak));
+extern void *rcu_xchg_pointer_sym_bp(void **p, void *v);
 #define rcu_xchg_pointer_bp(p, v)					     \
 	({								     \
 		typeof(*(p)) _________pv = (v);			             \
@@ -125,8 +120,7 @@ extern void *rcu_xchg_pointer_sym_bp(void **p, void *v)
 		(_________p1);						     \
 	})
 
-extern void *rcu_set_pointer_sym_bp(void **p, void *v)
-	__attribute__((weak));
+extern void *rcu_set_pointer_sym_bp(void **p, void *v);
 #define rcu_set_pointer_bp(p, v)					     \
 	({								     \
 		typeof(*(p)) _________pv = (v);			             \
