@@ -1,3 +1,17 @@
+2011-12-12 Userspace RCU 0.6.7
+	* Add compat file for test urcu wfs
+	* Add missing compat file for wfq test
+	* hlist.h: Add missing stddef.h include for NULL
+	* call_rcu: Add missing call_rcu_before_fork and
+	  call_rcu_after_fork_parent declarations
+	* Describe autotools/libtool/automake version dependency
+	* Remove m4_ifdef for AC_PROG_LIBTOOL (deprecated)
+	* Support older autotools
+	* Apply autoupdate to configure.ac
+	* Fix build for amd64 environment (for FreeBSD 8.2)
+	* Add missing rcu_dereference_sym_bp
+	* Install test scripts in the dist tarball
+
 2011-11-03 Userspace RCU 0.6.6
 	* qsbr vs call_rcu : remove exit assertion
 	* Rename likely/unlikely to caa_likely/caa_unlikely
