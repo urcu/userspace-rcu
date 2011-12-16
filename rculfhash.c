@@ -405,7 +405,7 @@ unsigned int fls_u32(uint32_t x)
 }
 #endif
 
-unsigned int fls_ulong(unsigned long x)
+unsigned int cds_lfht_fls_ulong(unsigned long x)
 {
 #if (CAA_BITS_PER_LONG == 32)
 	return fls_u32(x);
@@ -418,7 +418,7 @@ unsigned int fls_ulong(unsigned long x)
  * Return the minimum order for which x <= (1UL << order).
  * Return -1 if x is 0.
  */
-int get_count_order_u32(uint32_t x)
+int cds_lfht_get_count_order_u32(uint32_t x)
 {
 	if (!x)
 		return -1;
@@ -430,12 +430,12 @@ int get_count_order_u32(uint32_t x)
  * Return the minimum order for which x <= (1UL << order).
  * Return -1 if x is 0.
  */
-int get_count_order_ulong(unsigned long x)
+int cds_lfht_get_count_order_ulong(unsigned long x)
 {
 	if (!x)
 		return -1;
 
-	return fls_ulong(x - 1);
+	return cds_lfht_fls_ulong(x - 1);
 }
 
 static
@@ -462,7 +462,7 @@ static void ht_init_nr_cpus_mask(void)
 	 * round up number of CPUs to next power of two, so we
 	 * can use & for modulo.
 	 */
-	maxcpus = 1UL << get_count_order_ulong(maxcpus);
+	maxcpus = 1UL << cds_lfht_get_count_order_ulong(maxcpus);
 	nr_cpus_mask = maxcpus - 1;
 }
 #else /* #if defined(HAVE_SYSCONF) */
@@ -605,7 +605,7 @@ void check_resize(struct cds_lfht *ht, unsigned long size, uint32_t chain_len)
 			   chain_len);
 	if (chain_len >= CHAIN_LEN_RESIZE_THRESHOLD)
 		cds_lfht_resize_lazy_grow(ht, size,
-			get_count_order_u32(chain_len - (CHAIN_LEN_TARGET - 1)));
+			cds_lfht_get_count_order_u32(chain_len - (CHAIN_LEN_TARGET - 1)));
 }
 
 static
@@ -986,7 +986,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	} else {
 		nr_threads = 1;
 	}
-	partition_len = len >> get_count_order_ulong(nr_threads);
+	partition_len = len >> cds_lfht_get_count_order_ulong(nr_threads);
 	work = calloc(nr_threads, sizeof(*work));
 	assert(work);
 	for (thread = 0; thread < nr_threads; thread++) {
@@ -1221,7 +1221,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 	node->next = flag_bucket(get_end());
 	node->reverse_hash = 0;
 
-	for (order = 1; order < get_count_order_ulong(size) + 1; order++) {
+	for (order = 1; order < cds_lfht_get_count_order_ulong(size) + 1; order++) {
 		len = 1UL << (order - 1);
 		cds_lfht_alloc_bucket_table(ht, order);
 
@@ -1319,7 +1319,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	alloc_split_items_count(ht);
 	/* this mutex should not nest in read-side C.S. */
 	pthread_mutex_init(&ht->resize_mutex, NULL);
-	order = get_count_order_ulong(init_size);
+	order = cds_lfht_get_count_order_ulong(init_size);
 	ht->resize_target = 1UL << order;
 	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->size = 1UL << order;
@@ -1531,7 +1531,7 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 		assert(is_bucket(node->next));
 	}
 
-	for (order = get_count_order_ulong(size); (long)order >= 0; order--)
+	for (order = cds_lfht_get_count_order_ulong(size); (long)order >= 0; order--)
 		cds_lfht_free_bucket_table(ht, order);
 
 	return 0;
@@ -1616,8 +1616,8 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 {
 	unsigned long old_order, new_order;
 
-	old_order = get_count_order_ulong(old_size);
-	new_order = get_count_order_ulong(new_size);
+	old_order = cds_lfht_get_count_order_ulong(old_size);
+	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
 	assert(new_size > old_size);
@@ -1632,8 +1632,8 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	unsigned long old_order, new_order;
 
 	new_size = max(new_size, MIN_TABLE_SIZE);
-	old_order = get_count_order_ulong(old_size);
-	new_order = get_count_order_ulong(new_size);
+	old_order = cds_lfht_get_count_order_ulong(old_size);
+	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
 	assert(new_size < old_size);

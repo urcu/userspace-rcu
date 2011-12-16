@@ -137,8 +137,8 @@ struct cds_lfht {
 	 */
 };
 
-extern unsigned int fls_ulong(unsigned long x);
-extern int get_count_order_ulong(unsigned long x);
+extern unsigned int cds_lfht_fls_ulong(unsigned long x);
+extern int cds_lfht_get_count_order_ulong(unsigned long x);
 
 #ifdef POISON_FREE
 #define poison_free(ptr)					\
@@ -168,7 +168,7 @@ struct cds_lfht *__default_alloc_cds_lfht(
 	ht->bucket_at = mm->bucket_at;
 	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
 	ht->min_alloc_buckets_order =
-		get_count_order_ulong(min_nr_alloc_buckets);
+		cds_lfht_get_count_order_ulong(min_nr_alloc_buckets);
 	ht->max_nr_buckets = max_nr_buckets;
 
 	return ht;

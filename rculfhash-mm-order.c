@@ -63,11 +63,11 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 		return &ht->tbl_order[0][index];
 	}
 	/*
-	 * equivalent to get_count_order_ulong(index + 1), but optimizes
-	 * away the non-existing 0 special-case for
-	 * get_count_order_ulong.
+	 * equivalent to cds_lfht_get_count_order_ulong(index + 1), but
+	 * optimizes away the non-existing 0 special-case for
+	 * cds_lfht_get_count_order_ulong.
 	 */
-	order = fls_ulong(index);
+	order = cds_lfht_fls_ulong(index);
 	dbg_printf("bucket index %lu order %lu aridx %lu\n",
 		   index, order, index & ((1UL << (order - 1)) - 1));
 	return &ht->tbl_order[order][index & ((1UL << (order - 1)) - 1)];
