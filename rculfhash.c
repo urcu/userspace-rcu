@@ -201,7 +201,8 @@
  */
 #define REMOVED_FLAG		(1UL << 0)
 #define BUCKET_FLAG		(1UL << 1)
-#define FLAGS_MASK		((1UL << 2) - 1)
+#define REMOVAL_OWNER_FLAG	(1UL << 2)
+#define FLAGS_MASK		((1UL << 3) - 1)
 
 /* Value of the end pointer. Should not interact with flags. */
 #define END_VALUE		NULL
@@ -639,6 +640,18 @@ struct cds_lfht_node *flag_bucket(struct cds_lfht_node *node)
 }
 
 static
+int is_removal_owner(struct cds_lfht_node *node)
+{
+	return ((unsigned long) node) & REMOVAL_OWNER_FLAG;
+}
+
+static
+struct cds_lfht_node *flag_removal_owner(struct cds_lfht_node *node)
+{
+	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVAL_OWNER_FLAG);
+}
+
+static
 struct cds_lfht_node *get_end(void)
 {
 	return (struct cds_lfht_node *) END_VALUE;
@@ -778,6 +791,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		 * next pointer, they will either skip the old node due
 		 * to the removal flag and see the new node, or use
 		 * the old node, but will not see the new one.
+		 * This is a replacement of a node with another node
+		 * that has the same value: we are therefore not
+		 * removing a value from the hash table.
 		 */
 		ret_next = uatomic_cmpxchg(&old_node->next,
 			      old_next, flag_removed(new_node));
@@ -916,7 +932,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		struct cds_lfht_node *node,
 		int bucket_removal)
 {
-	struct cds_lfht_node *bucket, *next, *old;
+	struct cds_lfht_node *bucket, *next;
 
 	if (!node)	/* Return -ENOENT if asked to delete NULL node */
 		return -ENOENT;
@@ -924,20 +940,28 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	/* logically delete the node */
 	assert(!is_bucket(node));
 	assert(!is_removed(node));
-	old = rcu_dereference(node->next);
-	do {
-		struct cds_lfht_node *new_next;
+	assert(!is_removal_owner(node));
 
-		next = old;
-		if (caa_unlikely(is_removed(next)))
-			return -ENOENT;
-		if (bucket_removal)
-			assert(is_bucket(next));
-		else
-			assert(!is_bucket(next));
-		new_next = flag_removed(next);
-		old = uatomic_cmpxchg(&node->next, next, new_next);
-	} while (old != next);
+	/*
+	 * We are first checking if the node had previously been
+	 * logically removed (this check is not atomic with setting the
+	 * logical removal flag). Return -ENOENT if the node had
+	 * previously been removed.
+	 */
+	next = rcu_dereference(node->next);
+	if (caa_unlikely(is_removed(next)))
+		return -ENOENT;
+	if (bucket_removal)
+		assert(is_bucket(next));
+	else
+		assert(!is_bucket(next));
+	/*
+	 * We set the REMOVED_FLAG unconditionally. Note that there may
+	 * be more than one concurrent thread setting this flag.
+	 * Knowing which wins the race will be known after the garbage
+	 * collection phase, stay tuned!
+	 */
+	uatomic_or(&node->next, REMOVED_FLAG);
 	/* We performed the (logical) deletion. */
 
 	/*
@@ -949,7 +973,23 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	_cds_lfht_gc_bucket(bucket, node);
 
 	assert(is_removed(rcu_dereference(node->next)));
-	return 0;
+	/*
+	 * Last phase: atomically exchange node->next with a version
+	 * having "REMOVAL_OWNER_FLAG" set. If the returned node->next
+	 * pointer did _not_ have "REMOVAL_OWNER_FLAG" set, we now own
+	 * the node and win the removal race.
+	 * It is interesting to note that all "add" paths are forbidden
+	 * to change the next pointer starting from the point where the
+	 * REMOVED_FLAG is set, so here using a read, followed by a
+	 * xchg() suffice to guarantee that the xchg() will ever only
+	 * set the "REMOVAL_OWNER_FLAG" (or change nothing if the flag
+	 * was already set).
+	 */
+	if (!is_removal_owner(uatomic_xchg(&node->next,
+			flag_removal_owner(node->next))))
+		return 0;
+	else
+		return -ENOENT;
 }
 
 static

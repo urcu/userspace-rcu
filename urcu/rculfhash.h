@@ -39,8 +39,8 @@ extern "C" {
  * cds_lfht_node: Contains the next pointers and reverse-hash
  * value required for lookup and traversal of the hash table.
  *
- * struct cds_lfht_node should be aligned on 4-bytes boundaries because
- * the two lower bits are used as flags.
+ * struct cds_lfht_node should be aligned on 8-bytes boundaries because
+ * the three lower bits are used as flags.
  *
  * struct cds_lfht_node can be embedded into a structure (as a field).
  * caa_container_of() can be used to get the structure from the struct
@@ -53,7 +53,7 @@ extern "C" {
 struct cds_lfht_node {
 	struct cds_lfht_node *next;	/* ptr | BUCKET_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
-} __attribute__((aligned(4)));
+} __attribute__((aligned(8)));
 
 /* cds_lfht_iter: Used to track state while traversing a hash chain. */
 struct cds_lfht_iter {
