@@ -452,7 +452,7 @@ void rcu_exit(void)
 
 #endif /* #ifdef RCU_SIGNAL */
 
-DEFINE_RCU_FLAVOR()
+DEFINE_RCU_FLAVOR(rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"

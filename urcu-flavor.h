@@ -42,8 +42,8 @@ struct rcu_flavor_struct {
 	void (*unregister_thread)(void);
 };
 
-#define DEFINE_RCU_FLAVOR()				\
-const struct rcu_flavor_struct rcu_flavor = {		\
+#define DEFINE_RCU_FLAVOR(x)				\
+const struct rcu_flavor_struct x = {			\
 	.read_lock		= rcu_read_lock,	\
 	.read_unlock		= rcu_read_unlock,	\
 	.read_quiescent_state	= rcu_quiescent_state,	\
@@ -54,7 +54,7 @@ const struct rcu_flavor_struct rcu_flavor = {		\
 	.thread_online		= rcu_thread_online,	\
 	.register_thread	= rcu_register_thread,	\
 	.unregister_thread	= rcu_unregister_thread,\
-};
+}
 
 extern const struct rcu_flavor_struct rcu_flavor;
 

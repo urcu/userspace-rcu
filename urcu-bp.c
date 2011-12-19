@@ -444,7 +444,7 @@ void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new)
 	return uatomic_cmpxchg(p, old, _new);
 }
 
-DEFINE_RCU_FLAVOR()
+DEFINE_RCU_FLAVOR(rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"
