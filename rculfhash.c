@@ -1129,7 +1129,6 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 		assert(j >= size && j < (size << 1));
 		dbg_printf("remove entry: order %lu index %lu hash %lu\n",
 			   i, j, j);
-		fini_node->reverse_hash = bit_reverse_ulong(j);
 		(void) _cds_lfht_del(ht, size, fini_node, 1);
 	}
 	ht->flavor->read_unlock();
