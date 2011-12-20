@@ -40,7 +40,14 @@ extern "C" {
  * value required for lookup and traversal of the hash table.
  *
  * struct cds_lfht_node should be aligned on 8-bytes boundaries because
- * the three lower bits are used as flags.
+ * the three lower bits are used as flags. It is worth noting that the
+ * information contained within these three bits could be represented on
+ * two bits by re-using the same bit for REMOVAL_OWNER_FLAG and
+ * BUCKET_FLAG. This can be done if we ensure that no iterator nor
+ * updater check the BUCKET_FLAG after it detects that the REMOVED_FLAG
+ * is set. Given the minimum size of struct cds_lfht_node is 8 bytes on
+ * 32-bit architectures, we choose to go for simplicity and reserve
+ * three bits.
  *
  * struct cds_lfht_node can be embedded into a structure (as a field).
  * caa_container_of() can be used to get the structure from the struct
