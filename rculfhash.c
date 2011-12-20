@@ -739,7 +739,6 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *bucket, struct cds_lfht_node *nod
 			new_next = clear_flag(next);
 		(void) uatomic_cmpxchg(&iter_prev->next, iter, new_next);
 	}
-	return;
 }
 
 static
