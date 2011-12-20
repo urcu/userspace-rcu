@@ -1124,12 +1124,15 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 	assert(i > MIN_TABLE_ORDER);
 	ht->flavor->read_lock();
 	for (j = size + start; j < size + start + len; j++) {
-		struct cds_lfht_node *fini_node = bucket_at(ht, j);
+		struct cds_lfht_node *fini_bucket = bucket_at(ht, j);
+		struct cds_lfht_node *parent_bucket = bucket_at(ht, j - size);
 
 		assert(j >= size && j < (size << 1));
 		dbg_printf("remove entry: order %lu index %lu hash %lu\n",
 			   i, j, j);
-		(void) _cds_lfht_del(ht, size, fini_node, 1);
+		/* Set the REMOVED_FLAG to freeze the ->next for gc */
+		uatomic_or(&fini_bucket->next, REMOVED_FLAG);
+		_cds_lfht_gc_bucket(parent_bucket, fini_bucket);
 	}
 	ht->flavor->read_unlock();
 }
