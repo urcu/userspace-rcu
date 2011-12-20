@@ -929,8 +929,7 @@ end:
 
 static
 int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
-		struct cds_lfht_node *node,
-		int bucket_removal)
+		struct cds_lfht_node *node)
 {
 	struct cds_lfht_node *bucket, *next;
 
@@ -951,10 +950,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	next = rcu_dereference(node->next);
 	if (caa_unlikely(is_removed(next)))
 		return -ENOENT;
-	if (bucket_removal)
-		assert(is_bucket(next));
-	else
-		assert(!is_bucket(next));
+	assert(!is_bucket(next));
 	/*
 	 * We set the REMOVED_FLAG unconditionally. Note that there may
 	 * be more than one concurrent thread setting this flag.
@@ -1537,7 +1533,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	int ret;
 
 	size = rcu_dereference(ht->size);
-	ret = _cds_lfht_del(ht, size, iter->node, 0);
+	ret = _cds_lfht_del(ht, size, iter->node);
 	if (!ret) {
 		hash = bit_reverse_ulong(iter->node->reverse_hash);
 		ht_count_del(ht, size, hash);
