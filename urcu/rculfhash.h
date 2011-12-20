@@ -51,7 +51,7 @@ extern "C" {
  * of the hash value for cds_lfht APIs.
  */
 struct cds_lfht_node {
-	struct cds_lfht_node *next;	/* ptr | BUCKET_FLAG | REMOVED_FLAG */
+	struct cds_lfht_node *next;	/* ptr | REMOVAL_OWNER_FLAG | BUCKET_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
 } __attribute__((aligned(8)));
 
