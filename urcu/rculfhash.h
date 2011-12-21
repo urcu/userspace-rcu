@@ -325,11 +325,16 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
  * cds_lfht_replace - replace a node pointer to by iter within hash table.
  * @ht: the hash table.
  * @old_iter: the iterator position of the node to replace.
- * @now_node: the new node to try using for replacement.
+ * @hash: the node's hash.
+ * @match: the key match function.
+ * @key: the node's key.
+ * @new_node: the new node to use as replacement.
  *
  * Return 0 if replacement is successful, negative value otherwise.
- * Replacing a NULL old node or an already removed node will fail with a
- * negative value.
+ * Replacing a NULL old node or an already removed node will fail with
+ * -ENOENT.
+ * If the hash or value of the node to replace and the new node differ,
+ * this function returns -EINVAL without proceeding to the replacement.
  * Old node can be looked up with cds_lfht_lookup and cds_lfht_next.
  * RCU read-side lock must be held between lookup and replacement.
  * Call with rcu_read_lock held.
@@ -348,7 +353,11 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
  * guarantee that a combination of add_replace and add_unique updates
  * will never generate duplicated keys.
  */
-int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
+int cds_lfht_replace(struct cds_lfht *ht,
+		struct cds_lfht_iter *old_iter,
+		unsigned long hash,
+		cds_lfht_match_fct match,
+		const void *key,
 		struct cds_lfht_node *new_node);
 
 /*

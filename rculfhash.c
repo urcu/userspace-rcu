@@ -1517,11 +1517,22 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	}
 }
 
-int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
+int cds_lfht_replace(struct cds_lfht *ht,
+		struct cds_lfht_iter *old_iter,
+		unsigned long hash,
+		cds_lfht_match_fct match,
+		const void *key,
 		struct cds_lfht_node *new_node)
 {
 	unsigned long size;
 
+	new_node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	if (!old_iter->node)
+		return -ENOENT;
+	if (caa_unlikely(old_iter->node->reverse_hash != new_node->reverse_hash))
+		return -EINVAL;
+	if (caa_unlikely(!match(old_iter->node, key)))
+		return -EINVAL;
 	size = rcu_dereference(ht->size);
 	return _cds_lfht_replace(ht, size, old_iter->node, old_iter->next,
 			new_node);
