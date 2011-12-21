@@ -779,9 +779,9 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 			 */
 			return -ENOENT;
 		}
-		assert(!is_bucket(old_next));
-		assert(new_node != clear_flag(old_next));
-		new_node->next = clear_flag(old_next);
+		assert(old_next == clear_flag(old_next));
+		assert(new_node != old_next);
+		new_node->next = old_next;
 		/*
 		 * Here is the whole trick for lock-free replace: we add
 		 * the replacement node _after_ the node we want to
