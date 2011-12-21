@@ -354,14 +354,14 @@ int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
 /*
  * cds_lfht_del - remove node pointed to by iterator from hash table.
  * @ht: the hash table.
- * @iter: the iterator position of the node to delete.
+ * @node: the node to delete.
  *
  * Return 0 if the node is successfully removed, negative value
  * otherwise.
- * Replacing a NULL node or an already removed node will fail with a
+ * Deleting a NULL node or an already removed node will fail with a
  * negative value.
- * Node can be looked up with cds_lfht_lookup and cds_lfht_next.
- * cds_lfht_iter_get_node.
+ * Node can be looked up with cds_lfht_lookup and cds_lfht_next,
+ * followed by use of cds_lfht_iter_get_node.
  * RCU read-side lock must be held between lookup and removal.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
@@ -369,7 +369,7 @@ int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
  * freeing the memory reserved for old node (which can be accessed with
  * cds_lfht_iter_get_node).
  */
-int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter);
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
  * cds_lfht_resize - Force a hash table resize

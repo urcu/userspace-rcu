@@ -1527,15 +1527,15 @@ int cds_lfht_replace(struct cds_lfht *ht, struct cds_lfht_iter *old_iter,
 			new_node);
 }
 
-int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 {
 	unsigned long size, hash;
 	int ret;
 
 	size = rcu_dereference(ht->size);
-	ret = _cds_lfht_del(ht, size, iter->node);
+	ret = _cds_lfht_del(ht, size, node);
 	if (!ret) {
-		hash = bit_reverse_ulong(iter->node->reverse_hash);
+		hash = bit_reverse_ulong(node->reverse_hash);
 		ht_count_del(ht, size, hash);
 	}
 	return ret;

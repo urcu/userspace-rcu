@@ -610,7 +610,7 @@ void *thr_writer(void *_count)
 			cds_lfht_test_lookup(test_ht,
 				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
 				sizeof(void *), &iter);
-			ret = cds_lfht_del(test_ht, &iter);
+			ret = cds_lfht_del(test_ht, cds_lfht_iter_get_node(&iter));
 			rcu_read_unlock();
 			if (ret == 0) {
 				node = cds_lfht_iter_get_test_node(&iter);
@@ -715,7 +715,7 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 	cds_lfht_for_each_entry(ht, &iter, node, node) {
 		int ret;
 
-		ret = cds_lfht_del(test_ht, &iter);
+		ret = cds_lfht_del(test_ht, cds_lfht_iter_get_node(&iter));
 		assert(!ret);
 		call_rcu(&node->head, free_node_cb);
 		count++;
