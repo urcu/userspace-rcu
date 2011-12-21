@@ -820,6 +820,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
  */
 static
 void _cds_lfht_add(struct cds_lfht *ht,
+		unsigned long hash,
 		cds_lfht_match_fct match,
 		const void *key,
 		unsigned long size,
@@ -833,7 +834,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 
 	assert(!is_bucket(node));
 	assert(!is_removed(node));
-	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
+	bucket = lookup_bucket(ht, size, hash);
 	for (;;) {
 		uint32_t chain_len = 0;
 
@@ -1067,7 +1068,7 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 		dbg_printf("init populate: order %lu index %lu hash %lu\n",
 			   i, j, j);
 		new_node->reverse_hash = bit_reverse_ulong(j);
-		_cds_lfht_add(ht, NULL, NULL, size, new_node, NULL, 1);
+		_cds_lfht_add(ht, j, NULL, NULL, size, new_node, NULL, 1);
 	}
 	ht->flavor->read_unlock();
 }
@@ -1473,7 +1474,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
-	_cds_lfht_add(ht, NULL, NULL, size, node, NULL, 0);
+	_cds_lfht_add(ht, hash, NULL, NULL, size, node, NULL, 0);
 	ht_count_add(ht, size, hash);
 }
 
@@ -1488,7 +1489,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
-	_cds_lfht_add(ht, match, key, size, node, &iter, 0);
+	_cds_lfht_add(ht, hash, match, key, size, node, &iter, 0);
 	if (iter.node == node)
 		ht_count_add(ht, size, hash);
 	return iter.node;
@@ -1506,7 +1507,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
 	for (;;) {
-		_cds_lfht_add(ht, match, key, size, node, &iter, 0);
+		_cds_lfht_add(ht, hash, match, key, size, node, &iter, 0);
 		if (iter.node == node) {
 			ht_count_add(ht, size, hash);
 			return NULL;
