@@ -1600,11 +1600,10 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *approx_before,
 		unsigned long *count,
-		unsigned long *removed,
 		long *approx_after)
 {
 	struct cds_lfht_node *node, *next;
-	unsigned long nr_bucket = 0;
+	unsigned long nr_bucket = 0, nr_removed = 0;
 
 	*approx_before = 0;
 	if (ht->split_count) {
@@ -1617,7 +1616,6 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	}
 
 	*count = 0;
-	*removed = 0;
 
 	/* Count non-bucket nodes in the table */
 	node = bucket_at(ht, 0);
@@ -1625,7 +1623,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		next = rcu_dereference(node->next);
 		if (is_removed(next)) {
 			if (!is_bucket(next))
-				(*removed)++;
+				(nr_removed)++;
 			else
 				(nr_bucket)++;
 		} else if (!is_bucket(next))
@@ -1634,6 +1632,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 			(nr_bucket)++;
 		node = clear_flag(next);
 	} while (!is_end(node));
+	dbg_printf("number of logically removed nodes: %lu\n", nr_removed);
 	dbg_printf("number of bucket nodes: %lu\n", nr_bucket);
 	*approx_after = 0;
 	if (ht->split_count) {

@@ -182,7 +182,6 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
  * @ht: the hash table.
  * @split_count_before: Sample the node count split-counter before traversal.
  * @count: Traverse the hash table, count the number of nodes observed.
- * @removed: Number of logically removed nodes observed during traversal.
  * @split_count_after: Sample the node count split-counter after traversal.
  *
  * Call with rcu_read_lock held.
@@ -191,7 +190,6 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
 void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *split_count_before,
 		unsigned long *count,
-		unsigned long *removed,
 		long *split_count_after);
 
 /*
