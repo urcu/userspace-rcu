@@ -1471,7 +1471,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 {
 	unsigned long size;
 
-	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
 	_cds_lfht_add(ht, NULL, NULL, size, node, NULL, 0);
 	ht_count_add(ht, size, hash);
@@ -1486,7 +1486,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
 	_cds_lfht_add(ht, match, key, size, node, &iter, 0);
 	if (iter.node == node)
@@ -1503,7 +1503,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
-	node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	node->reverse_hash = bit_reverse_ulong(hash);
 	size = rcu_dereference(ht->size);
 	for (;;) {
 		_cds_lfht_add(ht, match, key, size, node, &iter, 0);
@@ -1526,7 +1526,7 @@ int cds_lfht_replace(struct cds_lfht *ht,
 {
 	unsigned long size;
 
-	new_node->reverse_hash = bit_reverse_ulong((unsigned long) hash);
+	new_node->reverse_hash = bit_reverse_ulong(hash);
 	if (!old_iter->node)
 		return -ENOENT;
 	if (caa_unlikely(old_iter->node->reverse_hash != new_node->reverse_hash))
