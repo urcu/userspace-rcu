@@ -41,6 +41,12 @@
 #define DEFAULT_MIN_ALLOC_SIZE	1
 #define DEFAULT_RAND_POOL	1000000
 
+/*
+ * Note: the hash seed should be a random value for hash tables
+ * targeting production environments to provide protection against
+ * denial of service attacks. We keep it a static value within this test
+ * program to compare identical benchmark runs.
+ */
 #define TEST_HASH_SEED	0x42UL
 
 /* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
