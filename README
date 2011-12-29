@@ -29,7 +29,7 @@ Currently, x86 (i386, i486, i586, i686), x86 64-bit, PowerPC 32/64, S390, S390x,
 ARM, Alpha, ia64 and Sparcv9 32/64 are supported. Only tested on Linux so
 far, but should theoretically work on other operating systems.
 
-ARM depends on running a Linux kernel 2.6.15 or better.
+ARM depends on running a Linux kernel 2.6.15 or better, GCC 4.4 or better.
 
 The gcc compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
 supported, with the following exceptions:
@@ -41,8 +41,9 @@ supported, with the following exceptions:
     http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
 - gcc 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
   See: http://kerneltrap.org/node/7507
-- Alpha, ia64 and ARM architectures depend on 4.x gcc with atomic builtins
-  support.
+- Alpha, ia64 and ARM architectures depend on gcc 4.x with atomic builtins
+  support. For ARM this was introduced with gcc 4.4:
+    http://gcc.gnu.org/gcc-4.4/changes.html
 
 For developers using the git tree:
 
