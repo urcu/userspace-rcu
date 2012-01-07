@@ -78,7 +78,7 @@ AS_IF([test "$host_cpu" = "armv7l"],[
 # ARM-specific checks
 AS_IF([test "x$ARCHTYPE" = "xarm"],[
 	AC_MSG_CHECKING([for dmb instruction])
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[asm volatile("dmb":::"memory");]])],[
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[]], [[asm volatile("dmb":::"memory");]])],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
 	],[
@@ -102,7 +102,7 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 
 # Check if sys_futex() is available
 AC_MSG_CHECKING([for sys_futex()])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 		#include <sys/syscall.h>
 	]],[[
 		#ifndef __NR_futex
@@ -173,7 +173,7 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 		# We do have it.  Confirm that we have CPU_ZERO, and it actually works.
 		AC_MSG_CHECKING([whether CPU_ZERO works])
 		AH_TEMPLATE([HAVE_CPU_ZERO], [Defined to 1 if we have CPU_ZERO and it works])
-		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 				#define _GNU_SOURCE
 				#include <sched.h>
 			]],[[
@@ -190,7 +190,7 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 		# Check how many arguments does sched_setaffinity take.
 		# Should be 3 or 2.
 		AC_MSG_CHECKING([how many arguments sched_setaffinity takes])
-		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 				#include <sched.h>
 			]],[[
 				cpu_set_t foo;
