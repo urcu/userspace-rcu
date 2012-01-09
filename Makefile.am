@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS=-I config
+
 INCLUDES = -I$(top_builddir)/urcu
 
 #Add the -version-info directly here since we are only building
