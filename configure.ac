@@ -78,7 +78,14 @@ AS_IF([test "$host_cpu" = "armv7l"],[
 # ARM-specific checks
 AS_IF([test "x$ARCHTYPE" = "xarm"],[
 	AC_MSG_CHECKING([for dmb instruction])
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[]], [[asm volatile("dmb":::"memory");]])],[
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+				int main()
+				{
+					asm volatile("dmb":::"memory");
+					return 0;
+				}
+		]])
+	],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
 	],[
@@ -102,12 +109,12 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 
 # Check if sys_futex() is available
 AC_MSG_CHECKING([for sys_futex()])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 		#include <sys/syscall.h>
 		#ifndef __NR_futex
 		#error "futexes not available"
 		#endif
-	])
+	]])
 ],[
 	AC_MSG_RESULT([yes])
 	AC_DEFINE([CONFIG_RCU_HAVE_FUTEX], [1])
@@ -175,8 +182,11 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 				#define _GNU_SOURCE
 				#include <sched.h>
-			]],[[
-				cpu_set_t foo; CPU_ZERO (&foo);
+				int main()
+				{
+					cpu_set_t foo; CPU_ZERO (&foo);
+					return 0;
+				}
 			]])
 		],[
 			# Works!
@@ -191,9 +201,12 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 		AC_MSG_CHECKING([how many arguments sched_setaffinity takes])
 		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 				#include <sched.h>
-			]],[[
-				cpu_set_t foo;
-				sched_setaffinity (0, sizeof (foo), &foo);
+				int main()
+				{
+					cpu_set_t foo;
+					sched_setaffinity (0, sizeof (foo), &foo);
+					return 0;
+				}
 			]])
 		],
 		[sched_set_affinity_args=3],
