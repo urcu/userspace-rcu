@@ -102,13 +102,12 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 
 # Check if sys_futex() is available
 AC_MSG_CHECKING([for sys_futex()])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		#include <sys/syscall.h>
-	]],[[
 		#ifndef __NR_futex
 		#error "futexes not available"
 		#endif
-	]])
+	])
 ],[
 	AC_MSG_RESULT([yes])
 	AC_DEFINE([CONFIG_RCU_HAVE_FUTEX], [1])
