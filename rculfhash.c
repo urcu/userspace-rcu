@@ -1553,6 +1553,11 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 	return ret;
 }
 
+int cds_lfht_is_node_deleted(struct cds_lfht_node *node)
+{
+	return is_removed(rcu_dereference(node->next));
+}
+
 static
 int cds_lfht_delete_bucket(struct cds_lfht *ht)
 {

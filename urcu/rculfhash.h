@@ -381,6 +381,20 @@ int cds_lfht_replace(struct cds_lfht *ht,
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
+ * cds_lfht_is_node_deleted - query if a node is removed from hash table.
+ *
+ * Return non-zero if the node is deleted from the hash table, 0
+ * otherwise.
+ * Node can be looked up with cds_lfht_lookup and cds_lfht_next,
+ * followed by use of cds_lfht_iter_get_node.
+ * RCU read-side lock must be held between lookup and call to this
+ * function.
+ * Call with rcu_read_lock held.
+ * Threads calling this API need to be registered RCU read-side threads.
+ */
+int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
+
+/*
  * cds_lfht_resize - Force a hash table resize
  * @ht: the hash table.
  * @new_size: update to this hash table size.
