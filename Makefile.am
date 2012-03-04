@@ -10,19 +10,21 @@ AM_CFLAGS=-Wall
 SUBDIRS = . tests
 
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
-		urcu-pointer.h urcu-qsbr.h
+		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
 nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/rculist.h urcu/rcuhlist.h urcu/system.h urcu/futex.h \
 		urcu/uatomic/generic.h urcu/arch/generic.h urcu/wfstack.h \
 		urcu/wfqueue.h urcu/rculfstack.h urcu/rculfqueue.h \
 		urcu/ref.h urcu/map/*.h urcu/static/*.h urcu/cds.h \
-		urcu/urcu_ref.h urcu/urcu-futex.h urcu/uatomic_arch.h
+		urcu/urcu_ref.h urcu/urcu-futex.h urcu/uatomic_arch.h \
+		urcu/rculfhash.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
 		README LICENSE compat_arch_x86.c \
 		urcu-call-rcu-impl.h urcu-defer-impl.h \
+		rculfhash-internal.h \
 		ChangeLog API.txt \
 		$(top_srcdir)/tests/*.sh
 
@@ -35,6 +37,9 @@ endif
 if COMPAT_FUTEX
 COMPAT+=compat_futex.c
 endif
+
+RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
+		rculfhash-mm-mmap.c
 
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
@@ -64,7 +69,7 @@ liburcu_signal_la_LIBADD = liburcu-common.la
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-common.la
 
-liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(COMPAT)
+liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c $(RCULFHASH) $(COMPAT)
 liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig

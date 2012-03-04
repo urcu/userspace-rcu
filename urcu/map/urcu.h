@@ -95,6 +95,8 @@
 #define rcu_defer_barrier		rcu_defer_barrier_memb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_memb
 
+#define rcu_flavor			rcu_flavor_memb
+
 #elif defined(RCU_SIGNAL)
 
 #define rcu_read_lock			rcu_read_lock_sig
@@ -127,6 +129,8 @@
 #define rcu_defer_barrier		rcu_defer_barrier_sig
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_sig
 
+#define rcu_flavor			rcu_flavor_sig
+
 #elif defined(RCU_MB)
 
 #define rcu_read_lock			rcu_read_lock_mb
@@ -158,6 +162,8 @@
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_mb
 #define rcu_defer_barrier		rcu_defer_barrier_mb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_mb
+
+#define rcu_flavor			rcu_flavor_mb
 
 #else
 

@@ -29,6 +29,7 @@
 #include <urcu/rculist.h>
 #include <urcu/rculfqueue.h>
 #include <urcu/rculfstack.h>
+#include <urcu/rculfhash.h>
 #include <urcu/wfqueue.h>
 #include <urcu/wfstack.h>
 

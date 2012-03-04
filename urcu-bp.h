@@ -180,5 +180,6 @@ static inline void rcu_thread_online(void)
 
 #include <urcu-call-rcu.h>
 #include <urcu-defer.h>
+#include <urcu-flavor.h>
 
 #endif /* _URCU_BP_H */
