@@ -1015,7 +1015,9 @@ int main(int argc, char **argv)
 	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 
 	err = create_all_cpu_call_rcu_data(0);
-        assert(!err);
+	if (err) {
+		printf("Per-CPU call_rcu() worker threads unavailable. Using default global worker thread.\n");
+	}
 
 	if (memory_backend) {
 		test_ht = _cds_lfht_new(init_hash_size, min_hash_alloc_size,

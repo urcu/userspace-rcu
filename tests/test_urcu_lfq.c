@@ -381,7 +381,9 @@ int main(int argc, char **argv)
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
 	cds_lfq_init_rcu(&q, call_rcu);
 	err = create_all_cpu_call_rcu_data(0);
-	assert(!err);
+	if (err) {
+		printf("Per-CPU call_rcu() worker threads unavailable. Using default global worker thread.\n");
+	}
 
 	next_aff = 0;
 
