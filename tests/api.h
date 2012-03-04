@@ -1,7 +1,7 @@
-
 #ifndef _INCLUDE_API_H
 #define _INCLUDE_API_H
 
+#define _GNU_SOURCE
 #include "../config.h"
 
 /*
@@ -64,7 +64,6 @@
 #include <errno.h>
 #include <limits.h>
 #include <sys/types.h>
-#define __USE_GNU
 #include <pthread.h>
 #include <sched.h>
 #include <sys/param.h>
