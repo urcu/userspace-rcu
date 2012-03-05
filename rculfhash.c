@@ -150,12 +150,14 @@
  */
 
 #define _LGPL_SOURCE
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <sched.h>
 
 #include "config.h"
 #include <urcu.h>
