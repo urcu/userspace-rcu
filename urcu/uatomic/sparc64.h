@@ -66,9 +66,10 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 }
 
 
-#define uatomic_cmpxchg(addr, old, _new)				    \
-	((__typeof__(*(addr))) _uatomic_cmpxchg((addr), (unsigned long)(old),\
-						(unsigned long)(_new), 	    \
+#define uatomic_cmpxchg(addr, old, _new)				       \
+	((__typeof__(*(addr))) _uatomic_cmpxchg((addr),			       \
+						caa_cast_long_keep_sign(old),  \
+						caa_cast_long_keep_sign(_new), \
 						sizeof(*(addr))))
 
 #ifdef __cplusplus 

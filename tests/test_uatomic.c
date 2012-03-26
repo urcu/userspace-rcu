@@ -62,6 +62,10 @@ do {						\
 	assert(uatomic_read(ptr) == 122);	\
 	v = uatomic_sub_return(ptr, 1);		\
 	assert(v == 121);			\
+	uatomic_sub(ptr, (unsigned int) 2);	\
+	assert(uatomic_read(ptr) == 119);	\
+	uatomic_inc(ptr);			\
+	uatomic_inc(ptr);			\
 	assert(uatomic_read(ptr) == 121);	\
 	uatomic_and(ptr, 129);			\
 	assert(uatomic_read(ptr) == 1);		\

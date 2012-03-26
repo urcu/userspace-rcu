@@ -86,4 +86,9 @@
 #define URCU_FORCE_CAST(type, arg)	((type) (arg))
 #endif
 
+#define caa_is_signed_type(type)	(((type) (-1)) < 0)
+
+#define caa_cast_long_keep_sign(v)	\
+	(caa_is_signed_type(__typeof__(v)) ? (long) (v) : (unsigned long) (v))
+
 #endif /* _URCU_COMPILER_H */
