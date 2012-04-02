@@ -1782,6 +1782,11 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 			return;
 		}
 		work = malloc(sizeof(*work));
+		if (work == NULL) {
+			dbg_printf("error allocating resize work, bailing out\n");
+			uatomic_dec(&ht->in_progress_resize);
+			return;
+		}
 		work->ht = ht;
 		ht->flavor->update_call_rcu(&work->head, do_resize_cb);
 		CMM_STORE_SHARED(ht->resize_initiated, 1);
