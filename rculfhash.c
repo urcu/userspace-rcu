@@ -71,18 +71,18 @@
  *   (not visible to lookups anymore) before the RCU read-side critical
  *   section held across removal ends. Furthermore, this ensures that
  *   the node with "removed" flag set is removed from the linked-list
- *   before its memory is reclaimed. Only the thread which removal
- *   successfully set the "removed" flag (with a cmpxchg) into a node's
- *   next pointer is considered to have succeeded its removal (and thus
- *   owns the node to reclaim). Because we garbage-collect starting from
- *   an invariant node (the start-of-bucket bucket node) up to the
- *   "removed" node (or find a reverse-hash that is higher), we are sure
- *   that a successful traversal of the chain leads to a chain that is
- *   present in the linked-list (the start node is never removed) and
- *   that is does not contain the "removed" node anymore, even if
- *   concurrent delete/add operations are changing the structure of the
- *   list concurrently.
- * - The add operation performs gargage collection of buckets if it
+ *   before its memory is reclaimed. After setting the "removal" flag,
+ *   only the thread which removal is the first to set the "removal
+ *   owner" flag (with an xchg) into a node's next pointer is considered
+ *   to have succeeded its removal (and thus owns the node to reclaim).
+ *   Because we garbage-collect starting from an invariant node (the
+ *   start-of-bucket bucket node) up to the "removed" node (or find a
+ *   reverse-hash that is higher), we are sure that a successful
+ *   traversal of the chain leads to a chain that is present in the
+ *   linked-list (the start node is never removed) and that is does not
+ *   contain the "removed" node anymore, even if concurrent delete/add
+ *   operations are changing the structure of the list concurrently.
+ * - The add operation performs garbage collection of buckets if it
  *   encounters nodes with removed flag set in the bucket where it wants
  *   to add its new node. This ensures lock-freedom of add operation by
  *   helping the remover unlink nodes from the list rather than to wait
