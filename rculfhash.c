@@ -98,6 +98,33 @@
  *   hash table nodes. These tables are invariant after they are
  *   populated into the hash table.
  *
+ * Linearizability Guarantees:
+ *
+ * To discuss these guarantees, we first define "read" operations as any
+ * of the following operations surrounded by an RCU read-side lock/unlock
+ * pair:
+ *  - cds_lfht_lookup
+ *  - cds_lfht_lookup followed by iteration with cds_lfht_next_duplicate
+ *  - cds_lfht_first followed iteration with cds_lfht_next
+ *
+ * We define "write" operations as any of cds_lfht_add,
+ * cds_lfht_add_unique, cds_lfht_add_replace, cds_lfht_del.
+ *
+ * The following guarantees are offered by this hash table:
+ *
+ * A) "read" after "write" will always return the result of the latest
+ *    write.
+ * B) "write" after "read" will never be returned by the read.
+ * C) It is guaranteed that after a grace period following a "del" and
+ *    "replace" operation, no reference to the removed items exists in
+ *    the hash table.
+ * D) Uniqueness guarantee: when using add_unique and/or add_replace to
+ *    insert nodes into the table, if there was previously one node or
+ *    less with the same key being inserted by one or more concurrent
+ *    add_unique and/or add_replace, all concurrent "read" performed on
+ *    the hash table are guaranteed to find one, and only one node with
+ *    that key.
+ *
  * Bucket node tables:
  *
  * hash table	hash table	the last	all bucket node tables
