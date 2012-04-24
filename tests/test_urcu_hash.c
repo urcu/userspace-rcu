@@ -3,7 +3,7 @@
  *
  * Userspace RCU library - test program
  *
- * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+ * Copyright 2009-2012 - Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,181 +21,60 @@
  */
 
 #define _GNU_SOURCE
-#include "../config.h"
-#include <stdio.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <assert.h>
-#include <sched.h>
-#include <errno.h>
-#include <signal.h>
+#include "test_urcu_hash.h"
 
-#ifdef __linux__
-#include <syscall.h>
-#endif
+unsigned int __thread rand_lookup;
+unsigned long __thread nr_add;
+unsigned long __thread nr_addexist;
+unsigned long __thread nr_del;
+unsigned long __thread nr_delnoent;
+unsigned long __thread lookup_fail;
+unsigned long __thread lookup_ok;
 
-#define DEFAULT_HASH_SIZE	32
-#define DEFAULT_MIN_ALLOC_SIZE	1
-#define DEFAULT_RAND_POOL	1000000
+struct cds_lfht *test_ht;
 
-/*
- * Note: the hash seed should be a random value for hash tables
- * targeting production environments to provide protection against
- * denial of service attacks. We keep it a static value within this test
- * program to compare identical benchmark runs.
- */
-#define TEST_HASH_SEED	0x42UL
+volatile int test_go, test_stop;
 
-/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
-#define CACHE_LINE_SIZE 4096
+unsigned long wdelay;
 
-/* hardcoded number of CPUs */
-#define NR_CPUS 16384
-
-#ifdef POISON_FREE
-#define poison_free(ptr)				\
-	do {						\
-		memset(ptr, 0x42, sizeof(*(ptr)));	\
-		free(ptr);				\
-	} while (0)
-#else
-#define poison_free(ptr)	free(ptr)
-#endif
-
-
-
-#if defined(_syscall0)
-_syscall0(pid_t, gettid)
-#elif defined(__NR_gettid)
-static inline pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-#else
-#warning "use pid as tid"
-static inline pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
-
-#ifndef DYNAMIC_LINK_TEST
-#define _LGPL_SOURCE
-#else
-#define debug_yield_read()
-#endif
-#include <urcu-qsbr.h>
-#include <urcu/rculfhash.h>
-#include <urcu-call-rcu.h>
-
-struct wr_count {
-	unsigned long update_ops;
-	unsigned long add;
-	unsigned long add_exist;
-	unsigned long remove;
-};
-
-static unsigned int __thread rand_lookup;
-static unsigned long __thread nr_add;
-static unsigned long __thread nr_addexist;
-static unsigned long __thread nr_del;
-static unsigned long __thread nr_delnoent;
-static unsigned long __thread lookup_fail;
-static unsigned long __thread lookup_ok;
-
-static struct cds_lfht *test_ht;
-
-struct test_data {
-	int a;
-	int b;
-};
-
-struct lfht_test_node {
-	struct cds_lfht_node node;
-	void *key;
-	unsigned int key_len;
-	/* cache-cold for iteration */
-	struct rcu_head head;
-};
-
-static inline struct lfht_test_node *
-to_test_node(struct cds_lfht_node *node)
-{
-	return caa_container_of(node, struct lfht_test_node, node);
-}
-
-static inline
-void lfht_test_node_init(struct lfht_test_node *node, void *key,
-			size_t key_len)
-{
-	cds_lfht_node_init(&node->node);
-	node->key = key;
-	node->key_len = key_len;
-}
-
-static inline struct lfht_test_node *
-cds_lfht_iter_get_test_node(struct cds_lfht_iter *iter)
-{
-	return to_test_node(cds_lfht_iter_get_node(iter));
-}
-
-static volatile int test_go, test_stop;
-
-static unsigned long wdelay;
-
-static unsigned long duration;
+unsigned long duration;
 
 /* read-side C.S. duration, in loops */
-static unsigned long rduration;
+unsigned long rduration;
 
-static unsigned long init_hash_size = DEFAULT_HASH_SIZE;
-static unsigned long min_hash_alloc_size = DEFAULT_MIN_ALLOC_SIZE;
-static unsigned long max_hash_buckets_size = (1UL << 20);
-static unsigned long init_populate;
-static int opt_auto_resize;
-static int add_only, add_unique, add_replace;
-static const struct cds_lfht_mm_type *memory_backend;
+unsigned long init_hash_size = DEFAULT_HASH_SIZE;
+unsigned long min_hash_alloc_size = DEFAULT_MIN_ALLOC_SIZE;
+unsigned long max_hash_buckets_size = (1UL << 20);
+unsigned long init_populate;
+int opt_auto_resize;
+int add_only, add_unique, add_replace;
+const struct cds_lfht_mm_type *memory_backend;
 
-static unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
-static unsigned long init_pool_size = DEFAULT_RAND_POOL,
+unsigned long init_pool_offset, lookup_pool_offset, write_pool_offset;
+unsigned long init_pool_size = DEFAULT_RAND_POOL,
 	lookup_pool_size = DEFAULT_RAND_POOL,
 	write_pool_size = DEFAULT_RAND_POOL;
-static int validate_lookup;
+int validate_lookup;
 
-static int count_pipe[2];
+int count_pipe[2];
 
-static inline void loop_sleep(unsigned long l)
-{
-	while(l-- != 0)
-		caa_cpu_relax();
-}
+int verbose_mode;
 
-static int verbose_mode;
-
-#define printf_verbose(fmt, args...)		\
-	do {					\
-		if (verbose_mode)		\
-			printf(fmt, ## args);	\
-	} while (0)
-
-static unsigned int cpu_affinities[NR_CPUS];
-static unsigned int next_aff = 0;
-static int use_affinity = 0;
+unsigned int cpu_affinities[NR_CPUS];
+unsigned int next_aff = 0;
+int use_affinity = 0;
 
 pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#ifndef HAVE_CPU_SET_T
-typedef unsigned long cpu_set_t;
-# define CPU_ZERO(cpuset) do { *(cpuset) = 0; } while(0)
-# define CPU_SET(cpu, cpuset) do { *(cpuset) |= (1UL << (cpu)); } while(0)
-#endif
+unsigned long long __thread nr_writes;
+unsigned long long __thread nr_reads;
 
-static void set_affinity(void)
+unsigned int nr_readers;
+unsigned int nr_writers;
+
+static pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void set_affinity(void)
 {
 	cpu_set_t mask;
 	int cpu;
@@ -226,63 +105,6 @@ static void set_affinity(void)
 #endif /* HAVE_SCHED_SETAFFINITY */
 }
 
-static enum {
-	AR_RANDOM = 0,
-	AR_ADD = 1,
-	AR_REMOVE = -1,
-} addremove;	/* 1: add, -1 remove, 0: random */
-
-static
-void sigusr1_handler(int signo)
-{
-	switch (addremove) {
-	case AR_ADD:
-		printf("Add/Remove: random.\n");
-		addremove = AR_RANDOM;
-		break;
-	case AR_RANDOM:
-		printf("Add/Remove: remove only.\n");
-		addremove = AR_REMOVE;
-		break;
-	case AR_REMOVE:
-		printf("Add/Remove: add only.\n");
-		addremove = AR_ADD;
-		break;
-	}
-}
-
-static
-void sigusr2_handler(int signo)
-{
-	char msg[1] = { 0x42 };
-	ssize_t ret;
-
-	do {
-		ret = write(count_pipe[1], msg, 1);	/* wakeup thread */
-	} while (ret == -1L && errno == EINTR);
-}
-
-/*
- * returns 0 if test should end.
- */
-static int test_duration_write(void)
-{
-	return !test_stop;
-}
-
-static int test_duration_read(void)
-{
-	return !test_stop;
-}
-
-static unsigned long long __thread nr_writes;
-static unsigned long long __thread nr_reads;
-
-static unsigned int nr_readers;
-static unsigned int nr_writers;
-
-pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 void rcu_copy_mutex_lock(void)
 {
 	int ret;
@@ -304,137 +126,6 @@ void rcu_copy_mutex_unlock(void)
 	}
 }
 
-/*
- * Hash function
- * Source: http://burtleburtle.net/bob/c/lookup3.c
- * Originally Public Domain
- */
-
-#define rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
-
-#define mix(a, b, c) \
-do { \
-	a -= c; a ^= rot(c,  4); c += b; \
-	b -= a; b ^= rot(a,  6); a += c; \
-	c -= b; c ^= rot(b,  8); b += a; \
-	a -= c; a ^= rot(c, 16); c += b; \
-	b -= a; b ^= rot(a, 19); a += c; \
-	c -= b; c ^= rot(b,  4); b += a; \
-} while (0)
-
-#define final(a, b, c) \
-{ \
-	c ^= b; c -= rot(b, 14); \
-	a ^= c; a -= rot(c, 11); \
-	b ^= a; b -= rot(a, 25); \
-	c ^= b; c -= rot(b, 16); \
-	a ^= c; a -= rot(c,  4);\
-	b ^= a; b -= rot(a, 14); \
-	c ^= b; c -= rot(b, 24); \
-}
-
-static __attribute__((unused))
-uint32_t hash_u32(
-	const uint32_t *k,	/* the key, an array of uint32_t values */
-	size_t length,		/* the length of the key, in uint32_ts */
-	uint32_t initval)	/* the previous hash, or an arbitrary value */
-{
-	uint32_t a, b, c;
-
-	/* Set up the internal state */
-	a = b = c = 0xdeadbeef + (((uint32_t) length) << 2) + initval;
-
-	/*----------------------------------------- handle most of the key */
-	while (length > 3) {
-		a += k[0];
-		b += k[1];
-		c += k[2];
-		mix(a, b, c);
-		length -= 3;
-		k += 3;
-	}
-
-	/*----------------------------------- handle the last 3 uint32_t's */
-	switch (length) {	/* all the case statements fall through */
-	case 3: c += k[2];
-	case 2: b += k[1];
-	case 1: a += k[0];
-		final(a, b, c);
-	case 0:			/* case 0: nothing left to add */
-		break;
-	}
-	/*---------------------------------------------- report the result */
-	return c;
-}
-
-static
-void hashword2(
-	const uint32_t *k,	/* the key, an array of uint32_t values */
-	size_t length,		/* the length of the key, in uint32_ts */
-	uint32_t *pc,		/* IN: seed OUT: primary hash value */
-	uint32_t *pb)		/* IN: more seed OUT: secondary hash value */
-{
-	uint32_t a, b, c;
-
-	/* Set up the internal state */
-	a = b = c = 0xdeadbeef + ((uint32_t) (length << 2)) + *pc;
-	c += *pb;
-
-	/*----------------------------------------- handle most of the key */
-	while (length > 3) {
-		a += k[0];
-		b += k[1];
-		c += k[2];
-		mix(a, b, c);
-		length -= 3;
-		k += 3;
-	}
-
-	/*----------------------------------- handle the last 3 uint32_t's */
-	switch (length) {	/* all the case statements fall through */
-	case 3: c += k[2];
-	case 2: b += k[1];
-	case 1: a += k[0];
-		final(a, b, c);
-	case 0:			/* case 0: nothing left to add */
-		break;
-	}
-	/*---------------------------------------------- report the result */
-	*pc = c;
-	*pb = b;
-}
-
-#if (CAA_BITS_PER_LONG == 32)
-static
-unsigned long test_hash(const void *_key, size_t length, unsigned long seed)
-{
-	unsigned int key = (unsigned int) _key;
-
-	assert(length == sizeof(unsigned int));
-	return hash_u32(&key, 1, seed);
-}
-#else
-static
-unsigned long test_hash(const void *_key, size_t length, unsigned long seed)
-{
-	union {
-		uint64_t v64;
-		uint32_t v32[2];
-	} v;
-	union {
-		uint64_t v64;
-		uint32_t v32[2];
-	} key;
-
-	assert(length == sizeof(unsigned long));
-	v.v64 = (uint64_t) seed;
-	key.v64 = (uint64_t) _key;
-	hashword2(key.v32, 2, &v.v32[0], &v.v32[1]);
-	return v.v64;
-}
-#endif
-
-static
 unsigned long test_compare(const void *key1, size_t key1_len,
                            const void *key2, size_t key2_len)
 {
@@ -445,25 +136,6 @@ unsigned long test_compare(const void *key1, size_t key1_len,
 		return 0;
 	else
 		return 1;
-}
-
-static
-int test_match(struct cds_lfht_node *node, const void *key)
-{
-	struct lfht_test_node *test_node = to_test_node(node);
-
-	return !test_compare(test_node->key, test_node->key_len,
-			key, sizeof(unsigned long));
-}
-
-static inline
-void cds_lfht_test_lookup(struct cds_lfht *ht, void *key, size_t key_len,
-		struct cds_lfht_iter *iter)
-{
-	assert(key_len == sizeof(unsigned long));
-
-	cds_lfht_lookup(ht, test_hash(key, key_len, TEST_HASH_SEED),
-			test_match, key, iter);
 }
 
 void *thr_count(void *arg)
@@ -506,223 +178,11 @@ void *thr_count(void *arg)
 	return NULL;
 }
 
-void *thr_reader(void *_count)
-{
-	unsigned long long *count = _count;
-	struct lfht_test_node *node;
-	struct cds_lfht_iter iter;
-
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
-
-	set_affinity();
-
-	rcu_register_thread();
-
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
-
-	for (;;) {
-		rcu_read_lock();
-		cds_lfht_test_lookup(test_ht,
-			(void *)(((unsigned long) rand_r(&rand_lookup) % lookup_pool_size) + lookup_pool_offset),
-			sizeof(void *), &iter);
-		node = cds_lfht_iter_get_test_node(&iter);
-		if (node == NULL) {
-			if (validate_lookup) {
-				printf("[ERROR] Lookup cannot find initial node.\n");
-				exit(-1);
-			}
-			lookup_fail++;
-		} else {
-			lookup_ok++;
-		}
-		debug_yield_read();
-		if (caa_unlikely(rduration))
-			loop_sleep(rduration);
-		rcu_read_unlock();
-		nr_reads++;
-		if (caa_unlikely(!test_duration_read()))
-			break;
-		if (caa_unlikely((nr_reads & ((1 << 10) - 1)) == 0))
-			rcu_quiescent_state();
-	}
-
-	rcu_unregister_thread();
-
-	*count = nr_reads;
-	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
-	printf_verbose("readid : %lx, lookupfail %lu, lookupok %lu\n",
-			pthread_self(), lookup_fail, lookup_ok);
-	return ((void*)1);
-
-}
-
-static
 void free_node_cb(struct rcu_head *head)
 {
 	struct lfht_test_node *node =
 		caa_container_of(head, struct lfht_test_node, head);
 	free(node);
-}
-
-void *thr_writer(void *_count)
-{
-	struct lfht_test_node *node;
-	struct cds_lfht_node *ret_node;
-	struct cds_lfht_iter iter;
-	struct wr_count *count = _count;
-	int ret;
-
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
-
-	set_affinity();
-
-	rcu_register_thread();
-
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
-
-	for (;;) {
-		if ((addremove == AR_ADD || add_only)
-				|| (addremove == AR_RANDOM && rand_r(&rand_lookup) & 1)) {
-			node = malloc(sizeof(struct lfht_test_node));
-			lfht_test_node_init(node,
-				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
-				sizeof(void *));
-			rcu_read_lock();
-			if (add_unique) {
-				ret_node = cds_lfht_add_unique(test_ht,
-					test_hash(node->key, node->key_len, TEST_HASH_SEED),
-					test_match, node->key, &node->node);
-			} else {
-				if (add_replace)
-					ret_node = cds_lfht_add_replace(test_ht,
-							test_hash(node->key, node->key_len, TEST_HASH_SEED),
-							test_match, node->key, &node->node);
-				else
-					cds_lfht_add(test_ht,
-						test_hash(node->key, node->key_len, TEST_HASH_SEED),
-						&node->node);
-			}
-			rcu_read_unlock();
-			if (add_unique && ret_node != &node->node) {
-				free(node);
-				nr_addexist++;
-			} else {
-				if (add_replace && ret_node) {
-					call_rcu(&to_test_node(ret_node)->head,
-							free_node_cb);
-					nr_addexist++;
-				} else {
-					nr_add++;
-				}
-			}
-		} else {
-			/* May delete */
-			rcu_read_lock();
-			cds_lfht_test_lookup(test_ht,
-				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
-				sizeof(void *), &iter);
-			ret = cds_lfht_del(test_ht, cds_lfht_iter_get_node(&iter));
-			rcu_read_unlock();
-			if (ret == 0) {
-				node = cds_lfht_iter_get_test_node(&iter);
-				call_rcu(&node->head, free_node_cb);
-				nr_del++;
-			} else
-				nr_delnoent++;
-		}
-#if 0
-		//if (nr_writes % 100000 == 0) {
-		if (nr_writes % 1000 == 0) {
-			rcu_read_lock();
-			if (rand_r(&rand_lookup) & 1) {
-				ht_resize(test_ht, 1);
-			} else {
-				ht_resize(test_ht, -1);
-			}
-			rcu_read_unlock();
-		}
-#endif //0
-		nr_writes++;
-		if (caa_unlikely(!test_duration_write()))
-			break;
-		if (caa_unlikely(wdelay))
-			loop_sleep(wdelay);
-		if (caa_unlikely((nr_writes & ((1 << 10) - 1)) == 0))
-			rcu_quiescent_state();
-	}
-
-	rcu_unregister_thread();
-
-	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
-	printf_verbose("info id %lx: nr_add %lu, nr_addexist %lu, nr_del %lu, "
-			"nr_delnoent %lu\n", pthread_self(), nr_add,
-			nr_addexist, nr_del, nr_delnoent);
-	count->update_ops = nr_writes;
-	count->add = nr_add;
-	count->add_exist = nr_addexist;
-	count->remove = nr_del;
-	return ((void*)2);
-}
-
-static int populate_hash(void)
-{
-	struct lfht_test_node *node;
-	struct cds_lfht_node *ret_node;
-
-	if (!init_populate)
-		return 0;
-
-	if ((add_unique || add_replace) && init_populate * 10 > init_pool_size) {
-		printf("WARNING: required to populate %lu nodes (-k), but random "
-"pool is quite small (%lu values) and we are in add_unique (-u) or add_replace (-s) mode. Try with a "
-"larger random pool (-p option). This may take a while...\n", init_populate, init_pool_size);
-	}
-
-	while (nr_add < init_populate) {
-		node = malloc(sizeof(struct lfht_test_node));
-		lfht_test_node_init(node,
-			(void *)(((unsigned long) rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
-			sizeof(void *));
-		rcu_read_lock();
-		if (add_unique) {
-			ret_node = cds_lfht_add_unique(test_ht,
-				test_hash(node->key, node->key_len, TEST_HASH_SEED),
-				test_match, node->key, &node->node);
-		} else {
-			if (add_replace)
-				ret_node = cds_lfht_add_replace(test_ht,
-						test_hash(node->key, node->key_len, TEST_HASH_SEED),
-						test_match, node->key, &node->node);
-			else
-				cds_lfht_add(test_ht,
-					test_hash(node->key, node->key_len, TEST_HASH_SEED),
-					&node->node);
-		}
-		rcu_read_unlock();
-		if (add_unique && ret_node != &node->node) {
-			free(node);
-			nr_addexist++;
-		} else {
-			if (add_replace && ret_node) {
-				call_rcu(&to_test_node(ret_node)->head, free_node_cb);
-				nr_addexist++;
-			} else {
-				nr_add++;
-			}
-		}
-		nr_writes++;
-	}
-	return 0;
 }
 
 static
@@ -756,7 +216,7 @@ void show_usage(int argc, char **argv)
 	printf("        [-h size] (initial number of buckets)\n");
 	printf("        [-m size] (minimum number of allocated buckets)\n");
 	printf("        [-n size] (maximum number of buckets)\n");
-	printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
+printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
 	printf("        [-u] Uniquify add (no redundant keys).\n");
 	printf("        [-s] Replace (swap) entries.\n");
 	printf("        [-i] Add only (no removal).\n");
@@ -962,7 +422,7 @@ int main(int argc, char **argv)
 		perror("sigemptyset");
 		return -1;
 	}
-	act.sa_handler = sigusr1_handler;
+	act.sa_handler = test_hash_rw_sigusr1_handler;
 	act.sa_flags = SA_RESTART;
 	ret = sigaction(SIGUSR1, &act, NULL);
 	if (ret == -1) {
@@ -982,7 +442,7 @@ int main(int argc, char **argv)
 	if (err != 0)
 		exit(1);
 
-	act.sa_handler = sigusr2_handler;
+	act.sa_handler = test_hash_rw_sigusr2_handler;
 	act.sa_flags = SA_RESTART;
 	ret = sigaction(SIGUSR2, &act, NULL);
 	if (ret == -1) {
@@ -1037,7 +497,7 @@ int main(int argc, char **argv)
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-      	ret = populate_hash();
+      	ret = test_hash_rw_populate_hash();
 	assert(!ret);
 
 	rcu_thread_offline();
@@ -1045,13 +505,15 @@ int main(int argc, char **argv)
 	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {
-		err = pthread_create(&tid_reader[i], NULL, thr_reader,
+		err = pthread_create(&tid_reader[i],
+				     NULL, test_hash_rw_thr_reader,
 				     &count_reader[i]);
 		if (err != 0)
 			exit(1);
 	}
 	for (i = 0; i < nr_writers; i++) {
-		err = pthread_create(&tid_writer[i], NULL, thr_writer,
+		err = pthread_create(&tid_writer[i],
+				     NULL, test_hash_rw_thr_writer,
 				     &count_writer[i]);
 		if (err != 0)
 			exit(1);
