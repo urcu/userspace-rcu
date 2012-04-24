@@ -98,32 +98,97 @@
  *   hash table nodes. These tables are invariant after they are
  *   populated into the hash table.
  *
- * Linearizability Guarantees:
+ * Ordering Guarantees:
  *
- * To discuss these guarantees, we first define "read" operations as any
- * of the following operations surrounded by an RCU read-side lock/unlock
- * pair:
- *  - cds_lfht_lookup
+ * To discuss these guarantees, we first define "read" operation as any
+ * of the the basic cds_lfht_lookup, cds_lfht_next_duplicate,
+ * cds_lfht_first, cds_lfht_next operation, as well as
+ * cds_lfht_add_unique (failure). 
+ *
+ * We define "read traversal" operation as any of the following
+ * group of operations
  *  - cds_lfht_lookup followed by iteration with cds_lfht_next_duplicate
- *  - cds_lfht_first followed iteration with cds_lfht_next
+ *    (and/or cds_lfht_next, although less common).
+ *  - cds_lfht_add_unique (failure) followed by iteration with
+ *    cds_lfht_next_duplicate (and/or cds_lfht_next, although less
+ *    common).
+ *  - cds_lfht_first followed iteration with cds_lfht_next (and/or
+ *    cds_lfht_next_duplicate, although less common).
  *
  * We define "write" operations as any of cds_lfht_add,
- * cds_lfht_add_unique, cds_lfht_add_replace, cds_lfht_del.
+ * cds_lfht_add_unique (success), cds_lfht_add_replace, cds_lfht_del.
  *
- * The following guarantees are offered by this hash table:
+ * When cds_lfht_add_unique succeeds (returns the node passed as
+ * parameter), it acts as a "write" operation. When cds_lfht_add_unique
+ * fails (returns a node different from the one passed as parameter), it
+ * acts as a "read" operation. A cds_lfht_add_unique failure is a
+ * cds_lfht_lookup "read" operation, therefore, any ordering guarantee
+ * referring to "lookup" imply any of "lookup" or cds_lfht_add_unique
+ * (failure).
  *
- * A) "read" after "write" will always return the result of the latest
- *    write.
- * B) "write" after "read" will never be returned by the read.
- * C) It is guaranteed that after a grace period following a "del" and
- *    "replace" operation, no reference to the removed items exists in
- *    the hash table.
- * D) Uniqueness guarantee: when using add_unique and/or add_replace to
- *    insert nodes into the table, if there was previously one node or
- *    less with the same key being inserted by one or more concurrent
- *    add_unique and/or add_replace, all concurrent "read" performed on
- *    the hash table are guaranteed to find one, and only one node with
- *    that key.
+ * We define "prior" and "later" node as nodes observable by reads and
+ * read traversals respectively before and after a write or sequence of
+ * write operations.
+ *
+ * Hash-table operations are often cascaded, for example, the pointer
+ * returned by a cds_lfht_lookup() might be passed to a cds_lfht_next(),
+ * whose return value might in turn be passed to another hash-table
+ * operation. This entire cascaded series of operations must be enclosed
+ * by a pair of matching rcu_read_lock() and rcu_read_unlock()
+ * operations.
+ *
+ * The following ordering guarantees are offered by this hash table:
+ *
+ * A.1) "read" after "write": if there is ordering between a write and a
+ *      later read, then the read is guaranteed to see the write or some
+ *      later write.
+ * A.2) "read traversal" after "write": given that there is dependency
+ *      ordering between reads in a "read traversal", if there is
+ *      ordering between a write and the first read of the traversal,
+ *      then the "read traversal" is guaranteed to see the write or
+ *      some later write.
+ * B.1) "write" after "read": if there is ordering between a read and a
+ *      later write, then the read will never see the write.
+ * B.2) "write" after "read traversal": given that there is dependency
+ *      ordering between reads in a "read traversal", if there is
+ *      ordering between the last read of the traversal and a later
+ *      write, then the "read traversal" will never see the write.
+ * C)   "write" while "read traversal": if a write occurs during a "read
+ *      traversal", the traversal may, or may not, see the write.
+ * D.1) "write" after "write": if there is ordering between a write and
+ *      a later write, then the later write is guaranteed to see the
+ *      effects of the first write.
+ * D.2) Concurrent "write" pairs: The system will assign an arbitrary
+ *      order to any pair of concurrent conflicting writes.
+ *      Non-conflicting writes (for example, to different keys) are
+ *      unordered.
+ * E)   If a grace period separates a "del" or "replace" operation
+ *      and a subsequent operation, then that subsequent operation is
+ *      guaranteed not to see the removed item.
+ * F)   Uniqueness guarantee: given a hash table that does not contain
+ *      duplicate items for a given key, there will only be one item in
+ *      the hash table after an arbitrary sequence of add_unique and/or
+ *      add_replace operations. Note, however, that a pair of
+ *      concurrent read operations might well access two different items
+ *      with that key.
+ * G.1) If a pair of lookups for a given key are ordered (e.g. by a
+ *      memory barrier), then the second lookup will return the same
+ *      node as the previous lookup, or some later node.
+ * G.2) A "read traversal" that starts after the end of a prior "read
+ *      traversal" (ordered by memory barriers) is guaranteed to see the
+ *      same nodes as the previous traversal, or some later nodes.
+ * G.3) Concurrent "read" pairs: concurrent reads are unordered. For
+ *      example, if a pair of reads to the same key run concurrently
+ *      with an insertion of that same key, the reads remain unordered
+ *      regardless of their return values. In other words, you cannot
+ *      rely on the values returned by the reads to deduce ordering.
+ *
+ * Progress guarantees:
+ *
+ * * Reads are wait-free. These operations always move forward in the
+ *   hash table linked list, and this list has no loop.
+ * * Writes are lock-free. Any retry loop performed by a write operation
+ *   is triggered by progress made within another update operation.
  *
  * Bucket node tables:
  *
