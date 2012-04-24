@@ -199,12 +199,6 @@ typedef unsigned long cpu_set_t;
 
 void set_affinity(void);
 
-/* rw test */
-void test_hash_rw_sigusr1_handler(int signo);
-void test_hash_rw_sigusr2_handler(int signo);
-void *test_hash_rw_thr_reader(void *_count);
-void *test_hash_rw_thr_writer(void *_count);
-
 /*
  * returns 0 if test should end.
  */
@@ -380,5 +374,12 @@ void cds_lfht_test_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 }
 
 void free_node_cb(struct rcu_head *head);
+
+/* rw test */
+void test_hash_rw_sigusr1_handler(int signo);
+void test_hash_rw_sigusr2_handler(int signo);
+void *test_hash_rw_thr_reader(void *_count);
+void *test_hash_rw_thr_writer(void *_count);
+int test_hash_rw_populate_hash(void);
 
 #endif /* _TEST_URCU_HASH_H */

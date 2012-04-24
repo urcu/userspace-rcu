@@ -23,6 +23,56 @@
 #define _GNU_SOURCE
 #include "test_urcu_hash.h"
 
+enum test_hash {
+	TEST_HASH_RW,
+};
+
+struct test_hash_cb {
+	void (*sigusr1)(int signo);
+	void (*sigusr2)(int signo);
+	void *(*thr_reader)(void *_count);
+	void *(*thr_writer)(void *_count);
+	int (*populate_hash)(void);
+};
+
+static
+struct test_hash_cb test_hash_cb[] = {
+	[TEST_HASH_RW] = {
+		test_hash_rw_sigusr1_handler,
+		test_hash_rw_sigusr2_handler,
+		test_hash_rw_thr_reader,
+		test_hash_rw_thr_writer,
+		test_hash_rw_populate_hash,
+	},
+};
+
+static enum test_hash test_choice = TEST_HASH_RW;
+
+void (*get_sigusr1_cb(void))(int)
+{
+	return test_hash_cb[test_choice].sigusr1;
+}
+
+void (*get_sigusr2_cb(void))(int)
+{
+	return test_hash_cb[test_choice].sigusr2;
+}
+
+void *(*get_thr_reader_cb(void))(void *)
+{
+	return test_hash_cb[test_choice].thr_reader;
+}
+
+void *(*get_thr_writer_cb(void))(void *)
+{
+	return test_hash_cb[test_choice].thr_writer;
+}
+
+int (*get_populate_hash_cb(void))(void)
+{
+	return test_hash_cb[test_choice].populate_hash;
+}
+
 unsigned int __thread rand_lookup;
 unsigned long __thread nr_add;
 unsigned long __thread nr_addexist;
@@ -422,7 +472,7 @@ int main(int argc, char **argv)
 		perror("sigemptyset");
 		return -1;
 	}
-	act.sa_handler = test_hash_rw_sigusr1_handler;
+	act.sa_handler = get_sigusr1_cb();
 	act.sa_flags = SA_RESTART;
 	ret = sigaction(SIGUSR1, &act, NULL);
 	if (ret == -1) {
@@ -442,7 +492,7 @@ int main(int argc, char **argv)
 	if (err != 0)
 		exit(1);
 
-	act.sa_handler = test_hash_rw_sigusr2_handler;
+	act.sa_handler = get_sigusr2_cb();
 	act.sa_flags = SA_RESTART;
 	ret = sigaction(SIGUSR2, &act, NULL);
 	if (ret == -1) {
@@ -497,7 +547,7 @@ int main(int argc, char **argv)
 	 * thread from the point of view of resize.
 	 */
 	rcu_register_thread();
-      	ret = test_hash_rw_populate_hash();
+      	ret = (get_populate_hash_cb())();
 	assert(!ret);
 
 	rcu_thread_offline();
@@ -506,14 +556,14 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_create(&tid_reader[i],
-				     NULL, test_hash_rw_thr_reader,
+				     NULL, get_thr_reader_cb(),
 				     &count_reader[i]);
 		if (err != 0)
 			exit(1);
 	}
 	for (i = 0; i < nr_writers; i++) {
 		err = pthread_create(&tid_writer[i],
-				     NULL, test_hash_rw_thr_writer,
+				     NULL, get_thr_writer_cb(),
 				     &count_writer[i]);
 		if (err != 0)
 			exit(1);
