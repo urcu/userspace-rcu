@@ -322,7 +322,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_replace - replace a node pointer to by iter within hash table.
+ * cds_lfht_replace - replace a node pointed to by iter within hash table.
  * @ht: the hash table.
  * @old_iter: the iterator position of the node to replace.
  * @hash: the node's hash.
