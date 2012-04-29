@@ -34,24 +34,31 @@
  * implementation:
  *
  * - RCU read-side critical section allows readers to perform hash
- *   table lookups and use the returned objects safely by delaying
- *   memory reclaim of a grace period.
+ *   table lookups, as well as traversals, and use the returned objects
+ *   safely by allowing memory reclaim to take place only after a grace
+ *   period.
  * - Add and remove operations are lock-free, and do not need to
  *   allocate memory. They need to be executed within RCU read-side
  *   critical section to ensure the objects they read are valid and to
  *   deal with the cmpxchg ABA problem.
  * - add and add_unique operations are supported. add_unique checks if
- *   the node key already exists in the hash table. It ensures no key
- *   duplicata exists.
- * - The resize operation executes concurrently with add/remove/lookup.
+ *   the node key already exists in the hash table. It ensures not to
+ *   populate a duplicate key if the node key already exists in the hash
+ *   table.
+ * - The resize operation executes concurrently with
+ *   add/add_unique/add_replace/remove/lookup/traversal.
  * - Hash table nodes are contained within a split-ordered list. This
  *   list is ordered by incrementing reversed-bits-hash value.
  * - An index of bucket nodes is kept. These bucket nodes are the hash
- *   table "buckets", and they are also chained together in the
- *   split-ordered list, which allows recursive expansion.
- * - The resize operation for small tables only allows expanding the hash table.
- *   It is triggered automatically by detecting long chains in the add
- *   operation.
+ *   table "buckets". These buckets are internal nodes that allow to
+ *   perform a fast hash lookup, similarly to a skip list. These
+ *   buckets are chained together in the split-ordered list, which
+ *   allows recursive expansion by inserting new buckets between the
+ *   existing buckets. The split-ordered list allows adding new buckets
+ *   between existing buckets as the table needs to grow.
+ * - The resize operation for small tables only allows expanding the
+ *   hash table. It is triggered automatically by detecting long chains
+ *   in the add operation.
  * - The resize operation for larger tables (and available through an
  *   API) allows both expanding and shrinking the hash table.
  * - Split-counters are used to keep track of the number of
@@ -79,24 +86,31 @@
  *   start-of-bucket bucket node) up to the "removed" node (or find a
  *   reverse-hash that is higher), we are sure that a successful
  *   traversal of the chain leads to a chain that is present in the
- *   linked-list (the start node is never removed) and that is does not
+ *   linked-list (the start node is never removed) and that it does not
  *   contain the "removed" node anymore, even if concurrent delete/add
  *   operations are changing the structure of the list concurrently.
- * - The add operation performs garbage collection of buckets if it
- *   encounters nodes with removed flag set in the bucket where it wants
- *   to add its new node. This ensures lock-freedom of add operation by
+ * - The add operations perform garbage collection of buckets if they
+ *   encounter nodes with removed flag set in the bucket where they want
+ *   to add their new node. This ensures lock-freedom of add operation by
  *   helping the remover unlink nodes from the list rather than to wait
  *   for it do to so.
- * - A RCU "order table" indexed by log2(hash index) is copied and
- *   expanded by the resize operation. This order table allows finding
- *   the "bucket node" tables.
- * - There is one bucket node table per hash index order. The size of
- *   each bucket node table is half the number of hashes contained in
- *   this order (except for order 0).
+ * - There are three memory backends for the hash table buckets: the
+ *   "order table", the "chunks", and the "mmap".
+ * - These bucket containers contain a compact version of the hash table
+ *   nodes.
+ * - The RCU "order table":
+ *   -  has a first level table indexed by log2(hash index) which is
+ *      copied and expanded by the resize operation. This order table
+ *      allows finding the "bucket node" tables.
+ *   - There is one bucket node table per hash index order. The size of
+ *     each bucket node table is half the number of hashes contained in
+ *     this order (except for order 0).
+ * - The RCU "chunks" is best suited for close interaction with a page
+ *   allocator. It uses a linear array as index to "chunks" containing
+ *   each the same number of buckets.
+ * - The RCU "mmap" memory backend uses a single memory map to hold
+ *   all buckets.
  * - synchronzie_rcu is used to garbage-collect the old bucket node table.
- * - The per-order bucket node tables contain a compact version of the
- *   hash table nodes. These tables are invariant after they are
- *   populated into the hash table.
  *
  * Ordering Guarantees:
  *
@@ -212,8 +226,8 @@
  *
  * A bit of ascii art explanation:
  * 
- * Order index is the off-by-one compare to the actual power of 2 because 
- * we use index 0 to deal with the 0 special-case.
+ * The order index is the off-by-one compared to the actual power of 2
+ * because we use index 0 to deal with the 0 special-case.
  * 
  * This shows the nodes for a small table ordered by reversed bits:
  * 
@@ -292,6 +306,11 @@
  * removal, and that node garbage collection must be performed.
  * The bucket flag does not require to be updated atomically with the
  * pointer, but it is added as a pointer low bit flag to save space.
+ * The "removal owner" flag is used to detect which of the "del"
+ * operation that has set the "removed flag" gets to return the removed
+ * node to its caller. Note that the replace operation does not need to
+ * iteract with the "removal owner" flag, because it validates that
+ * the "removed" flag is not set before performing its cmpxchg.
  */
 #define REMOVED_FLAG		(1UL << 0)
 #define BUCKET_FLAG		(1UL << 1)
@@ -966,8 +985,8 @@ void _cds_lfht_add(struct cds_lfht *ht,
 				 *
 				 * This semantic ensures no duplicated keys
 				 * should ever be observable in the table
-				 * (including observe one node by one node
-				 * by forward iterations)
+				 * (including traversing the table node by
+				 * node by forward iterations)
 				 */
 				cds_lfht_next_duplicate(ht, match, key, &d_iter);
 				if (!d_iter.node)
@@ -1237,8 +1256,8 @@ void init_table(struct cds_lfht *ht,
  * removed nodes have been garbage-collected (unlinked) before call_rcu is
  * invoked to free a hole level of bucket nodes (after a grace period).
  *
- * Logical removal and garbage collection can therefore be done in batch or on a
- * node-per-node basis, as long as the guarantee above holds.
+ * Logical removal and garbage collection can therefore be done in batch
+ * or on a node-per-node basis, as long as the guarantee above holds.
  *
  * When we reach a certain length, we can split this removal over many worker
  * threads, based on the number of CPUs available in the system. This should
@@ -1671,7 +1690,7 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 	 * being destroyed.
 	 */
 	size = ht->size;
-	/* Internal sanity check: all nodes left should be bucket */
+	/* Internal sanity check: all nodes left should be buckets */
 	for (i = 0; i < size; i++) {
 		node = bucket_at(ht, i);
 		dbg_printf("delete bucket: index %lu expected hash %lu hash %lu\n",
