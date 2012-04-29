@@ -227,6 +227,8 @@ int test_hash_rw_populate_hash(void)
 	if (!init_populate)
 		return 0;
 
+	printf("Starting rw test\n");
+
 	if ((add_unique || add_replace) && init_populate * 10 > init_pool_size) {
 		printf("WARNING: required to populate %lu nodes (-k), but random "
 "pool is quite small (%lu values) and we are in add_unique (-u) or add_replace (-s) mode. Try with a "
