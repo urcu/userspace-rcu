@@ -214,7 +214,8 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
  * @key: the current node key.
  * @iter: Node, if found (output). *iter->node set to NULL if not found.
  *
- * Uses an iterator initialized by a lookup.
+ * Uses an iterator initialized by a lookup. Important: the iterator
+ * _needs_ to be initialized before calling cds_lfht_next_duplicate.
  * Sets *iter-node to the following node with same key.
  * Sets *iter->node to NULL if no following node exists with same key.
  * RCU read-side lock must be held across cds_lfht_lookup and
