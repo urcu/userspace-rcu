@@ -176,7 +176,7 @@ test_urcu_wfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfs_dynlink_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_hash_SOURCES = test_urcu_hash.c test_urcu_hash.h \
-		test_urcu_hash_rw.c $(COMPAT)
+		test_urcu_hash_rw.c test_urcu_hash_unique.c $(COMPAT)
 test_urcu_hash_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
 test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_CDS_LIB)
 

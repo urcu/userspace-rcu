@@ -382,4 +382,11 @@ void *test_hash_rw_thr_reader(void *_count);
 void *test_hash_rw_thr_writer(void *_count);
 int test_hash_rw_populate_hash(void);
 
+/* unique test */
+void test_hash_unique_sigusr1_handler(int signo);
+void test_hash_unique_sigusr2_handler(int signo);
+void *test_hash_unique_thr_reader(void *_count);
+void *test_hash_unique_thr_writer(void *_count);
+int test_hash_unique_populate_hash(void);
+
 #endif /* _TEST_URCU_HASH_H */

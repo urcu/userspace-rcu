@@ -25,6 +25,7 @@
 
 enum test_hash {
 	TEST_HASH_RW,
+	TEST_HASH_UNIQUE,
 };
 
 struct test_hash_cb {
@@ -44,6 +45,14 @@ struct test_hash_cb test_hash_cb[] = {
 		test_hash_rw_thr_writer,
 		test_hash_rw_populate_hash,
 	},
+	[TEST_HASH_UNIQUE] = {
+		test_hash_unique_sigusr1_handler,
+		test_hash_unique_sigusr2_handler,
+		test_hash_unique_thr_reader,
+		test_hash_unique_thr_writer,
+		test_hash_unique_populate_hash,
+	},
+
 };
 
 static enum test_hash test_choice = TEST_HASH_RW;
@@ -280,6 +289,7 @@ printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
 	printf("        [-N size] Write pool size.\n");
 	printf("        [-O size] Init pool size.\n");
 	printf("        [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).\n");
+	printf("	[-U] Uniqueness test.\n");
 	printf("\n\n");
 }
 
@@ -443,7 +453,9 @@ int main(int argc, char **argv)
 		case 'V':
 			validate_lookup = 1;
 			break;
-
+		case 'U':
+			test_choice = TEST_HASH_UNIQUE;
+			break;
 		}
 	}
 
