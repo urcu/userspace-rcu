@@ -110,7 +110,7 @@
  *   each the same number of buckets.
  * - The RCU "mmap" memory backend uses a single memory map to hold
  *   all buckets.
- * - synchronzie_rcu is used to garbage-collect the old bucket node table.
+ * - synchronize_rcu is used to garbage-collect the old bucket node table.
  *
  * Ordering Guarantees:
  *
