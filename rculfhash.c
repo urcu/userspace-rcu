@@ -735,12 +735,6 @@ int is_removed(struct cds_lfht_node *node)
 }
 
 static
-struct cds_lfht_node *flag_removed(struct cds_lfht_node *node)
-{
-	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVED_FLAG);
-}
-
-static
 int is_bucket(struct cds_lfht_node *node)
 {
 	return ((unsigned long) node) & BUCKET_FLAG;
@@ -762,6 +756,12 @@ static
 struct cds_lfht_node *flag_removal_owner(struct cds_lfht_node *node)
 {
 	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVAL_OWNER_FLAG);
+}
+
+static
+struct cds_lfht_node *flag_removed_or_removal_owner(struct cds_lfht_node *node)
+{
+	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVED_FLAG | REMOVAL_OWNER_FLAG);
 }
 
 static
@@ -894,6 +894,12 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		}
 		assert(old_next == clear_flag(old_next));
 		assert(new_node != old_next);
+		/*
+		 * REMOVAL_OWNER flag is _NEVER_ set before the REMOVED
+		 * flag. It is either set atomically at the same time
+		 * (replace) or after (del).
+		 */
+		assert(!is_removal_owner(old_next));
 		new_node->next = old_next;
 		/*
 		 * Here is the whole trick for lock-free replace: we add
@@ -906,10 +912,12 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 		 * the old node, but will not see the new one.
 		 * This is a replacement of a node with another node
 		 * that has the same value: we are therefore not
-		 * removing a value from the hash table.
+		 * removing a value from the hash table. We set both the
+		 * REMOVED and REMOVAL_OWNER flags atomically so we own
+		 * the node after successful cmpxchg.
 		 */
 		ret_next = uatomic_cmpxchg(&old_node->next,
-			      old_next, flag_removed(new_node));
+			old_next, flag_removed_or_removal_owner(new_node));
 		if (ret_next == old_next)
 			break;		/* We performed the replacement. */
 		old_next = ret_next;
