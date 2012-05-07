@@ -923,7 +923,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(old_node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, new_node);
 
-	assert(is_removed(rcu_dereference(old_node->next)));
+	assert(is_removed(CMM_LOAD_SHARED(old_node->next)));
 	return 0;
 }
 
@@ -1061,7 +1061,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	 * logical removal flag). Return -ENOENT if the node had
 	 * previously been removed.
 	 */
-	next = rcu_dereference(node->next);
+	next = CMM_LOAD_SHARED(node->next);	/* next is not dereferenced */
 	if (caa_unlikely(is_removed(next)))
 		return -ENOENT;
 	assert(!is_bucket(next));
@@ -1082,7 +1082,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, node);
 
-	assert(is_removed(rcu_dereference(node->next)));
+	assert(is_removed(CMM_LOAD_SHARED(node->next)));
 	/*
 	 * Last phase: atomically exchange node->next with a version
 	 * having "REMOVAL_OWNER_FLAG" set. If the returned node->next
@@ -1510,7 +1510,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1543,7 +1543,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1565,7 +1565,7 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(rcu_dereference(node->next)));
+	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1668,7 +1668,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 
 int cds_lfht_is_node_deleted(struct cds_lfht_node *node)
 {
-	return is_removed(rcu_dereference(node->next));
+	return is_removed(CMM_LOAD_SHARED(node->next));
 }
 
 static
