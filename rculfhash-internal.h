@@ -25,11 +25,17 @@
  */
 
 #include <urcu/rculfhash.h>
+#include <stdio.h>
 
 #ifdef DEBUG
 #define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
 #else
-#define dbg_printf(fmt, args...)
+#define dbg_printf(fmt, args...)				\
+do {								\
+	/* do nothing but check printf format */		\
+	if (0)							\
+		printf("[debug rculfhash] " fmt, ## args);	\
+} while (0)
 #endif
 
 #if (CAA_BITS_PER_LONG == 32)
