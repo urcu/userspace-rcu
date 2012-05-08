@@ -1074,6 +1074,11 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		return -ENOENT;
 	assert(!is_bucket(next));
 	/*
+	 * The del operation semantic guarantees a full memory barrier
+	 * before the uatomic_or atomic commit of the deletion flag.
+	 */
+	cmm_smp_mb__before_uatomic_or();
+	/*
 	 * We set the REMOVED_FLAG unconditionally. Note that there may
 	 * be more than one concurrent thread setting this flag.
 	 * Knowing which wins the race will be known after the garbage
