@@ -122,8 +122,8 @@ void _uatomic_and(void *addr, unsigned long val,
 	(_uatomic_and((addr),			\
 		caa_cast_long_keep_sign(v),	\
 		sizeof(*(addr))))
-#define cmm_smp_mb__before_and()	cmm_barrier()
-#define cmm_smp_mb__after_and()		cmm_barrier()
+#define cmm_smp_mb__before_uatomic_and()	cmm_barrier()
+#define cmm_smp_mb__after_uatomic_and()		cmm_barrier()
 
 #endif
 
@@ -162,8 +162,8 @@ void _uatomic_or(void *addr, unsigned long val,
 	(_uatomic_or((addr),			\
 		caa_cast_long_keep_sign(v),	\
 		sizeof(*(addr))))
-#define cmm_smp_mb__before_or()		cmm_barrier()
-#define cmm_smp_mb__after_or()		cmm_barrier()
+#define cmm_smp_mb__before_uatomic_or()		cmm_barrier()
+#define cmm_smp_mb__after_uatomic_or()		cmm_barrier()
 
 #endif
 
@@ -335,8 +335,8 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 	(_uatomic_and((addr),			\
 		caa_cast_long_keep_sign(v),	\
 		sizeof(*(addr))))
-#define cmm_smp_mb__before_and()	cmm_barrier()
-#define cmm_smp_mb__after_and()		cmm_barrier()
+#define cmm_smp_mb__before_uatomic_and()	cmm_barrier()
+#define cmm_smp_mb__after_uatomic_and()		cmm_barrier()
 
 #endif /* #ifndef uatomic_and */
 
@@ -409,8 +409,8 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 	(_uatomic_or((addr),			\
 		caa_cast_long_keep_sign(v),	\
 		sizeof(*(addr))))
-#define cmm_smp_mb__before_or()		cmm_barrier()
-#define cmm_smp_mb__after_or()		cmm_barrier()
+#define cmm_smp_mb__before_uatomic_or()		cmm_barrier()
+#define cmm_smp_mb__after_uatomic_or()		cmm_barrier()
 
 #endif /* #ifndef uatomic_or */
 
@@ -572,27 +572,27 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 #ifndef uatomic_add
 #define uatomic_add(addr, v)		(void)uatomic_add_return((addr), (v))
-#define cmm_smp_mb__before_add()	cmm_barrier()
-#define cmm_smp_mb__after_add()		cmm_barrier()
+#define cmm_smp_mb__before_uatomic_add()	cmm_barrier()
+#define cmm_smp_mb__after_uatomic_add()		cmm_barrier()
 #endif
 
 #define uatomic_sub_return(addr, v)	\
 	uatomic_add_return((addr), -(caa_cast_long_keep_sign(v)))
 #define uatomic_sub(addr, v)		\
 	uatomic_add((addr), -(caa_cast_long_keep_sign(v)))
-#define cmm_smp_mb__before_sub()	cmm_smp_mb__before_add()
-#define cmm_smp_mb__after_sub()		cmm_smp_mb__after_add()
+#define cmm_smp_mb__before_uatomic_sub()	cmm_smp_mb__before_uatomic_add()
+#define cmm_smp_mb__after_uatomic_sub()		cmm_smp_mb__after_uatomic_add()
 
 #ifndef uatomic_inc
 #define uatomic_inc(addr)		uatomic_add((addr), 1)
-#define cmm_smp_mb__before_inc()	cmm_smp_mb__before_add()
-#define cmm_smp_mb__after_inc()		cmm_smp_mb__after_add()
+#define cmm_smp_mb__before_uatomic_inc()	cmm_smp_mb__before_uatomic_add()
+#define cmm_smp_mb__after_uatomic_inc()		cmm_smp_mb__after_uatomic_add()
 #endif
 
 #ifndef uatomic_dec
 #define uatomic_dec(addr)		uatomic_add((addr), -1)
-#define cmm_smp_mb__before_dec()	cmm_smp_mb__before_add()
-#define cmm_smp_mb__after_dec()		cmm_smp_mb__after_add()
+#define cmm_smp_mb__before_uatomic_dec()	cmm_smp_mb__before_uatomic_add()
+#define cmm_smp_mb__after_uatomic_dec()		cmm_smp_mb__after_uatomic_add()
 #endif
 
 #ifdef __cplusplus
