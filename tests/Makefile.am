@@ -45,7 +45,7 @@ URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
-EXTRA_DIST = $(top_srcdir)/tests/api.h runall.sh
+EXTRA_DIST = $(top_srcdir)/tests/api.h runall.sh runhash.sh
 
 test_urcu_SOURCES = test_urcu.c $(URCU)
 

@@ -99,3 +99,6 @@ for READERCSLEN in ${READERCSLEN_ARRAY}; do
 	echo "./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log" >> runall.log
 	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log
 done
+
+echo Executing Hash table test
+./runhash.sh
