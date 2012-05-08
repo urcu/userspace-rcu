@@ -560,6 +560,10 @@ int main(int argc, char **argv)
 				(opt_auto_resize ? CDS_LFHT_AUTO_RESIZE : 0) |
 				CDS_LFHT_ACCOUNTING, NULL);
 	}
+	if (!test_ht) {
+		printf("Error allocating hash table.\n");
+		return -1;
+	}
 
 	/*
 	 * Hash Population needs to be seen as a RCU reader
