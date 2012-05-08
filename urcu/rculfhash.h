@@ -203,6 +203,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
  *
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function acts as a rcu_dereference() to read the node pointer.
  */
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		cds_lfht_match_fct match, const void *key,
@@ -226,6 +227,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
  * node returned by a previous cds_lfht_next.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function acts as a rcu_dereference() to read the node pointer.
  */
 void cds_lfht_next_duplicate(struct cds_lfht *ht,
 		cds_lfht_match_fct match, const void *key,
@@ -239,6 +241,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht,
  * Output in "*iter". *iter->node set to NULL if table is empty.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function acts as a rcu_dereference() to read the node pointer.
  */
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
@@ -252,6 +255,7 @@ void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
  * pointing to the last table node.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function acts as a rcu_dereference() to read the node pointer.
  */
 void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
@@ -264,6 +268,8 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
  * This function supports adding redundant keys into the table.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function issues a full memory barrier before and after its
+ * atomic commit.
  */
 void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 		struct cds_lfht_node *node);
@@ -288,6 +294,12 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  * to add keys into the table, no duplicated keys should ever be
  * observable in the table. The same guarantee apply for combination of
  * add_unique and add_replace (see below).
+ *
+ * Upon success, this function issues a full memory barrier before and
+ * after its atomic commit. Upon failure, this function acts like a
+ * simple lookup operation: it acts as a rcu_dereference() to read the
+ * node pointer. The failure case does not guarantee any other memory
+ * barrier.
  */
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		unsigned long hash,
@@ -321,6 +333,9 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * schemes will never generate duplicated keys. It also allows us to
  * guarantee that a combination of add_replace and add_unique updates
  * will never generate duplicated keys.
+ *
+ * This function issues a full memory barrier before and after its
+ * atomic commit.
  */
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		unsigned long hash,
@@ -352,6 +367,10 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
  *
  * The semantic of replacement vs lookups is the same as
  * cds_lfht_add_replace().
+ *
+ * Upon success, this function issues a full memory barrier before and
+ * after its atomic commit. Upon failure, this function does not issue
+ * any memory barrier.
  */
 int cds_lfht_replace(struct cds_lfht *ht,
 		struct cds_lfht_iter *old_iter,
@@ -377,6 +396,9 @@ int cds_lfht_replace(struct cds_lfht *ht,
  * After successful removal, a grace period must be waited for before
  * freeing the memory reserved for old node (which can be accessed with
  * cds_lfht_iter_get_node).
+ * Upon success, this function issues a full memory barrier before and
+ * after its atomic commit. Upon failure, this function does not issue
+ * any memory barrier.
  */
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
@@ -391,6 +413,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
  * function.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function does not issue any memory barrier.
  */
 int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
 
@@ -400,6 +423,7 @@ int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
  * @new_size: update to this hash table size.
  *
  * Threads calling this API need to be registered RCU read-side threads.
+ * This function does not (necessarily) issue memory barriers.
  */
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 
@@ -407,6 +431,7 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
  * Note: it is safe to perform element removal (del), replacement, or
  * any hash table update operation during any of the following hash
  * table traversals.
+ * These functions act as rcu_dereference() to read the node pointers.
  */
 #define cds_lfht_for_each(ht, iter, node)				\
 	for (cds_lfht_first(ht, iter),					\
