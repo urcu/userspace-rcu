@@ -7,7 +7,7 @@ INCLUDES = -I$(top_builddir)/urcu
 AM_LDFLAGS=-lpthread -version-info $(URCU_LIBRARY_VERSION)
 AM_CFLAGS=-Wall
 
-SUBDIRS = . tests
+SUBDIRS = . doc tests
 
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
 		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
@@ -23,10 +23,9 @@ nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
-		README LICENSE compat_arch_x86.c \
+		LICENSE compat_arch_x86.c \
 		urcu-call-rcu-impl.h urcu-defer-impl.h \
 		rculfhash-internal.h \
-		ChangeLog API.txt \
 		$(top_srcdir)/tests/*.sh
 
 if COMPAT_ARCH
