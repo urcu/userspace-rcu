@@ -1,0 +1,99 @@
+#ifndef _URCU_TLS_COMPAT_H
+#define _URCU_TLS_COMPAT_H
+
+/*
+ * urcu/tls-compat.h
+ *
+ * Userspace RCU library - Thread-Local Storage Compatibility Header
+ *
+ * Copyright 2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include <stdlib.h>
+#include <urcu/config.h>
+#include <urcu/compiler.h>
+#include <urcu/arch.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef CONFIG_RCU_TLS	/* Based on ax_tls.m4 */
+
+# define DECLARE_URCU_TLS(type, name)	\
+	CONFIG_RCU_TLS type __tls_ ## name
+
+# define DEFINE_URCU_TLS(type, name)	\
+	CONFIG_RCU_TLS type __tls_ ## name
+
+# define URCU_TLS(name)		(__tls_ ## name)
+
+#else /* #ifndef CONFIG_RCU_TLS */
+
+# include <pthread.h>
+
+struct urcu_tls {
+	pthread_key_t key;
+	pthread_mutex_t init_mutex;
+	int init_done;
+};
+
+# define DECLARE_URCU_TLS(type, name)				\
+	type *__tls_access_ ## name(void)
+
+/*
+ * Note: we don't free memory at process exit, since it will be dealt
+ * with by the OS.
+ */
+# define DEFINE_URCU_TLS(type, name)				\
+	type *__tls_access_ ## name(void)			\
+	{							\
+		static struct urcu_tls __tls_ ## name = {	\
+			.init_mutex = PTHREAD_MUTEX_INITIALIZER,\
+			.init_done = 0,				\
+		};						\
+		void *__tls_p;					\
+		if (!__tls_ ## name.init_done) {		\
+			/* Mutex to protect concurrent init */	\
+			pthread_mutex_lock(&__tls_ ## name.init_mutex); \
+			if (!__tls_ ## name.init_done) {	\
+				(void) pthread_key_create(&__tls_ ## name.key, \
+					free);			\
+				cmm_smp_wmb();	/* create key before write init_done */ \
+				__tls_ ## name.init_done = 1;	\
+			}					\
+			pthread_mutex_unlock(&__tls_ ## name.init_mutex); \
+		}						\
+		cmm_smp_rmb();	/* read init_done before getting key */ \
+		__tls_p = pthread_getspecific(__tls_ ## name.key); \
+		if (caa_unlikely(__tls_p == NULL)) {		\
+			__tls_p = calloc(1, sizeof(type));	\
+			(void) pthread_setspecific(__tls_ ## name.key,	\
+				__tls_p);			\
+		}						\
+		return __tls_p;					\
+	}
+
+# define URCU_TLS(name)		(*__tls_access_ ## name())
+
+#endif	/* #else #ifndef CONFIG_RCU_TLS */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _URCU_TLS_COMPAT_H */
