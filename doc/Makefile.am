@@ -1,1 +1,1 @@
-dist_doc_DATA = rcu-api.txt
+dist_doc_DATA = rcu-api.txt cds-api.txt
