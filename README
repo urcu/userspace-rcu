@@ -172,7 +172,7 @@ Usage of urcu-call-rcu
 	  grace periods.  A number of additional functions are provided
 	  to manage the helper threads used by call_rcu(), but reasonable
 	  defaults are used if these additional functions are not invoked.
-	  See API.txt for more details.
+	  See rcu-api.txt in userspace-rcu documentation for more details.
 
 Being careful with signals
 
