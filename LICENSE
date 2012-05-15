@@ -1,6 +1,6 @@
 Userspace RCU library licensing
 Mathieu Desnoyers
-May 10, 2009
+May 15, 2012
 
 
 * LGPLv2.1
@@ -57,3 +57,9 @@ test_urcu.c
 test_urcu_yield.c
 test_rwlock_timing.c
 urcu-asm.c
+
+* GPLv3 (or later)
+
+The following build-related macro is under GPLv3 (or later):
+
+m4/ax_tls.m4

@@ -16,3 +16,6 @@
 
 /* Use the dmb instruction is available for use on ARM. */
 #undef CONFIG_RCU_ARM_HAVE_DMB
+
+/* TLS provided by the compiler. */
+#define CONFIG_RCU_TLS TLS

@@ -78,7 +78,6 @@ tests/*.log
 .libs/
 Makefile.in
 Makefile
-*.m4
 *.la
 *.bz2
 *.o
@@ -86,7 +85,18 @@ Makefile
 *.loT
 /config.log
 /configure
-/config/
+/config/compile
+/config/config.guess
+/config/config.sub
+/config/depcomp
+/config/install-sh
+/config/libtool.m4
+/config/ltmain.sh
+/config/lt~obsolete.m4
+/config/ltoptions.m4
+/config/ltsugar.m4
+/config/ltversion.m4
+/config/missing
 /libtool
 /stamp-h1
 /config.h.in

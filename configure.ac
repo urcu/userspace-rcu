@@ -15,6 +15,8 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+m4_include([config/ax_tls.m4])
+
 AC_CONFIG_SRCDIR([urcu.h])
 
 AC_CONFIG_HEADERS([config.h urcu/config.h])
@@ -24,6 +26,9 @@ AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory f
 AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
 AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks cmpxchg instruction.])
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
+AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
+
+AX_TLS([AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $ac_cv_tls)], [])
 
 # Checks for programs.
 AC_PROG_CC
