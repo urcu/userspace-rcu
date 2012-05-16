@@ -51,7 +51,14 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-#ifndef __linux__
+#ifdef __linux__
+static
+void *mremap_wrapper(void *old_address, size_t old_size,
+		size_t new_size, int flags)
+{
+	return mremap(old_address, old_size, new_size, flags);
+}
+#else
 
 #define MREMAP_MAYMOVE	1
 #define MREMAP_FIXED	2
@@ -60,7 +67,9 @@
  * mremap wrapper for non-Linux systems. Maps a RW, anonymous private mapping.
  * This is not generic.
 */
-void *mremap(void *old_address, size_t old_size, size_t new_size, int flags)
+static
+void *mremap_wrapper(void *old_address, size_t old_size,
+		size_t new_size, int flags)
 {
 	void *new_address;
 
@@ -284,8 +293,8 @@ static void resize_arena(struct registry_arena *arena, size_t len)
 				 MAP_ANONYMOUS | MAP_PRIVATE,
 				 -1, 0);
 	else
-		new_arena = mremap(arena->p, arena->len,
-				   len, MREMAP_MAYMOVE);
+		new_arena = mremap_wrapper(arena->p, arena->len,
+				   	len, MREMAP_MAYMOVE);
 	assert(new_arena != MAP_FAILED);
 
 	/*
