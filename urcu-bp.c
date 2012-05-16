@@ -40,6 +40,7 @@
 #include "urcu/map/urcu-bp.h"
 #include "urcu/static/urcu-bp.h"
 #include "urcu-pointer.h"
+#include "urcu/tls-compat.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
@@ -94,7 +95,7 @@ static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
-unsigned int __thread rand_yield;
+DEFINE_URCU_TLS(unsigned int, rand_yield);
 #endif
 
 /*
@@ -109,7 +110,7 @@ long rcu_gp_ctr = RCU_GP_COUNT;
  * Pointer to registry elements. Written to only by each individual reader. Read
  * by both the reader and the writers.
  */
-struct rcu_reader __thread *rcu_reader;
+DEFINE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 
@@ -322,7 +323,7 @@ static void add_thread(void)
 	rcu_reader_reg->tid = pthread_self();
 	assert(rcu_reader_reg->ctr == 0);
 	cds_list_add(&rcu_reader_reg->node, &registry);
-	rcu_reader = rcu_reader_reg;
+	URCU_TLS(rcu_reader) = rcu_reader_reg;
 }
 
 /* Called with signals off and mutex locked */
@@ -363,7 +364,7 @@ void rcu_bp_register(void)
 	/*
 	 * Check if a signal concurrently registered our thread since
 	 * the check in rcu_read_lock(). */
-	if (rcu_reader)
+	if (URCU_TLS(rcu_reader))
 		goto end;
 
 	mutex_lock(&rcu_gp_lock);

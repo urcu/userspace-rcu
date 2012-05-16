@@ -42,6 +42,7 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/futex.h>
+#include <urcu/tls-compat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,25 +75,25 @@ extern "C" {
 #define MAX_SLEEP 50
 
 extern unsigned int yield_active;
-extern unsigned int __thread rand_yield;
+extern DECLARE_URCU_TLS(unsigned int, rand_yield);
 
 static inline void debug_yield_read(void)
 {
 	if (yield_active & YIELD_READ)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_write(void)
 {
 	if (yield_active & YIELD_WRITE)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_init(void)
 {
-	rand_yield = time(NULL) ^ pthread_self();
+	URCU_TLS(rand_yield) = time(NULL) ^ pthread_self();
 }
 #else
 static inline void debug_yield_read(void)
@@ -128,7 +129,7 @@ struct rcu_reader {
 	pthread_t tid;
 };
 
-extern struct rcu_reader __thread rcu_reader;
+extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 extern int32_t gp_futex;
 
@@ -137,8 +138,8 @@ extern int32_t gp_futex;
  */
 static inline void wake_up_gp(void)
 {
-	if (caa_unlikely(_CMM_LOAD_SHARED(rcu_reader.waiting))) {
-		_CMM_STORE_SHARED(rcu_reader.waiting, 0);
+	if (caa_unlikely(_CMM_LOAD_SHARED(URCU_TLS(rcu_reader).waiting))) {
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).waiting, 0);
 		cmm_smp_mb();
 		if (uatomic_read(&gp_futex) != -1)
 			return;
@@ -158,7 +159,7 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 
 static inline void _rcu_read_lock(void)
 {
-	rcu_assert(rcu_reader.ctr);
+	rcu_assert(URCU_TLS(rcu_reader).ctr);
 }
 
 static inline void _rcu_read_unlock(void)
@@ -168,8 +169,8 @@ static inline void _rcu_read_unlock(void)
 static inline void _rcu_quiescent_state(void)
 {
 	cmm_smp_mb();
-	_CMM_STORE_SHARED(rcu_reader.ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
-	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
 	wake_up_gp();
 	cmm_smp_mb();
 }
@@ -177,8 +178,8 @@ static inline void _rcu_quiescent_state(void)
 static inline void _rcu_thread_offline(void)
 {
 	cmm_smp_mb();
-	CMM_STORE_SHARED(rcu_reader.ctr, 0);
-	cmm_smp_mb();	/* write rcu_reader.ctr before read futex */
+	CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, 0);
+	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
 	wake_up_gp();
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
@@ -186,7 +187,7 @@ static inline void _rcu_thread_offline(void)
 static inline void _rcu_thread_online(void)
 {
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	_CMM_STORE_SHARED(rcu_reader.ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
 	cmm_smp_mb();
 }
 

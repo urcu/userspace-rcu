@@ -38,6 +38,7 @@
 #include <urcu/system.h>
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
+#include <urcu/tls-compat.h>
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
@@ -74,25 +75,25 @@ extern "C" {
 #define MAX_SLEEP 50
 
 extern unsigned int yield_active;
-extern unsigned int __thread rand_yield;
+extern DECLARE_URCU_TLS(unsigned int, rand_yield);
 
 static inline void debug_yield_read(void)
 {
 	if (yield_active & YIELD_READ)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_write(void)
 {
 	if (yield_active & YIELD_WRITE)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_init(void)
 {
-	rand_yield = time(NULL) ^ pthread_self();
+	URCU_TLS(rand_yield) = time(NULL) ^ pthread_self();
 }
 #else
 static inline void debug_yield_read(void)
@@ -144,7 +145,7 @@ struct rcu_reader {
  * Adds a pointer dereference on the read-side, but won't require to unregister
  * the reader thread.
  */
-extern struct rcu_reader __thread *rcu_reader;
+extern DECLARE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
 static inline int rcu_old_gp_ongoing(long *value)
 {
@@ -166,24 +167,24 @@ static inline void _rcu_read_lock(void)
 	long tmp;
 
 	/* Check if registered */
-	if (caa_unlikely(!rcu_reader))
+	if (caa_unlikely(!URCU_TLS(rcu_reader)))
 		rcu_bp_register();
 
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	tmp = rcu_reader->ctr;
+	tmp = URCU_TLS(rcu_reader)->ctr;
 	/*
 	 * rcu_gp_ctr is
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(rcu_reader->ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer.
 		 */
 		cmm_smp_mb();
 	} else {
-		_CMM_STORE_SHARED(rcu_reader->ctr, tmp + RCU_GP_COUNT);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -193,7 +194,7 @@ static inline void _rcu_read_unlock(void)
 	 * Finish using rcu before decrementing the pointer.
 	 */
 	cmm_smp_mb();
-	_CMM_STORE_SHARED(rcu_reader->ctr, rcu_reader->ctr - RCU_GP_COUNT);
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, URCU_TLS(rcu_reader)->ctr - RCU_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 

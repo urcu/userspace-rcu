@@ -37,6 +37,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <urcu/tls-compat.h>
+
 #ifdef __linux__
 #include <syscall.h>
 #endif
@@ -102,13 +104,13 @@ struct wr_count {
 	unsigned long remove;
 };
 
-extern unsigned int __thread rand_lookup;
-extern unsigned long __thread nr_add;
-extern unsigned long __thread nr_addexist;
-extern unsigned long __thread nr_del;
-extern unsigned long __thread nr_delnoent;
-extern unsigned long __thread lookup_fail;
-extern unsigned long __thread lookup_ok;
+extern DECLARE_URCU_TLS(unsigned int, rand_lookup);
+extern DECLARE_URCU_TLS(unsigned long, nr_add);
+extern DECLARE_URCU_TLS(unsigned long, nr_addexist);
+extern DECLARE_URCU_TLS(unsigned long, nr_del);
+extern DECLARE_URCU_TLS(unsigned long, nr_delnoent);
+extern DECLARE_URCU_TLS(unsigned long, lookup_fail);
+extern DECLARE_URCU_TLS(unsigned long, lookup_ok);
 
 extern struct cds_lfht *test_ht;
 
@@ -214,8 +216,8 @@ static inline int test_duration_read(void)
 	return !test_stop;
 }
 
-extern unsigned long long __thread nr_writes;
-extern unsigned long long __thread nr_reads;
+extern DECLARE_URCU_TLS(unsigned long long, nr_writes);
+extern DECLARE_URCU_TLS(unsigned long long, nr_reads);
 
 extern unsigned int nr_readers;
 extern unsigned int nr_writers;

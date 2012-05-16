@@ -38,6 +38,7 @@
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/tls-compat.h>
 
 #ifdef __linux__
 #include <syscall.h>
@@ -147,11 +148,11 @@ static int test_duration_enqueue(void)
 	return !test_stop;
 }
 
-static unsigned long long __thread nr_dequeues;
-static unsigned long long __thread nr_enqueues;
+static DEFINE_URCU_TLS(unsigned long long, nr_dequeues);
+static DEFINE_URCU_TLS(unsigned long long, nr_enqueues);
 
-static unsigned long long __thread nr_successful_dequeues;
-static unsigned long long __thread nr_successful_enqueues;
+static DEFINE_URCU_TLS(unsigned long long, nr_successful_dequeues);
+static DEFINE_URCU_TLS(unsigned long long, nr_successful_enqueues);
 
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
@@ -178,22 +179,22 @@ void *thr_enqueuer(void *_count)
 			goto fail;
 		cds_wfq_node_init(node);
 		cds_wfq_enqueue(&q, node);
-		nr_successful_enqueues++;
+		URCU_TLS(nr_successful_enqueues)++;
 
 		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 fail:
-		nr_enqueues++;
+		URCU_TLS(nr_enqueues)++;
 		if (caa_unlikely(!test_duration_enqueue()))
 			break;
 	}
 
-	count[0] = nr_enqueues;
-	count[1] = nr_successful_enqueues;
+	count[0] = URCU_TLS(nr_enqueues);
+	count[1] = URCU_TLS(nr_successful_enqueues);
 	printf_verbose("enqueuer thread_end, thread id : %lx, tid %lu, "
 		       "enqueues %llu successful_enqueues %llu\n",
-		       pthread_self(), (unsigned long)gettid(), nr_enqueues,
-		       nr_successful_enqueues);
+		       pthread_self(), (unsigned long)gettid(),
+		       URCU_TLS(nr_enqueues), URCU_TLS(nr_successful_enqueues));
 	return ((void*)1);
 
 }
@@ -217,10 +218,10 @@ void *thr_dequeuer(void *_count)
 
 		if (node) {
 			free(node);
-			nr_successful_dequeues++;
+			URCU_TLS(nr_successful_dequeues)++;
 		}
 
-		nr_dequeues++;
+		URCU_TLS(nr_dequeues)++;
 		if (caa_unlikely(!test_duration_dequeue()))
 			break;
 		if (caa_unlikely(rduration))
@@ -229,10 +230,10 @@ void *thr_dequeuer(void *_count)
 
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
-		       pthread_self(), (unsigned long)gettid(), nr_dequeues,
-		       nr_successful_dequeues);
-	count[0] = nr_dequeues;
-	count[1] = nr_successful_dequeues;
+		       pthread_self(), (unsigned long)gettid(),
+		       URCU_TLS(nr_dequeues), URCU_TLS(nr_successful_dequeues));
+	count[0] = URCU_TLS(nr_dequeues);
+	count[1] = URCU_TLS(nr_successful_dequeues);
 	return ((void*)2);
 }
 

@@ -35,6 +35,7 @@
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/tls-compat.h>
 
 #ifdef __linux__
 #include <syscall.h>
@@ -163,8 +164,8 @@ static int test_duration_read(void)
 	return !test_stop;
 }
 
-static unsigned long long __thread nr_writes;
-static unsigned long long __thread nr_reads;
+static DEFINE_URCU_TLS(unsigned long long, nr_writes);
+static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
 static
 unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
@@ -221,14 +222,14 @@ void *thr_reader(void *_count)
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		rcu_read_unlock();
-		nr_reads++;
+		URCU_TLS(nr_reads)++;
 		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
 	rcu_unregister_thread();
 
-	*count = nr_reads;
+	*count = URCU_TLS(nr_reads);
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	return ((void*)1);
@@ -294,7 +295,7 @@ void *thr_writer(void *data)
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		rcu_gc_reclaim(wtidx, old);
-		nr_writes++;
+		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
 			break;
 		if (caa_unlikely(wdelay))
@@ -303,7 +304,7 @@ void *thr_writer(void *data)
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
-	tot_nr_writes[wtidx] = nr_writes;
+	tot_nr_writes[wtidx] = URCU_TLS(nr_writes);
 	return ((void*)2);
 }
 

@@ -48,6 +48,7 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/system.h>
+#include <urcu/tls-compat.h>
 
 /*
  * Number of entries in the per-thread defer queue. Must be power of 2.
@@ -130,7 +131,7 @@ static int32_t defer_thread_stop;
  * Written to only by each individual deferer. Read by both the deferer and
  * the reclamation tread.
  */
-static struct defer_queue __thread defer_queue;
+static DEFINE_URCU_TLS(struct defer_queue, defer_queue);
 static CDS_LIST_HEAD(registry_defer);
 static pthread_t tid_defer;
 
@@ -245,12 +246,12 @@ static void _rcu_defer_barrier_thread(void)
 {
 	unsigned long head, num_items;
 
-	head = defer_queue.head;
-	num_items = head - defer_queue.tail;
+	head = URCU_TLS(defer_queue).head;
+	num_items = head - URCU_TLS(defer_queue).tail;
 	if (caa_unlikely(!num_items))
 		return;
 	synchronize_rcu();
-	rcu_defer_barrier_queue(&defer_queue, head);
+	rcu_defer_barrier_queue(&URCU_TLS(defer_queue), head);
 }
 
 void rcu_defer_barrier_thread(void)
@@ -311,8 +312,8 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * Head is only modified by ourself. Tail can be modified by reclamation
 	 * thread.
 	 */
-	head = defer_queue.head;
-	tail = CMM_LOAD_SHARED(defer_queue.tail);
+	head = URCU_TLS(defer_queue).head;
+	tail = CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail);
 
 	/*
 	 * If queue is full, or reached threshold. Empty queue ourself.
@@ -321,7 +322,7 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	if (caa_unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
 		assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
-		assert(head - CMM_LOAD_SHARED(defer_queue.tail) == 0);
+		assert(head - CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail) == 0);
 	}
 
 	/*
@@ -340,25 +341,25 @@ void _defer_rcu(void (*fct)(void *p), void *p)
 	 * Decode: see the comments before 'struct defer_queue'
 	 *         or the code in rcu_defer_barrier_queue().
 	 */
-	if (caa_unlikely(defer_queue.last_fct_in != fct
+	if (caa_unlikely(URCU_TLS(defer_queue).last_fct_in != fct
 			|| DQ_IS_FCT_BIT(p)
 			|| p == DQ_FCT_MARK)) {
-		defer_queue.last_fct_in = fct;
+		URCU_TLS(defer_queue).last_fct_in = fct;
 		if (caa_unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
-			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      DQ_FCT_MARK);
-			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		} else {
 			DQ_SET_FCT_BIT(fct);
-			_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK],
+			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		}
 	}
-	_CMM_STORE_SHARED(defer_queue.q[head++ & DEFER_QUEUE_MASK], p);
+	_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK], p);
 	cmm_smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
-	CMM_STORE_SHARED(defer_queue.head, head);
+	CMM_STORE_SHARED(URCU_TLS(defer_queue).head, head);
 	cmm_smp_mb();	/* Write queue head before read futex */
 	/*
 	 * Wake-up any waiting defer thread.
@@ -422,16 +423,16 @@ int rcu_defer_register_thread(void)
 {
 	int was_empty;
 
-	assert(defer_queue.last_head == 0);
-	assert(defer_queue.q == NULL);
-	defer_queue.q = malloc(sizeof(void *) * DEFER_QUEUE_SIZE);
-	if (!defer_queue.q)
+	assert(URCU_TLS(defer_queue).last_head == 0);
+	assert(URCU_TLS(defer_queue).q == NULL);
+	URCU_TLS(defer_queue).q = malloc(sizeof(void *) * DEFER_QUEUE_SIZE);
+	if (!URCU_TLS(defer_queue).q)
 		return -ENOMEM;
 
 	mutex_lock_defer(&defer_thread_mutex);
 	mutex_lock_defer(&rcu_defer_mutex);
 	was_empty = cds_list_empty(&registry_defer);
-	cds_list_add(&defer_queue.list, &registry_defer);
+	cds_list_add(&URCU_TLS(defer_queue).list, &registry_defer);
 	mutex_unlock(&rcu_defer_mutex);
 
 	if (was_empty)
@@ -446,10 +447,10 @@ void rcu_defer_unregister_thread(void)
 
 	mutex_lock_defer(&defer_thread_mutex);
 	mutex_lock_defer(&rcu_defer_mutex);
-	cds_list_del(&defer_queue.list);
+	cds_list_del(&URCU_TLS(defer_queue).list);
 	_rcu_defer_barrier_thread();
-	free(defer_queue.q);
-	defer_queue.q = NULL;
+	free(URCU_TLS(defer_queue).q);
+	URCU_TLS(defer_queue).q = NULL;
 	is_empty = cds_list_empty(&registry_defer);
 	mutex_unlock(&rcu_defer_mutex);
 

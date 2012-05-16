@@ -82,13 +82,13 @@ int (*get_populate_hash_cb(void))(void)
 	return test_hash_cb[test_choice].populate_hash;
 }
 
-unsigned int __thread rand_lookup;
-unsigned long __thread nr_add;
-unsigned long __thread nr_addexist;
-unsigned long __thread nr_del;
-unsigned long __thread nr_delnoent;
-unsigned long __thread lookup_fail;
-unsigned long __thread lookup_ok;
+DEFINE_URCU_TLS(unsigned int, rand_lookup);
+DEFINE_URCU_TLS(unsigned long, nr_add);
+DEFINE_URCU_TLS(unsigned long, nr_addexist);
+DEFINE_URCU_TLS(unsigned long, nr_del);
+DEFINE_URCU_TLS(unsigned long, nr_delnoent);
+DEFINE_URCU_TLS(unsigned long, lookup_fail);
+DEFINE_URCU_TLS(unsigned long, lookup_ok);
 
 struct cds_lfht *test_ht;
 
@@ -126,8 +126,8 @@ int use_affinity = 0;
 
 pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-unsigned long long __thread nr_writes;
-unsigned long long __thread nr_reads;
+DEFINE_URCU_TLS(unsigned long long, nr_writes);
+DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
 unsigned int nr_readers;
 unsigned int nr_writers;

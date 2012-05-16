@@ -40,6 +40,7 @@
 #define BUILD_QSBR_LIB
 #include "urcu/static/urcu-qsbr.h"
 #include "urcu-pointer.h"
+#include "urcu/tls-compat.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
@@ -66,11 +67,11 @@ unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-struct rcu_reader __thread rcu_reader;
+DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
-unsigned int __thread rand_yield;
+DEFINE_URCU_TLS(unsigned int, rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
@@ -139,7 +140,7 @@ static void update_counter_and_wait(void)
 	 * quiescent state. Failure to do so could result in the writer
 	 * waiting forever while new readers are always accessing data
 	 * (no progress). Enforce compiler-order of store to rcu_gp_ctr
-	 * before load rcu_reader ctr.
+	 * before load URCU_TLS(rcu_reader).ctr.
 	 */
 	cmm_barrier();
 
@@ -206,7 +207,7 @@ void synchronize_rcu(void)
 {
 	unsigned long was_online;
 
-	was_online = rcu_reader.ctr;
+	was_online = URCU_TLS(rcu_reader).ctr;
 
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to.  In the "then" case, rcu_thread_offline
@@ -236,7 +237,7 @@ void synchronize_rcu(void)
 	 * committing next rcu_gp_ctr update to memory. Failure to
 	 * do so could result in the writer waiting forever while new
 	 * readers are always accessing data (no progress).  Enforce
-	 * compiler-order of load rcu_reader ctr before store to
+	 * compiler-order of load URCU_TLS(rcu_reader).ctr before store to
 	 * rcu_gp_ctr.
 	 */
 	cmm_barrier();
@@ -269,7 +270,7 @@ void synchronize_rcu(void)
 {
 	unsigned long was_online;
 
-	was_online = rcu_reader.ctr;
+	was_online = URCU_TLS(rcu_reader).ctr;
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
@@ -326,11 +327,11 @@ void rcu_thread_online(void)
 
 void rcu_register_thread(void)
 {
-	rcu_reader.tid = pthread_self();
-	assert(rcu_reader.ctr == 0);
+	URCU_TLS(rcu_reader).tid = pthread_self();
+	assert(URCU_TLS(rcu_reader).ctr == 0);
 
 	mutex_lock(&rcu_gp_lock);
-	cds_list_add(&rcu_reader.node, &registry);
+	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_gp_lock);
 	_rcu_thread_online();
 }
@@ -343,7 +344,7 @@ void rcu_unregister_thread(void)
 	 */
 	_rcu_thread_offline();
 	mutex_lock(&rcu_gp_lock);
-	cds_list_del(&rcu_reader.node);
+	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_gp_lock);
 }
 

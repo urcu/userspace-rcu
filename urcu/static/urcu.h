@@ -40,6 +40,7 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/futex.h>
+#include <urcu/tls-compat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -121,25 +122,25 @@ extern "C" {
 #endif
 
 extern unsigned int yield_active;
-extern unsigned int __thread rand_yield;
+extern DECLARE_URCU_TLS(unsigned int, rand_yield);
 
 static inline void debug_yield_read(void)
 {
 	if (yield_active & YIELD_READ)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_write(void)
 {
 	if (yield_active & YIELD_WRITE)
-		if (rand_r(&rand_yield) & 0x1)
-			usleep(rand_r(&rand_yield) % MAX_SLEEP);
+		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
 }
 
 static inline void debug_yield_init(void)
 {
-	rand_yield = time(NULL) ^ (unsigned long) pthread_self();
+	URCU_TLS(rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
 }
 #else
 static inline void debug_yield_read(void)
@@ -222,7 +223,7 @@ struct rcu_reader {
 	pthread_t tid;
 };
 
-extern struct rcu_reader __thread rcu_reader;
+extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 extern int32_t gp_futex;
 
@@ -256,20 +257,20 @@ static inline void _rcu_read_lock(void)
 	unsigned long tmp;
 
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	tmp = rcu_reader.ctr;
+	tmp = URCU_TLS(rcu_reader).ctr;
 	/*
 	 * rcu_gp_ctr is
 	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
 	 */
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(rcu_reader.ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
 		/*
 		 * Set active readers count for outermost nesting level before
 		 * accessing the pointer. See smp_mb_master().
 		 */
 		smp_mb_slave(RCU_MB_GROUP);
 	} else {
-		_CMM_STORE_SHARED(rcu_reader.ctr, tmp + RCU_GP_COUNT);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp + RCU_GP_COUNT);
 	}
 }
 
@@ -277,19 +278,19 @@ static inline void _rcu_read_unlock(void)
 {
 	unsigned long tmp;
 
-	tmp = rcu_reader.ctr;
+	tmp = URCU_TLS(rcu_reader).ctr;
 	/*
 	 * Finish using rcu before decrementing the pointer.
 	 * See smp_mb_master().
 	 */
 	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		smp_mb_slave(RCU_MB_GROUP);
-		_CMM_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
-		/* write rcu_reader.ctr before read futex */
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
+		/* write URCU_TLS(rcu_reader).ctr before read futex */
 		smp_mb_slave(RCU_MB_GROUP);
 		wake_up_gp();
 	} else {
-		_CMM_STORE_SHARED(rcu_reader.ctr, rcu_reader.ctr - RCU_GP_COUNT);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
 	}
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }

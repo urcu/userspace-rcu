@@ -40,6 +40,7 @@
 #include "urcu-pointer.h"
 #include "urcu/list.h"
 #include "urcu/futex.h"
+#include "urcu/tls-compat.h"
 
 /* Data structure that identifies a call_rcu thread. */
 
@@ -62,7 +63,7 @@ CDS_LIST_HEAD(call_rcu_data_list);
 
 /* Link a thread using call_rcu() to its call_rcu thread. */
 
-static __thread struct call_rcu_data *thread_call_rcu_data;
+static DEFINE_URCU_TLS(struct call_rcu_data *, thread_call_rcu_data);
 
 /* Guard call_rcu thread creation. */
 
@@ -232,7 +233,7 @@ static void *call_rcu_thread(void *arg)
 	 */
 	rcu_register_thread();
 
-	thread_call_rcu_data = crdp;
+	URCU_TLS(thread_call_rcu_data) = crdp;
 	if (!rt) {
 		uatomic_dec(&crdp->futex);
 		/* Decrement futex before reading call_rcu list */
@@ -470,8 +471,8 @@ struct call_rcu_data *get_call_rcu_data(void)
 {
 	struct call_rcu_data *crd;
 
-	if (thread_call_rcu_data != NULL)
-		return thread_call_rcu_data;
+	if (URCU_TLS(thread_call_rcu_data) != NULL)
+		return URCU_TLS(thread_call_rcu_data);
 
 	if (maxcpus > 0) {
 		crd = get_cpu_call_rcu_data(sched_getcpu());
@@ -488,7 +489,7 @@ struct call_rcu_data *get_call_rcu_data(void)
 
 struct call_rcu_data *get_thread_call_rcu_data(void)
 {
-	return thread_call_rcu_data;
+	return URCU_TLS(thread_call_rcu_data);
 }
 
 /*
@@ -504,7 +505,7 @@ struct call_rcu_data *get_thread_call_rcu_data(void)
 
 void set_thread_call_rcu_data(struct call_rcu_data *crdp)
 {
-	thread_call_rcu_data = crdp;
+	URCU_TLS(thread_call_rcu_data) = crdp;
 }
 
 /*
@@ -746,7 +747,7 @@ void call_rcu_after_fork_child(void)
 	maxcpus_reset();
 	free(per_cpu_call_rcu_data);
 	rcu_set_pointer(&per_cpu_call_rcu_data, NULL);
-	thread_call_rcu_data = NULL;
+	URCU_TLS(thread_call_rcu_data) = NULL;
 
 	/* Dispose of all of the rest of the call_rcu_data structures. */
 	cds_list_for_each_entry_safe(crdp, next, &call_rcu_data_list, list) {

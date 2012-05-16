@@ -40,6 +40,7 @@
 #include "urcu/map/urcu.h"
 #include "urcu/static/urcu.h"
 #include "urcu-pointer.h"
+#include "urcu/tls-compat.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
@@ -94,11 +95,11 @@ unsigned long rcu_gp_ctr = RCU_GP_COUNT;
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-struct rcu_reader __thread rcu_reader;
+DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
-unsigned int __thread rand_yield;
+DEFINE_URCU_TLS(unsigned int, rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
@@ -120,9 +121,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			perror("Error in pthread mutex lock");
 			exit(-1);
 		}
-		if (CMM_LOAD_SHARED(rcu_reader.need_mb)) {
+		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
 			cmm_smp_mb();
-			_CMM_STORE_SHARED(rcu_reader.need_mb, 0);
+			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
 			cmm_smp_mb();
 		}
 		poll(NULL,0,10);
@@ -245,7 +246,7 @@ void update_counter_and_wait(void)
 	cmm_smp_mb();
 
 	/*
-	 * Wait for each thread rcu_reader.ctr count to become 0.
+	 * Wait for each thread URCU_TLS(rcu_reader).ctr count to become 0.
 	 */
 	for (;;) {
 		wait_loops++;
@@ -277,7 +278,8 @@ void update_counter_and_wait(void)
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
 		 * BUSY-LOOP. Force the reader thread to commit its
-		 * rcu_reader.ctr update to memory if we wait for too long.
+		 * URCU_TLS(rcu_reader).ctr update to memory if we wait
+		 * for too long.
 		 */
 		if (cds_list_empty(&registry)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
@@ -328,7 +330,7 @@ void synchronize_rcu(void)
 	 * committing next rcu_gp_ctr update to memory. Failure to do so could
 	 * result in the writer waiting forever while new readers are always
 	 * accessing data (no progress).  Enforce compiler-order of load
-	 * rcu_reader ctr before store to rcu_gp_ctr.
+	 * URCU_TLS(rcu_reader).ctr before store to rcu_gp_ctr.
 	 */
 	cmm_barrier();
 
@@ -368,20 +370,20 @@ void rcu_read_unlock(void)
 
 void rcu_register_thread(void)
 {
-	rcu_reader.tid = pthread_self();
-	assert(rcu_reader.need_mb == 0);
-	assert(!(rcu_reader.ctr & RCU_GP_CTR_NEST_MASK));
+	URCU_TLS(rcu_reader).tid = pthread_self();
+	assert(URCU_TLS(rcu_reader).need_mb == 0);
+	assert(!(URCU_TLS(rcu_reader).ctr & RCU_GP_CTR_NEST_MASK));
 
 	mutex_lock(&rcu_gp_lock);
 	rcu_init();	/* In case gcc does not support constructor attribute */
-	cds_list_add(&rcu_reader.node, &registry);
+	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_gp_lock);
 }
 
 void rcu_unregister_thread(void)
 {
 	mutex_lock(&rcu_gp_lock);
-	cds_list_del(&rcu_reader.node);
+	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_gp_lock);
 }
 
@@ -405,7 +407,7 @@ static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
 	 * executed on.
 	 */
 	cmm_smp_mb();
-	_CMM_STORE_SHARED(rcu_reader.need_mb, 0);
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
 	cmm_smp_mb();
 }
 

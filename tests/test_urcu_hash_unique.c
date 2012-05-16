@@ -98,20 +98,21 @@ void *test_hash_unique_thr_reader(void *_count)
 		debug_yield_read();
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		nr_reads++;
+		URCU_TLS(nr_reads)++;
 		if (caa_unlikely(!test_duration_read()))
 			break;
-		if (caa_unlikely((nr_reads & ((1 << 10) - 1)) == 0))
+		if (caa_unlikely((URCU_TLS(nr_reads) & ((1 << 10) - 1)) == 0))
 			rcu_quiescent_state();
 	}
 
 	rcu_unregister_thread();
 
-	*count = nr_reads;
+	*count = URCU_TLS(nr_reads);
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"reader", pthread_self(), (unsigned long)gettid());
 	printf_verbose("readid : %lx, lookupfail %lu, lookupok %lu\n",
-			pthread_self(), lookup_fail, lookup_ok);
+			pthread_self(), URCU_TLS(lookup_fail),
+			URCU_TLS(lookup_ok));
 	return ((void*)1);
 
 }
@@ -142,13 +143,13 @@ void *test_hash_unique_thr_writer(void *_count)
 		 * add unique/add replace with new node key from range.
 		 */
 		if (1 || (addremove == AR_ADD || add_only)
-				|| (addremove == AR_RANDOM && rand_r(&rand_lookup) & 1)) {
+				|| (addremove == AR_RANDOM && rand_r(&URCU_TLS(rand_lookup)) & 1)) {
 			node = malloc(sizeof(struct lfht_test_node));
 			lfht_test_node_init(node,
-				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
+				(void *)(((unsigned long) rand_r(&URCU_TLS(rand_lookup)) % write_pool_size) + write_pool_offset),
 				sizeof(void *));
 			rcu_read_lock();
-			loc_add_unique = rand_r(&rand_lookup) & 1;
+			loc_add_unique = rand_r(&URCU_TLS(rand_lookup)) & 1;
 			if (loc_add_unique) {
 				ret_node = cds_lfht_add_unique(test_ht,
 					test_hash(node->key, node->key_len, TEST_HASH_SEED),
@@ -168,39 +169,39 @@ void *test_hash_unique_thr_writer(void *_count)
 			if (loc_add_unique) {
 				if (ret_node != &node->node) {
 					free(node);
-					nr_addexist++;
+					URCU_TLS(nr_addexist)++;
 				} else {
-					nr_add++;
+					URCU_TLS(nr_add)++;
 				}
 			} else {
 				if (ret_node) {
 					call_rcu(&to_test_node(ret_node)->head,
 							free_node_cb);
-					nr_addexist++;
+					URCU_TLS(nr_addexist)++;
 				} else {
-					nr_add++;
+					URCU_TLS(nr_add)++;
 				}
 			}
 		} else {
 			/* May delete */
 			rcu_read_lock();
 			cds_lfht_test_lookup(test_ht,
-				(void *)(((unsigned long) rand_r(&rand_lookup) % write_pool_size) + write_pool_offset),
+				(void *)(((unsigned long) rand_r(&URCU_TLS(rand_lookup)) % write_pool_size) + write_pool_offset),
 				sizeof(void *), &iter);
 			ret = cds_lfht_del(test_ht, cds_lfht_iter_get_node(&iter));
 			rcu_read_unlock();
 			if (ret == 0) {
 				node = cds_lfht_iter_get_test_node(&iter);
 				call_rcu(&node->head, free_node_cb);
-				nr_del++;
+				URCU_TLS(nr_del)++;
 			} else
-				nr_delnoent++;
+				URCU_TLS(nr_delnoent)++;
 		}
 #if 0
-		//if (nr_writes % 100000 == 0) {
-		if (nr_writes % 1000 == 0) {
+		//if (URCU_TLS(nr_writes) % 100000 == 0) {
+		if (URCU_TLS(nr_writes) % 1000 == 0) {
 			rcu_read_lock();
-			if (rand_r(&rand_lookup) & 1) {
+			if (rand_r(&URCU_TLS(rand_lookup)) & 1) {
 				ht_resize(test_ht, 1);
 			} else {
 				ht_resize(test_ht, -1);
@@ -208,12 +209,12 @@ void *test_hash_unique_thr_writer(void *_count)
 			rcu_read_unlock();
 		}
 #endif //0
-		nr_writes++;
+		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
 			break;
 		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
-		if (caa_unlikely((nr_writes & ((1 << 10) - 1)) == 0))
+		if (caa_unlikely((URCU_TLS(nr_writes) & ((1 << 10) - 1)) == 0))
 			rcu_quiescent_state();
 	}
 
@@ -222,12 +223,13 @@ void *test_hash_unique_thr_writer(void *_count)
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
 			"writer", pthread_self(), (unsigned long)gettid());
 	printf_verbose("info id %lx: nr_add %lu, nr_addexist %lu, nr_del %lu, "
-			"nr_delnoent %lu\n", pthread_self(), nr_add,
-			nr_addexist, nr_del, nr_delnoent);
-	count->update_ops = nr_writes;
-	count->add = nr_add;
-	count->add_exist = nr_addexist;
-	count->remove = nr_del;
+			"nr_delnoent %lu\n", pthread_self(), URCU_TLS(nr_add),
+			URCU_TLS(nr_addexist), URCU_TLS(nr_del),
+			URCU_TLS(nr_delnoent));
+	count->update_ops = URCU_TLS(nr_writes);
+	count->add = URCU_TLS(nr_add);
+	count->add_exist = URCU_TLS(nr_addexist);
+	count->remove = URCU_TLS(nr_del);
 	return ((void*)2);
 }
 
@@ -247,10 +249,10 @@ int test_hash_unique_populate_hash(void)
 "larger random pool (-p option). This may take a while...\n", init_populate, init_pool_size);
 	}
 
-	while (nr_add < init_populate) {
+	while (URCU_TLS(nr_add) < init_populate) {
 		node = malloc(sizeof(struct lfht_test_node));
 		lfht_test_node_init(node,
-			(void *)(((unsigned long) rand_r(&rand_lookup) % init_pool_size) + init_pool_offset),
+			(void *)(((unsigned long) rand_r(&URCU_TLS(rand_lookup)) % init_pool_size) + init_pool_offset),
 			sizeof(void *));
 		rcu_read_lock();
 		ret_node = cds_lfht_add_replace(test_ht,
@@ -259,11 +261,11 @@ int test_hash_unique_populate_hash(void)
 		rcu_read_unlock();
 		if (ret_node) {
 			call_rcu(&to_test_node(ret_node)->head, free_node_cb);
-			nr_addexist++;
+			URCU_TLS(nr_addexist)++;
 		} else {
-			nr_add++;
+			URCU_TLS(nr_add)++;
 		}
-		nr_writes++;
+		URCU_TLS(nr_writes)++;
 	}
 	return 0;
 }
