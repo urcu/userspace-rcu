@@ -47,9 +47,9 @@ extern "C" {
 #define rcu_dereference		_rcu_dereference
 
 /*
- * rcu_cmpxchg_pointer(type **ptr, type *new, type *old)
+ * type *rcu_cmpxchg_pointer(type **ptr, type *new, type *old)
  * type *rcu_xchg_pointer(type **ptr, type *new)
- * type *rcu_set_pointer(type **ptr, type *new)
+ * void rcu_set_pointer(type **ptr, type *new)
  *
  * RCU pointer updates.
  * @ptr: address of the pointer to modify
@@ -94,20 +94,24 @@ extern void *rcu_xchg_pointer_sym(void **p, void *v);
 		(_________p1);						     \
 	})
 
+/*
+ * Note: rcu_set_pointer_sym returns @v because we don't want to break
+ * the ABI. At the API level, rcu_set_pointer() now returns void. Use of
+ * the return value is therefore deprecated, and will cause a build
+ * error.
+ */
 extern void *rcu_set_pointer_sym(void **p, void *v);
 #define rcu_set_pointer(p, v)						     \
-	({								     \
+	do {								     \
 		typeof(*(p)) _________pv = (v);			             \
-		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
-			rcu_set_pointer_sym(URCU_FORCE_CAST(void **, p),     \
-					    _________pv));		     \
-		(_________p1);						     \
-	})
+		(void) rcu_set_pointer_sym(URCU_FORCE_CAST(void **, p),	     \
+					    _________pv);		     \
+	} while (0)
 
 #endif /* !_LGPL_SOURCE */
 
 /*
- * rcu_assign_pointer(type *ptr, type *new)
+ * void rcu_assign_pointer(type *ptr, type *new)
  *
  * Same as rcu_set_pointer, but takes the pointer to assign to rather than its
  * address as first parameter. Provided for compatibility with the Linux kernel

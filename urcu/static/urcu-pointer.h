@@ -102,13 +102,13 @@ extern "C" {
 
 
 #define _rcu_set_pointer(p, v)				\
-	({						\
+	do {						\
 		typeof(*p) _________pv = (v);		\
 		if (!__builtin_constant_p(v) || 	\
 		    ((v) != NULL))			\
 			cmm_wmb();				\
 		uatomic_set(p, _________pv);		\
-	})
+	} while (0)
 
 /**
  * _rcu_assign_pointer - assign (publicize) a pointer to a new data structure
