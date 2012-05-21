@@ -1,3 +1,73 @@
+2012-05-21 Userspace RCU 0.7.0
+	* Cleanup: header comments coding style
+	* Document uatomic operations
+	* Update return value of "set" operations
+	* Fix mremap wrapper for NetBSD 5
+	* Use urcu/tls-compat.h
+	* Implement urcu/tls-compat.h
+	* Add TLS detection m4 macro
+	* document concurrent data structures
+	* documentation: refer to rcu-api.txt
+	* Move API.txt to doc/rcu-api.txt, install in system doc/
+	* rculfhash: document implied memory barriers
+	* rculfhash: Ensure future-proof memory barrier semantic consistency
+	* API cleanup: use "uatomic_*" in cmm_smp_mb__ API
+	* uatomic: add memory barrier API for and/or/add/sub/inc/sub
+	* rculfhash: add runhash.sh test script
+	* rculfhash tests: add missing check
+	* rculfhash: fix: race between replace and del operations
+	* rculfhash: replace unneeded rcu_dereference by CMM_LOAD_SHARED
+	* rculfhash: use do {} while (0) for dbg_printf()
+	* rculfhash: cleanup typo
+	* rculfhash: update API comments
+	* rculfhash: update comments in implementation
+	* rculfhash tests: add long hash chains tests
+	* rculfhash tests: add uniqueness test
+	* rculfhash test: print test name
+	* rculfhash: stress requirement in documentation
+	* rculfhash: fix typo
+	* rculfhash tests: use array of callbacks to modularize
+	* rculfhash tests: modularize tests
+	* rculfhash: document ordering guarantees
+	* rculfhash: document linearizability guarantees
+	* rculfhash: update removal comment
+	* Add missing files to .gitignore
+	* Fix out-of-tree build
+	* rculfhash: check malloc NULL pointer
+	* Fix uatomic sign cast
+	* Remove unused jhash.h file
+	* Fix: use known license text, fix incorrect FSF address
+	* Fix: add missing sched.h include in rculfhash.c
+	* Allow tests to run on architectures without per-cpu call_rcu support
+	* Hash table test: FreeBSD compatibility fix
+	* tests: define _GNU_SOURCE instead of __USE_GNU
+	* RCU lock-free hash table: implement cds_lfht_is_node_deleted()
+	* Define _GNU_SOURCE to access CPU_ZERO() macro in uClibc
+	* Install ChangeLog and README into system's doc
+	* Fix AC_LANG_SOURCE usage: only takes one parameter
+	* Fix autoconf futex check
+	* configure.ac: Use AC_LANG_SOURCE for if else macros
+	* Refresh autoconf files
+	* Update gitignore
+	* rculfhash: add comment about hash seed randomness within test program
+	* readme: state correct GCC dependency for ARM
+	* rculfhash: remove an invocation of bit_reverse_ulong() when adding
+	* rculfhash: remove unneeded conversion
+	* rculfhash: remove unneeded clear_flag()
+	* cds_lfht_replace: add checks for old/new node hash/value match
+	* rculfhash: use node instead of iter argument for deletion
+	* rculfhash: number of logically removed nodes should not appear in API
+	* Document that flags could be represented on 2 bits
+	* Add missing REMOVAL_OWNER_FLAG comment to cds_lfht_node comment
+	* _cds_lfht_del is not used for buckets anymore, remove parameter
+	* rculfhash: Relax atomicity guarantees required by removal operation
+	* remove unneeded "return;"
+	* simplify the deletion for bucket node
+	* Remove unneeded code
+	* Cleanup DEFINE_RCU_FLAVOR()
+	* Add cds_lfht_ prefix to fls_ulong, get_count_order_ulong, get_count_order_u32
+	* Merge RCU Lock-Free Resizable Hash Table
+
 2011-12-12 Userspace RCU 0.6.7
 	* Add compat file for test urcu wfs
 	* Add missing compat file for wfq test
