@@ -23,7 +23,8 @@
 #include <urcu/arch.h>
 
 /*
- * Identify a shared load. A cmm_smp_rmc() or cmm_smp_mc() should come before the load.
+ * Identify a shared load. A cmm_smp_rmc() or cmm_smp_mc() should come
+ * before the load.
  */
 #define _CMM_LOAD_SHARED(p)	       CMM_ACCESS_ONCE(p)
 
@@ -37,13 +38,14 @@
 	})
 
 /*
- * Identify a shared store. A cmm_smp_wmc() or cmm_smp_mc() should follow the store.
+ * Identify a shared store. A cmm_smp_wmc() or cmm_smp_mc() should
+ * follow the store.
  */
 #define _CMM_STORE_SHARED(x, v)	({ CMM_ACCESS_ONCE(x) = (v); })
 
 /*
- * Store v into x, where x is located in shared memory. Performs the required
- * cache flush after writing. Returns v.
+ * Store v into x, where x is located in shared memory. Performs the
+ * required cache flush after writing. Returns v.
  */
 #define CMM_STORE_SHARED(x, v)		\
 	({				\

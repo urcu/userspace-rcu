@@ -95,8 +95,10 @@ unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return 0;
 }
@@ -157,8 +159,10 @@ unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return 0;
 }
@@ -222,8 +226,10 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return 0;
 }
@@ -278,8 +284,10 @@ void __uatomic_and(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return;
 }
@@ -332,8 +340,10 @@ void __uatomic_or(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return;
 }
@@ -386,8 +396,10 @@ void __uatomic_add(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return;
 }
@@ -494,8 +506,10 @@ void __uatomic_dec(void *addr, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__("ud2");
 	return;
 }

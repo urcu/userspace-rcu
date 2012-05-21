@@ -93,8 +93,10 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }
@@ -153,8 +155,10 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }
@@ -210,8 +214,10 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
+	/*
+	 * generate an illegal instruction. Cannot catch this with
+	 * linker tricks when optimizations are disabled.
+	 */
 	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }

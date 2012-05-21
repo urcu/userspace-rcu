@@ -37,9 +37,9 @@ extern "C" {
 /*
  * Architectures with cache coherency must _not_ define cmm_mc/cmm_rmc/cmm_wmc.
  *
- * For them, cmm_mc/cmm_rmc/cmm_wmc are implemented with a * simple compiler barrier;
- * in addition, we provide defaults for cmm_mb (using GCC builtins) as well as
- * cmm_rmb and cmm_wmb (defaulting to cmm_mb).
+ * For them, cmm_mc/cmm_rmc/cmm_wmc are implemented with a simple
+ * compiler barrier; in addition, we provide defaults for cmm_mb (using
+ * GCC builtins) as well as cmm_rmb and cmm_wmb (defaulting to cmm_mb).
  */
 
 #ifndef cmm_mb
@@ -61,14 +61,14 @@ extern "C" {
 /*
  * Architectures without cache coherency need something like the following:
  *
- * #define cmm_mc()		arch_cache_flush() 
+ * #define cmm_mc()	arch_cache_flush() 
  * #define cmm_rmc()	arch_cache_flush_read()
  * #define cmm_wmc()	arch_cache_flush_write()
  *
- * Of these, only cmm_mc is mandatory.  cmm_rmc and cmm_wmc default to cmm_mc.  
- * cmm_mb/cmm_rmb/cmm_wmb use these definitions by default:
+ * Of these, only cmm_mc is mandatory. cmm_rmc and cmm_wmc default to
+ * cmm_mc. cmm_mb/cmm_rmb/cmm_wmb use these definitions by default:
  *
- * #define cmm_mb()		cmm_mc()
+ * #define cmm_mb()	cmm_mc()
  * #define cmm_rmb()	cmm_rmc()
  * #define cmm_wmb()	cmm_wmc()
  */
