@@ -39,7 +39,7 @@ struct __uatomic_dummy {
 };
 #define __hp(x)	((struct __uatomic_dummy *)(x))
 
-#define _uatomic_set(addr, v)	CMM_STORE_SHARED(*(addr), (v))
+#define _uatomic_set(addr, v)	((void) CMM_STORE_SHARED(*(addr), (v)))
 
 /* cmpxchg */
 
@@ -529,12 +529,16 @@ extern int __rcu_cas_init(void);
 				: (compat_uatomic_##insn))			\
 			: (compat_uatomic_##insn))))
 
+/*
+ * We leave the return value so we don't break the ABI, but remove the
+ * return value from the API.
+ */
 extern unsigned long _compat_uatomic_set(void *addr,
 					 unsigned long _new, int len);
 #define compat_uatomic_set(addr, _new)				     	       \
-	((__typeof__(*(addr))) _compat_uatomic_set((addr),		       \
-						caa_cast_long_keep_sign(_new), \
-						sizeof(*(addr))))
+	((void) _compat_uatomic_set((addr),				       \
+				caa_cast_long_keep_sign(_new),		       \
+				sizeof(*(addr))))
 
 
 extern unsigned long _compat_uatomic_xchg(void *addr,

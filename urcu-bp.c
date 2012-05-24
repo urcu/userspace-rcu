@@ -439,7 +439,8 @@ void *rcu_dereference_sym_bp(void *p)
 void *rcu_set_pointer_sym_bp(void **p, void *v)
 {
 	cmm_wmb();
-	return uatomic_set(p, v);
+	uatomic_set(p, v);
+	return v;
 }
 
 void *rcu_xchg_pointer_sym_bp(void **p, void *v)
