@@ -35,12 +35,12 @@ extern "C" {
 #ifdef CONFIG_RCU_TLS	/* Based on ax_tls.m4 */
 
 # define DECLARE_URCU_TLS(type, name)	\
-	CONFIG_RCU_TLS type __tls_ ## name
+	CONFIG_RCU_TLS type name
 
 # define DEFINE_URCU_TLS(type, name)	\
-	CONFIG_RCU_TLS type __tls_ ## name
+	CONFIG_RCU_TLS type name
 
-# define URCU_TLS(name)		(__tls_ ## name)
+# define URCU_TLS(name)		(name)
 
 #else /* #ifndef CONFIG_RCU_TLS */
 
