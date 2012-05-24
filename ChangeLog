@@ -1,3 +1,6 @@
+2012-05-24 Userspace RCU 0.7.2
+	* Fix library compatibility
+
 2012-05-24 Userspace RCU 0.7.1
 	* fix: uatomic_set return value compile fix for non-x86 arch.
 
