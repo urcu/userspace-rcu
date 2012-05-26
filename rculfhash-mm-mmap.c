@@ -24,6 +24,10 @@
 #include <sys/mman.h>
 #include "rculfhash-internal.h"
 
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS		MAP_ANON
+#endif
+
 /* reserve inaccessible memory space without allocation any memory */
 static void *memory_map(size_t length)
 {
