@@ -283,7 +283,6 @@ int main(int argc, char **argv)
 	int err;
 	pthread_t *tid_reader, *tid_writer;
 	void *tret;
-	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
 
@@ -369,11 +368,14 @@ int main(int argc, char **argv)
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
-	count_reader = malloc(sizeof(*count_reader) * nr_readers);
-	count_writer = malloc(sizeof(*count_writer) * nr_writers);
 	tot_nr_reads = malloc(sizeof(*tot_nr_reads) * nr_readers);
 	tot_nr_writes = malloc(sizeof(*tot_nr_writes) * nr_writers);
 	per_thread_lock = malloc(sizeof(*per_thread_lock) * nr_readers);
+	for (i = 0; i < nr_readers; i++) {
+		err = pthread_mutex_init(&per_thread_lock[i].lock, NULL);
+		if (err != 0)
+			exit(1);
+	}
 
 	next_aff = 0;
 
@@ -422,8 +424,6 @@ int main(int argc, char **argv)
 
 	free(tid_reader);
 	free(tid_writer);
-	free(count_reader);
-	free(count_writer);
 	free(tot_nr_reads);
 	free(tot_nr_writes);
 	free(per_thread_lock);
