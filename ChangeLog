@@ -1,3 +1,12 @@
+2012-06-01 Userspace RCU 0.7.3
+	* Fix tests: make dist lib dependency
+	* Update README for OS supported, tests dependency
+	* Add CodingStyle to tarball
+	* Add coding style document
+	* Test fix: test_perthreadlock uninitialized mutex
+	* tests: support FreeBSD short "time" args
+	* freebsd 8.2 fix: define MAP_ANONYMOUS for compatibility
+
 2012-05-24 Userspace RCU 0.7.2
 	* Fix library compatibility
 
