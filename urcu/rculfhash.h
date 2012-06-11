@@ -450,21 +450,21 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 #define cds_lfht_for_each_entry(ht, iter, pos, member)			\
 	for (cds_lfht_first(ht, iter),					\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					typeof(*(pos)), member);	\
+					__typeof__(*(pos)), member);	\
 		&(pos)->member != NULL;					\
 		cds_lfht_next(ht, iter),				\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					typeof(*(pos)), member))
+					__typeof__(*(pos)), member))
 
 #define cds_lfht_for_each_entry_duplicate(ht, hash, match, key,		\
 				iter, pos, member)			\
 	for (cds_lfht_lookup(ht, hash, match, key, iter),		\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					typeof(*(pos)), member);	\
+					__typeof__(*(pos)), member);	\
 		&(pos)->member != NULL;					\
 		cds_lfht_next_duplicate(ht, match, key, iter),		\
 			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					typeof(*(pos)), member))
+					__typeof__(*(pos)), member))
 
 #ifdef __cplusplus
 }

@@ -154,20 +154,20 @@ cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
        pos = p, p = pos->prev)
 
 #define cds_list_for_each_entry(pos, head, member)				\
-	for (pos = cds_list_entry((head)->next, typeof(*pos), member);	\
+	for (pos = cds_list_entry((head)->next, __typeof__(*pos), member); \
 	     &pos->member != (head);					\
-	     pos = cds_list_entry(pos->member.next, typeof(*pos), member))
+	     pos = cds_list_entry(pos->member.next, __typeof__(*pos), member))
 
 #define cds_list_for_each_entry_reverse(pos, head, member)			\
-	for (pos = cds_list_entry((head)->prev, typeof(*pos), member);	\
+	for (pos = cds_list_entry((head)->prev, __typeof__(*pos), member); \
 	     &pos->member != (head);					\
-	     pos = cds_list_entry(pos->member.prev, typeof(*pos), member))
+	     pos = cds_list_entry(pos->member.prev, __typeof__(*pos), member))
 
 #define cds_list_for_each_entry_safe(pos, p, head, member)			\
-	for (pos = cds_list_entry((head)->next, typeof(*pos), member),	\
-		     p = cds_list_entry(pos->member.next,typeof(*pos), member); \
+	for (pos = cds_list_entry((head)->next, __typeof__(*pos), member), \
+		     p = cds_list_entry(pos->member.next, __typeof__(*pos), member); \
 	     &pos->member != (head);					\
-	     pos = p, p = cds_list_entry(pos->member.next, typeof(*pos), member))
+	     pos = p, p = cds_list_entry(pos->member.next, __typeof__(*pos), member))
 
 static inline int cds_list_empty(struct cds_list_head *head)
 {

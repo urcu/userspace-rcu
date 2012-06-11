@@ -67,7 +67,7 @@ extern "C" {
 extern void *rcu_dereference_sym(void *p);
 #define rcu_dereference(p)						     \
 	({								     \
-		typeof(p) _________p1 =	URCU_FORCE_CAST(typeof(p),	     \
+		__typeof__(p) _________p1 =	URCU_FORCE_CAST(__typeof__(p), \
 			rcu_dereference_sym(URCU_FORCE_CAST(void *, p)));    \
 		(_________p1);						     \
 	})
@@ -75,10 +75,10 @@ extern void *rcu_dereference_sym(void *p);
 extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer(p, old, _new)				     \
 	({								     \
-		typeof(*(p)) _________pold = (old);			     \
-		typeof(*(p)) _________pnew = (_new);			     \
-		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
-			rcu_cmpxchg_pointer_sym(URCU_FORCE_CAST(void **, p),\
+		__typeof__(*(p)) _________pold = (old);			     \
+		__typeof__(*(p)) _________pnew = (_new);		     \
+		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
+			rcu_cmpxchg_pointer_sym(URCU_FORCE_CAST(void **, p), \
 						_________pold,		     \
 						_________pnew));	     \
 		(_________p1);						     \
@@ -87,8 +87,8 @@ extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 extern void *rcu_xchg_pointer_sym(void **p, void *v);
 #define rcu_xchg_pointer(p, v)						     \
 	({								     \
-		typeof(*(p)) _________pv = (v);			             \
-		typeof(*(p)) _________p1 = URCU_FORCE_CAST(typeof(*(p)),     \
+		__typeof__(*(p)) _________pv = (v);		             \
+		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
 			rcu_xchg_pointer_sym(URCU_FORCE_CAST(void **, p),    \
 					     _________pv));		     \
 		(_________p1);						     \
@@ -103,7 +103,7 @@ extern void *rcu_xchg_pointer_sym(void **p, void *v);
 extern void *rcu_set_pointer_sym(void **p, void *v);
 #define rcu_set_pointer(p, v)						     \
 	do {								     \
-		typeof(*(p)) _________pv = (v);			             \
+		__typeof__(*(p)) _________pv = (v);		             \
 		(void) rcu_set_pointer_sym(URCU_FORCE_CAST(void **, p),	     \
 					    _________pv);		     \
 	} while (0)

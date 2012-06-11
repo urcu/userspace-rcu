@@ -49,7 +49,7 @@
  */
 #define CMM_STORE_SHARED(x, v)		\
 	({				\
-		typeof(x) _v = _CMM_STORE_SHARED(x, v);	\
+		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
 		cmm_smp_wmc();		\
 		_v;			\
 	})

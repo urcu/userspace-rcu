@@ -62,7 +62,7 @@ extern "C" {
  */
 
 #define _rcu_dereference(p)     ({					\
-				typeof(p) _________p1 = CMM_LOAD_SHARED(p); \
+				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p); \
 				cmm_smp_read_barrier_depends();		\
 				(_________p1);				\
 				})
@@ -77,8 +77,8 @@ extern "C" {
 
 #define _rcu_cmpxchg_pointer(p, old, _new)				\
 	({								\
-		typeof(*p) _________pold = (old);			\
-		typeof(*p) _________pnew = (_new);			\
+		__typeof__(*p) _________pold = (old);			\
+		__typeof__(*p) _________pnew = (_new);			\
 		if (!__builtin_constant_p(_new) ||			\
 		    ((_new) != NULL))					\
 			cmm_wmb();						\
@@ -93,7 +93,7 @@ extern "C" {
 
 #define _rcu_xchg_pointer(p, v)				\
 	({						\
-		typeof(*p) _________pv = (v);		\
+		__typeof__(*p) _________pv = (v);	\
 		if (!__builtin_constant_p(v) ||		\
 		    ((v) != NULL))			\
 			cmm_wmb();				\
@@ -103,7 +103,7 @@ extern "C" {
 
 #define _rcu_set_pointer(p, v)				\
 	do {						\
-		typeof(*p) _________pv = (v);		\
+		__typeof__(*p) _________pv = (v);	\
 		if (!__builtin_constant_p(v) || 	\
 		    ((v) != NULL))			\
 			cmm_wmb();				\

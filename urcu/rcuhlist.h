@@ -57,9 +57,9 @@ static inline void cds_hlist_del_rcu(struct cds_hlist_node *elem)
 
 #define cds_hlist_for_each_entry_rcu(entry, pos, head, member)		\
 	for (pos = rcu_dereference((head)->next),			\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member);	\
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member);	\
 	     pos != NULL;						\
 	     pos = rcu_dereference(pos->next),				\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member))
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member))
 
 #endif	/* _URCU_RCUHLIST_H */

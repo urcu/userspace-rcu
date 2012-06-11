@@ -62,16 +62,16 @@ static inline void cds_hlist_del (struct cds_hlist_node *elem)
 
 #define cds_hlist_for_each_entry(entry, pos, head, member)			\
 	for (pos = (head)->next,					\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member);	\
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member);	\
 	     pos != NULL;						\
 	     pos = pos->next,					\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member))
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member))
 
 #define cds_hlist_for_each_entry_safe(entry, pos, p, head, member)		\
 	for (pos = (head)->next,					\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member);	\
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member);	\
 	     (pos != NULL) && ({ p = pos->next; 1;});			\
 	     pos = p,							\
-		     entry = cds_hlist_entry(pos, typeof(*entry), member))
+		     entry = cds_hlist_entry(pos, __typeof__(*entry), member))
 
 #endif	/* _KCOMPAT_HLIST_H */
