@@ -46,7 +46,7 @@ extern "C" {
  * order cacheable and non-cacheable memory operations separately---i.e.
  * not the latter against the former.
  */
-#define cmm_mb()         asm volatile("sync":::"memory")
+#define cmm_mb()         __asm__ __volatile__ ("sync":::"memory")
 
 /*
  * lwsync orders loads in cacheable memory with respect to other loads,
@@ -54,27 +54,27 @@ extern "C" {
  * Therefore, use it for barriers ordering accesses to cacheable memory
  * only.
  */
-#define cmm_smp_rmb()    asm volatile(LWSYNC_OPCODE:::"memory")
-#define cmm_smp_wmb()    asm volatile(LWSYNC_OPCODE:::"memory")
+#define cmm_smp_rmb()    __asm__ __volatile__ (LWSYNC_OPCODE:::"memory")
+#define cmm_smp_wmb()    __asm__ __volatile__ (LWSYNC_OPCODE:::"memory")
 
 #define mftbl()						\
 	({ 						\
 		unsigned long rval;			\
-		asm volatile("mftbl %0" : "=r" (rval));	\
+		__asm__ __volatile__ ("mftbl %0" : "=r" (rval));	\
 		rval;					\
 	})
 
 #define mftbu()						\
 	({						\
 		unsigned long rval;			\
-		asm volatile("mftbu %0" : "=r" (rval));	\
+		__asm__ __volatile__ ("mftbu %0" : "=r" (rval));	\
 		rval;					\
 	})
 
 #define mftb()						\
 	({						\
 		unsigned long long rval;		\
-		asm volatile("mftb %0" : "=r" (rval));	\
+		__asm__ __volatile__ ("mftb %0" : "=r" (rval));		\
 		rval;					\
 	})
 

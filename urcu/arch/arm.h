@@ -30,9 +30,9 @@ extern "C" {
 #endif 
 
 #ifdef CONFIG_RCU_ARM_HAVE_DMB
-#define cmm_mb()	asm volatile("dmb":::"memory")
-#define cmm_rmb()	asm volatile("dmb":::"memory")
-#define cmm_wmb()	asm volatile("dmb":::"memory")
+#define cmm_mb()	__asm__ __volatile__ ("dmb":::"memory")
+#define cmm_rmb()	__asm__ __volatile__ ("dmb":::"memory")
+#define cmm_wmb()	__asm__ __volatile__ ("dmb":::"memory")
 #endif /* CONFIG_RCU_ARM_HAVE_DMB */
 
 #include <stdlib.h>

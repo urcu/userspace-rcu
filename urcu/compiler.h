@@ -24,7 +24,7 @@
 #define caa_likely(x)	__builtin_expect(!!(x), 1)
 #define caa_unlikely(x)	__builtin_expect(!!(x), 0)
 
-#define	cmm_barrier()	asm volatile("" : : : "memory")
+#define	cmm_barrier()	__asm__ __volatile__ ("" : : : "memory")
 
 /*
  * Instruct the compiler to perform only a single access to a variable
@@ -38,7 +38,7 @@
  * use is to mediate communication between process-level code and irq/NMI
  * handlers, all running on the same CPU.
  */
-#define CMM_ACCESS_ONCE(x)	(*(volatile __typeof__(x) *)&(x))
+#define CMM_ACCESS_ONCE(x)	(*(__volatile__  __typeof__(x) *)&(x))
 
 #ifndef caa_max
 #define caa_max(a,b) ((a)>(b)?(a):(b))

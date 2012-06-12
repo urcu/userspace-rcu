@@ -32,15 +32,15 @@ extern "C" {
 #define CAA_CACHE_LINE_SIZE	128
 
 #ifdef CONFIG_RCU_HAVE_FENCE
-#define cmm_mb()    asm volatile("mfence":::"memory")
+#define cmm_mb()    __asm__ __volatile__ ("mfence":::"memory")
 
 /*
  * Define cmm_rmb/cmm_wmb to "strict" barriers that may be needed when
  * using SSE or working with I/O areas.  cmm_smp_rmb/cmm_smp_wmb are
  * only compiler barriers, which is enough for general use.
  */
-#define cmm_rmb()     asm volatile("lfence":::"memory")
-#define cmm_wmb()     asm volatile("sfence"::: "memory")
+#define cmm_rmb()     __asm__ __volatile__ ("lfence":::"memory")
+#define cmm_wmb()     __asm__ __volatile__ ("sfence"::: "memory")
 #define cmm_smp_rmb() cmm_barrier()
 #define cmm_smp_wmb() cmm_barrier()
 #else
@@ -55,17 +55,17 @@ extern "C" {
  * IDT WinChip supports weak store ordering, and the kernel may enable it
  * under our feet; cmm_smp_wmb() ceases to be a nop for these processors.
  */
-#define cmm_mb()    asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define cmm_rmb()   asm volatile("lock; addl $0,0(%%esp)":::"memory")
-#define cmm_wmb()   asm volatile("lock; addl $0,0(%%esp)"::: "memory")
+#define cmm_mb()    __asm__ __volatile__ ("lock; addl $0,0(%%esp)":::"memory")
+#define cmm_rmb()   __asm__ __volatile__ ("lock; addl $0,0(%%esp)":::"memory")
+#define cmm_wmb()   __asm__ __volatile__ ("lock; addl $0,0(%%esp)"::: "memory")
 #endif
 
-#define caa_cpu_relax()	asm volatile("rep; nop" : : : "memory");
+#define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory");
 
 #define rdtscll(val)							  \
 	do {						  		  \
 	     unsigned int __a, __d;					  \
-	     asm volatile("rdtsc" : "=a" (__a), "=d" (__d));		  \
+	     __asm__ __volatile__ ("rdtsc" : "=a" (__a), "=d" (__d));	  \
 	     (val) = ((unsigned long long)__a)				  \
 			| (((unsigned long long)__d) << 32);		  \
 	} while(0)
