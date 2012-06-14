@@ -28,7 +28,7 @@ AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks c
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 
-AX_TLS([AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $ac_cv_tls)], [])
+AX_TLS(AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $ac_cv_tls), [:])
 
 # Checks for programs.
 AC_PROG_CC
