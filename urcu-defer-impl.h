@@ -49,6 +49,7 @@
 #include <urcu/list.h>
 #include <urcu/system.h>
 #include <urcu/tls-compat.h>
+#include "urcu-die.h"
 
 /*
  * Number of entries in the per-thread defer queue. Must be power of 2.
@@ -141,17 +142,12 @@ static void mutex_lock_defer(pthread_mutex_t *mutex)
 
 #ifndef DISTRUST_SIGNALS_EXTREME
 	ret = pthread_mutex_lock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(ret);
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
-		if (ret != EBUSY && ret != EINTR) {
-			printf("ret = %d, errno = %d\n", ret, errno);
-			perror("Error in pthread mutex lock");
-			exit(-1);
-		}
+		if (ret != EBUSY && ret != EINTR)
+			urcu_die(ret);
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */

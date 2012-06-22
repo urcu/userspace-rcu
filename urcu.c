@@ -42,6 +42,8 @@
 #include "urcu-pointer.h"
 #include "urcu/tls-compat.h"
 
+#include "urcu-die.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
 #include "urcu.h"
@@ -110,17 +112,12 @@ static void mutex_lock(pthread_mutex_t *mutex)
 
 #ifndef DISTRUST_SIGNALS_EXTREME
 	ret = pthread_mutex_lock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(ret);
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
-		if (ret != EBUSY && ret != EINTR) {
-			printf("ret = %d, errno = %d\n", ret, errno);
-			perror("Error in pthread mutex lock");
-			exit(-1);
-		}
+		if (ret != EBUSY && ret != EINTR)
+			urcu_die(ret);
 		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
 			cmm_smp_mb();
 			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
@@ -136,10 +133,8 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 	int ret;
 
 	ret = pthread_mutex_unlock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(ret);
 }
 
 #ifdef RCU_MEMBARRIER
@@ -432,10 +427,8 @@ void rcu_init(void)
 	act.sa_flags = SA_SIGINFO | SA_RESTART;
 	sigemptyset(&act.sa_mask);
 	ret = sigaction(SIGRCU, &act, NULL);
-	if (ret) {
-		perror("Error in sigaction");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(errno);
 }
 
 void rcu_exit(void)
@@ -444,10 +437,8 @@ void rcu_exit(void)
 	int ret;
 
 	ret = sigaction(SIGRCU, NULL, &act);
-	if (ret) {
-		perror("Error in sigaction");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(errno);
 	assert(act.sa_sigaction == sigrcu_handler);
 	assert(cds_list_empty(&registry));
 }

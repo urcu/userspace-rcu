@@ -41,6 +41,7 @@
 #include "urcu/list.h"
 #include "urcu/futex.h"
 #include "urcu/tls-compat.h"
+#include "urcu-die.h"
 
 /* Data structure that identifies a call_rcu thread. */
 
@@ -151,20 +152,22 @@ static int sched_getcpu(void)
 
 static void call_rcu_lock(pthread_mutex_t *pmp)
 {
-	if (pthread_mutex_lock(pmp) != 0) {
-		perror("pthread_mutex_lock");
-		exit(-1);
-	}
+	int ret;
+
+	ret = pthread_mutex_lock(pmp);
+	if (ret)
+		urcu_die(ret);
 }
 
 /* Release the specified pthread mutex. */
 
 static void call_rcu_unlock(pthread_mutex_t *pmp)
 {
-	if (pthread_mutex_unlock(pmp) != 0) {
-		perror("pthread_mutex_unlock");
-		exit(-1);
-	}
+	int ret;
+
+	ret = pthread_mutex_unlock(pmp);
+	if (ret)
+		urcu_die(ret);
 }
 
 #if HAVE_SCHED_SETAFFINITY
@@ -222,11 +225,11 @@ static void *call_rcu_thread(void *arg)
 	struct call_rcu_data *crdp = (struct call_rcu_data *)arg;
 	struct rcu_head *rhp;
 	int rt = !!(uatomic_read(&crdp->flags) & URCU_CALL_RCU_RT);
+	int ret;
 
-	if (set_thread_cpu_affinity(crdp) != 0) {
-		perror("pthread_setaffinity_np");
-		exit(-1);
-	}
+	ret = set_thread_cpu_affinity(crdp);
+	if (ret)
+		urcu_die(errno);
 
 	/*
 	 * If callbacks take a read-side lock, we need to be registered.
@@ -308,12 +311,11 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 			       int cpu_affinity)
 {
 	struct call_rcu_data *crdp;
+	int ret;
 
 	crdp = malloc(sizeof(*crdp));
-	if (crdp == NULL) {
-		fprintf(stderr, "Out of memory.\n");
-		exit(-1);
-	}
+	if (crdp == NULL)
+		urcu_die(errno);
 	memset(crdp, '\0', sizeof(*crdp));
 	cds_wfq_init(&crdp->cbs);
 	crdp->qlen = 0;
@@ -323,10 +325,9 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 	crdp->cpu_affinity = cpu_affinity;
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
 	*crdpp = crdp;
-	if (pthread_create(&crdp->tid, NULL, call_rcu_thread, crdp) != 0) {
-		perror("pthread_create");
-		exit(-1);
-	}
+	ret = pthread_create(&crdp->tid, NULL, call_rcu_thread, crdp);
+	if (ret)
+		urcu_die(ret);
 }
 
 /*

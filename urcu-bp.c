@@ -42,6 +42,8 @@
 #include "urcu-pointer.h"
 #include "urcu/tls-compat.h"
 
+#include "urcu-die.h"
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
 #include "urcu-bp.h"
@@ -142,17 +144,12 @@ static void mutex_lock(pthread_mutex_t *mutex)
 
 #ifndef DISTRUST_SIGNALS_EXTREME
 	ret = pthread_mutex_lock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(ret);
 #else /* #ifndef DISTRUST_SIGNALS_EXTREME */
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
-		if (ret != EBUSY && ret != EINTR) {
-			printf("ret = %d, errno = %d\n", ret, errno);
-			perror("Error in pthread mutex lock");
-			exit(-1);
-		}
+		if (ret != EBUSY && ret != EINTR)
+			urcu_die(ret);
 		poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
@@ -163,10 +160,8 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 	int ret;
 
 	ret = pthread_mutex_unlock(mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
+	if (ret)
+		urcu_die(ret);
 }
 
 void update_counter_and_wait(void)
