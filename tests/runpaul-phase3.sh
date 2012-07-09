@@ -28,7 +28,7 @@ rm -f runall.log
 rm -fr runall.detail.log
 
 #setting gc each 32768. ** UPDATE FOR YOUR ARCHITECTURE BASED ON PHASE 1 RESULT **
-EXTRA_OPTS+="-b 32768"
+EXTRA_OPTS="${EXTRA_OPTS} -b 32768"
 
 #Test scalability :
 # x: vary number of readers from 0 to num cpus
