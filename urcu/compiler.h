@@ -70,7 +70,7 @@
 	})
 
 #define CAA_BUILD_BUG_ON_ZERO(cond) (sizeof(struct { int:-!!(cond); }))
-#define CAA_BUILD_BUG_ON(cond) ((void)BUILD_BUG_ON_ZERO(cond))
+#define CAA_BUILD_BUG_ON(cond) ((void)CAA_BUILD_BUG_ON_ZERO(cond))
 
 /*
  * __rcu is an annotation that documents RCU pointer accesses that need
