@@ -85,25 +85,13 @@ static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
 }
 
 /*
- * It is valid to reuse and free a dequeued node immediately.
- *
- * No need to go on a waitqueue here, as there is no possible state in which the
- * list could cause dequeue to busy-loop needlessly while waiting for another
- * thread to be scheduled. The queue appears empty until tail->next is set by
- * enqueue.
+ * Waiting for enqueuer to complete enqueue and return the next node
  */
 static inline struct cds_wfq_node *
-___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
+___cds_wfq_node_sync_next(struct cds_wfq_node *node)
 {
-	struct cds_wfq_node *node, *next;
+	struct cds_wfq_node *next;
 	int attempt = 0;
-
-	/*
-	 * Queue is empty if it only contains the dummy node.
-	 */
-	if (q->head == &q->dummy && CMM_LOAD_SHARED(q->tail) == &q->dummy.next)
-		return NULL;
-	node = q->head;
 
 	/*
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
@@ -115,6 +103,32 @@ ___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 		} else
 			caa_cpu_relax();
 	}
+
+	return next;
+}
+
+/*
+ * It is valid to reuse and free a dequeued node immediately.
+ *
+ * No need to go on a waitqueue here, as there is no possible state in which the
+ * list could cause dequeue to busy-loop needlessly while waiting for another
+ * thread to be scheduled. The queue appears empty until tail->next is set by
+ * enqueue.
+ */
+static inline struct cds_wfq_node *
+___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
+{
+	struct cds_wfq_node *node, *next;
+
+	/*
+	 * Queue is empty if it only contains the dummy node.
+	 */
+	if (q->head == &q->dummy && CMM_LOAD_SHARED(q->tail) == &q->dummy.next)
+		return NULL;
+	node = q->head;
+
+	next = ___cds_wfq_node_sync_next(node);
+
 	/*
 	 * Move queue head forward.
 	 */
