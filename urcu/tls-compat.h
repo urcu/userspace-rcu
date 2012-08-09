@@ -34,6 +34,21 @@ extern "C" {
 
 #ifdef CONFIG_RCU_TLS	/* Based on ax_tls.m4 */
 
+/*
+ * Hint: How to define/declare TLS variables of compound types
+ *       such as array or function pointers?
+ *
+ * Answer: Use typedef to assign a type_name to the compound type.
+ * Example: Define a TLS variable which is an int array with len=4:
+ *
+ * 	typedef int my_int_array_type[4];
+ * 	DEFINE_URCU_TLS(my_int_array_type, var_name);
+ *
+ * Another exmaple:
+ * 	typedef void (*call_rcu_flavor)(struct rcu_head *, XXXX);
+ * 	DECLARE_URCU_TLS(call_rcu_flavor, p_call_rcu);
+ */
+
 # define DECLARE_URCU_TLS(type, name)	\
 	CONFIG_RCU_TLS type name
 
