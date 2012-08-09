@@ -43,7 +43,7 @@ static pthread_cond_t compat_futex_cond = PTHREAD_COND_INITIALIZER;
 int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	int ret, i, gret = 0;
+	int ret, gret = 0;
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
@@ -67,8 +67,7 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 		pthread_cond_wait(&compat_futex_cond, &compat_futex_lock);
 		break;
 	case FUTEX_WAKE:
-		for (i = 0; i < val; i++)
-			pthread_cond_signal(&compat_futex_cond);
+		pthread_cond_broadcast(&compat_futex_cond);
 		break;
 	default:
 		gret = -EINVAL;
