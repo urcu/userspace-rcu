@@ -97,6 +97,7 @@ Makefile
 /config/ltsugar.m4
 /config/ltversion.m4
 /config/missing
+/aclocal.m4
 /libtool
 /stamp-h1
 /config.h.in
