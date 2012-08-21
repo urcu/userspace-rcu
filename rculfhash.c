@@ -1728,8 +1728,10 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	/* Wait for in-flight resize operations to complete */
 	_CMM_STORE_SHARED(ht->in_progress_destroy, 1);
 	cmm_smp_mb();	/* Store destroy before load resize */
+	ht->flavor->thread_offline();
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
+	ht->flavor->thread_online();
 	ret = cds_lfht_delete_bucket(ht);
 	if (ret)
 		return ret;
