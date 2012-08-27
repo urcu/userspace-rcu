@@ -1,3 +1,19 @@
+2012-08-27 Userspace RCU 0.7.4
+	* rculfhash API documentation: document destroy RCU read-lock constraint
+	* Fix: rculfhash should be offline while waiting for resize to complete
+	* Add missing entry to gitignore
+	* urcu: move busy-wait code and name it ___cds_wfq_node_sync_next()
+	* urcu: fix compat_futex_noasync()
+	* urcu: add hint to DEFINE_URCU_TLS() for compound types
+	* Fix: CAA_BUILD_BUG_ON should refer to CAA_BUILD_BUG_ON_ZERO
+	* Add MIPS support
+	* Compatibility: remove bash-ismsm from test scripts
+	* Fix inappropriate lib behavior: don't call exit()
+	* Fix: re-enable compatibility with autoconf < 2.64
+	* Fix c99 compatibility: use __asm__ and __volatile__ in public headers
+	* Fix c99 compatibility: use __typeof__ instead of typeof in public headers
+	* warning fix: tests urcutorture for NetBSD 5
+
 2012-06-01 Userspace RCU 0.7.3
 	* Fix tests: make dist lib dependency
 	* Update README for OS supported, tests dependency
