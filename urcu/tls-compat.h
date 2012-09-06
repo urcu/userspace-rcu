@@ -47,6 +47,18 @@ extern "C" {
  * Another exmaple:
  * 	typedef void (*call_rcu_flavor)(struct rcu_head *, XXXX);
  * 	DECLARE_URCU_TLS(call_rcu_flavor, p_call_rcu);
+ *
+ * NOTE: URCU_TLS() is NOT async-signal-safe, you can't use it
+ * inside any function which can be called from signal handler.
+ *
+ * But if pthread_getspecific() is async-signal-safe in your
+ * platform, you can make URCU_TLS() async-signal-safe via:
+ * ensuring the first call to URCU_TLS() of a given TLS variable of
+ * all threads is called earliest from a non-signal handler function.
+ *
+ * Example: In any thread, the first call of URCU_TLS(rcu_reader)
+ * is called from rcu_register_thread(), so we can ensure all later
+ * URCU_TLS(rcu_reader) in any thread is async-signal-safe.
  */
 
 # define DECLARE_URCU_TLS(type, name)	\
