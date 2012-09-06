@@ -59,6 +59,9 @@ extern "C" {
  * Example: In any thread, the first call of URCU_TLS(rcu_reader)
  * is called from rcu_register_thread(), so we can ensure all later
  * URCU_TLS(rcu_reader) in any thread is async-signal-safe.
+ *
+ * Moreover, URCU_TLS variables should not be touched from signal
+ * handlers setup with with sigaltstack(2).
  */
 
 # define DECLARE_URCU_TLS(type, name)	\
