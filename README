@@ -189,11 +189,12 @@ Being careful with signals
 	signal(7). The liburcu-mb and liburcu-qsbr versions of the Userspace RCU
 	library do not require any signal.
 
-	Read-side critical sections are allowed in a signal handler with
-	liburcu and liburcu-mb. Be careful, however, to disable these signals
+	Read-side critical sections are allowed in a signal handler,
+	except those setup with sigaltstack(2), with liburcu and
+	liburcu-mb. Be careful, however, to disable these signals
 	between thread creation and calls to rcu_register_thread(), because a
-	signal handler nesting on an unregistered thread would not be allowed to
-	call rcu_read_lock().
+	signal handler nesting on an unregistered thread would not be
+	allowed to call rcu_read_lock().
 
 	Read-side critical sections are _not_ allowed in a signal handler with
 	liburcu-qsbr, unless signals are disabled explicitly around each
