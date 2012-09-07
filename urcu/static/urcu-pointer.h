@@ -6,8 +6,8 @@
  *
  * Userspace RCU header. Operations on pointers.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-pointer.h for
- * linking dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN CODE THAT IS TO BE RECOMPILED ON EACH LIBURCU
+ * RELEASE. See urcu.h for linking dynamically with the userspace rcu library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -59,8 +59,11 @@ extern "C" {
  * addition to forthcoming C++ standard.
  *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
+ *
+ * This macro is less than 10 lines long.  The intent is that this macro
+ * meets the 10-line criterion in LGPL, allowing this function to be
+ * expanded directly in non-LGPL code.
  */
-
 #define _rcu_dereference(p)     ({					\
 				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p); \
 				cmm_smp_read_barrier_depends();		\
@@ -73,8 +76,11 @@ extern "C" {
  * data structure, which can be safely freed after waiting for a quiescent state
  * using synchronize_rcu(). If fails (unexpected value), returns old (which
  * should not be freed !).
+ *
+ * This macro is less than 10 lines long.  The intent is that this macro
+ * meets the 10-line criterion in LGPL, allowing this function to be
+ * expanded directly in non-LGPL code.
  */
-
 #define _rcu_cmpxchg_pointer(p, old, _new)				\
 	({								\
 		__typeof__(*p) _________pold = (old);			\
@@ -89,8 +95,11 @@ extern "C" {
  * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
  * pointer to the data structure, which can be safely freed after waiting for a
  * quiescent state using synchronize_rcu().
+ *
+ * This macro is less than 10 lines long.  The intent is that this macro
+ * meets the 10-line criterion in LGPL, allowing this function to be
+ * expanded directly in non-LGPL code.
  */
-
 #define _rcu_xchg_pointer(p, v)				\
 	({						\
 		__typeof__(*p) _________pv = (v);	\
@@ -121,8 +130,11 @@ extern "C" {
  * data structure before its publication.
  *
  * Should match rcu_dereference_pointer().
+ *
+ * This macro is less than 10 lines long.  The intent is that this macro
+ * meets the 10-line criterion in LGPL, allowing this function to be
+ * expanded directly in non-LGPL code.
  */
-
 #define _rcu_assign_pointer(p, v)	_rcu_set_pointer(&(p), v)
 
 #ifdef __cplusplus 

@@ -6,8 +6,8 @@
  *
  * Userspace RCU header.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN CODE THAT IS TO BE RECOMPILED ON EACH LIBURCU
+ * RELEASE. See urcu.h for linking dynamically with the userspace rcu library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -252,46 +252,71 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
 }
 
+/*
+ * Helper for _rcu_read_lock().  The format of rcu_gp_ctr (as well as
+ * the per-thread rcu_reader.ctr) has the upper bits containing a count of
+ * _rcu_read_lock() nesting, and a lower-order bit that contains either zero
+ * or RCU_GP_CTR_PHASE.  The smp_mb_slave() ensures that the accesses in
+ * _rcu_read_lock() happen before the subsequent read-side critical section.
+ */
+static inline void _rcu_read_lock_update(unsigned long tmp)
+{
+	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+		smp_mb_slave(RCU_MB_GROUP);
+	} else
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp + RCU_GP_COUNT);
+}
+
+/*
+ * Enter an RCU read-side critical section.
+ *
+ * The first cmm_barrier() call ensures that the compiler does not reorder
+ * the body of _rcu_read_lock() with a mutex.
+ *
+ * This function and its helper are both less than 10 lines long.  The
+ * intent is that this function meets the 10-line criterion in LGPL,
+ * allowing this function to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
-	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
+	cmm_barrier();
 	tmp = URCU_TLS(rcu_reader).ctr;
-	/*
-	 * rcu_gp_ctr is
-	 *   RCU_GP_COUNT | (~RCU_GP_CTR_PHASE or RCU_GP_CTR_PHASE)
-	 */
-	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
-		/*
-		 * Set active readers count for outermost nesting level before
-		 * accessing the pointer. See smp_mb_master().
-		 */
-		smp_mb_slave(RCU_MB_GROUP);
-	} else {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp + RCU_GP_COUNT);
-	}
+	_rcu_read_lock_update(tmp);
 }
 
+/*
+ * This is a helper function for _rcu_read_unlock().
+ *
+ * The first smp_mb_slave() call ensures that the critical section is
+ * seen to precede the store to rcu_reader.ctr.
+ * The second smp_mb_slave() call ensures that we write to rcu_reader.ctr
+ * before reading the update-side futex.
+ */
+static inline void _rcu_read_unlock_update_and_wakeup(unsigned long tmp)
+{
+	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
+		smp_mb_slave(RCU_MB_GROUP);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
+		smp_mb_slave(RCU_MB_GROUP);
+		wake_up_gp();
+	} else
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
+}
+
+/*
+ * Exit an RCU read-side crtical section.  Both this function and its
+ * helper are smaller than 10 lines of code, and are intended to be
+ * usable by non-LGPL code, as called out in LGPL.
+ */
 static inline void _rcu_read_unlock(void)
 {
 	unsigned long tmp;
 
 	tmp = URCU_TLS(rcu_reader).ctr;
-	/*
-	 * Finish using rcu before decrementing the pointer.
-	 * See smp_mb_master().
-	 */
-	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
-		smp_mb_slave(RCU_MB_GROUP);
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
-		/* write URCU_TLS(rcu_reader).ctr before read futex */
-		smp_mb_slave(RCU_MB_GROUP);
-		wake_up_gp();
-	} else {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
-	}
+	_rcu_read_unlock_update_and_wakeup(tmp);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 

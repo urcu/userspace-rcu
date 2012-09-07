@@ -6,8 +6,8 @@
  *
  * Userspace RCU QSBR header.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu-qsbr.h for linking
- * dynamically with the userspace rcu QSBR library.
+ * TO BE INCLUDED ONLY IN CODE THAT IS TO BE RECOMPILED ON EACH LIBURCU
+ * RELEASE. See urcu.h for linking dynamically with the userspace rcu library.
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -157,15 +157,36 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 	return v && (v != rcu_gp_ctr);
 }
 
+/*
+ * Enter an RCU read-side critical section.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_read_lock(void)
 {
 	rcu_assert(URCU_TLS(rcu_reader).ctr);
 }
 
+/*
+ * Exit an RCU read-side critical section.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_read_unlock(void)
 {
 }
 
+/*
+ * Inform RCU of a quiescent state.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_quiescent_state(void)
 {
 	cmm_smp_mb();
@@ -175,6 +196,14 @@ static inline void _rcu_quiescent_state(void)
 	cmm_smp_mb();
 }
 
+/*
+ * Take a thread offline, prohibiting it from entering further RCU
+ * read-side critical sections.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_thread_offline(void)
 {
 	cmm_smp_mb();
@@ -184,6 +213,14 @@ static inline void _rcu_thread_offline(void)
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
+/*
+ * Bring a thread online, allowing it to once again enter RCU
+ * read-side critical sections.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
 static inline void _rcu_thread_online(void)
 {
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
