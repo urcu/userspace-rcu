@@ -91,8 +91,9 @@ struct cds_wfcq_tail {
  *
  * Unless otherwise stated, the caller must ensure mutual exclusion of
  * queue update operations "dequeue" and "splice" (for source queue).
- * Queue read operations "first" and "next" need to be protected against
- * concurrent "dequeue" and "splice" (for source queue) by the caller.
+ * Queue read operations "first" and "next", which are used by
+ * "for_each" iterations, need to be protected against concurrent
+ * "dequeue" and "splice" (for source queue) by the caller.
  * "enqueue", "splice" (for destination queue), and "empty" are the only
  * operations that can be used without any mutual exclusion.
  * Mutual exclusion can be ensured by holding cds_wfcq_dequeue_lock().
@@ -202,6 +203,10 @@ extern void __cds_wfcq_splice_blocking(
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * Should be called with cds_wfcq_dequeue_lock() held.
+ *
+ * Used by for-like iteration macros:
+ * __cds_wfcq_for_each_blocking()
+ * __cds_wfcq_for_each_blocking_safe()
  */
 extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
 		struct cds_wfcq_head *head,
@@ -213,6 +218,10 @@ extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * Should be called with cds_wfcq_dequeue_lock() held.
+ *
+ * Used by for-like iteration macros:
+ * __cds_wfcq_for_each_blocking()
+ * __cds_wfcq_for_each_blocking_safe()
  */
 extern struct cds_wfcq_node *__cds_wfcq_next_blocking(
 		struct cds_wfcq_head *head,
