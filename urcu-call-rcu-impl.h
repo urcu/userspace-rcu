@@ -49,12 +49,14 @@
 struct call_rcu_data {
 	/*
 	 * Align the tail on cache line size to eliminate false-sharing
-	 * with head.
+	 * with head. Small note, however: the "qlen" field, kept for
+	 * debugging, will cause false-sharing between enqueue and
+	 * dequeue.
 	 */
-	struct cds_wfcq_tail __attribute__((aligned(CAA_CACHE_LINE_SIZE))) cbs_tail;
+	struct cds_wfcq_tail cbs_tail;
 	/* Alignment on cache line size will add padding here */
 
-	struct cds_wfcq_head cbs_head;
+	struct cds_wfcq_head __attribute__((aligned(CAA_CACHE_LINE_SIZE))) cbs_head;
 	unsigned long flags;
 	int32_t futex;
 	unsigned long qlen; /* maintained for debugging. */
