@@ -1,12 +1,9 @@
-#ifndef _URCU_CDS_H
-#define _URCU_CDS_H
-
 /*
- * urcu/cds.h
+ * lfstack.c
  *
- * Userspace RCU library - Concurrent Data Structures
+ * Userspace RCU library - Lock-Free Stack
  *
- * Copyright 2011 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright 2010-2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,16 +20,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <urcu/hlist.h>
-#include <urcu/list.h>
-#include <urcu/rcuhlist.h>
-#include <urcu/rculist.h>
-#include <urcu/rculfqueue.h>
-#include <urcu/rculfstack.h>
-#include <urcu/rculfhash.h>
-#include <urcu/wfqueue.h>
-#include <urcu/wfcqueue.h>
-#include <urcu/wfstack.h>
-#include <urcu/lfstack.h>
+/* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
+#undef _LGPL_SOURCE
+#include "urcu/lfstack.h"
+#define _LGPL_SOURCE
+#include "urcu/static/lfstack.h"
 
-#endif /* _URCU_CDS_H */
+/*
+ * library wrappers to be used by non-LGPL compatible source code.
+ */
+
+void cds_lfs_node_init(struct cds_lfs_node *node)
+{
+	_cds_lfs_node_init(node);
+}
+
+void cds_lfs_init(struct cds_lfs_stack *s)
+{
+	_cds_lfs_init(s);
+}
+
+int cds_lfs_push(struct cds_lfs_stack *s, struct cds_lfs_node *node)
+{
+	return _cds_lfs_push(s, node);
+}
+
+struct cds_lfs_node *cds_lfs_pop(struct cds_lfs_stack *s)
+{
+	return _cds_lfs_pop(s);
+}
