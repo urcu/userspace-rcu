@@ -647,8 +647,9 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		/* Create default call rcu data if need be */
 		(void) get_default_call_rcu_data();
 		cbs_endprev = (struct cds_wfq_node **)
-			uatomic_xchg(&default_call_rcu_data, cbs_tail);
-		*cbs_endprev = cbs;
+			uatomic_xchg(&default_call_rcu_data->cbs.tail,
+					cbs_tail);
+		_CMM_STORE_SHARED(*cbs_endprev, cbs);
 		uatomic_add(&default_call_rcu_data->qlen,
 			    uatomic_read(&crdp->qlen));
 		wake_call_rcu_thread(default_call_rcu_data);
