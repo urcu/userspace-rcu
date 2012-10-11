@@ -41,8 +41,10 @@ extern "C" {
 /*
  * Concurrent queue with wait-free enqueue/blocking dequeue.
  *
- * Inspired from half-wait-free/half-blocking queue implementation done by
- * Paul E. McKenney.
+ * This queue has been designed and implemented collaboratively by
+ * Mathieu Desnoyers and Lai Jiangshan. Inspired from
+ * half-wait-free/half-blocking queue implementation done by Paul E.
+ * McKenney.
  *
  * Mutual exclusion of __cds_wfcq_* API
  *
