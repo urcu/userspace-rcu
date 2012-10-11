@@ -1,3 +1,6 @@
+2012-09-11 Userspace RCU 0.6.8
+	* Fix: call_rcu list corruption on teardown
+
 2011-12-12 Userspace RCU 0.6.7
 	* Add compat file for test urcu wfs
 	* Add missing compat file for wfq test
