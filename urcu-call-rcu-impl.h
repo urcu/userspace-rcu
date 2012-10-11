@@ -626,6 +626,10 @@ void call_rcu(struct rcu_head *head,
  * The caller must wait for a grace-period to pass between return from
  * set_cpu_call_rcu_data() and call to call_rcu_data_free() passing the
  * previous call rcu data as argument.
+ *
+ * Note: introducing __cds_wfcq_splice_blocking() in this function fixed
+ * a list corruption bug in the 0.7.x series. The equivalent fix
+ * appeared in 0.6.8 for the stable-0.6 branch.
  */
 void call_rcu_data_free(struct call_rcu_data *crdp)
 {
