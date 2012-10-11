@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include "urcu/wfqueue.h"
+#include "urcu/wfcqueue.h"
 #include "urcu/map/urcu-bp.h"
 #include "urcu/static/urcu-bp.h"
 #include "urcu-pointer.h"

@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "urcu/wfqueue.h"
+#include "urcu/wfcqueue.h"
 #include "urcu/map/urcu-qsbr.h"
 #define BUILD_QSBR_LIB
 #include "urcu/static/urcu-qsbr.h"
