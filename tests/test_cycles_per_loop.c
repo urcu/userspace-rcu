@@ -25,9 +25,9 @@
 
 #define NR_LOOPS 1000000UL
 
-static inline void loop_sleep(unsigned long l)
+static inline void loop_sleep(unsigned long loops)
 {
-	while(l-- != 0)
+	while (loops-- != 0)
 		caa_cpu_relax();
 }
 

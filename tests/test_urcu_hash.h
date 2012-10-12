@@ -175,9 +175,9 @@ extern unsigned long nr_hash_chains;
 
 extern int count_pipe[2];
 
-static inline void loop_sleep(unsigned long l)
+static inline void loop_sleep(unsigned long loops)
 {
-	while(l-- != 0)
+	while (loops-- != 0)
 		caa_cpu_relax();
 }
 
