@@ -22,6 +22,7 @@ BUILDING
 		Forcing a 32-bit build for Sparcv9 (typical for Sparc v9)
 		* CFLAGS="-m32 -Wa,-Av9a -g -O2" ./configure
 
+
 ARCHITECTURES SUPPORTED
 -----------------------
 
@@ -64,6 +65,19 @@ tree configuration.
 
 Test scripts provided in the tests/ directory of the source tree depend
 on "bash" and the "seq" program.
+
+
+API
+---
+
+See the relevant API documentation files in doc/. The APIs provided by
+Userspace RCU are, by prefix:
+
+- rcu_ : Read-Copy Update
+- cmm_ : Concurrent Memory Model
+- caa_ : Concurrent Architecture Abstraction
+- cds_ : Concurrent Data Structures
+- uatomic_: Userspace Atomic
 
 
 QUICK START GUIDE
