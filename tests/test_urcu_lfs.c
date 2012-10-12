@@ -237,7 +237,7 @@ void *thr_dequeuer(void *_count)
 		struct cds_lfs_node *snode;
 
 		rcu_read_lock();
-		snode = cds_lfs_pop(&s);
+		snode = __cds_lfs_pop(&s);
 		rcu_read_unlock();
 		if (snode) {
 			struct test *node;
@@ -269,7 +269,7 @@ void test_end(struct cds_lfs_stack *s, unsigned long long *nr_dequeues)
 	struct cds_lfs_node *snode;
 
 	do {
-		snode = cds_lfs_pop(s);
+		snode = __cds_lfs_pop(s);
 		if (snode) {
 			struct test *node;
 

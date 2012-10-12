@@ -26,6 +26,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbool.h>
+#include <pthread.h>
+#include <assert.h>
 #include <urcu/uatomic.h>
 #include <urcu-pointer.h>
 
@@ -33,15 +36,63 @@
 extern "C" {
 #endif
 
+/*
+ * Lock-free stack.
+ *
+ * Stack implementing push, pop, pop_all operations, as well as iterator
+ * on the stack head returned by pop_all.
+ *
+ * Synchronization table:
+ *
+ * External synchronization techniques described in the API below is
+ * required between pairs marked with "X". No external synchronization
+ * required between pairs marked with "-".
+ *
+ *                      cds_lfs_push  __cds_lfs_pop  __cds_lfs_pop_all
+ * cds_lfs_push               -              -                  -
+ * __cds_lfs_pop              -              X                  X
+ * __cds_lfs_pop_all          -              X                  -
+ *
+ * cds_lfs_pop_blocking and cds_lfs_pop_all_blocking use an internal
+ * mutex to provide synchronization.
+ */
+
+/*
+ * cds_lfs_node_init: initialize lock-free stack node.
+ */
 static inline
 void _cds_lfs_node_init(struct cds_lfs_node *node)
 {
 }
 
+/*
+ * cds_lfs_init: initialize lock-free stack.
+ */
 static inline
 void _cds_lfs_init(struct cds_lfs_stack *s)
 {
+        int ret;
+
 	s->head = NULL;
+	ret = pthread_mutex_init(&s->lock, NULL);
+	assert(!ret);
+}
+
+static inline
+bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
+{
+	return head == NULL;
+}
+
+/*
+ * cds_lfs_empty: return whether lock-free stack is empty.
+ *
+ * No memory barrier is issued. No mutual exclusion is required.
+ */
+static inline
+bool _cds_lfs_empty(struct cds_lfs_stack *s)
+{
+	return ___cds_lfs_empty_head(CMM_LOAD_SHARED(s->head));
 }
 
 /*
@@ -74,74 +125,157 @@ void _cds_lfs_init(struct cds_lfs_stack *s)
  * Returns non-zero otherwise.
  */
 static inline
-int _cds_lfs_push(struct cds_lfs_stack *s,
+bool _cds_lfs_push(struct cds_lfs_stack *s,
 		  struct cds_lfs_node *node)
 {
-	struct cds_lfs_node *head = NULL;
+	struct cds_lfs_head *head = NULL;
+	struct cds_lfs_head *new_head =
+		caa_container_of(node, struct cds_lfs_head, node);
 
 	for (;;) {
-		struct cds_lfs_node *old_head = head;
+		struct cds_lfs_head *old_head = head;
 
 		/*
 		 * node->next is still private at this point, no need to
 		 * perform a _CMM_STORE_SHARED().
 		 */
-		node->next = head;
+		node->next = &head->node;
 		/*
 		 * uatomic_cmpxchg() implicit memory barrier orders earlier
 		 * stores to node before publication.
 		 */
-		head = uatomic_cmpxchg(&s->head, old_head, node);
+		head = uatomic_cmpxchg(&s->head, old_head, new_head);
 		if (old_head == head)
 			break;
 	}
-	return (int) !!((unsigned long) head);
+	return ___cds_lfs_empty_head(head);
 }
 
 /*
- * cds_lfs_pop: pop a node from the stack.
+ * __cds_lfs_pop: pop a node from the stack.
  *
  * Returns NULL if stack is empty.
  *
- * cds_lfs_pop needs to be synchronized using one of the following
+ * __cds_lfs_pop needs to be synchronized using one of the following
  * techniques:
  *
- * 1) Calling cds_lfs_pop under rcu read lock critical section. The
+ * 1) Calling __cds_lfs_pop under rcu read lock critical section. The
  *    caller must wait for a grace period to pass before freeing the
  *    returned node or modifying the cds_lfs_node structure.
- * 2) Using mutual exclusion (e.g. mutexes) to protect cds_lfs_pop
- *    callers.
- * 3) Ensuring that only ONE thread can call cds_lfs_pop().
- *    (multi-provider/single-consumer scheme).
+ * 2) Using mutual exclusion (e.g. mutexes) to protect __cds_lfs_pop
+ *    and __cds_lfs_pop_all callers.
+ * 3) Ensuring that only ONE thread can call __cds_lfs_pop() and
+ *    __cds_lfs_pop_all(). (multi-provider/single-consumer scheme).
  */
 static inline
-struct cds_lfs_node *_cds_lfs_pop(struct cds_lfs_stack *s)
+struct cds_lfs_node *___cds_lfs_pop(struct cds_lfs_stack *s)
 {
 	for (;;) {
-		struct cds_lfs_node *head;
+		struct cds_lfs_head *head, *next_head;
+		struct cds_lfs_node *next;
 
 		head = _CMM_LOAD_SHARED(s->head);
-		if (head) {
-			struct cds_lfs_node *next;
+		if (___cds_lfs_empty_head(head))
+			return NULL;	/* Empty stack */
 
-			/*
-			 * Read head before head->next. Matches the
-			 * implicit memory barrier before
-			 * uatomic_cmpxchg() in cds_lfs_push.
-			 */
-			cmm_smp_read_barrier_depends();
-			next = _CMM_LOAD_SHARED(head->next);
-			if (uatomic_cmpxchg(&s->head, head, next) == head) {
-				return head;
-			} else {
-				/* Concurrent modification. Retry. */
-				continue;
-			}
-		} else {
-			/* Empty stack */
-			return NULL;
-		}
+		/*
+		 * Read head before head->next. Matches the implicit
+		 * memory barrier before uatomic_cmpxchg() in
+		 * cds_lfs_push.
+		 */
+		cmm_smp_read_barrier_depends();
+		next = _CMM_LOAD_SHARED(head->node.next);
+		next_head = caa_container_of(next,
+				struct cds_lfs_head, node);
+		if (uatomic_cmpxchg(&s->head, head, next_head) == head)
+			return &head->node;
+		/* busy-loop if head changed under us */
 	}
+}
+
+/*
+ * __cds_lfs_pop_all: pop all nodes from a stack.
+ *
+ * __cds_lfs_pop_all does not require any synchronization with other
+ * push, nor with other __cds_lfs_pop_all, but requires synchronization
+ * matching the technique used to synchronize __cds_lfs_pop:
+ *
+ * 1) If __cds_lfs_pop is called under rcu read lock critical section,
+ *    both __cds_lfs_pop and cds_lfs_pop_all callers must wait for a
+ *    grace period to pass before freeing the returned node or modifying
+ *    the cds_lfs_node structure. However, no RCU read-side critical
+ *    section is needed around __cds_lfs_pop_all.
+ * 2) Using mutual exclusion (e.g. mutexes) to protect __cds_lfs_pop and
+ *    __cds_lfs_pop_all callers.
+ * 3) Ensuring that only ONE thread can call __cds_lfs_pop() and
+ *    __cds_lfs_pop_all(). (multi-provider/single-consumer scheme).
+ */
+static inline
+struct cds_lfs_head *___cds_lfs_pop_all(struct cds_lfs_stack *s)
+{
+	/*
+	 * Implicit memory barrier after uatomic_xchg() matches implicit
+	 * memory barrier before uatomic_cmpxchg() in cds_lfs_push. It
+	 * ensures that all nodes of the returned list are consistent.
+	 * There is no need to issue memory barriers when iterating on
+	 * the returned list, because the full memory barrier issued
+	 * prior to each uatomic_cmpxchg, which each write to head, are
+	 * taking care to order writes to each node prior to the full
+	 * memory barrier after this uatomic_xchg().
+	 */
+	return uatomic_xchg(&s->head, NULL);
+}
+
+/*
+ * cds_lfs_pop_lock: lock stack pop-protection mutex.
+ */
+static inline void _cds_lfs_pop_lock(struct cds_lfs_stack *s)
+{
+	int ret;
+
+	ret = pthread_mutex_lock(&s->lock);
+	assert(!ret);
+}
+
+/*
+ * cds_lfs_pop_unlock: unlock stack pop-protection mutex.
+ */
+static inline void _cds_lfs_pop_unlock(struct cds_lfs_stack *s)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(&s->lock);
+	assert(!ret);
+}
+
+/*
+ * Call __cds_lfs_pop with an internal pop mutex held.
+ */
+static inline
+struct cds_lfs_node *
+_cds_lfs_pop_blocking(struct cds_lfs_stack *s)
+{
+	struct cds_lfs_node *retnode;
+
+	_cds_lfs_pop_lock(s);
+	retnode = ___cds_lfs_pop(s);
+	_cds_lfs_pop_unlock(s);
+	return retnode;
+}
+
+/*
+ * Call __cds_lfs_pop_all with an internal pop mutex held.
+ */
+static inline
+struct cds_lfs_head *
+_cds_lfs_pop_all_blocking(struct cds_lfs_stack *s)
+{
+	struct cds_lfs_head *rethead;
+
+	_cds_lfs_pop_lock(s);
+	rethead = ___cds_lfs_pop_all(s);
+	_cds_lfs_pop_unlock(s);
+	return rethead;
 }
 
 #ifdef __cplusplus
