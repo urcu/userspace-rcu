@@ -1,3 +1,11 @@
+2012-10-12 Userspace RCU 0.7.5
+	* 19cf3ae Fix: call_rcu list corruption on teardown
+	* Ensure that read-side functions meet 10-line LGPL criterion
+	* tls-compat.h: document sigaltstack(2) limitation
+	* urcu: add notice to URCU_TLS() for it is not strictly async-signal-safe
+	* Document sigaltstack(2) limitation
+	* Documentation: update LICENSE file
+
 2012-08-27 Userspace RCU 0.7.4
 	* rculfhash API documentation: document destroy RCU read-lock constraint
 	* Fix: rculfhash should be offline while waiting for resize to complete
