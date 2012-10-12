@@ -102,6 +102,10 @@ struct cds_wfcq_tail {
  *
  * For convenience, cds_wfcq_dequeue_blocking() and
  * cds_wfcq_splice_blocking() hold the dequeue lock.
+ *
+ * Besides locking, mutual exclusion of dequeue, splice and iteration
+ * can be ensured by performing all of those operations from a single
+ * thread, without requiring any lock.
  */
 
 /*
@@ -151,7 +155,8 @@ extern void cds_wfcq_enqueue(struct cds_wfcq_head *head,
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * It is valid to reuse and free a dequeued node immediately.
- * Mutual exlusion with dequeuers is ensured internally.
+ * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
+ * ensured.
  */
 extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
 		struct cds_wfcq_head *head,
@@ -164,7 +169,8 @@ extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
  * dest_q must be already initialized.
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Mutual exlusion with dequeuers is ensured internally.
+ * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
+ * ensured.
  */
 extern void cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
@@ -178,7 +184,8 @@ extern void cds_wfcq_splice_blocking(
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * It is valid to reuse and free a dequeued node immediately.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
  */
 extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 		struct cds_wfcq_head *head,
@@ -191,7 +198,8 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
  * dest_q must be already initialized.
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion for src_q should be ensured
+ * by the caller.
  */
 extern void __cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
@@ -204,7 +212,8 @@ extern void __cds_wfcq_splice_blocking(
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
  *
  * Used by for-like iteration macros:
  * __cds_wfcq_for_each_blocking()
@@ -219,7 +228,8 @@ extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
  *
  * Used by for-like iteration macros:
  * __cds_wfcq_for_each_blocking()
@@ -241,7 +251,8 @@ extern struct cds_wfcq_node *__cds_wfcq_next_blocking(
  *
  * Content written into each node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
  */
 #define __cds_wfcq_for_each_blocking(head, tail, node)		\
 	for (node = __cds_wfcq_first_blocking(head, tail);	\
@@ -259,7 +270,8 @@ extern struct cds_wfcq_node *__cds_wfcq_next_blocking(
  *
  * Content written into each node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Should be called with cds_wfcq_dequeue_lock() held.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
  */
 #define __cds_wfcq_for_each_blocking_safe(head, tail, node, n)		       \
 	for (node = __cds_wfcq_first_blocking(head, tail),		       \
