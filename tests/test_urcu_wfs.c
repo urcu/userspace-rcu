@@ -68,6 +68,16 @@ static inline pid_t gettid(void)
 #include <urcu.h>
 #include <urcu/wfstack.h>
 
+/*
+ * External synchronization used.
+ */
+enum test_sync {
+	TEST_SYNC_NONE = 0,
+	TEST_SYNC_MUTEX,
+};
+
+static enum test_sync test_sync;
+
 static volatile int test_go, test_stop;
 
 static unsigned long rduration;
@@ -85,10 +95,12 @@ static inline void loop_sleep(unsigned long loops)
 
 static int verbose_mode;
 
+static int test_pop, test_pop_all;
+
 #define printf_verbose(fmt, args...)		\
 	do {					\
 		if (verbose_mode)		\
-			printf(fmt, args);	\
+			printf(fmt, ## args);	\
 	} while (0)
 
 static unsigned int cpu_affinities[NR_CPUS];
@@ -200,9 +212,45 @@ fail:
 
 }
 
+static void do_test_pop(enum test_sync sync)
+{
+	struct cds_wfs_node *node;
+
+	if (sync == TEST_SYNC_MUTEX)
+		cds_wfs_pop_lock(&s);
+	node = __cds_wfs_pop_blocking(&s);
+	if (sync == TEST_SYNC_MUTEX)
+		cds_wfs_pop_unlock(&s);
+
+	if (node) {
+		free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+	}
+	URCU_TLS(nr_dequeues)++;
+}
+
+static void do_test_pop_all(enum test_sync sync)
+{
+	struct cds_wfs_head *head;
+	struct cds_wfs_node *node, *n;
+
+	if (sync == TEST_SYNC_MUTEX)
+		cds_wfs_pop_lock(&s);
+	head = __cds_wfs_pop_all(&s);
+	if (sync == TEST_SYNC_MUTEX)
+		cds_wfs_pop_unlock(&s);
+
+	cds_wfs_for_each_blocking_safe(head, node, n) {
+		free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+		URCU_TLS(nr_dequeues)++;
+	}
+}
+
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
+	unsigned int counter;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"dequeuer", pthread_self(), (unsigned long)gettid());
@@ -214,15 +262,22 @@ void *thr_dequeuer(void *_count)
 	}
 	cmm_smp_mb();
 
-	for (;;) {
-		struct cds_wfs_node *node = cds_wfs_pop_blocking(&s);
+	assert(test_pop || test_pop_all);
 
-		if (node) {
-			free(node);
-			URCU_TLS(nr_successful_dequeues)++;
+	for (;;) {
+		if (test_pop && test_pop_all) {
+			if (counter & 1)
+				do_test_pop(test_sync);
+			else
+				do_test_pop_all(test_sync);
+			counter++;
+		} else {
+			if (test_pop)
+				do_test_pop(test_sync);
+			else
+				do_test_pop_all(test_sync);
 		}
 
-		URCU_TLS(nr_dequeues)++;
 		if (caa_unlikely(!test_duration_dequeue()))
 			break;
 		if (caa_unlikely(rduration))
@@ -258,6 +313,10 @@ void show_usage(int argc, char **argv)
 	printf(" [-c duration] (dequeuer period (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
+	printf(" [-p] (test pop)");
+	printf(" [-P] (test pop_all, enabled by default)");
+	printf(" [-M] (use mutex external synchronization)");
+	printf("      Note: default: no external synchronization used.");
 	printf("\n");
 }
 
@@ -327,12 +386,29 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose_mode = 1;
 			break;
+		case 'p':
+			test_pop = 1;
+			break;
+		case 'P':
+			test_pop_all = 1;
+			break;
+		case 'M':
+			test_sync = TEST_SYNC_MUTEX;
+			break;
 		}
 	}
+
+	/* activate pop_all test by default */
+	if (!test_pop && !test_pop_all)
+		test_pop_all = 1;
 
 	printf_verbose("running test for %lu seconds, %u enqueuers, "
 		       "%u dequeuers.\n",
 		       duration, nr_enqueuers, nr_dequeuers);
+	if (test_pop)
+		printf_verbose("pop test activated.\n");
+	if (test_pop_all)
+		printf_verbose("pop_all test activated.\n");
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
