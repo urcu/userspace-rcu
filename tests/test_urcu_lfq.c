@@ -243,14 +243,15 @@ void *thr_dequeuer(void *_count)
 
 	for (;;) {
 		struct cds_lfq_node_rcu *qnode;
-		struct test *node;
 
 		rcu_read_lock();
 		qnode = cds_lfq_dequeue_rcu(&q);
-		node = caa_container_of(qnode, struct test, list);
 		rcu_read_unlock();
 
-		if (node) {
+		if (qnode) {
+			struct test *node;
+
+			node = caa_container_of(qnode, struct test, list);
 			call_rcu(&node->rcu, free_node_cb);
 			URCU_TLS(nr_successful_dequeues)++;
 		}
