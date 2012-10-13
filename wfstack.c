@@ -1,7 +1,7 @@
 /*
  * wfstack.c
  *
- * Userspace RCU library - Stack with Wait-Free push, Blocking pop.
+ * Userspace RCU library - Stack with wait-free push, blocking traversal.
  *
  * Copyright 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
@@ -38,9 +38,44 @@ void cds_wfs_init(struct cds_wfs_stack *s)
 	_cds_wfs_init(s);
 }
 
+bool cds_wfs_empty(struct cds_wfs_stack *s)
+{
+	return _cds_wfs_empty(s);
+}
+
 int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
 {
 	return _cds_wfs_push(s, node);
+}
+
+struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s)
+{
+	return _cds_wfs_pop_blocking(s);
+}
+
+struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s)
+{
+	return _cds_wfs_pop_all_blocking(s);
+}
+
+struct cds_wfs_node *cds_wfs_first_blocking(struct cds_wfs_head *head)
+{
+	return _cds_wfs_first_blocking(head);
+}
+
+struct cds_wfs_node *cds_wfs_next_blocking(struct cds_wfs_node *node)
+{
+	return _cds_wfs_next_blocking(node);
+}
+
+void cds_wfs_pop_lock(struct cds_wfs_stack *s)
+{
+	_cds_wfs_pop_lock(s);
+}
+
+void cds_wfs_pop_unlock(struct cds_wfs_stack *s)
+{
+	_cds_wfs_pop_unlock(s);
 }
 
 struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
@@ -48,7 +83,7 @@ struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 	return ___cds_wfs_pop_blocking(s);
 }
 
-struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s)
+struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s)
 {
-	return _cds_wfs_pop_blocking(s);
+	return ___cds_wfs_pop_all(s);
 }
