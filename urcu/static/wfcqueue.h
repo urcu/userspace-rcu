@@ -257,11 +257,6 @@ ___cds_wfcq_next_blocking(struct cds_wfcq_head *head,
 /*
  * __cds_wfcq_dequeue_blocking: dequeue a node from the queue.
  *
- * No need to go on a waitqueue here, as there is no possible state in which the
- * list could cause dequeue to busy-loop needlessly while waiting for another
- * thread to be scheduled. The queue appears empty until tail->next is set by
- * enqueue.
- *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * It is valid to reuse and free a dequeued node immediately.
