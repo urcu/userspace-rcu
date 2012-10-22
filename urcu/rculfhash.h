@@ -118,6 +118,7 @@ extern const struct cds_lfht_mm_type cds_lfht_mm_mmap;
 /*
  * _cds_lfht_new - API used by cds_lfht_new wrapper. Do not use directly.
  */
+extern
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets,
@@ -178,6 +179,7 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
  * cds_lfht_destroy should *not* be called from a RCU read-side critical
  * section.
  */
+extern
 int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
 
 /*
@@ -190,6 +192,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  */
+extern
 void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *split_count_before,
 		unsigned long *count,
@@ -207,6 +210,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
  * Threads calling this API need to be registered RCU read-side threads.
  * This function acts as a rcu_dereference() to read the node pointer.
  */
+extern
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		cds_lfht_match_fct match, const void *key,
 		struct cds_lfht_iter *iter);
@@ -231,6 +235,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
  * Threads calling this API need to be registered RCU read-side threads.
  * This function acts as a rcu_dereference() to read the node pointer.
  */
+extern
 void cds_lfht_next_duplicate(struct cds_lfht *ht,
 		cds_lfht_match_fct match, const void *key,
 		struct cds_lfht_iter *iter);
@@ -245,6 +250,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht,
  * Threads calling this API need to be registered RCU read-side threads.
  * This function acts as a rcu_dereference() to read the node pointer.
  */
+extern
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
@@ -259,6 +265,7 @@ void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
  * Threads calling this API need to be registered RCU read-side threads.
  * This function acts as a rcu_dereference() to read the node pointer.
  */
+extern
 void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
@@ -273,6 +280,7 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
  * This function issues a full memory barrier before and after its
  * atomic commit.
  */
+extern
 void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 		struct cds_lfht_node *node);
 
@@ -303,6 +311,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  * node pointer. The failure case does not guarantee any other memory
  * barrier.
  */
+extern
 struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		unsigned long hash,
 		cds_lfht_match_fct match,
@@ -339,6 +348,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * This function issues a full memory barrier before and after its
  * atomic commit.
  */
+extern
 struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		unsigned long hash,
 		cds_lfht_match_fct match,
@@ -374,6 +384,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
  * after its atomic commit. Upon failure, this function does not issue
  * any memory barrier.
  */
+extern
 int cds_lfht_replace(struct cds_lfht *ht,
 		struct cds_lfht_iter *old_iter,
 		unsigned long hash,
@@ -402,6 +413,7 @@ int cds_lfht_replace(struct cds_lfht *ht,
  * after its atomic commit. Upon failure, this function does not issue
  * any memory barrier.
  */
+extern
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
@@ -417,6 +429,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
  * Threads calling this API need to be registered RCU read-side threads.
  * This function does not issue any memory barrier.
  */
+extern
 int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
 
 /*
@@ -427,6 +440,7 @@ int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
  * Threads calling this API need to be registered RCU read-side threads.
  * This function does not (necessarily) issue memory barriers.
  */
+extern
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 
 /*
