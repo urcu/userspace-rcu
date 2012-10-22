@@ -2,7 +2,7 @@
 #define _URCU_WFCQUEUE_H
 
 /*
- * wfcqueue.h
+ * urcu/wfcqueue.h
  *
  * Userspace RCU library - Concurrent Queue with Wait-Free Enqueue/Blocking Dequeue
  *
@@ -42,6 +42,8 @@ extern "C" {
  * half-wait-free/half-blocking queue implementation done by Paul E.
  * McKenney.
  */
+
+#define CDS_WFCQ_WOULDBLOCK	((void *) -1UL)
 
 struct cds_wfcq_node {
 	struct cds_wfcq_node *next;
@@ -85,6 +87,16 @@ struct cds_wfcq_tail {
 #define __cds_wfcq_splice_blocking	___cds_wfcq_splice_blocking
 #define __cds_wfcq_first_blocking	___cds_wfcq_first_blocking
 #define __cds_wfcq_next_blocking	___cds_wfcq_next_blocking
+
+/*
+ * Locking ensured by caller by holding cds_wfcq_dequeue_lock().
+ * Non-blocking: deque, first, next return CDS_WFCQ_WOULDBLOCK if they
+ * need to block. splice returns nonzero if it needs to block.
+ */
+#define __cds_wfcq_dequeue_nonblocking	___cds_wfcq_dequeue_nonblocking
+#define __cds_wfcq_splice_nonblocking	___cds_wfcq_splice_nonblocking
+#define __cds_wfcq_first_nonblocking	___cds_wfcq_first_nonblocking
+#define __cds_wfcq_next_nonblocking	___cds_wfcq_next_nonblocking
 
 #else /* !_LGPL_SOURCE */
 
@@ -179,7 +191,7 @@ extern void cds_wfcq_splice_blocking(
 		struct cds_wfcq_tail *src_q_tail);
 
 /*
- * __cds_wfcq_dequeue_blocking:
+ * __cds_wfcq_dequeue_blocking: dequeue a node from a wait-free queue.
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
@@ -188,6 +200,16 @@ extern void cds_wfcq_splice_blocking(
  * caller.
  */
 extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail);
+
+/*
+ * __cds_wfcq_dequeue_nonblocking: dequeue a node from a wait-free queue.
+ *
+ * Same as __cds_wfcq_dequeue_blocking, but returns CDS_WFCQ_WOULDBLOCK
+ * if it needs to block.
+ */
+extern struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail);
 
@@ -202,6 +224,18 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
  * by the caller.
  */
 extern void __cds_wfcq_splice_blocking(
+		struct cds_wfcq_head *dest_q_head,
+		struct cds_wfcq_tail *dest_q_tail,
+		struct cds_wfcq_head *src_q_head,
+		struct cds_wfcq_tail *src_q_tail);
+
+/*
+ * __cds_wfcq_splice_nonblocking: enqueue all src_q nodes at the end of dest_q.
+ *
+ * Same as __cds_wfcq_splice_blocking, but returns nonzero if it needs to
+ * block.
+ */
+extern int __cds_wfcq_splice_nonblocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
@@ -224,6 +258,16 @@ extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
 		struct cds_wfcq_tail *tail);
 
 /*
+ * __cds_wfcq_first_nonblocking: get first node of a queue, without dequeuing.
+ *
+ * Same as __cds_wfcq_first_blocking, but returns CDS_WFCQ_WOULDBLOCK if
+ * it needs to block.
+ */
+extern struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail);
+
+/*
  * __cds_wfcq_next_blocking: get next node of a queue, without dequeuing.
  *
  * Content written into the node before enqueue is guaranteed to be
@@ -236,6 +280,17 @@ extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
  * __cds_wfcq_for_each_blocking_safe()
  */
 extern struct cds_wfcq_node *__cds_wfcq_next_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		struct cds_wfcq_node *node);
+
+/*
+ * __cds_wfcq_next_blocking: get next node of a queue, without dequeuing.
+ *
+ * Same as __cds_wfcq_next_blocking, but returns CDS_WFCQ_WOULDBLOCK if
+ * it needs to block.
+ */
+extern struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node);

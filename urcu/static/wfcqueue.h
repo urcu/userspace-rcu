@@ -2,7 +2,7 @@
 #define _URCU_WFCQUEUE_STATIC_H
 
 /*
- * wfcqueue-static.h
+ * urcu/static/wfcqueue.h
  *
  * Userspace RCU library - Concurrent Queue with Wait-Free Enqueue/Blocking Dequeue
  *
@@ -171,7 +171,7 @@ static inline void _cds_wfcq_enqueue(struct cds_wfcq_head *head,
  * Waiting for enqueuer to complete enqueue and return the next node.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_node_sync_next(struct cds_wfcq_node *node)
+___cds_wfcq_node_sync_next(struct cds_wfcq_node *node, int blocking)
 {
 	struct cds_wfcq_node *next;
 	int attempt = 0;
@@ -180,6 +180,8 @@ ___cds_wfcq_node_sync_next(struct cds_wfcq_node *node)
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
 	 */
 	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+		if (!blocking)
+			return CDS_WFCQ_WOULDBLOCK;
 		if (++attempt >= WFCQ_ADAPT_ATTEMPTS) {
 			poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
 			attempt = 0;
@@ -189,6 +191,21 @@ ___cds_wfcq_node_sync_next(struct cds_wfcq_node *node)
 	}
 
 	return next;
+}
+
+static inline struct cds_wfcq_node *
+___cds_wfcq_first(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int blocking)
+{
+	struct cds_wfcq_node *node;
+
+	if (_cds_wfcq_empty(head, tail))
+		return NULL;
+	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
+	/* Load head->node.next before loading node's content */
+	cmm_smp_read_barrier_depends();
+	return node;
 }
 
 /*
@@ -207,14 +224,47 @@ static inline struct cds_wfcq_node *
 ___cds_wfcq_first_blocking(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	struct cds_wfcq_node *node;
+	return ___cds_wfcq_first(head, tail, 1);
+}
 
-	if (_cds_wfcq_empty(head, tail))
-		return NULL;
-	node = ___cds_wfcq_node_sync_next(&head->node);
-	/* Load head->node.next before loading node's content */
+
+/*
+ * __cds_wfcq_first_nonblocking: get first node of a queue, without dequeuing.
+ *
+ * Same as __cds_wfcq_first_blocking, but returns CDS_WFCQ_WOULDBLOCK if
+ * it needs to block.
+ */
+static inline struct cds_wfcq_node *
+___cds_wfcq_first_nonblocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	return ___cds_wfcq_first(head, tail, 0);
+}
+
+static inline struct cds_wfcq_node *
+___cds_wfcq_next(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		struct cds_wfcq_node *node,
+		int blocking)
+{
+	struct cds_wfcq_node *next;
+
+	/*
+	 * Even though the following tail->p check is sufficient to find
+	 * out if we reached the end of the queue, we first check
+	 * node->next as a common case to ensure that iteration on nodes
+	 * do not frequently access enqueuer's tail->p cache line.
+	 */
+	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+		/* Load node->next before tail->p */
+		cmm_smp_rmb();
+		if (CMM_LOAD_SHARED(tail->p) == node)
+			return NULL;
+		next = ___cds_wfcq_node_sync_next(node, blocking);
+	}
+	/* Load node->next before loading next's content */
 	cmm_smp_read_barrier_depends();
-	return node;
+	return next;
 }
 
 /*
@@ -234,45 +284,34 @@ ___cds_wfcq_next_blocking(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	struct cds_wfcq_node *next;
-
-	/*
-	 * Even though the following tail->p check is sufficient to find
-	 * out if we reached the end of the queue, we first check
-	 * node->next as a common case to ensure that iteration on nodes
-	 * do not frequently access enqueuer's tail->p cache line.
-	 */
-	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
-		/* Load node->next before tail->p */
-		cmm_smp_rmb();
-		if (CMM_LOAD_SHARED(tail->p) == node)
-			return NULL;
-		next = ___cds_wfcq_node_sync_next(node);
-	}
-	/* Load node->next before loading next's content */
-	cmm_smp_read_barrier_depends();
-	return next;
+	return ___cds_wfcq_next(head, tail, node, 1);
 }
 
 /*
- * __cds_wfcq_dequeue_blocking: dequeue a node from the queue.
+ * __cds_wfcq_next_blocking: get next node of a queue, without dequeuing.
  *
- * Content written into the node before enqueue is guaranteed to be
- * consistent, but no other memory ordering is ensured.
- * It is valid to reuse and free a dequeued node immediately.
- * Dequeue/splice/iteration mutual exclusion should be ensured by the
- * caller.
+ * Same as __cds_wfcq_next_blocking, but returns CDS_WFCQ_WOULDBLOCK if
+ * it needs to block.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+___cds_wfcq_next_nonblocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		struct cds_wfcq_node *node)
+{
+	return ___cds_wfcq_next(head, tail, node, 0);
+}
+
+static inline struct cds_wfcq_node *
+___cds_wfcq_dequeue(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int blocking)
 {
 	struct cds_wfcq_node *node, *next;
 
 	if (_cds_wfcq_empty(head, tail))
 		return NULL;
 
-	node = ___cds_wfcq_node_sync_next(&head->node);
+	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
 
 	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
 		/*
@@ -292,7 +331,7 @@ ___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
 		_cds_wfcq_node_init(&head->node);
 		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node)
 			return node;
-		next = ___cds_wfcq_node_sync_next(node);
+		next = ___cds_wfcq_node_sync_next(node, blocking);
 	}
 
 	/*
@@ -304,6 +343,70 @@ ___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
 	cmm_smp_read_barrier_depends();
 	return node;
 }
+
+/*
+ * __cds_wfcq_dequeue_blocking: dequeue a node from the queue.
+ *
+ * Content written into the node before enqueue is guaranteed to be
+ * consistent, but no other memory ordering is ensured.
+ * It is valid to reuse and free a dequeued node immediately.
+ * Dequeue/splice/iteration mutual exclusion should be ensured by the
+ * caller.
+ */
+static inline struct cds_wfcq_node *
+___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	return ___cds_wfcq_dequeue(head, tail, 1);
+}
+
+/*
+ * __cds_wfcq_dequeue_nonblocking: dequeue a node from a wait-free queue.
+ *
+ * Same as __cds_wfcq_dequeue_blocking, but returns CDS_WFCQ_WOULDBLOCK
+ * if it needs to block.
+ */
+static inline struct cds_wfcq_node *
+___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	return ___cds_wfcq_dequeue(head, tail, 0);
+}
+
+static inline int
+___cds_wfcq_splice(
+		struct cds_wfcq_head *dest_q_head,
+		struct cds_wfcq_tail *dest_q_tail,
+		struct cds_wfcq_head *src_q_head,
+		struct cds_wfcq_tail *src_q_tail,
+		int blocking)
+{
+	struct cds_wfcq_node *head, *tail;
+
+	if (_cds_wfcq_empty(src_q_head, src_q_tail))
+		return 0;
+
+	head = ___cds_wfcq_node_sync_next(&src_q_head->node, blocking);
+	if (head == CDS_WFCQ_WOULDBLOCK)
+		return -1;
+	_cds_wfcq_node_init(&src_q_head->node);
+
+	/*
+	 * Memory barrier implied before uatomic_xchg() orders store to
+	 * src_q->head before store to src_q->tail. This is required by
+	 * concurrent enqueue on src_q, which exchanges the tail before
+	 * updating the previous tail's next pointer.
+	 */
+	tail = uatomic_xchg(&src_q_tail->p, &src_q_head->node);
+
+	/*
+	 * Append the spliced content of src_q into dest_q. Does not
+	 * require mutual exclusion on dest_q (wait-free).
+	 */
+	___cds_wfcq_append(dest_q_head, dest_q_tail, head, tail);
+	return 0;
+}
+
 
 /*
  * __cds_wfcq_splice_blocking: enqueue all src_q nodes at the end of dest_q.
@@ -320,27 +423,25 @@ ___cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	struct cds_wfcq_node *head, *tail;
+	(void) ___cds_wfcq_splice(dest_q_head, dest_q_tail,
+		src_q_head, src_q_tail, 1);
+}
 
-	if (_cds_wfcq_empty(src_q_head, src_q_tail))
-		return;
-
-	head = ___cds_wfcq_node_sync_next(&src_q_head->node);
-	_cds_wfcq_node_init(&src_q_head->node);
-
-	/*
-	 * Memory barrier implied before uatomic_xchg() orders store to
-	 * src_q->head before store to src_q->tail. This is required by
-	 * concurrent enqueue on src_q, which exchanges the tail before
-	 * updating the previous tail's next pointer.
-	 */
-	tail = uatomic_xchg(&src_q_tail->p, &src_q_head->node);
-
-	/*
-	 * Append the spliced content of src_q into dest_q. Does not
-	 * require mutual exclusion on dest_q (wait-free).
-	 */
-	___cds_wfcq_append(dest_q_head, dest_q_tail, head, tail);
+/*
+ * __cds_wfcq_splice_nonblocking: enqueue all src_q nodes at the end of dest_q.
+ *
+ * Same as __cds_wfcq_splice_blocking, but returns nonzero if it needs to
+ * block.
+ */
+static inline int
+___cds_wfcq_splice_nonblocking(
+		struct cds_wfcq_head *dest_q_head,
+		struct cds_wfcq_tail *dest_q_tail,
+		struct cds_wfcq_head *src_q_head,
+		struct cds_wfcq_tail *src_q_tail)
+{
+	return ___cds_wfcq_splice(dest_q_head, dest_q_tail,
+		src_q_head, src_q_tail, 0);
 }
 
 /*
