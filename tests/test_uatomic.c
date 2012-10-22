@@ -25,8 +25,12 @@
 #include <urcu/uatomic.h>
 
 struct testvals {
+#ifdef UATOMIC_HAS_ATOMIC_BYTE
 	unsigned char c;
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_SHORT
 	unsigned short s;
+#endif
 	unsigned int i;
 	unsigned long l;
 };

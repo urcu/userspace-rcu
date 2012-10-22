@@ -136,9 +136,10 @@ static pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void set_affinity(void)
 {
+#if HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
-	int cpu;
-	int ret;
+	int cpu, ret;
+#endif /* HAVE_SCHED_SETAFFINITY */
 
 	if (!use_affinity)
 		return;
