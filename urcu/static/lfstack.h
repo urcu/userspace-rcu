@@ -8,8 +8,8 @@
  *
  * Copyright 2010-2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See rculfstack.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu/lfstack.h for
+ * linking dynamically with the userspace rcu library.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

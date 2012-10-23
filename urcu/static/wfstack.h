@@ -6,8 +6,8 @@
  *
  * Userspace RCU library - Stack with with wait-free push, blocking traversal.
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See wfstack.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu/wfstack.h for
+ * linking dynamically with the userspace rcu library.
  *
  * Copyright 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *

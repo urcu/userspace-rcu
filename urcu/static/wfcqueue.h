@@ -6,8 +6,8 @@
  *
  * Userspace RCU library - Concurrent Queue with Wait-Free Enqueue/Blocking Dequeue
  *
- * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See wfcqueue.h for linking
- * dynamically with the userspace rcu library.
+ * TO BE INCLUDED ONLY IN LGPL-COMPATIBLE CODE. See urcu/wfcqueue.h for
+ * linking dynamically with the userspace rcu library.
  *
  * Copyright 2010-2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright 2011-2012 - Lai Jiangshan <laijs@cn.fujitsu.com>
