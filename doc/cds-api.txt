@@ -33,15 +33,18 @@ urcu/rculfqueue.h:
 	RCU queue with lock-free enqueue, lock-free dequeue. RCU used to
 	provide existance guarantees.
 
-urcu/wfqueue.h:
+urcu/wfcqueue.h:
 
-	Queue with wait-free enqueue, blocking dequeue. This queue does
-	_not_ use RCU.
+	Concurrent queue with wait-free enqueue, blocking traversal.
+	This queue does _not_ use RCU.
+	(note: deprecates urcu/wfqueue.h)
 
-urcu/rculfstack.h:
+urcu/lfstack.h:
 
-	RCU stack with lock-free push, lock-free dequeue. RCU used to
-	provide existance guarantees.
+	RCU stack with lock-free push, lock-free dequeue. Various
+	synchronization techniques can be used to deal with "pop" ABA.
+	Those are detailed in the API.
+	(note: deprecates urcu/rculfstack.h)
 
 urcu/wfstack.h:
 
