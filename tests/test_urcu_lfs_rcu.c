@@ -66,6 +66,10 @@ static inline pid_t gettid(void)
 #define _LGPL_SOURCE
 #endif
 #include <urcu.h>
+
+/* Remove deprecation warnings from test build. */
+#define CDS_LFS_RCU_DEPRECATED
+
 #include <urcu/cds.h>
 
 static volatile int test_go, test_stop;

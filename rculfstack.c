@@ -20,6 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* Remove deprecation warnings from LGPL wrapper build. */
+#define CDS_LFS_RCU_DEPRECATED
+
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
 #include "urcu/rculfstack.h"
