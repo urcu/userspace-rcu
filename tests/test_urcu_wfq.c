@@ -65,6 +65,10 @@ static inline pid_t gettid(void)
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #endif
+
+/* Remove deprecation warnings from test build. */
+#define CDS_WFQ_DEPRECATED
+
 #include <urcu.h>
 #include <urcu/wfqueue.h>
 

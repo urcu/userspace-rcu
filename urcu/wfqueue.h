@@ -31,6 +31,11 @@
 extern "C" {
 #endif
 
+#ifndef CDS_WFQ_DEPRECATED
+#define CDS_WFQ_DEPRECATED	\
+	__attribute__((deprecated("urcu/wfqueue.h is deprecated. Please use urcu/wfcqueue.h instead.")))
+#endif
+
 /*
  * Queue with wait-free enqueue/blocking dequeue.
  * This implementation adds a dummy head node when the queue is empty to ensure
@@ -54,20 +59,53 @@ struct cds_wfq_queue {
 
 #include <urcu/static/wfqueue.h>
 
-#define cds_wfq_node_init		_cds_wfq_node_init
-#define cds_wfq_init		_cds_wfq_init
-#define cds_wfq_enqueue		_cds_wfq_enqueue
-#define __cds_wfq_dequeue_blocking	___cds_wfq_dequeue_blocking
-#define cds_wfq_dequeue_blocking	_cds_wfq_dequeue_blocking
+static inline CDS_WFQ_DEPRECATED
+void cds_wfq_node_init(struct cds_wfq_node *node)
+{
+	_cds_wfq_node_init(node);
+}
+
+static inline CDS_WFQ_DEPRECATED
+void cds_wfq_init(struct cds_wfq_queue *q)
+{
+	_cds_wfq_init(q);
+}
+
+static inline CDS_WFQ_DEPRECATED
+void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
+{
+	_cds_wfq_enqueue(q, node);
+}
+
+static inline CDS_WFQ_DEPRECATED
+struct cds_wfq_node *__cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
+{
+	return ___cds_wfq_dequeue_blocking(q);
+}
+
+static inline CDS_WFQ_DEPRECATED
+struct cds_wfq_node *cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
+{
+	return _cds_wfq_dequeue_blocking(q);
+}
 
 #else /* !_LGPL_SOURCE */
 
-extern void cds_wfq_node_init(struct cds_wfq_node *node);
-extern void cds_wfq_init(struct cds_wfq_queue *q);
-extern void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node);
+extern CDS_WFQ_DEPRECATED
+void cds_wfq_node_init(struct cds_wfq_node *node);
+
+extern CDS_WFQ_DEPRECATED
+void cds_wfq_init(struct cds_wfq_queue *q);
+
+extern CDS_WFQ_DEPRECATED
+void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node);
+
 /* __cds_wfq_dequeue_blocking: caller ensures mutual exclusion between dequeues */
-extern struct cds_wfq_node *__cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
-extern struct cds_wfq_node *cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
+extern CDS_WFQ_DEPRECATED
+struct cds_wfq_node *__cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
+
+extern CDS_WFQ_DEPRECATED
+struct cds_wfq_node *cds_wfq_dequeue_blocking(struct cds_wfq_queue *q);
 
 #endif /* !_LGPL_SOURCE */
 
