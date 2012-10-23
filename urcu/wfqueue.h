@@ -33,7 +33,7 @@ extern "C" {
 
 #ifndef CDS_WFQ_DEPRECATED
 #define CDS_WFQ_DEPRECATED	\
-	__attribute__((deprecated("urcu/wfqueue.h is deprecated. Please use urcu/wfcqueue.h instead.")))
+	CDS_DEPRECATED("urcu/wfqueue.h is deprecated. Please use urcu/wfcqueue.h instead.")
 #endif
 
 /*

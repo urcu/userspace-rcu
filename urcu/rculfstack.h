@@ -23,13 +23,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <urcu/compiler.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifndef CDS_LFS_RCU_DEPRECATED
 #define CDS_LFS_RCU_DEPRECATED	\
-	__attribute__((deprecated("urcu/rculfstack.h is deprecated. Please use urcu/lfstack.h instead.")))
+	CDS_DEPRECATED("urcu/rculfstack.h is deprecated. Please use urcu/lfstack.h instead.")
 #endif
 
 struct cds_lfs_node_rcu {

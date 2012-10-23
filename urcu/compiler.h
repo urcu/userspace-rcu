@@ -91,4 +91,14 @@
 #define caa_cast_long_keep_sign(v)	\
 	(caa_is_signed_type(__typeof__(v)) ? (long) (v) : (unsigned long) (v))
 
+#if defined (__GNUC__) \
+	&& ((__GNUC_MAJOR__ == 4) && (__GNUC_MINOR__ >= 5)	\
+		|| __GNUC_MAJOR__ >= 5)
+#define CDS_DEPRECATED(msg)	\
+	__attribute__((deprecated(msg)))
+#else
+#define CDS_DEPRECATED(msg)	\
+	__attribute__((deprecated))
+#endif
+
 #endif /* _URCU_COMPILER_H */
