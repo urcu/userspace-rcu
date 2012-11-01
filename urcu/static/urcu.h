@@ -108,8 +108,8 @@ extern "C" {
 #include <pthread.h>
 #include <unistd.h>
 
-#define YIELD_READ 	(1 << 0)
-#define YIELD_WRITE	(1 << 1)
+#define RCU_YIELD_READ 	(1 << 0)
+#define RCU_YIELD_WRITE	(1 << 1)
 
 /*
  * Updates with RCU_SIGNAL are much slower. Account this in the delay.
@@ -121,37 +121,37 @@ extern "C" {
 #define MAX_SLEEP 50
 #endif
 
-extern unsigned int yield_active;
-extern DECLARE_URCU_TLS(unsigned int, rand_yield);
+extern unsigned int rcu_yield_active;
+extern DECLARE_URCU_TLS(unsigned int, rcu_rand_yield);
 
-static inline void debug_yield_read(void)
+static inline void rcu_debug_yield_read(void)
 {
-	if (yield_active & YIELD_READ)
-		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
+	if (rcu_yield_active & RCU_YIELD_READ)
+		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
 }
 
-static inline void debug_yield_write(void)
+static inline void rcu_debug_yield_write(void)
 {
-	if (yield_active & YIELD_WRITE)
-		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
+	if (rcu_yield_active & RCU_YIELD_WRITE)
+		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
 }
 
-static inline void debug_yield_init(void)
+static inline void rcu_debug_yield_init(void)
 {
-	URCU_TLS(rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
+	URCU_TLS(rcu_rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
 }
 #else
-static inline void debug_yield_read(void)
+static inline void rcu_debug_yield_read(void)
 {
 }
 
-static inline void debug_yield_write(void)
+static inline void rcu_debug_yield_write(void)
 {
 }
 
-static inline void debug_yield_init(void)
+static inline void rcu_debug_yield_init(void)
 {
 
 }
@@ -173,11 +173,11 @@ static inline void debug_yield_init(void)
 #define RCU_MB_GROUP		MB_GROUP_ALL
 
 #ifdef RCU_MEMBARRIER
-extern int has_sys_membarrier;
+extern int rcu_has_sys_membarrier;
 
 static inline void smp_mb_slave(int group)
 {
-	if (caa_likely(has_sys_membarrier))
+	if (caa_likely(rcu_has_sys_membarrier))
 		cmm_barrier();
 	else
 		cmm_smp_mb();
@@ -225,16 +225,16 @@ struct rcu_reader {
 
 extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
 
-extern int32_t gp_futex;
+extern int32_t rcu_gp_futex;
 
 /*
  * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.
  */
 static inline void wake_up_gp(void)
 {
-	if (caa_unlikely(uatomic_read(&gp_futex) == -1)) {
-		uatomic_set(&gp_futex, 0);
-		futex_async(&gp_futex, FUTEX_WAKE, 1,
+	if (caa_unlikely(uatomic_read(&rcu_gp_futex) == -1)) {
+		uatomic_set(&rcu_gp_futex, 0);
+		futex_async(&rcu_gp_futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }

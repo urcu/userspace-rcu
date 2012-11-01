@@ -213,7 +213,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		_rcu_read_lock();
 		local_ptr = _rcu_dereference(test_rcu_pointer);
-		debug_yield_read();
+		rcu_debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		if (caa_unlikely(rduration))
@@ -361,10 +361,10 @@ int main(int argc, char **argv)
 		switch (argv[i][1]) {
 #ifdef DEBUG_YIELD
 		case 'r':
-			yield_active |= YIELD_READ;
+			rcu_yield_active |= RCU_YIELD_READ;
 			break;
 		case 'w':
-			yield_active |= YIELD_WRITE;
+			rcu_yield_active |= RCU_YIELD_WRITE;
 			break;
 #endif
 		case 'a':

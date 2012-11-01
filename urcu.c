@@ -63,7 +63,7 @@
 
 #ifdef RCU_MEMBARRIER
 static int init_done;
-int has_sys_membarrier;
+int rcu_has_sys_membarrier;
 
 void __attribute__((constructor)) rcu_init(void);
 #endif
@@ -83,7 +83,7 @@ void __attribute__((destructor)) rcu_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int32_t gp_futex;
+int32_t rcu_gp_futex;
 
 /*
  * Global grace period counter.
@@ -100,8 +100,8 @@ unsigned long rcu_gp_ctr = RCU_GP_COUNT;
 DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
-unsigned int yield_active;
-DEFINE_URCU_TLS(unsigned int, rand_yield);
+unsigned int rcu_yield_active;
+DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
@@ -140,7 +140,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 #ifdef RCU_MEMBARRIER
 static void smp_mb_master(int group)
 {
-	if (caa_likely(has_sys_membarrier))
+	if (caa_likely(rcu_has_sys_membarrier))
 		membarrier(MEMBARRIER_EXPEDITED);
 	else
 		cmm_smp_mb();
@@ -210,8 +210,8 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	smp_mb_master(RCU_MB_GROUP);
-	if (uatomic_read(&gp_futex) == -1)
-		futex_async(&gp_futex, FUTEX_WAIT, -1,
+	if (uatomic_read(&rcu_gp_futex) == -1)
+		futex_async(&rcu_gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
 }
 
@@ -246,7 +246,7 @@ static void update_counter_and_wait(void)
 	for (;;) {
 		wait_loops++;
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_dec(&gp_futex);
+			uatomic_dec(&rcu_gp_futex);
 			/* Write futex before read reader_gp */
 			smp_mb_master(RCU_MB_GROUP);
 		}
@@ -261,7 +261,7 @@ static void update_counter_and_wait(void)
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
-				uatomic_set(&gp_futex, 0);
+				uatomic_set(&rcu_gp_futex, 0);
 			}
 			break;
 		} else {
@@ -280,7 +280,7 @@ static void update_counter_and_wait(void)
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
-				uatomic_set(&gp_futex, 0);
+				uatomic_set(&rcu_gp_futex, 0);
 			}
 			break;
 		} else {
@@ -389,7 +389,7 @@ void rcu_init(void)
 		return;
 	init_done = 1;
 	if (!membarrier(MEMBARRIER_EXPEDITED | MEMBARRIER_QUERY))
-		has_sys_membarrier = 1;
+		rcu_has_sys_membarrier = 1;
 }
 #endif
 

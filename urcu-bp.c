@@ -105,8 +105,8 @@ void __attribute__((destructor)) rcu_bp_exit(void);
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef DEBUG_YIELD
-unsigned int yield_active;
-DEFINE_URCU_TLS(unsigned int, rand_yield);
+unsigned int rcu_yield_active;
+DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 #endif
 
 /*

@@ -62,7 +62,7 @@ static inline pid_t gettid(void)
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #else
-#define debug_yield_read()
+#define rcu_debug_yield_read()
 #endif
 #include <urcu.h>
 #include <urcu-defer.h>
@@ -209,7 +209,7 @@ void *thr_reader(void *_count)
 	for (;;) {
 		rcu_read_lock();
 		local_ptr = rcu_dereference(test_rcu_pointer);
-		debug_yield_read();
+		rcu_debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		if (caa_unlikely(rduration))
@@ -340,10 +340,10 @@ int main(int argc, char **argv)
 		switch (argv[i][1]) {
 #ifdef DEBUG_YIELD
 		case 'r':
-			yield_active |= YIELD_READ;
+			rcu_yield_active |= RCU_YIELD_READ;
 			break;
 		case 'w':
-			yield_active |= YIELD_WRITE;
+			rcu_yield_active |= RCU_YIELD_WRITE;
 			break;
 #endif
 		case 'a':

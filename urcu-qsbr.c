@@ -53,7 +53,7 @@ void __attribute__((destructor)) rcu_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int32_t gp_futex;
+int32_t rcu_gp_futex;
 
 /*
  * Global grace period counter.
@@ -72,8 +72,8 @@ unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
 DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
-unsigned int yield_active;
-DEFINE_URCU_TLS(unsigned int, rand_yield);
+unsigned int rcu_yield_active;
+DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
@@ -111,8 +111,8 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	cmm_smp_rmb();
-	if (uatomic_read(&gp_futex) == -1)
-		futex_noasync(&gp_futex, FUTEX_WAIT, -1,
+	if (uatomic_read(&rcu_gp_futex) == -1)
+		futex_noasync(&rcu_gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
 }
 
@@ -152,7 +152,7 @@ static void update_counter_and_wait(void)
 	for (;;) {
 		wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_set(&gp_futex, -1);
+			uatomic_set(&rcu_gp_futex, -1);
 			/*
 			 * Write futex before write waiting (the other side
 			 * reads them in the opposite order).
@@ -173,7 +173,7 @@ static void update_counter_and_wait(void)
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				cmm_smp_mb();
-				uatomic_set(&gp_futex, 0);
+				uatomic_set(&rcu_gp_futex, 0);
 			}
 			break;
 		} else {

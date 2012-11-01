@@ -45,6 +45,7 @@
 #define synchronize_rcu			synchronize_rcu_bp
 #define rcu_reader			rcu_reader_bp
 #define rcu_gp_ctr			rcu_gp_ctr_bp
+#define rcu_gp_futex			rcu_gp_futex_bp	/* unused */
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_bp
 #define get_call_rcu_thread		get_call_rcu_thread_bp
@@ -57,13 +58,21 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_bp
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_bp
 #define call_rcu			call_rcu_bp
+#define call_rcu_data_free		call_rcu_data_free_bp
+#define call_rcu_before_fork		call_rcu_before_fork_bp
+#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_bp
+#define call_rcu_after_fork_child	call_rcu_after_fork_child_bp
 
 #define defer_rcu			defer_rcu_bp
 #define rcu_defer_register_thread	rcu_defer_register_thread_bp
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_bp
 #define rcu_defer_barrier		rcu_defer_barrier_bp
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
+#define rcu_defer_exit			rcu_defer_exit_bp
 
 #define rcu_flavor			rcu_flavor_bp
+
+#define rcu_yield_active		rcu_yield_active_bp
+#define rcu_rand_yield			rcu_rand_yield_bp
 
 #endif /* _URCU_BP_MAP_H */

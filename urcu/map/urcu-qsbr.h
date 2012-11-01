@@ -48,6 +48,7 @@
 #define synchronize_rcu			synchronize_rcu_qsbr
 #define rcu_reader			rcu_reader_qsbr
 #define rcu_gp_ctr			rcu_gp_ctr_qsbr
+#define rcu_gp_futex			rcu_gp_futex_qsbr
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_qsbr
 #define get_call_rcu_thread		get_call_rcu_thread_qsbr
@@ -59,13 +60,21 @@
 #define set_thread_call_rcu_data	set_thread_call_rcu_data_qsbr
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_qsbr
 #define call_rcu			call_rcu_qsbr
+#define call_rcu_data_free		call_rcu_data_free_qsbr
+#define call_rcu_before_fork		call_rcu_before_fork_qsbr
+#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_qsbr
+#define call_rcu_after_fork_child	call_rcu_after_fork_child_qsbr
 
 #define defer_rcu			defer_rcu_qsbr
 #define rcu_defer_register_thread	rcu_defer_register_thread_qsbr
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_qsbr
 #define	rcu_defer_barrier		rcu_defer_barrier_qsbr
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_qsbr
+#define rcu_defer_exit			rcu_defer_exit_qsbr
 
 #define rcu_flavor			rcu_flavor_qsbr
+
+#define rcu_yield_active		rcu_yield_active_memb_qsbr
+#define rcu_rand_yield			rcu_rand_yield_memb_qsbr
 
 #endif /* _URCU_QSBR_MAP_H */

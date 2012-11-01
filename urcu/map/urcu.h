@@ -76,6 +76,7 @@
 #define synchronize_rcu			synchronize_rcu_memb
 #define rcu_reader			rcu_reader_memb
 #define rcu_gp_ctr			rcu_gp_ctr_memb
+#define rcu_gp_futex			rcu_gp_futex_memb
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_memb
 #define get_call_rcu_thread		get_call_rcu_thread_memb
@@ -88,14 +89,25 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_memb
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_memb
 #define call_rcu			call_rcu_memb
+#define call_rcu_data_free		call_rcu_data_free_memb
+#define call_rcu_before_fork		call_rcu_before_fork_memb
+#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_memb
+#define call_rcu_after_fork_child	call_rcu_after_fork_child_memb
 
 #define defer_rcu			defer_rcu_memb
 #define rcu_defer_register_thread	rcu_defer_register_thread_memb
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_memb
 #define rcu_defer_barrier		rcu_defer_barrier_memb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_memb
+#define rcu_defer_exit			rcu_defer_exit_memb
 
 #define rcu_flavor			rcu_flavor_memb
+
+#define rcu_yield_active		rcu_yield_active_memb
+#define rcu_rand_yield			rcu_rand_yield_memb
+
+/* Specific to MEMBARRIER flavor */
+#define rcu_has_sys_membarrier		rcu_has_sys_membarrier_memb
 
 #elif defined(RCU_SIGNAL)
 
@@ -110,6 +122,7 @@
 #define synchronize_rcu			synchronize_rcu_sig
 #define rcu_reader			rcu_reader_sig
 #define rcu_gp_ctr			rcu_gp_ctr_sig
+#define rcu_gp_futex			rcu_gp_futex_sig
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_sig
 #define get_call_rcu_thread		get_call_rcu_thread_sig
@@ -122,14 +135,22 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_sig
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_sig
 #define call_rcu			call_rcu_sig
+#define call_rcu_data_free		call_rcu_data_free_sig
+#define call_rcu_before_fork		call_rcu_before_fork_sig
+#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_sig
+#define call_rcu_after_fork_child	call_rcu_after_fork_child_sig
 
 #define defer_rcu			defer_rcu_sig
 #define rcu_defer_register_thread	rcu_defer_register_thread_sig
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_sig
 #define rcu_defer_barrier		rcu_defer_barrier_sig
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_sig
+#define rcu_defer_exit			rcu_defer_exit_sig
 
 #define rcu_flavor			rcu_flavor_sig
+
+#define rcu_yield_active		rcu_yield_active_sig
+#define rcu_rand_yield			rcu_rand_yield_sig
 
 #elif defined(RCU_MB)
 
@@ -144,6 +165,7 @@
 #define synchronize_rcu			synchronize_rcu_mb
 #define rcu_reader			rcu_reader_mb
 #define rcu_gp_ctr			rcu_gp_ctr_mb
+#define rcu_gp_futex			rcu_gp_futex_mb
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_mb
 #define get_call_rcu_thread		get_call_rcu_thread_mb
@@ -156,14 +178,22 @@
 #define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_mb
 #define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_mb
 #define call_rcu			call_rcu_mb
+#define call_rcu_data_free		call_rcu_data_free_mb
+#define call_rcu_before_fork		call_rcu_before_fork_mb
+#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_mb
+#define call_rcu_after_fork_child	call_rcu_after_fork_child_mb
 
 #define defer_rcu			defer_rcu_mb
 #define rcu_defer_register_thread	rcu_defer_register_thread_mb
 #define rcu_defer_unregister_thread	rcu_defer_unregister_thread_mb
 #define rcu_defer_barrier		rcu_defer_barrier_mb
 #define rcu_defer_barrier_thread	rcu_defer_barrier_thread_mb
+#define rcu_defer_exit			rcu_defer_exit_mb
 
 #define rcu_flavor			rcu_flavor_mb
+
+#define rcu_yield_active		rcu_yield_active_mb
+#define rcu_rand_yield			rcu_rand_yield_mb
 
 #else
 

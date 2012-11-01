@@ -64,8 +64,8 @@ extern "C" {
 #include <pthread.h>
 #include <unistd.h>
 
-#define YIELD_READ 	(1 << 0)
-#define YIELD_WRITE	(1 << 1)
+#define RCU_YIELD_READ 	(1 << 0)
+#define RCU_YIELD_WRITE	(1 << 1)
 
 /*
  * Updates without RCU_MB are much slower. Account this in
@@ -74,37 +74,37 @@ extern "C" {
 /* maximum sleep delay, in us */
 #define MAX_SLEEP 50
 
-extern unsigned int yield_active;
-extern DECLARE_URCU_TLS(unsigned int, rand_yield);
+extern unsigned int rcu_yield_active;
+extern DECLARE_URCU_TLS(unsigned int, rcu_rand_yield);
 
-static inline void debug_yield_read(void)
+static inline void rcu_debug_yield_read(void)
 {
-	if (yield_active & YIELD_READ)
-		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
+	if (rcu_yield_active & RCU_YIELD_READ)
+		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
 }
 
-static inline void debug_yield_write(void)
+static inline void rcu_debug_yield_write(void)
 {
-	if (yield_active & YIELD_WRITE)
-		if (rand_r(&URCU_TLS(rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rand_yield)) % MAX_SLEEP);
+	if (rcu_yield_active & RCU_YIELD_WRITE)
+		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
+			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
 }
 
-static inline void debug_yield_init(void)
+static inline void rcu_debug_yield_init(void)
 {
-	URCU_TLS(rand_yield) = time(NULL) ^ pthread_self();
+	URCU_TLS(rcu_rand_yield) = time(NULL) ^ pthread_self();
 }
 #else
-static inline void debug_yield_read(void)
+static inline void rcu_debug_yield_read(void)
 {
 }
 
-static inline void debug_yield_write(void)
+static inline void rcu_debug_yield_write(void)
 {
 }
 
-static inline void debug_yield_init(void)
+static inline void rcu_debug_yield_init(void)
 {
 
 }
