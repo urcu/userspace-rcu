@@ -19,7 +19,8 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_wfq_dynlink test_urcu_wfs_dynlink \
 	test_urcu_wfcq_dynlink \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
-	test_urcu_lfs_rcu_dynlink
+	test_urcu_lfs_rcu_dynlink \
+	test_urcu_multiflavor test_urcu_multiflavor_dynlink
 noinst_HEADERS = rcutorture.h
 
 if COMPAT_ARCH
@@ -205,6 +206,25 @@ test_urcu_hash_SOURCES = test_urcu_hash.c test_urcu_hash.h \
 		test_urcu_hash_rw.c test_urcu_hash_unique.c $(COMPAT)
 test_urcu_hash_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
 test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_CDS_LIB)
+
+test_urcu_multiflavor_SOURCES = test_urcu_multiflavor.c \
+	test_urcu_multiflavor-memb.c \
+	test_urcu_multiflavor-mb.c \
+	test_urcu_multiflavor-signal.c \
+	test_urcu_multiflavor-qsbr.c \
+	test_urcu_multiflavor-bp.c
+test_urcu_multiflavor_LDADD = $(URCU_LIB) $(URCU_MB_LIB) \
+	$(URCU_SIGNAL_LIB) $(URCU_QSBR_LIB) $(URCU_BP_LIB)
+
+test_urcu_multiflavor_dynlink_SOURCES = test_urcu_multiflavor.c \
+	test_urcu_multiflavor-memb.c \
+	test_urcu_multiflavor-mb.c \
+	test_urcu_multiflavor-signal.c \
+	test_urcu_multiflavor-qsbr.c \
+	test_urcu_multiflavor-bp.c
+test_urcu_multiflavor_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
+test_urcu_multiflavor_dynlink_LDADD = $(URCU_LIB) $(URCU_MB_LIB) \
+	$(URCU_SIGNAL_LIB) $(URCU_QSBR_LIB) $(URCU_BP_LIB)
 
 urcutorture.c: api.h
 

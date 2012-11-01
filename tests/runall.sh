@@ -100,5 +100,9 @@ for READERCSLEN in ${READERCSLEN_ARRAY}; do
 	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log
 done
 
+echo Executing multi-flavor RCU test
+./test_urcu_multiflavor
+./test_urcu_multiflavor_dynlink
+
 echo Executing Hash table test
 ./runhash.sh
