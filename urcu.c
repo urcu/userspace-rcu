@@ -215,7 +215,7 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
-void update_counter_and_wait(void)
+static void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;

@@ -69,7 +69,7 @@ struct call_rcu_data {
  * Protected by call_rcu_mutex.
  */
 
-CDS_LIST_HEAD(call_rcu_data_list);
+static CDS_LIST_HEAD(call_rcu_data_list);
 
 /* Link a thread using call_rcu() to its call_rcu thread. */
 

@@ -164,7 +164,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 		urcu_die(ret);
 }
 
-void update_counter_and_wait(void)
+static void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
