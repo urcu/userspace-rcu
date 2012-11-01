@@ -40,7 +40,7 @@ rm -f batch-rcu.log
 NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
 for BATCH_SIZE in ${BATCH_ARRAY}; do
 	echo "./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log" >> runall.log
-	./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log
+	(./runtests-batch.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d 0 -b ${BATCH_SIZE} ${EXTRA_OPTS} | tee -a batch-rcu.log) || exit 1
 done
 
 #setting gc each 32768. ** UPDATE FOR YOUR ARCHITECTURE BASED ON TEST ABOVE **
@@ -59,7 +59,7 @@ rm -f update-fraction.log
 NR_READERS=$((${NUM_CPUS} - ${NR_WRITERS}))
 for WDELAY in ${WDELAY_ARRAY}; do
 	echo "./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log" >> runall.log
-	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log
+	(./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} -d ${WDELAY} ${EXTRA_OPTS} | tee -a update-fraction.log) || exit 1
 done
 
 #Test scalability :
@@ -76,7 +76,7 @@ rm -f scalability.log
 
 for NR_READERS in $(seq 1 ${NUM_CPUS}); do
 	echo "./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS}| tee -a scalability.log" >> runall.log
-	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS}| tee -a scalability.log
+	(./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS}| tee -a scalability.log) || exit 1
 done
 
 
@@ -97,12 +97,12 @@ rm -f readercslen.log
 
 for READERCSLEN in ${READERCSLEN_ARRAY}; do
 	echo "./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log" >> runall.log
-	./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log
+	(./runtests.sh ${NR_READERS} ${NR_WRITERS} ${DURATION} ${EXTRA_OPTS} -c ${READERCSLEN} | tee -a readercslen.log) || exit 1
 done
 
 echo Executing multi-flavor RCU test
-./test_urcu_multiflavor
-./test_urcu_multiflavor_dynlink
+./test_urcu_multiflavor || exit 1
+./test_urcu_multiflavor_dynlink || exit 1
 
 echo Executing Hash table test
-./runhash.sh
+./runhash.sh || exit 1
