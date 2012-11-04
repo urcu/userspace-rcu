@@ -68,6 +68,13 @@ static inline pid_t gettid(void)
 #include <urcu.h>
 #include <urcu/wfcqueue.h>
 
+enum test_sync {
+	TEST_SYNC_MUTEX = 0,
+	TEST_SYNC_NONE,
+};
+
+static enum test_sync test_sync;
+
 static volatile int test_go, test_stop;
 
 static unsigned long rduration;
@@ -85,10 +92,12 @@ static inline void loop_sleep(unsigned long loops)
 
 static int verbose_mode;
 
+static int test_dequeue, test_splice;
+
 #define printf_verbose(fmt, args...)		\
 	do {					\
 		if (verbose_mode)		\
-			printf(fmt, args);	\
+			printf(fmt, ## args);	\
 	} while (0)
 
 static unsigned int cpu_affinities[NR_CPUS];
@@ -161,7 +170,7 @@ static unsigned int nr_dequeuers;
 static struct cds_wfcq_head __attribute__((aligned(CAA_CACHE_LINE_SIZE))) head;
 static struct cds_wfcq_tail __attribute__((aligned(CAA_CACHE_LINE_SIZE))) tail;
 
-void *thr_enqueuer(void *_count)
+static void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
 
@@ -201,9 +210,48 @@ fail:
 
 }
 
-void *thr_dequeuer(void *_count)
+static void do_test_dequeue(enum test_sync sync)
+{
+	struct cds_wfcq_node *node;
+
+	if (sync == TEST_SYNC_MUTEX)
+		node = cds_wfcq_dequeue_blocking(&head, &tail);
+	else
+		node = __cds_wfcq_dequeue_blocking(&head, &tail);
+
+	if (node) {
+		free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+	}
+	URCU_TLS(nr_dequeues)++;
+}
+
+static void do_test_splice(enum test_sync sync)
+{
+	struct cds_wfcq_head tmp_head;
+	struct cds_wfcq_tail tmp_tail;
+	struct cds_wfcq_node *node, *n;
+
+	cds_wfcq_init(&tmp_head, &tmp_tail);
+
+	if (sync == TEST_SYNC_MUTEX)
+		cds_wfcq_splice_blocking(&tmp_head, &tmp_tail,
+			&head, &tail);
+	else
+		__cds_wfcq_splice_blocking(&tmp_head, &tmp_tail,
+			&head, &tail);
+
+	__cds_wfcq_for_each_blocking_safe(&tmp_head, &tmp_tail, node, n) {
+		free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+		URCU_TLS(nr_dequeues)++;
+	}
+}
+
+static void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
+	unsigned int counter;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"dequeuer", pthread_self(), (unsigned long)gettid());
@@ -216,15 +264,18 @@ void *thr_dequeuer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_wfcq_node *node =
-			cds_wfcq_dequeue_blocking(&head, &tail);
-
-		if (node) {
-			free(node);
-			URCU_TLS(nr_successful_dequeues)++;
+		if (test_dequeue && test_splice) {
+			if (counter & 1)
+				do_test_dequeue(test_sync);
+			else
+				do_test_splice(test_sync);
+			counter++;
+		} else {
+			if (test_dequeue)
+				do_test_dequeue(test_sync);
+			else
+				do_test_splice(test_sync);
 		}
-
-		URCU_TLS(nr_dequeues)++;
 		if (caa_unlikely(!test_duration_dequeue()))
 			break;
 		if (caa_unlikely(rduration))
@@ -240,7 +291,7 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-void test_end(unsigned long long *nr_dequeues)
+static void test_end(unsigned long long *nr_dequeues)
 {
 	struct cds_wfcq_node *node;
 
@@ -253,13 +304,18 @@ void test_end(unsigned long long *nr_dequeues)
 	} while (node);
 }
 
-void show_usage(int argc, char **argv)
+static void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s)", argv[0]);
 	printf(" [-d delay] (enqueuer period (in loops))");
 	printf(" [-c duration] (dequeuer period (in loops))");
 	printf(" [-v] (verbose output)");
 	printf(" [-a cpu#] [-a cpu#]... (affinity)");
+	printf(" [-q] (test dequeue)");
+	printf(" [-s] (test splice, enabled by default)");
+	printf(" [-M] (use mutex external synchronization)");
+	printf(" [-0] (use no external synchronization)");
+	printf("      Note: default: mutex external synchronization used.");
 	printf("\n");
 }
 
@@ -329,12 +385,36 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose_mode = 1;
 			break;
+		case 'q':
+			test_dequeue = 1;
+			break;
+		case 's':
+			test_splice = 1;
+			break;
+		case 'M':
+			test_sync = TEST_SYNC_MUTEX;
+			break;
+		case '0':
+			test_sync = TEST_SYNC_NONE;
+			break;
 		}
 	}
+
+	/* activate splice test by default */
+	if (!test_dequeue && !test_splice)
+		test_splice = 1;
 
 	printf_verbose("running test for %lu seconds, %u enqueuers, "
 		       "%u dequeuers.\n",
 		       duration, nr_enqueuers, nr_dequeuers);
+	if (test_dequeue)
+		printf_verbose("dequeue test activated.\n");
+	else
+		printf_verbose("splice test activated.\n");
+	if (test_sync == TEST_SYNC_MUTEX)
+		printf_verbose("External sync: mutex.\n");
+	else
+		printf_verbose("External sync: none.\n");
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
