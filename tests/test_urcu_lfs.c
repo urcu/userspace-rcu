@@ -177,7 +177,7 @@ struct test {
 
 static struct cds_lfs_stack s;
 
-void *thr_enqueuer(void *_count)
+static void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
 
@@ -275,7 +275,7 @@ void do_test_pop_all(enum test_sync sync)
 
 }
 
-void *thr_dequeuer(void *_count)
+static void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
 
@@ -327,7 +327,7 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-void test_end(struct cds_lfs_stack *s, unsigned long long *nr_dequeues)
+static void test_end(struct cds_lfs_stack *s, unsigned long long *nr_dequeues)
 {
 	struct cds_lfs_node *snode;
 
@@ -343,7 +343,7 @@ void test_end(struct cds_lfs_stack *s, unsigned long long *nr_dequeues)
 	} while (snode);
 }
 
-void show_usage(int argc, char **argv)
+static void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s)", argv[0]);
 	printf(" [-d delay] (enqueuer period (in loops))");
@@ -446,6 +446,10 @@ int main(int argc, char **argv)
 		printf_verbose("pop test activated.\n");
 	if (test_pop_all)
 		printf_verbose("pop_all test activated.\n");
+	if (test_sync == TEST_SYNC_RCU)
+		printf_verbose("External sync: RCU.\n");
+	else
+		printf_verbose("External sync: none.\n");
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
