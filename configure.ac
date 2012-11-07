@@ -46,7 +46,7 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([bzero gettimeofday munmap sched_getcpu strtoul sysconf])
 
 # Find arch type
-AS_CASE([$host_cpu],
+AS_CASE([$target_cpu],
 	[i386], [ARCHTYPE="x86" && SUBARCHTYPE="x86compat"],
 	[i486], [ARCHTYPE="x86"],
 	[i586], [ARCHTYPE="x86"],
@@ -77,7 +77,7 @@ AS_IF([test "x$SUBARCHTYPE" = xx86compat],[
 	AC_DEFINE([CONFIG_RCU_COMPAT_ARCH], [1])
 ])
 
-AS_IF([test "$host_cpu" = "armv7l"],[
+AS_IF([test "$target_cpu" = "armv7l"],[
 	CFLAGS="$CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
 ])
 
@@ -105,7 +105,7 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 	#For now, using lock; addl compatibility mode even for i686, because the
 	#Pentium III is seen as a i686, but lacks mfence instruction.
 	#Only using fence for x86_64.
-	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686"],[
+	AS_IF([test "x$target_cpu" != "xi386" -a "x$target_cpu" != "xi486" -a "x$target_cpu" != "xi586" -a "x$target_cpu" != "xi686"],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
 	],[
