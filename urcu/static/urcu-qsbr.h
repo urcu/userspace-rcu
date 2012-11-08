@@ -93,7 +93,7 @@ static inline void rcu_debug_yield_write(void)
 
 static inline void rcu_debug_yield_init(void)
 {
-	URCU_TLS(rcu_rand_yield) = time(NULL) ^ pthread_self();
+	URCU_TLS(rcu_rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
 }
 #else
 static inline void rcu_debug_yield_read(void)
