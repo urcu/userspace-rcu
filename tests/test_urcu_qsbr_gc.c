@@ -198,7 +198,8 @@ void *thr_reader(void *_count)
 	struct test_array *local_ptr;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
+			"reader", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -230,7 +231,8 @@ void *thr_reader(void *_count)
 
 	*count = URCU_TLS(nr_reads);
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
+			"reader", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 	return ((void*)1);
 
 }
@@ -276,7 +278,8 @@ void *thr_writer(void *data)
 #endif
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
+			"writer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -302,7 +305,8 @@ void *thr_writer(void *data)
 	}
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
+			"writer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 	tot_nr_writes[wtidx] = URCU_TLS(nr_writes);
 	return ((void*)2);
 }
@@ -415,7 +419,8 @@ int main(int argc, char **argv)
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", pthread_self(), (unsigned long)gettid());
+			"main", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);

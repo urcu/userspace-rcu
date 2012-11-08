@@ -64,7 +64,8 @@ void *test_hash_unique_thr_reader(void *_count)
 	unsigned long long *count = _count;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
+			"reader", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -109,7 +110,8 @@ void *test_hash_unique_thr_reader(void *_count)
 
 	*count = URCU_TLS(nr_reads);
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"reader", pthread_self(), (unsigned long)gettid());
+			"reader", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 	printf_verbose("readid : %lx, lookupfail %lu, lookupok %lu\n",
 			pthread_self(), URCU_TLS(lookup_fail),
 			URCU_TLS(lookup_ok));
@@ -127,7 +129,8 @@ void *test_hash_unique_thr_writer(void *_count)
 	int loc_add_unique;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
+			"writer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -221,9 +224,10 @@ void *test_hash_unique_thr_writer(void *_count)
 	rcu_unregister_thread();
 
 	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"writer", pthread_self(), (unsigned long)gettid());
+			"writer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 	printf_verbose("info id %lx: nr_add %lu, nr_addexist %lu, nr_del %lu, "
-			"nr_delnoent %lu\n", pthread_self(), URCU_TLS(nr_add),
+			"nr_delnoent %lu\n", (unsigned long) pthread_self(), URCU_TLS(nr_add),
 			URCU_TLS(nr_addexist), URCU_TLS(nr_del),
 			URCU_TLS(nr_delnoent));
 	count->update_ops = URCU_TLS(nr_writes);

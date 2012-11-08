@@ -170,7 +170,8 @@ void *thr_enqueuer(void *_count)
 	unsigned long long *count = _count;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"enqueuer", pthread_self(), (unsigned long)gettid());
+			"enqueuer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -205,7 +206,8 @@ fail:
 	count[1] = URCU_TLS(nr_successful_enqueues);
 	printf_verbose("enqueuer thread_end, thread id : %lx, tid %lu, "
 		       "enqueues %llu successful_enqueues %llu\n",
-		       pthread_self(), (unsigned long)gettid(),
+		       pthread_self(),
+			(unsigned long) gettid(),
 		       URCU_TLS(nr_enqueues), URCU_TLS(nr_successful_enqueues));
 	return ((void*)1);
 
@@ -225,7 +227,8 @@ void *thr_dequeuer(void *_count)
 	int ret;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"dequeuer", pthread_self(), (unsigned long)gettid());
+			"dequeuer", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	set_affinity();
 
@@ -266,7 +269,8 @@ void *thr_dequeuer(void *_count)
 	rcu_defer_unregister_thread();
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
-		       pthread_self(), (unsigned long)gettid(),
+		       pthread_self(),
+			(unsigned long) gettid(),
 		       URCU_TLS(nr_dequeues), URCU_TLS(nr_successful_dequeues));
 	count[0] = URCU_TLS(nr_dequeues);
 	count[1] = URCU_TLS(nr_successful_dequeues);
@@ -374,7 +378,8 @@ int main(int argc, char **argv)
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", pthread_self(), (unsigned long)gettid());
+			"main", (unsigned long) pthread_self(),
+			(unsigned long) gettid());
 
 	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
