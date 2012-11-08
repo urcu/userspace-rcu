@@ -18,4 +18,4 @@
 #undef CONFIG_RCU_ARM_HAVE_DMB
 
 /* TLS provided by the compiler. */
-#define CONFIG_RCU_TLS TLS
+#undef CONFIG_RCU_TLS
