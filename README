@@ -260,3 +260,10 @@ Interaction with fork()
 	call_rcu_after_fork_parent() after the fork().  The child
 	process must invoke call_rcu_after_fork_child().
 	These three APIs are suitable for passing to pthread_atfork().
+
+Thread Local Storage (TLS)
+
+	Userspace RCU can fall back on pthread_getspecific() to emulate
+	TLS variables on systems where it is not available. This behavior
+	can be forced by specifying --disable-compiler-tls as configure
+	argument.

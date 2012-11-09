@@ -28,7 +28,20 @@ AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks c
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 
-AX_TLS(AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $ac_cv_tls), [:])
+# Allow overriding storage used for TLS variables.
+AC_ARG_ENABLE([compiler-tls],
+	AS_HELP_STRING([--disable-compiler-tls], [Use pthread_getspecific() to emulate Thread Local Storage (TLS) variables.]),
+	[def_compiler_tls=$enableval],
+	[def_compiler_tls="yes"])
+
+# If not overridden, use ax_tls.m4 to check if TLS is available.
+AS_IF([test "x$def_compiler_tls" = "xyes"],
+	[AX_TLS([def_tls_detect=$ac_cv_tls], [:])],
+	[:])
+
+AS_IF([test "x$def_tls_detect" = "x"],
+	[:],
+	[AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $def_tls_detect)])
 
 # Checks for programs.
 AC_PROG_CC
@@ -251,4 +264,10 @@ AS_IF([test "x$def_smp_support" = "xyes"],[
 	AS_ECHO("SMP support enabled.")
 ],[
 	AS_ECHO("SMP support disabled.")
+])
+
+AS_IF([test "x$def_tls_detect" = "x"],[
+	AS_ECHO("Thread Local Storage (TLS): pthread_getspecific().")
+],[
+	AS_ECHO("Thread Local Storage (TLS): $def_tls_detect.")
 ])

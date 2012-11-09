@@ -69,16 +69,11 @@ AC_DEFUN([AX_TLS], [
     for ax_tls_keyword in $ax_tls_keywords; do
        AS_CASE([$ax_tls_keyword],
           [none], [ac_cv_tls=none ; break],
-          [AC_TRY_COMPILE(
-              [#include <stdlib.h>
-               static void
-               foo(void) {
-               static ] $ax_tls_keyword [ int bar;
-               exit(1);
-               }],
-               [],
+          [AC_TRY_LINK(
+               [$ax_tls_keyword int foo;],
+               [++foo;],
                [ac_cv_tls=$ax_tls_keyword ; break],
-               ac_cv_tls=none
+               [ac_cv_tls=none]
            )])
     done
   ])
