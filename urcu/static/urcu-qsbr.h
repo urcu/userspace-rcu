@@ -181,19 +181,42 @@ static inline void _rcu_read_unlock(void)
 }
 
 /*
+ * This is a helper function for _rcu_quiescent_state().
+ * The first cmm_smp_mb() ensures memory accesses in the prior read-side
+ * critical sections are not reordered with store to
+ * URCU_TLS(rcu_reader).ctr, and ensures that mutexes held within an
+ * offline section that would happen to end with this
+ * rcu_quiescent_state() call are not reordered with
+ * store to URCU_TLS(rcu_reader).ctr.
+ */
+static inline void _rcu_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
+{
+	cmm_smp_mb();
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, gp_ctr);
+	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
+	wake_up_gp();
+	cmm_smp_mb();
+}
+
+/*
  * Inform RCU of a quiescent state.
  *
  * This function is less than 10 lines long.  The intent is that this
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
+ *
+ * We skip the memory barriers and gp store if our local ctr already
+ * matches the global rcu_gp_ctr value: this is OK because a prior
+ * _rcu_quiescent_state() or _rcu_thread_online() already updated it
+ * within our thread, so we have no quiescent state to report.
  */
 static inline void _rcu_quiescent_state(void)
 {
-	cmm_smp_mb();
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
-	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
-	wake_up_gp();
-	cmm_smp_mb();
+	unsigned long gp_ctr;
+
+	if ((gp_ctr = CMM_LOAD_SHARED(rcu_gp_ctr)) == URCU_TLS(rcu_reader).ctr)
+		return;
+	_rcu_quiescent_state_update_and_wakeup(gp_ctr);
 }
 
 /*
