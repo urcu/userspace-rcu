@@ -62,6 +62,12 @@ extern "C" {
 #define rcu_assert(args...)
 #endif
 
+enum rcu_state {
+	RCU_READER_ACTIVE_CURRENT,
+	RCU_READER_ACTIVE_OLD,
+	RCU_READER_INACTIVE,
+};
+
 #ifdef DEBUG_YIELD
 #include <sched.h>
 #include <time.h>
@@ -149,12 +155,16 @@ static inline void wake_up_gp(void)
 	}
 }
 
-static inline int rcu_gp_ongoing(unsigned long *ctr)
+static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 {
 	unsigned long v;
 
 	v = CMM_LOAD_SHARED(*ctr);
-	return v && (v != rcu_gp_ctr);
+	if (!v)
+		return RCU_READER_INACTIVE;
+	if (v == rcu_gp_ctr)
+		return RCU_READER_ACTIVE_CURRENT;
+	return RCU_READER_ACTIVE_OLD;
 }
 
 /*
