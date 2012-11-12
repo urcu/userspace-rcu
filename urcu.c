@@ -215,9 +215,10 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
-static void wait_for_readers(void)
+static void wait_for_readers(struct cds_list_head *input_readers,
+			struct cds_list_head *cur_snap_readers,
+			struct cds_list_head *qsreaders)
 {
-	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
@@ -234,13 +235,31 @@ static void wait_for_readers(void)
 			smp_mb_master(RCU_MB_GROUP);
 		}
 
-		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
-			if (!rcu_gp_ongoing(&index->ctr))
-				cds_list_move(&index->node, &qsreaders);
+		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
+			switch (rcu_reader_state(&index->ctr)) {
+			case RCU_READER_ACTIVE_CURRENT:
+				if (cur_snap_readers) {
+					cds_list_move(&index->node,
+						cur_snap_readers);
+					break;
+				}
+				/* Fall-through */
+			case RCU_READER_INACTIVE:
+				cds_list_move(&index->node, qsreaders);
+				break;
+			case RCU_READER_ACTIVE_OLD:
+				/*
+				 * Old snapshot. Leaving node in
+				 * input_readers will make us busy-loop
+				 * until the snapshot becomes current or
+				 * the reader becomes inactive.
+				 */
+				break;
+			}
 		}
 
 #ifndef HAS_INCOHERENT_CACHES
-		if (cds_list_empty(&registry)) {
+		if (cds_list_empty(input_readers)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
@@ -259,7 +278,7 @@ static void wait_for_readers(void)
 		 * URCU_TLS(rcu_reader).ctr update to memory if we wait
 		 * for too long.
 		 */
-		if (cds_list_empty(&registry)) {
+		if (cds_list_empty(input_readers)) {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
@@ -281,12 +300,13 @@ static void wait_for_readers(void)
 		}
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
-	/* put back the reader list in the registry */
-	cds_list_splice(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
 {
+	CDS_LIST_HEAD(cur_snap_readers);
+	CDS_LIST_HEAD(qsreaders);
+
 	mutex_lock(&rcu_gp_lock);
 
 	if (cds_list_empty(&registry))
@@ -301,7 +321,7 @@ void synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
 	 */
-	wait_for_readers();
+	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
 
 	/*
 	 * Must finish waiting for quiescent state for original parity before
@@ -341,7 +361,12 @@ void synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe new parity or be quiescent.
 	 */
-	wait_for_readers();
+	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
+
+	/*
+	 * Put quiescent reader list back into registry.
+	 */
+	cds_list_splice(&qsreaders, &registry);
 
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. Must be done within rcu_gp_lock because it iterates on reader

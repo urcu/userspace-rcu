@@ -96,6 +96,12 @@ extern "C" {
 #define SIGRCU SIGUSR1
 #endif
 
+enum rcu_state {
+	RCU_READER_ACTIVE_CURRENT,
+	RCU_READER_ACTIVE_OLD,
+	RCU_READER_INACTIVE,
+};
+
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)	assert(args)
 #else
@@ -239,7 +245,7 @@ static inline void wake_up_gp(void)
 	}
 }
 
-static inline int rcu_gp_ongoing(unsigned long *ctr)
+static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 {
 	unsigned long v;
 
@@ -248,8 +254,11 @@ static inline int rcu_gp_ongoing(unsigned long *ctr)
 	 * to insure consistency.
 	 */
 	v = CMM_LOAD_SHARED(*ctr);
-	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
+	if (!(v & RCU_GP_CTR_NEST_MASK))
+		return RCU_READER_INACTIVE;
+	if (!((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE))
+		return RCU_READER_ACTIVE_CURRENT;
+	return RCU_READER_ACTIVE_OLD;
 }
 
 /*
