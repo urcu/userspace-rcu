@@ -115,7 +115,7 @@ DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
  * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
  * Written to only by writer with mutex taken. Read by both writer and readers.
  */
-long rcu_gp_ctr = RCU_GP_COUNT;
+unsigned long rcu_gp_ctr = RCU_GP_COUNT;
 
 /*
  * Pointer to registry elements. Written to only by each individual reader. Read
@@ -164,9 +164,10 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 		urcu_die(ret);
 }
 
-static void wait_for_readers(void)
+static void wait_for_readers(struct cds_list_head *input_readers,
+			struct cds_list_head *cur_snap_readers,
+			struct cds_list_head *qsreaders)
 {
-	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
@@ -177,12 +178,30 @@ static void wait_for_readers(void)
 	 */
 	for (;;) {
 		wait_loops++;
-		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
-			if (!rcu_old_gp_ongoing(&index->ctr))
-				cds_list_move(&index->node, &qsreaders);
+		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
+			switch (rcu_reader_state(&index->ctr)) {
+			case RCU_READER_ACTIVE_CURRENT:
+				if (cur_snap_readers) {
+					cds_list_move(&index->node,
+						cur_snap_readers);
+					break;
+				}
+				/* Fall-through */
+			case RCU_READER_INACTIVE:
+				cds_list_move(&index->node, qsreaders);
+				break;
+			case RCU_READER_ACTIVE_OLD:
+				/*
+				 * Old snapshot. Leaving node in
+				 * input_readers will make us busy-loop
+				 * until the snapshot becomes current or
+				 * the reader becomes inactive.
+				 */
+				break;
+			}
 		}
 
-		if (cds_list_empty(&registry)) {
+		if (cds_list_empty(input_readers)) {
 			break;
 		} else {
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
@@ -191,12 +210,12 @@ static void wait_for_readers(void)
 				caa_cpu_relax();
 		}
 	}
-	/* put back the reader list in the registry */
-	cds_list_splice(&qsreaders, &registry);
 }
 
 void synchronize_rcu(void)
 {
+	CDS_LIST_HEAD(cur_snap_readers);
+	CDS_LIST_HEAD(qsreaders);
 	sigset_t newmask, oldmask;
 	int ret;
 
@@ -221,7 +240,7 @@ void synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
 	 */
-	wait_for_readers();
+	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
 
 	/*
 	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
@@ -250,7 +269,12 @@ void synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe new parity or be quiescent.
 	 */
-	wait_for_readers();
+	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
+
+	/*
+	 * Put quiescent reader list back into registry.
+	 */
+	cds_list_splice(&qsreaders, &registry);
 
 	/*
 	 * Finish waiting for reader threads before letting the old ptr being

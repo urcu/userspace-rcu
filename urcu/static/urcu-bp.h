@@ -58,6 +58,12 @@ extern "C" {
 #define rcu_assert(args...)
 #endif
 
+enum rcu_state {
+	RCU_READER_ACTIVE_CURRENT,
+	RCU_READER_ACTIVE_OLD,
+	RCU_READER_INACTIVE,
+};
+
 #ifdef DEBUG_YIELD
 #include <sched.h>
 #include <time.h>
@@ -129,11 +135,11 @@ extern void rcu_bp_register(void);
  * Using a int rather than a char to eliminate false register dependencies
  * causing stalls on some architectures.
  */
-extern long rcu_gp_ctr;
+extern unsigned long rcu_gp_ctr;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
-	long ctr;
+	unsigned long ctr;
 	/* Data used for registry */
 	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
@@ -147,19 +153,22 @@ struct rcu_reader {
  */
 extern DECLARE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
-static inline int rcu_old_gp_ongoing(long *value)
+static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 {
-	long v;
+	unsigned long v;
 
-	if (value == NULL)
-		return 0;
+	if (ctr == NULL)
+		return RCU_READER_INACTIVE;
 	/*
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = CMM_LOAD_SHARED(*value);
-	return (v & RCU_GP_CTR_NEST_MASK) &&
-		 ((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE);
+	v = CMM_LOAD_SHARED(*ctr);
+	if (!(v & RCU_GP_CTR_NEST_MASK))
+		return RCU_READER_INACTIVE;
+	if (!((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE))
+		return RCU_READER_ACTIVE_CURRENT;
+	return RCU_READER_ACTIVE_OLD;
 }
 
 /*
@@ -190,7 +199,7 @@ static inline void _rcu_read_lock_update(unsigned long tmp)
  */
 static inline void _rcu_read_lock(void)
 {
-	long tmp;
+	unsigned long tmp;
 
 	if (caa_unlikely(!URCU_TLS(rcu_reader)))
 		rcu_bp_register(); /* If not yet registered. */
