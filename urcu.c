@@ -215,33 +215,16 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
-static void update_counter_and_wait(void)
+static void wait_for_readers(void)
 {
 	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
-
 	/*
-	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
-	 * state. Failure to do so could result in the writer waiting forever
-	 * while new readers are always accessing data (no progress). Enforce
-	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
-	 */
-	cmm_barrier();
-
-	/*
-	 *
-	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
-	 * model easier to understand. It does not have a big performance impact
-	 * anyway, given this is the write-side.
-	 */
-	cmm_smp_mb();
-
-	/*
-	 * Wait for each thread URCU_TLS(rcu_reader).ctr count to become 0.
+	 * Wait for each thread URCU_TLS(rcu_reader).ctr to either
+	 * indicate quiescence (not nested), or observe the current
+	 * rcu_gp_ctr value.
 	 */
 	for (;;) {
 		wait_loops++;
@@ -316,12 +299,12 @@ void synchronize_rcu(void)
 	smp_mb_master(RCU_MB_GROUP);
 
 	/*
-	 * Wait for previous parity to be empty of readers.
+	 * Wait for readers to observe original parity or be quiescent.
 	 */
-	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
+	wait_for_readers();
 
 	/*
-	 * Must finish waiting for quiescent state for parity 0 before
+	 * Must finish waiting for quiescent state for original parity before
 	 * committing next rcu_gp_ctr update to memory. Failure to do so could
 	 * result in the writer waiting forever while new readers are always
 	 * accessing data (no progress).  Enforce compiler-order of load
@@ -336,10 +319,29 @@ void synchronize_rcu(void)
 	 */
 	cmm_smp_mb();
 
+	/* Switch parity: 0 -> 1, 1 -> 0 */
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+
 	/*
-	 * Wait for previous parity to be empty of readers.
+	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
+	 * state. Failure to do so could result in the writer waiting forever
+	 * while new readers are always accessing data (no progress). Enforce
+	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
 	 */
-	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
+	cmm_barrier();
+
+	/*
+	 *
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	cmm_smp_mb();
+
+	/*
+	 * Wait for readers to observe new parity or be quiescent.
+	 */
+	wait_for_readers();
 
 	/* Finish waiting for reader threads before letting the old ptr being
 	 * freed. Must be done within rcu_gp_lock because it iterates on reader
