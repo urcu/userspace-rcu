@@ -164,31 +164,16 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 		urcu_die(ret);
 }
 
-static void update_counter_and_wait(void)
+static void wait_for_readers(void)
 {
 	CDS_LIST_HEAD(qsreaders);
 	int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
-	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
-
 	/*
-	 * Must commit qparity update to memory before waiting for other parity
-	 * quiescent state. Failure to do so could result in the writer waiting
-	 * forever while new readers are always accessing data (no progress).
-	 * Ensured by CMM_STORE_SHARED and CMM_LOAD_SHARED.
-	 */
-
-	/*
-	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
-	 * model easier to understand. It does not have a big performance impact
-	 * anyway, given this is the write-side.
-	 */
-	cmm_smp_mb();
-
-	/*
-	 * Wait for each thread rcu_reader.ctr count to become 0.
+	 * Wait for each thread URCU_TLS(rcu_reader).ctr to either
+	 * indicate quiescence (not nested), or observe the current
+	 * rcu_gp_ctr value.
 	 */
 	for (;;) {
 		wait_loops++;
@@ -234,9 +219,26 @@ void synchronize_rcu(void)
 	rcu_gc_registry();
 
 	/*
-	 * Wait for previous parity to be empty of readers.
+	 * Wait for readers to observe original parity or be quiescent.
 	 */
-	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
+	wait_for_readers();
+
+	/*
+	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
+	 * model easier to understand. It does not have a big performance impact
+	 * anyway, given this is the write-side.
+	 */
+	cmm_smp_mb();
+
+	/* Switch parity: 0 -> 1, 1 -> 0 */
+	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+
+	/*
+	 * Must commit qparity update to memory before waiting for other parity
+	 * quiescent state. Failure to do so could result in the writer waiting
+	 * forever while new readers are always accessing data (no progress).
+	 * Ensured by CMM_STORE_SHARED and CMM_LOAD_SHARED.
+	 */
 
 	/*
 	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
@@ -246,9 +248,9 @@ void synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/*
-	 * Wait for previous parity to be empty of readers.
+	 * Wait for readers to observe new parity or be quiescent.
 	 */
-	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
+	wait_for_readers();
 
 	/*
 	 * Finish waiting for reader threads before letting the old ptr being
