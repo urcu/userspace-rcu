@@ -57,13 +57,13 @@ void cds_wfcq_enqueue(struct cds_wfcq_head *head,
 void cds_wfcq_dequeue_lock(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	cds_wfcq_dequeue_lock(head, tail);
+	_cds_wfcq_dequeue_lock(head, tail);
 }
 
 void cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	cds_wfcq_dequeue_unlock(head, tail);
+	_cds_wfcq_dequeue_unlock(head, tail);
 }
 
 struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
