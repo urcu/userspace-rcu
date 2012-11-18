@@ -128,7 +128,7 @@ static inline void _cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
 	assert(!ret);
 }
 
-static inline void ___cds_wfcq_append(struct cds_wfcq_head *head,
+static inline bool ___cds_wfcq_append(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *new_head,
 		struct cds_wfcq_node *new_tail)
@@ -152,6 +152,11 @@ static inline void ___cds_wfcq_append(struct cds_wfcq_head *head,
 	 * perspective.
 	 */
 	CMM_STORE_SHARED(old_tail->next, new_head);
+	/*
+	 * Return false if queue was empty prior to adding the node,
+	 * else return true.
+	 */
+	return old_tail != &head->node;
 }
 
 /*
@@ -159,12 +164,15 @@ static inline void ___cds_wfcq_append(struct cds_wfcq_head *head,
  *
  * Issues a full memory barrier before enqueue. No mutual exclusion is
  * required.
+ *
+ * Returns false if the queue was empty prior to adding the node.
+ * Returns true otherwise.
  */
-static inline void _cds_wfcq_enqueue(struct cds_wfcq_head *head,
+static inline bool _cds_wfcq_enqueue(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *new_tail)
 {
-	___cds_wfcq_append(head, tail, new_tail, new_tail);
+	return ___cds_wfcq_append(head, tail, new_tail, new_tail);
 }
 
 /*
@@ -384,7 +392,7 @@ ___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
 	return ___cds_wfcq_dequeue(head, tail, 0);
 }
 
-static inline int
+static inline enum cds_wfcq_ret
 ___cds_wfcq_splice(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
@@ -395,11 +403,11 @@ ___cds_wfcq_splice(
 	struct cds_wfcq_node *head, *tail;
 
 	if (_cds_wfcq_empty(src_q_head, src_q_tail))
-		return 0;
+		return CDS_WFCQ_RET_SRC_EMPTY;
 
 	head = ___cds_wfcq_node_sync_next(&src_q_head->node, blocking);
 	if (head == CDS_WFCQ_WOULDBLOCK)
-		return -1;
+		return CDS_WFCQ_RET_WOULDBLOCK;
 	_cds_wfcq_node_init(&src_q_head->node);
 
 	/*
@@ -414,8 +422,10 @@ ___cds_wfcq_splice(
 	 * Append the spliced content of src_q into dest_q. Does not
 	 * require mutual exclusion on dest_q (wait-free).
 	 */
-	___cds_wfcq_append(dest_q_head, dest_q_tail, head, tail);
-	return 0;
+	if (___cds_wfcq_append(dest_q_head, dest_q_tail, head, tail))
+		return CDS_WFCQ_RET_DEST_NON_EMPTY;
+	else
+		return CDS_WFCQ_RET_DEST_EMPTY;
 }
 
 
@@ -426,25 +436,27 @@ ___cds_wfcq_splice(
  * dest_q must be already initialized.
  * Dequeue/splice/iteration mutual exclusion for src_q should be ensured
  * by the caller.
+ * Returns enum cds_wfcq_ret which indicates the state of the src or
+ * dest queue. Never returns CDS_WFCQ_RET_WOULDBLOCK.
  */
-static inline void
+static inline enum cds_wfcq_ret
 ___cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	(void) ___cds_wfcq_splice(dest_q_head, dest_q_tail,
+	return ___cds_wfcq_splice(dest_q_head, dest_q_tail,
 		src_q_head, src_q_tail, 1);
 }
 
 /*
  * __cds_wfcq_splice_nonblocking: enqueue all src_q nodes at the end of dest_q.
  *
- * Same as __cds_wfcq_splice_blocking, but returns nonzero if it needs to
- * block.
+ * Same as __cds_wfcq_splice_blocking, but returns
+ * CDS_WFCQ_RET_WOULDBLOCK if it needs to block.
  */
-static inline int
+static inline enum cds_wfcq_ret
 ___cds_wfcq_splice_nonblocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
@@ -485,18 +497,23 @@ _cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
  * consistent, but no other memory ordering is ensured.
  * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
  * ensured.
+ * Returns enum cds_wfcq_ret which indicates the state of the src or
+ * dest queue. Never returns CDS_WFCQ_RET_WOULDBLOCK.
  */
-static inline void
+static inline enum cds_wfcq_ret
 _cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
+	enum cds_wfcq_ret ret;
+
 	_cds_wfcq_dequeue_lock(src_q_head, src_q_tail);
-	___cds_wfcq_splice_blocking(dest_q_head, dest_q_tail,
+	ret = ___cds_wfcq_splice_blocking(dest_q_head, dest_q_tail,
 			src_q_head, src_q_tail);
 	_cds_wfcq_dequeue_unlock(src_q_head, src_q_tail);
+	return ret;
 }
 
 #ifdef __cplusplus

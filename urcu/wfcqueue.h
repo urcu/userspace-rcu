@@ -45,6 +45,13 @@ extern "C" {
 
 #define CDS_WFCQ_WOULDBLOCK	((void *) -1UL)
 
+enum cds_wfcq_ret {
+	CDS_WFCQ_RET_WOULDBLOCK = 	-1,
+	CDS_WFCQ_RET_DEST_EMPTY =	0,
+	CDS_WFCQ_RET_DEST_NON_EMPTY =	1,
+	CDS_WFCQ_RET_SRC_EMPTY = 	2,
+};
+
 struct cds_wfcq_node {
 	struct cds_wfcq_node *next;
 };
@@ -156,8 +163,11 @@ extern void cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
  *
  * Issues a full memory barrier before enqueue. No mutual exclusion is
  * required.
+ *
+ * Returns false if the queue was empty prior to adding the node.
+ * Returns true otherwise.
  */
-extern void cds_wfcq_enqueue(struct cds_wfcq_head *head,
+extern bool cds_wfcq_enqueue(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node);
 
@@ -183,8 +193,11 @@ extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
  * consistent, but no other memory ordering is ensured.
  * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
  * ensured.
+ *
+ * Returns enum cds_wfcq_ret which indicates the state of the src or
+ * dest queue. Cannot block.
  */
-extern void cds_wfcq_splice_blocking(
+extern enum cds_wfcq_ret cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
@@ -222,8 +235,11 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
  * consistent, but no other memory ordering is ensured.
  * Dequeue/splice/iteration mutual exclusion for src_q should be ensured
  * by the caller.
+ *
+ * Returns enum cds_wfcq_ret which indicates the state of the src or
+ * dest queue. Cannot block.
  */
-extern void __cds_wfcq_splice_blocking(
+extern enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
@@ -232,10 +248,10 @@ extern void __cds_wfcq_splice_blocking(
 /*
  * __cds_wfcq_splice_nonblocking: enqueue all src_q nodes at the end of dest_q.
  *
- * Same as __cds_wfcq_splice_blocking, but returns nonzero if it needs to
- * block.
+ * Same as __cds_wfcq_splice_blocking, but returns
+ * CDS_WFCQ_RET_WOULDBLOCK if it needs to block.
  */
-extern int __cds_wfcq_splice_nonblocking(
+extern enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
 		struct cds_wfcq_head *src_q_head,
