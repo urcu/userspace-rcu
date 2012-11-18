@@ -44,6 +44,7 @@
 #include "urcu/tls-compat.h"
 
 #include "urcu-die.h"
+#include "urcu-wait.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
@@ -79,24 +80,9 @@ DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 
 static CDS_LIST_HEAD(registry);
 
-/*
- * Number of busy-loop attempts before waiting on futex for grace period
- * batching.
- */
-#define RCU_AWAKE_ATTEMPTS 1000
-
-enum adapt_wakeup_state {
-	/* AWAKE_WAITING is compared directly (futex compares it). */
-	AWAKE_WAITING =		0,
-	/* non-zero are used as masks. */
-	AWAKE_WAKEUP =		(1 << 0),
-	AWAKE_AWAKENED =	(1 << 1),
-	AWAKE_TEARDOWN =	(1 << 2),
-};
-
 struct gp_waiters_thread {
 	struct cds_wfs_node node;
-	int32_t wait_futex;
+	struct urcu_wait wait;
 };
 
 /*
@@ -144,58 +130,6 @@ static void wait_gp(void)
 	if (uatomic_read(&rcu_gp_futex) == -1)
 		futex_noasync(&rcu_gp_futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
-}
-
-/*
- * Note: urcu_adaptative_wake_up needs "value" to stay allocated
- * throughout its execution. In this scheme, the waiter owns the futex
- * memory, and we only allow it to free this memory when it receives the
- * AWAKE_TEARDOWN flag.
- */
-static void urcu_adaptative_wake_up(int32_t *value)
-{
-	cmm_smp_mb();
-	assert(uatomic_read(value) == AWAKE_WAITING);
-	uatomic_set(value, AWAKE_WAKEUP);
-	if (!(uatomic_read(value) & AWAKE_AWAKENED))
-		futex_noasync(value, FUTEX_WAKE, 1, NULL, NULL, 0);
-	/* Allow teardown of "value" memory. */
-	uatomic_or(value, AWAKE_TEARDOWN);
-}
-
-/*
- * Caller must initialize "value" to AWAKE_WAITING before passing its
- * memory to waker thread.
- */
-static void urcu_adaptative_busy_wait(int32_t *value)
-{
-	unsigned int i;
-
-	/* Load and test condition before read futex */
-	cmm_smp_rmb();
-	for (i = 0; i < RCU_AWAKE_ATTEMPTS; i++) {
-		if (uatomic_read(value) != AWAKE_WAITING)
-			goto skip_futex_wait;
-		caa_cpu_relax();
-	}
-	futex_noasync(value, FUTEX_WAIT, AWAKE_WAITING, NULL, NULL, 0);
-skip_futex_wait:
-
-	/* Tell waker thread than we are awakened. */
-	uatomic_or(value, AWAKE_AWAKENED);
-
-	/*
-	 * Wait until waker thread lets us know it's ok to tear down
-	 * memory allocated for value.
-	 */
-	for (i = 0; i < RCU_AWAKE_ATTEMPTS; i++) {
-		if (uatomic_read(value) & AWAKE_TEARDOWN)
-			break;
-		caa_cpu_relax();
-	}
-	while (!(uatomic_read(value) & AWAKE_TEARDOWN))
-		poll(NULL, 0, 10);
-	assert(uatomic_read(value) & AWAKE_TEARDOWN);
 }
 
 static void wait_for_readers(struct cds_list_head *input_readers,
@@ -305,10 +239,10 @@ void synchronize_rcu(void)
 	 * if we are the first thread added into the stack.
 	 */
 	cds_wfs_node_init(&gp_waiters_thread.node);
-	gp_waiters_thread.wait_futex = AWAKE_WAITING;
+	urcu_wait_init(&gp_waiters_thread.wait);
 	if (cds_wfs_push(&gp_waiters, &gp_waiters_node) != 0) {
 		/* Not first in stack: will be awakened by another thread. */
-		urcu_adaptative_busy_wait(&gp_waiters_thread.wait_futex);
+		urcu_adaptative_busy_wait(&gp_waiters_thread.wait);
 		goto gp_end;
 	}
 
@@ -384,7 +318,7 @@ out:
 				struct gp_waiters_thread, node);
 		if (wt == &gp_waiters_thread)
 			continue;
-		urcu_adaptative_wake_up(&wt->wait_futex);
+		urcu_adaptative_wake_up(&wt->wait);
 	}
 
 gp_end:
@@ -424,10 +358,10 @@ void synchronize_rcu(void)
 	 * if we are the first thread added into the stack.
 	 */
 	cds_wfs_node_init(&gp_waiters_thread.node);
-	gp_waiters_thread.wait_futex = AWAKE_WAITING;
+	urcu_wait_init(&gp_waiters_thread.wait);
 	if (cds_wfs_push(&gp_waiters, &gp_waiters_thread.node) != 0) {
 		/* Not first in stack: will be awakened by another thread. */
-		urcu_adaptative_busy_wait(&gp_waiters_thread.wait_futex);
+		urcu_adaptative_busy_wait(&gp_waiters_thread.wait);
 		goto gp_end;
 	}
 
@@ -481,7 +415,7 @@ out:
 				struct gp_waiters_thread, node);
 		if (wt == &gp_waiters_thread)
 			continue;
-		urcu_adaptative_wake_up(&wt->wait_futex);
+		urcu_adaptative_wake_up(&wt->wait);
 	}
 
 gp_end:
