@@ -36,7 +36,6 @@
 #include <poll.h>
 
 #include "urcu/wfcqueue.h"
-#include "urcu/wfstack.h"
 #include "urcu/map/urcu-qsbr.h"
 #define BUILD_QSBR_LIB
 #include "urcu/static/urcu-qsbr.h"
@@ -80,19 +79,11 @@ DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 
 static CDS_LIST_HEAD(registry);
 
-struct gp_waiters_thread {
-	struct cds_wfs_node node;
-	struct urcu_wait wait;
-};
-
 /*
- * Stack keeping threads awaiting to wait for a grace period. Contains
+ * Queue keeping threads awaiting to wait for a grace period. Contains
  * struct gp_waiters_thread objects.
  */
-static struct cds_wfs_stack gp_waiters = {
-	.head = CDS_WFS_END,
-	.lock = PTHREAD_MUTEX_INITIALIZER,
-};
+static DEFINE_URCU_WAIT_QUEUE(gp_waiters);
 
 static void mutex_lock(pthread_mutex_t *mutex)
 {
@@ -214,9 +205,8 @@ void synchronize_rcu(void)
 	CDS_LIST_HEAD(cur_snap_readers);
 	CDS_LIST_HEAD(qsreaders);
 	unsigned long was_online;
-	struct gp_waiters_thread gp_waiters_thread;
-	struct cds_wfs_head *gp_waiters_head;
-	struct cds_wfs_node *waiters_iter, *waiters_iter_n;
+	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
+	struct urcu_waiters waiters;
 
 	was_online = URCU_TLS(rcu_reader).ctr;
 
@@ -234,24 +224,24 @@ void synchronize_rcu(void)
 		cmm_smp_mb();
 
 	/*
-	 * Add ourself to gp_waiters stack of threads awaiting to wait
+	 * Add ourself to gp_waiters queue of threads awaiting to wait
 	 * for a grace period. Proceed to perform the grace period only
-	 * if we are the first thread added into the stack.
+	 * if we are the first thread added into the queue.
 	 */
-	cds_wfs_node_init(&gp_waiters_thread.node);
-	urcu_wait_init(&gp_waiters_thread.wait);
-	if (cds_wfs_push(&gp_waiters, &gp_waiters_node) != 0) {
-		/* Not first in stack: will be awakened by another thread. */
-		urcu_adaptative_busy_wait(&gp_waiters_thread.wait);
+	if (urcu_wait_add(&gp_waiters, &wait) != 0) {
+		/* Not first in queue: will be awakened by another thread. */
+		urcu_adaptative_busy_wait(&wait);
 		goto gp_end;
 	}
+	/* We won't need to wake ourself up */
+	urcu_wait_set_state(&wait, URCU_WAIT_RUNNING);
 
 	mutex_lock(&rcu_gp_lock);
 
 	/*
-	 * Pop all waiters into our local stack head.
+	 * Move all waiters into our local queue.
 	 */
-	gp_waiters_head = __cds_wfs_pop_all(&gp_waiters);
+	urcu_move_waiters(&waiters, &gp_waiters);
 
 	if (cds_list_empty(&registry))
 		goto out;
@@ -308,19 +298,7 @@ void synchronize_rcu(void)
 	cds_list_splice(&qsreaders, &registry);
 out:
 	mutex_unlock(&rcu_gp_lock);
-
-	/* Wake all waiters in our stack head, excluding ourself. */
-	cds_wfs_for_each_blocking_safe(gp_waiters_head, waiters_iter,
-				waiters_iter_n) {
-		struct gp_waiters_thread *wt;
-
-		wt = caa_container_of(waiters_iter,
-				struct gp_waiters_thread, node);
-		if (wt == &gp_waiters_thread)
-			continue;
-		urcu_adaptative_wake_up(&wt->wait);
-	}
-
+	urcu_wake_all_waiters(&waiters);
 gp_end:
 	/*
 	 * Finish waiting for reader threads before letting the old ptr being
@@ -336,9 +314,8 @@ void synchronize_rcu(void)
 {
 	CDS_LIST_HEAD(qsreaders);
 	unsigned long was_online;
-	struct gp_waiters_thread gp_waiters_thread;
-	struct cds_wfs_head *gp_waiters_head;
-	struct cds_wfs_node *waiters_iter, *waiters_iter_n;
+	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
+	struct urcu_waiters waiters;
 
 	was_online = URCU_TLS(rcu_reader).ctr;
 
@@ -353,24 +330,24 @@ void synchronize_rcu(void)
 		cmm_smp_mb();
 
 	/*
-	 * Add ourself to gp_waiters stack of threads awaiting to wait
+	 * Add ourself to gp_waiters queue of threads awaiting to wait
 	 * for a grace period. Proceed to perform the grace period only
-	 * if we are the first thread added into the stack.
+	 * if we are the first thread added into the queue.
 	 */
-	cds_wfs_node_init(&gp_waiters_thread.node);
-	urcu_wait_init(&gp_waiters_thread.wait);
-	if (cds_wfs_push(&gp_waiters, &gp_waiters_thread.node) != 0) {
-		/* Not first in stack: will be awakened by another thread. */
-		urcu_adaptative_busy_wait(&gp_waiters_thread.wait);
+	if (urcu_wait_add(&gp_waiters, &wait) != 0) {
+		/* Not first in queue: will be awakened by another thread. */
+		urcu_adaptative_busy_wait(&wait);
 		goto gp_end;
 	}
+	/* We won't need to wake ourself up */
+	urcu_wait_set_state(&wait, URCU_WAIT_RUNNING);
 
 	mutex_lock(&rcu_gp_lock);
 
 	/*
-	 * Pop all waiters into our local stack head.
+	 * Move all waiters into our local queue.
 	 */
-	gp_waiters_head = __cds_wfs_pop_all(&gp_waiters);
+	urcu_move_waiters(&waiters, &gp_waiters);
 
 	if (cds_list_empty(&registry))
 		goto out;
@@ -405,19 +382,7 @@ void synchronize_rcu(void)
 	cds_list_splice(&qsreaders, &registry);
 out:
 	mutex_unlock(&rcu_gp_lock);
-
-	/* Wake all waiters in our stack head, excluding ourself. */
-	cds_wfs_for_each_blocking_safe(gp_waiters_head, waiters_iter,
-				waiters_iter_n) {
-		struct gp_waiters_thread *wt;
-
-		wt = caa_container_of(waiters_iter,
-				struct gp_waiters_thread, node);
-		if (wt == &gp_waiters_thread)
-			continue;
-		urcu_adaptative_wake_up(&wt->wait);
-	}
-
+	urcu_wake_all_waiters(&waiters);
 gp_end:
 	if (was_online)
 		rcu_thread_online();
