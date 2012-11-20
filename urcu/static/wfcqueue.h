@@ -312,6 +312,8 @@ ___cds_wfcq_dequeue(struct cds_wfcq_head *head,
 		return NULL;
 
 	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
+	if (!blocking && node == CDS_WFCQ_WOULDBLOCK)
+		return CDS_WFCQ_WOULDBLOCK;
 
 	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
 		/*
@@ -332,6 +334,15 @@ ___cds_wfcq_dequeue(struct cds_wfcq_head *head,
 		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node)
 			return node;
 		next = ___cds_wfcq_node_sync_next(node, blocking);
+		/*
+		 * In nonblocking mode, if we would need to block to
+		 * get node's next, set the head next node pointer
+		 * (currently NULL) back to its original value.
+		 */
+		if (!blocking && next == CDS_WFCQ_WOULDBLOCK) {
+			head->node.next = node;
+			return CDS_WFCQ_WOULDBLOCK;
+		}
 	}
 
 	/*
