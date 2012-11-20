@@ -95,6 +95,13 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
  * cds_wfcq_empty: return whether wait-free queue is empty.
  *
  * No memory barrier is issued. No mutual exclusion is required.
+ *
+ * We perform the test on head->node.next to check if the queue is
+ * possibly empty, but we confirm this by checking if the tail pointer
+ * points to the head node because the tail pointer is the linearisation
+ * point of the enqueuers. Just checking the head next pointer could
+ * make a queue appear empty if an enqueuer is preempted for a long time
+ * between xchg() and setting the previous node's next pointer.
  */
 static inline bool _cds_wfcq_empty(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
