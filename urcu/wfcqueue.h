@@ -46,7 +46,7 @@ extern "C" {
 #define CDS_WFCQ_WOULDBLOCK	((void *) -1UL)
 
 enum cds_wfcq_ret {
-	CDS_WFCQ_RET_WOULDBLOCK = 	-1,
+	CDS_WFCQ_RET_WOULDBLOCK =	-1,
 	CDS_WFCQ_RET_DEST_EMPTY =	0,
 	CDS_WFCQ_RET_DEST_NON_EMPTY =	1,
 	CDS_WFCQ_RET_SRC_EMPTY = 	2,
@@ -110,13 +110,28 @@ struct cds_wfcq_tail {
 /*
  * Mutual exclusion of cds_wfcq_* / __cds_wfcq_* API
  *
- * Unless otherwise stated, the caller must ensure mutual exclusion of
- * queue update operations "dequeue" and "splice" (for source queue).
- * Queue read operations "first" and "next", which are used by
- * "for_each" iterations, need to be protected against concurrent
- * "dequeue" and "splice" (for source queue) by the caller.
- * "enqueue", "splice" (for destination queue), and "empty" are the only
- * operations that can be used without any mutual exclusion.
+ * Synchronization table:
+ *
+ * External synchronization techniques described in the API below is
+ * required between pairs marked with "X". No external synchronization
+ * required between pairs marked with "-".
+ *
+ * Legend:
+ * [1] cds_wfcq_enqueue
+ * [2] __cds_wfcq_splice (destination queue)
+ * [3] __cds_wfcq_dequeue
+ * [4] __cds_wfcq_splice (source queue)
+ * [5] __cds_wfcq_first
+ * [6] __cds_wfcq_next
+ *
+ *     [1] [2] [3] [4] [5] [6]
+ * [1]  -   -   -   -   -   -
+ * [2]  -   -   -   -   -   -
+ * [3]  -   -   X   X   X   X
+ * [4]  -   -   X   -   X   X
+ * [5]  -   -   X   X   -   -
+ * [6]  -   -   X   X   -   -
+ *
  * Mutual exclusion can be ensured by holding cds_wfcq_dequeue_lock().
  *
  * For convenience, cds_wfcq_dequeue_blocking() and
@@ -231,13 +246,10 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
  *
  * Dequeue all nodes from src_q.
  * dest_q must be already initialized.
- * Content written into the node before enqueue is guaranteed to be
- * consistent, but no other memory ordering is ensured.
- * Dequeue/splice/iteration mutual exclusion for src_q should be ensured
- * by the caller.
- *
+ * Mutual exclusion for src_q should be ensured by the caller as
+ * specified in the "Synchronisation table".
  * Returns enum cds_wfcq_ret which indicates the state of the src or
- * dest queue. Cannot block.
+ * dest queue. Never returns CDS_WFCQ_RET_WOULDBLOCK.
  */
 extern enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,

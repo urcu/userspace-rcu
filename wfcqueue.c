@@ -1,7 +1,7 @@
 /*
  * wfcqueue.c
  *
- * Userspace RCU library - Concurrent queue with Wait-Free Enqueue/Blocking Dequeue
+ * Userspace RCU library - Concurrent Queue with Wait-Free Enqueue/Blocking Dequeue
  *
  * Copyright 2010-2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright 2011-2012 - Lai Jiangshan <laijs@cn.fujitsu.com>

@@ -46,15 +46,30 @@ extern "C" {
  * half-wait-free/half-blocking queue implementation done by Paul E.
  * McKenney.
  *
- * Mutual exclusion of __cds_wfcq_* API
+ * Mutual exclusion of cds_wfcq_* / __cds_wfcq_* API
  *
- * Unless otherwise stated, the caller must ensure mutual exclusion of
- * queue update operations "dequeue" and "splice" (for source queue).
- * Queue read operations "first" and "next", which are used by
- * "for_each" iterations, need to be protected against concurrent
- * "dequeue" and "splice" (for source queue) by the caller.
- * "enqueue", "splice" (for destination queue), and "empty" are the only
- * operations that can be used without any mutual exclusion.
+ * Synchronization table:
+ *
+ * External synchronization techniques described in the API below is
+ * required between pairs marked with "X". No external synchronization
+ * required between pairs marked with "-".
+ *
+ * Legend:
+ * [1] cds_wfcq_enqueue
+ * [2] __cds_wfcq_splice (destination queue)
+ * [3] __cds_wfcq_dequeue
+ * [4] __cds_wfcq_splice (source queue)
+ * [5] __cds_wfcq_first
+ * [6] __cds_wfcq_next
+ *
+ *     [1] [2] [3] [4] [5] [6]
+ * [1]  -   -   -   -   -   -
+ * [2]  -   -   -   -   -   -
+ * [3]  -   -   X   X   X   X
+ * [4]  -   -   X   -   X   X
+ * [5]  -   -   X   X   -   -
+ * [6]  -   -   X   X   -   -
+ *
  * Mutual exclusion can be ensured by holding cds_wfcq_dequeue_lock().
  *
  * For convenience, cds_wfcq_dequeue_blocking() and
@@ -183,6 +198,25 @@ static inline bool _cds_wfcq_enqueue(struct cds_wfcq_head *head,
 }
 
 /*
+ * ___cds_wfcq_busy_wait: adaptative busy-wait.
+ *
+ * Returns 1 if nonblocking and needs to block, 0 otherwise.
+ */
+static inline bool
+___cds_wfcq_busy_wait(int *attempt, int blocking)
+{
+	if (!blocking)
+		return 1;
+	if (++(*attempt) >= WFCQ_ADAPT_ATTEMPTS) {
+		poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
+		*attempt = 0;
+	} else {
+		caa_cpu_relax();
+	}
+	return 0;
+}
+
+/*
  * Waiting for enqueuer to complete enqueue and return the next node.
  */
 static inline struct cds_wfcq_node *
@@ -195,14 +229,8 @@ ___cds_wfcq_node_sync_next(struct cds_wfcq_node *node, int blocking)
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
 	 */
 	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
-		if (!blocking)
+		if (___cds_wfcq_busy_wait(&attempt, blocking))
 			return CDS_WFCQ_WOULDBLOCK;
-		if (++attempt >= WFCQ_ADAPT_ATTEMPTS) {
-			poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
-			attempt = 0;
-		} else {
-			caa_cpu_relax();
-		}
 	}
 
 	return next;
@@ -399,6 +427,16 @@ ___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
 	return ___cds_wfcq_dequeue(head, tail, 0);
 }
 
+/*
+ * __cds_wfcq_splice: enqueue all src_q nodes at the end of dest_q.
+ *
+ * Dequeue all nodes from src_q.
+ * dest_q must be already initialized.
+ * Mutual exclusion for src_q should be ensured by the caller as
+ * specified in the "Synchronisation table".
+ * Returns enum cds_wfcq_ret which indicates the state of the src or
+ * dest queue.
+ */
 static inline enum cds_wfcq_ret
 ___cds_wfcq_splice(
 		struct cds_wfcq_head *dest_q_head,
@@ -408,14 +446,29 @@ ___cds_wfcq_splice(
 		int blocking)
 {
 	struct cds_wfcq_node *head, *tail;
+	int attempt = 0;
 
+	/*
+	 * Initial emptiness check to speed up cases where queue is
+	 * empty: only require loads to check if queue is empty.
+	 */
 	if (_cds_wfcq_empty(src_q_head, src_q_tail))
 		return CDS_WFCQ_RET_SRC_EMPTY;
 
-	head = ___cds_wfcq_node_sync_next(&src_q_head->node, blocking);
-	if (head == CDS_WFCQ_WOULDBLOCK)
-		return CDS_WFCQ_RET_WOULDBLOCK;
-	_cds_wfcq_node_init(&src_q_head->node);
+	for (;;) {
+		/*
+		 * Open-coded _cds_wfcq_empty() by testing result of
+		 * uatomic_xchg, as well as tail pointer vs head node
+		 * address.
+		 */
+		head = uatomic_xchg(&src_q_head->node.next, NULL);
+		if (head)
+			break;	/* non-empty */
+		if (CMM_LOAD_SHARED(src_q_tail->p) == &src_q_head->node)
+			return CDS_WFCQ_RET_SRC_EMPTY;
+		if (___cds_wfcq_busy_wait(&attempt, blocking))
+			return CDS_WFCQ_RET_WOULDBLOCK;
+	}
 
 	/*
 	 * Memory barrier implied before uatomic_xchg() orders store to
@@ -435,14 +488,13 @@ ___cds_wfcq_splice(
 		return CDS_WFCQ_RET_DEST_EMPTY;
 }
 
-
 /*
  * __cds_wfcq_splice_blocking: enqueue all src_q nodes at the end of dest_q.
  *
  * Dequeue all nodes from src_q.
  * dest_q must be already initialized.
- * Dequeue/splice/iteration mutual exclusion for src_q should be ensured
- * by the caller.
+ * Mutual exclusion for src_q should be ensured by the caller as
+ * specified in the "Synchronisation table".
  * Returns enum cds_wfcq_ret which indicates the state of the src or
  * dest queue. Never returns CDS_WFCQ_RET_WOULDBLOCK.
  */
