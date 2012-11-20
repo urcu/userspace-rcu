@@ -252,11 +252,14 @@ static void *call_rcu_thread(void *arg)
 		struct cds_wfcq_head cbs_tmp_head;
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
+		enum cds_wfcq_ret splice_ret;
 
 		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
-		__cds_wfcq_splice_blocking(&cbs_tmp_head, &cbs_tmp_tail,
-			&crdp->cbs_head, &crdp->cbs_tail);
-		if (!cds_wfcq_empty(&cbs_tmp_head, &cbs_tmp_tail)) {
+		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
+			&cbs_tmp_tail, &crdp->cbs_head, &crdp->cbs_tail);
+		assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
+		assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
+		if (splice_ret != CDS_WFCQ_RET_SRC_EMPTY) {
 			synchronize_rcu();
 			cbcount = 0;
 			__cds_wfcq_for_each_blocking_safe(&cbs_tmp_head,
