@@ -43,6 +43,7 @@
 #include "urcu/tls-compat.h"
 
 #include "urcu-die.h"
+#include "urcu-wait.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE
@@ -105,6 +106,12 @@ DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
+
+/*
+ * Queue keeping threads awaiting to wait for a grace period. Contains
+ * struct gp_waiters_thread objects.
+ */
+static DEFINE_URCU_WAIT_QUEUE(gp_waiters);
 
 static void mutex_lock(pthread_mutex_t *mutex)
 {
@@ -306,8 +313,33 @@ void synchronize_rcu(void)
 {
 	CDS_LIST_HEAD(cur_snap_readers);
 	CDS_LIST_HEAD(qsreaders);
+	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
+	struct urcu_waiters waiters;
+
+	/*
+	 * Add ourself to gp_waiters queue of threads awaiting to wait
+	 * for a grace period. Proceed to perform the grace period only
+	 * if we are the first thread added into the queue.
+	 * The implicit memory barrier before urcu_wait_add()
+	 * orders prior memory accesses of threads put into the wait
+	 * queue before their insertion into the wait queue.
+	 */
+	if (urcu_wait_add(&gp_waiters, &wait) != 0) {
+		/* Not first in queue: will be awakened by another thread. */
+		urcu_adaptative_busy_wait(&wait);
+		/* Order following memory accesses after grace period. */
+		cmm_smp_mb();
+		return;
+	}
+	/* We won't need to wake ourself up */
+	urcu_wait_set_state(&wait, URCU_WAIT_RUNNING);
 
 	mutex_lock(&rcu_gp_lock);
+
+	/*
+	 * Move all waiters into our local queue.
+	 */
+	urcu_move_waiters(&waiters, &gp_waiters);
 
 	if (cds_list_empty(&registry))
 		goto out;
@@ -374,6 +406,13 @@ void synchronize_rcu(void)
 	smp_mb_master(RCU_MB_GROUP);
 out:
 	mutex_unlock(&rcu_gp_lock);
+
+	/*
+	 * Wakeup waiters only after we have completed the grace period
+	 * and have ensured the memory barriers at the end of the grace
+	 * period have been issued.
+	 */
+	urcu_wake_all_waiters(&waiters);
 }
 
 /*
