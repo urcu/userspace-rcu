@@ -69,11 +69,13 @@ static inline pid_t gettid(void)
 #include <urcu/wfcqueue.h>
 
 enum test_sync {
-	TEST_SYNC_MUTEX = 0,
-	TEST_SYNC_NONE,
+	TEST_SYNC_NONE = 0,
+	TEST_SYNC_MUTEX,
 };
 
 static enum test_sync test_sync;
+
+static int test_force_sync;
 
 static volatile int test_go, test_stop_enqueue, test_stop_dequeue;
 
@@ -349,8 +351,8 @@ static void show_usage(int argc, char **argv)
 	printf(" [-q] (test dequeue)");
 	printf(" [-s] (test splice, enabled by default)");
 	printf(" [-M] (use mutex external synchronization)");
-	printf(" [-0] (use no external synchronization)");
-	printf("      Note: default: mutex external synchronization used.");
+	printf("      Note: default: no external synchronization used.");
+	printf(" [-f] (force user-provided synchronization)");
 	printf(" [-w] Wait for dequeuer to empty queue");
 	printf("\n");
 }
@@ -432,11 +434,11 @@ int main(int argc, char **argv)
 		case 'M':
 			test_sync = TEST_SYNC_MUTEX;
 			break;
-		case '0':
-			test_sync = TEST_SYNC_NONE;
-			break;
 		case 'w':
 			test_wait_empty = 1;
+			break;
+		case 'f':
+			test_force_sync = 1;
 			break;
 		}
 	}
@@ -444,6 +446,17 @@ int main(int argc, char **argv)
 	/* activate splice test by default */
 	if (!test_dequeue && !test_splice)
 		test_splice = 1;
+
+	if (test_sync == TEST_SYNC_NONE && nr_dequeuers > 1 && test_dequeue) {
+		if (test_force_sync) {
+			fprintf(stderr, "[WARNING] Using dequeue concurrently "
+				"with other dequeue or splice without external "
+				"synchronization. Expect run-time failure.\n");
+		} else {
+			printf("Enforcing mutex synchronization\n");
+			test_sync = TEST_SYNC_MUTEX;
+		}
+	}
 
 	printf_verbose("running test for %lu seconds, %u enqueuers, "
 		       "%u dequeuers.\n",
