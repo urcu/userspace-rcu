@@ -38,9 +38,10 @@ extern "C" {
  * Stack implementing push, pop, pop_all operations, as well as iterator
  * on the stack head returned by pop_all.
  *
- * Wait-free operations: cds_wfs_push, __cds_wfs_pop_all.
- * Blocking operations: cds_wfs_pop, cds_wfs_pop_all, iteration on stack
- *                      head returned by pop_all.
+ * Wait-free operations: cds_wfs_push, __cds_wfs_pop_all, cds_wfs_empty,
+ *                       cds_wfs_first.
+ * Blocking operations: cds_wfs_pop, cds_wfs_pop_all, cds_wfs_next,
+ *                      iteration on stack head returned by pop_all.
  *
  * Synchronization table:
  *
