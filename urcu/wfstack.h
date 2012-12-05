@@ -162,6 +162,8 @@ extern struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s);
  * Used by for-like iteration macros in urcu/wfstack.h:
  * cds_wfs_for_each_blocking()
  * cds_wfs_for_each_blocking_safe()
+ *
+ * Returns NULL if popped stack is empty, top stack node otherwise.
  */
 extern struct cds_wfs_node *cds_wfs_first_blocking(struct cds_wfs_head *head);
 
@@ -174,6 +176,9 @@ extern struct cds_wfs_node *cds_wfs_first_blocking(struct cds_wfs_head *head);
  * Used by for-like iteration macros in urcu/wfstack.h:
  * cds_wfs_for_each_blocking()
  * cds_wfs_for_each_blocking_safe()
+ *
+ * Returns NULL if reached end of popped stack, non-NULL next stack
+ * node otherwise.
  */
 extern struct cds_wfs_node *cds_wfs_next_blocking(struct cds_wfs_node *node);
 
