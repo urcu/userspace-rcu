@@ -78,6 +78,8 @@ enum test_sync {
 
 static enum test_sync test_sync;
 
+static int test_force_sync;
+
 static volatile int test_go, test_stop;
 
 static unsigned long rduration;
@@ -321,6 +323,7 @@ static void show_usage(int argc, char **argv)
 	printf(" [-P] (test pop_all, enabled by default)");
 	printf(" [-M] (use mutex external synchronization)");
 	printf("      Note: default: no external synchronization used.");
+	printf(" [-f] (force user-provided synchronization)");
 	printf("\n");
 }
 
@@ -399,12 +402,26 @@ int main(int argc, char **argv)
 		case 'M':
 			test_sync = TEST_SYNC_MUTEX;
 			break;
+		case 'f':
+			test_force_sync = 1;
+			break;
 		}
 	}
 
 	/* activate pop_all test by default */
 	if (!test_pop && !test_pop_all)
 		test_pop_all = 1;
+
+	if (test_sync == TEST_SYNC_NONE && nr_dequeuers > 1 && test_pop) {
+		if (test_force_sync) {
+			fprintf(stderr, "[WARNING] Using pop concurrently "
+				"with other pop or pop_all without external "
+				"synchronization. Expect run-time failure.\n");
+		} else {
+			printf("Enforcing mutex synchronization\n");
+			test_sync = TEST_SYNC_MUTEX;
+		}
+	}
 
 	printf_verbose("running test for %lu seconds, %u enqueuers, "
 		       "%u dequeuers.\n",
