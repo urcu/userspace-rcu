@@ -58,6 +58,8 @@ extern "C" {
  * synchronization.
  */
 
+#define CDS_WFS_WOULDBLOCK	((void *) -1UL)
+
 /*
  * struct cds_wfs_node is returned by __cds_wfs_pop, and also used as
  * iterator on stack. It is not safe to dereference the node next
@@ -184,6 +186,14 @@ extern struct cds_wfs_node *cds_wfs_first(struct cds_wfs_head *head);
 extern struct cds_wfs_node *cds_wfs_next_blocking(struct cds_wfs_node *node);
 
 /*
+ * cds_wfs_next_nonblocking: get next node of a popped stack.
+ *
+ * Same as cds_wfs_next_blocking, but returns CDS_WFS_WOULDBLOCK if it
+ * needs to block.
+ */
+extern struct cds_wfs_node *cds_wfs_next_nonblocking(struct cds_wfs_node *node);
+
+/*
  * cds_wfs_pop_lock: lock stack pop-protection mutex.
  */
 extern void cds_wfs_pop_lock(struct cds_wfs_stack *s);
@@ -210,6 +220,14 @@ extern void cds_wfs_pop_unlock(struct cds_wfs_stack *s);
  *    and __cds_wfs_pop_all(). (multi-provider/single-consumer scheme).
  */
 extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
+
+/*
+ * __cds_wfs_pop_nonblocking: pop a node from the stack.
+ *
+ * Same as __cds_wfs_pop_blocking, but returns CDS_WFS_WOULDBLOCK if
+ * it needs to block.
+ */
+extern struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s);
 
 /*
  * __cds_wfs_pop_all: pop all nodes from a stack.

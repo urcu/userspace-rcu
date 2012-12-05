@@ -137,7 +137,7 @@ int _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
  * Waiting for push to complete enqueue and return the next node.
  */
 static inline struct cds_wfs_node *
-___cds_wfs_node_sync_next(struct cds_wfs_node *node)
+___cds_wfs_node_sync_next(struct cds_wfs_node *node, int blocking)
 {
 	struct cds_wfs_node *next;
 	int attempt = 0;
@@ -146,6 +146,8 @@ ___cds_wfs_node_sync_next(struct cds_wfs_node *node)
 	 * Adaptative busy-looping waiting for push to complete.
 	 */
 	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+		if (!blocking)
+			return CDS_WFS_WOULDBLOCK;
 		if (++attempt >= CDS_WFS_ADAPT_ATTEMPTS) {
 			poll(NULL, 0, CDS_WFS_WAIT);	/* Wait for 10ms */
 			attempt = 0;
@@ -155,6 +157,29 @@ ___cds_wfs_node_sync_next(struct cds_wfs_node *node)
 	}
 
 	return next;
+}
+
+static inline
+struct cds_wfs_node *
+___cds_wfs_pop(struct cds_wfs_stack *s, int blocking)
+{
+	struct cds_wfs_head *head, *new_head;
+	struct cds_wfs_node *next;
+
+	for (;;) {
+		head = CMM_LOAD_SHARED(s->head);
+		if (___cds_wfs_end(head))
+			return NULL;
+		next = ___cds_wfs_node_sync_next(&head->node, blocking);
+		if (!blocking && next == CDS_WFS_WOULDBLOCK)
+			return CDS_WFS_WOULDBLOCK;
+		new_head = caa_container_of(next, struct cds_wfs_head, node);
+		if (uatomic_cmpxchg(&s->head, head, new_head) == head)
+			return &head->node;
+		if (!blocking)
+			return CDS_WFS_WOULDBLOCK;
+		/* busy-loop if head changed under us */
+	}
 }
 
 /*
@@ -177,19 +202,20 @@ static inline
 struct cds_wfs_node *
 ___cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	struct cds_wfs_head *head, *new_head;
-	struct cds_wfs_node *next;
+	return ___cds_wfs_pop(s, 1);
+}
 
-	for (;;) {
-		head = CMM_LOAD_SHARED(s->head);
-		if (___cds_wfs_end(head))
-			return NULL;
-		next = ___cds_wfs_node_sync_next(&head->node);
-		new_head = caa_container_of(next, struct cds_wfs_head, node);
-		if (uatomic_cmpxchg(&s->head, head, new_head) == head)
-			return &head->node;
-		/* busy-loop if head changed under us */
-	}
+/*
+ * __cds_wfs_pop_nonblocking: pop a node from the stack.
+ *
+ * Same as __cds_wfs_pop_blocking, but returns CDS_WFS_WOULDBLOCK if
+ * it needs to block.
+ */
+static inline
+struct cds_wfs_node *
+___cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
+{
+	return ___cds_wfs_pop(s, 0);
 }
 
 /*
@@ -303,6 +329,22 @@ _cds_wfs_first(struct cds_wfs_head *head)
 	return &head->node;
 }
 
+static inline struct cds_wfs_node *
+___cds_wfs_next(struct cds_wfs_node *node, int blocking)
+{
+	struct cds_wfs_node *next;
+
+	next = ___cds_wfs_node_sync_next(node, blocking);
+	/*
+	 * CDS_WFS_WOULDBLOCK != CSD_WFS_END, so we can check for end
+	 * even if ___cds_wfs_node_sync_next returns CDS_WFS_WOULDBLOCK,
+	 * and still return CDS_WFS_WOULDBLOCK.
+	 */
+	if (___cds_wfs_end(next))
+		return NULL;
+	return next;
+}
+
 /*
  * cds_wfs_next_blocking: get next node of a popped stack.
  *
@@ -319,12 +361,20 @@ _cds_wfs_first(struct cds_wfs_head *head)
 static inline struct cds_wfs_node *
 _cds_wfs_next_blocking(struct cds_wfs_node *node)
 {
-	struct cds_wfs_node *next;
+	return ___cds_wfs_next(node, 1);
+}
 
-	next = ___cds_wfs_node_sync_next(node);
-	if (___cds_wfs_end(next))
-		return NULL;
-	return next;
+
+/*
+ * cds_wfs_next_nonblocking: get next node of a popped stack.
+ *
+ * Same as cds_wfs_next_blocking, but returns CDS_WFS_WOULDBLOCK if it
+ * needs to block.
+ */
+static inline struct cds_wfs_node *
+_cds_wfs_next_nonblocking(struct cds_wfs_node *node)
+{
+	return ___cds_wfs_next(node, 0);
 }
 
 #ifdef __cplusplus
