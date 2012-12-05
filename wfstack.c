@@ -58,9 +58,9 @@ struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s)
 	return _cds_wfs_pop_all_blocking(s);
 }
 
-struct cds_wfs_node *cds_wfs_first_blocking(struct cds_wfs_head *head)
+struct cds_wfs_node *cds_wfs_first(struct cds_wfs_head *head)
 {
-	return _cds_wfs_first_blocking(head);
+	return _cds_wfs_first(head);
 }
 
 struct cds_wfs_node *cds_wfs_next_blocking(struct cds_wfs_node *node)

@@ -98,7 +98,7 @@ struct cds_wfs_stack {
  * For iteration on cds_wfs_head returned by __cds_wfs_pop_all or
  * cds_wfs_pop_all_blocking.
  */
-#define cds_wfs_first_blocking		_cds_wfs_first_blocking
+#define cds_wfs_first			_cds_wfs_first
 #define cds_wfs_next_blocking		_cds_wfs_next_blocking
 
 /* Pop locking with internal mutex */
@@ -154,7 +154,7 @@ extern struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s);
 extern struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s);
 
 /*
- * cds_wfs_first_blocking: get first node of a popped stack.
+ * cds_wfs_first: get first node of a popped stack.
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
@@ -165,7 +165,7 @@ extern struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s);
  *
  * Returns NULL if popped stack is empty, top stack node otherwise.
  */
-extern struct cds_wfs_node *cds_wfs_first_blocking(struct cds_wfs_head *head);
+extern struct cds_wfs_node *cds_wfs_first(struct cds_wfs_head *head);
 
 /*
  * cds_wfs_next_blocking: get next node of a popped stack.
@@ -245,7 +245,7 @@ extern struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s);
  * consistent, but no other memory ordering is ensured.
  */
 #define cds_wfs_for_each_blocking(head, node)			\
-	for (node = cds_wfs_first_blocking(head);		\
+	for (node = cds_wfs_first(head);			\
 		node != NULL;					\
 		node = cds_wfs_next_blocking(node))
 
@@ -261,7 +261,7 @@ extern struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s);
  * consistent, but no other memory ordering is ensured.
  */
 #define cds_wfs_for_each_blocking_safe(head, node, n)			   \
-	for (node = cds_wfs_first_blocking(head),			   \
+	for (node = cds_wfs_first(head),				   \
 			n = (node ? cds_wfs_next_blocking(node) : NULL);   \
 		node != NULL;						   \
 		node = n, n = (node ? cds_wfs_next_blocking(node) : NULL))

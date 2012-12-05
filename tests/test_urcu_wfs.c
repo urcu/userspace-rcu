@@ -256,7 +256,7 @@ static void do_test_pop_all(enum test_sync sync)
 		cds_wfs_pop_unlock(&s);
 
 	/* Check if empty */
-	if (cds_wfs_first_blocking(head) == NULL)
+	if (cds_wfs_first(head) == NULL)
 		return;
 
 	URCU_TLS(nr_pop_all)++;

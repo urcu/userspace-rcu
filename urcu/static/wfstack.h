@@ -283,7 +283,7 @@ _cds_wfs_pop_all_blocking(struct cds_wfs_stack *s)
 }
 
 /*
- * cds_wfs_first_blocking: get first node of a popped stack.
+ * cds_wfs_first: get first node of a popped stack.
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
@@ -295,7 +295,7 @@ _cds_wfs_pop_all_blocking(struct cds_wfs_stack *s)
  * Returns NULL if popped stack is empty, top stack node otherwise.
  */
 static inline struct cds_wfs_node *
-_cds_wfs_first_blocking(struct cds_wfs_head *head)
+_cds_wfs_first(struct cds_wfs_head *head)
 {
 	if (___cds_wfs_end(head))
 		return NULL;
