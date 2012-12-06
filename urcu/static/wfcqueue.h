@@ -262,6 +262,8 @@ ___cds_wfcq_first(struct cds_wfcq_head *head,
  * Used by for-like iteration macros in urcu/wfqueue.h:
  * __cds_wfcq_for_each_blocking()
  * __cds_wfcq_for_each_blocking_safe()
+ *
+ * Returns NULL if queue is empty, first node otherwise.
  */
 static inline struct cds_wfcq_node *
 ___cds_wfcq_first_blocking(struct cds_wfcq_head *head,
@@ -321,6 +323,9 @@ ___cds_wfcq_next(struct cds_wfcq_head *head,
  * Used by for-like iteration macros in urcu/wfqueue.h:
  * __cds_wfcq_for_each_blocking()
  * __cds_wfcq_for_each_blocking_safe()
+ *
+ * Returns NULL if reached end of queue, non-NULL next queue node
+ * otherwise.
  */
 static inline struct cds_wfcq_node *
 ___cds_wfcq_next_blocking(struct cds_wfcq_head *head,

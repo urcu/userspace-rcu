@@ -280,6 +280,8 @@ extern enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
  * Used by for-like iteration macros:
  * __cds_wfcq_for_each_blocking()
  * __cds_wfcq_for_each_blocking_safe()
+ *
+ * Returns NULL if queue is empty, first node otherwise.
  */
 extern struct cds_wfcq_node *__cds_wfcq_first_blocking(
 		struct cds_wfcq_head *head,
@@ -306,6 +308,9 @@ extern struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
  * Used by for-like iteration macros:
  * __cds_wfcq_for_each_blocking()
  * __cds_wfcq_for_each_blocking_safe()
+ *
+ * Returns NULL if reached end of queue, non-NULL next queue node
+ * otherwise.
  */
 extern struct cds_wfcq_node *__cds_wfcq_next_blocking(
 		struct cds_wfcq_head *head,
