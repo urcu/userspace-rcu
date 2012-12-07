@@ -544,7 +544,7 @@ int main(int argc, char **argv)
 		       tot_enqueues, tot_dequeues);
 	printf_verbose("total number of successful enqueues : %llu, "
 		       "enqueues to empty dest : %llu, "
-		       "successful dequeues %llu, ",
+		       "successful dequeues %llu, "
 		       "splice : %llu\n",
 		       tot_successful_enqueues,
 		       tot_empty_dest_enqueues,
