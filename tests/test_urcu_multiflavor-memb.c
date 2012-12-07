@@ -25,6 +25,7 @@
 #endif
 
 #include <urcu.h>
+#include "test_urcu_multiflavor.h"
 
 int test_mf_memb(void)
 {

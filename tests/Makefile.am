@@ -21,7 +21,7 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
 	test_urcu_lfs_rcu_dynlink \
 	test_urcu_multiflavor test_urcu_multiflavor_dynlink
-noinst_HEADERS = rcutorture.h
+noinst_HEADERS = rcutorture.h test_urcu_multiflavor.h
 
 if COMPAT_ARCH
 COMPAT=$(top_srcdir)/compat_arch_@ARCHTYPE@.c

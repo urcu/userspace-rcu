@@ -26,6 +26,7 @@
 
 #define RCU_MB
 #include <urcu.h>
+#include "test_urcu_multiflavor.h"
 
 int test_mf_mb(void)
 {
