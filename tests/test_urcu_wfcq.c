@@ -39,6 +39,7 @@
 
 #include <urcu/arch.h>
 #include <urcu/tls-compat.h>
+#include <urcu/uatomic.h>
 
 #ifdef __linux__
 #include <syscall.h>
@@ -65,7 +66,6 @@ static inline pid_t gettid(void)
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #endif
-#include <urcu.h>
 #include <urcu/wfcqueue.h>
 
 enum test_sync {
