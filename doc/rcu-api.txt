@@ -72,17 +72,6 @@ struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 	"cpu_affinity" specifies a cpu on which the call_rcu thread should
 	be affined to. It is ignored if negative.
 
-struct call_rcu_data *get_default_call_rcu_data(void);
-
-	Returns the handle of the default call_rcu() helper thread.
-
-struct call_rcu_data *get_call_rcu_data(void);
-
-	Returns the handle of the current thread's call_rcu() helper
-	thread, which might well be the default helper thread.
-	get_call_rcu_data should be called from registered RCU read-side
-	threads.  For the QSBR flavor, the caller should be online.
-
 void call_rcu_data_free(struct call_rcu_data *crdp);
 
 	Terminates a call_rcu() helper thread and frees its associated
@@ -114,7 +103,9 @@ struct call_rcu_data *get_call_rcu_data(void);
 	Returns the handle for the current thread's call_rcu() helper
 	thread, which is either, in increasing order of preference:
 	per-thread hard-assigned helper thread, per-cpu helper thread,
-	or default helper thread.
+	or default helper thread. get_call_rcu_data should be called
+	from registered RCU read-side threads. For the QSBR flavor, the
+	caller should be online.
 
 pthread_t get_call_rcu_thread(struct call_rcu_data *crdp);
 
