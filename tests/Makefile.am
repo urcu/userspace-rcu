@@ -20,7 +20,8 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_wfcq_dynlink \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
 	test_urcu_lfs_rcu_dynlink \
-	test_urcu_multiflavor test_urcu_multiflavor_dynlink
+	test_urcu_multiflavor test_urcu_multiflavor_dynlink \
+	test_urcu_fork
 noinst_HEADERS = rcutorture.h test_urcu_multiflavor.h
 
 if COMPAT_ARCH
@@ -85,6 +86,7 @@ test_urcu_signal_timing_CFLAGS= -DRCU_SIGNAL $(AM_CFLAGS)
 test_urcu_signal_yield_SOURCES = test_urcu.c $(URCU_SIGNAL)
 test_urcu_signal_yield_CFLAGS = -DRCU_SIGNAL -DDEBUG_YIELD $(AM_CFLAGS)
 
+test_urcu_fork_SOURCES = test_urcu_fork.c $(URCU)
 
 test_rwlock_timing_SOURCES = test_rwlock_timing.c $(URCU_SIGNAL)
 
