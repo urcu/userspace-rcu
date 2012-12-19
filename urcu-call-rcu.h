@@ -44,10 +44,12 @@ struct call_rcu_data;
 
 /* Flag values. */
 
-#define URCU_CALL_RCU_RT	0x1
-#define URCU_CALL_RCU_RUNNING	0x2
-#define URCU_CALL_RCU_STOP	0x4
-#define URCU_CALL_RCU_STOPPED	0x8
+#define URCU_CALL_RCU_RT	(1U << 0)
+#define URCU_CALL_RCU_RUNNING	(1U << 1)
+#define URCU_CALL_RCU_STOP	(1U << 2)
+#define URCU_CALL_RCU_STOPPED	(1U << 3)
+#define URCU_CALL_RCU_PAUSE	(1U << 4)
+#define URCU_CALL_RCU_PAUSED	(1U << 5)
 
 /*
  * The rcu_head data structure is placed in the structure to be freed
