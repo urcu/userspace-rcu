@@ -141,7 +141,7 @@ cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
   for (pos = (head)->next; pos != (head); pos = pos->next)
 
 
-/* Iterate forward over the elements of the list.  */
+/* Iterate backward over the elements of the list.  */
 #define cds_list_for_each_prev(pos, head) \
   for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
