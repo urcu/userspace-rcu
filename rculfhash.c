@@ -129,7 +129,7 @@
  *  - cds_lfht_first followed iteration with cds_lfht_next (and/or
  *    cds_lfht_next_duplicate, although less common).
  *
- * We define "write" operations as any of cds_lfht_add,
+ * We define "write" operations as any of cds_lfht_add, cds_lfht_replace,
  * cds_lfht_add_unique (success), cds_lfht_add_replace, cds_lfht_del.
  *
  * When cds_lfht_add_unique succeeds (returns the node passed as
