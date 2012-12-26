@@ -273,7 +273,20 @@ Interaction with fork()
 	must invoke call_rcu_before_fork() before the fork() and
 	call_rcu_after_fork_parent() after the fork().  The child
 	process must invoke call_rcu_after_fork_child().
-	These three APIs are suitable for passing to pthread_atfork().
+	Even though these three APIs are suitable for passing to
+	pthread_atfork(), use of pthread_atfork() is *STRONGLY
+	DISCOURAGED* for programs calling the glibc memory allocator
+	(malloc(), calloc(), free(), ...) within call_rcu callbacks.
+	This is due to limitations in the way glibc memory allocator
+	handles calls to the memory allocator from concurrent threads
+	while the pthread_atfork() handlers are executing.
+	Combining e.g.:
+	* call to free() from callbacks executed within call_rcu worker
+	  threads,
+	* executing call_rcu atfork handlers within the glibc pthread
+	  atfork mechanism,
+	will sometimes trigger interesting process hangs. This usually
+	hangs on a memory allocator lock within glibc.
 
 Thread Local Storage (TLS)
 
