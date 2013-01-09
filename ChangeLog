@@ -1,3 +1,11 @@
+2013-01-09 Userspace RCU 0.6.9
+	* API cleanup: use "uatomic_*" in cmm_smp_mb__ API
+	* uatomic: add memory barrier API for and/or/add/sub/inc/sub
+	* Fix uatomic sign cast
+	* Discourage use of pthread_atfork() for call_rcu handlers
+	* Fix call_rcu fork handling
+	* test: fork handling
+
 2012-09-11 Userspace RCU 0.6.8
 	* Fix: call_rcu list corruption on teardown
 
