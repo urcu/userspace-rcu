@@ -1,3 +1,11 @@
+2013-01-09 Userspace RCU 0.7.6
+	* Discourage use of pthread_atfork() for call_rcu handlers
+	* Fix call_rcu fork handling
+	* test: fork handling
+	* Fix TLS detection: test with linker, add --disable-compiler-tls
+	* Cleanup: cast pthread_self() return value to unsigned long
+	* Fallback mechanism not working on platform where TLS is unsupported
+
 2012-10-12 Userspace RCU 0.7.5
 	* 19cf3ae Fix: call_rcu list corruption on teardown
 	* Ensure that read-side functions meet 10-line LGPL criterion
