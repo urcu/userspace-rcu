@@ -103,6 +103,7 @@ struct cds_wfs_stack {
  */
 #define cds_wfs_first			_cds_wfs_first
 #define cds_wfs_next_blocking		_cds_wfs_next_blocking
+#define cds_wfs_next_nonblocking	_cds_wfs_next_nonblocking
 
 /* Pop locking with internal mutex */
 #define cds_wfs_pop_lock		_cds_wfs_pop_lock
@@ -110,6 +111,7 @@ struct cds_wfs_stack {
 
 /* Synchronization ensured by the caller. See synchronization table. */
 #define __cds_wfs_pop_blocking		___cds_wfs_pop_blocking
+#define __cds_wfs_pop_nonblocking	___cds_wfs_pop_nonblocking
 #define __cds_wfs_pop_all		___cds_wfs_pop_all
 
 #else /* !_LGPL_SOURCE */
