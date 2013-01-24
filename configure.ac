@@ -77,6 +77,7 @@ AS_CASE([$host_cpu],
 	[ia64], [ARCHTYPE="gcc"],
 	[arm*], [ARCHTYPE="arm"],
 	[mips*], [ARCHTYPE="mips"],
+	[tile*], [ARCHTYPE="tile"],
 	[ARCHTYPE="unknown"]
 )
 
