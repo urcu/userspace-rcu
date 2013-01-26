@@ -28,28 +28,36 @@ urcu/rcuhlist.h:
 	for implementing hash tables. Downside over rculist.h: lookup of
 	tail in O(n).
 
-urcu/rculfqueue.h:
+urcu/wfstack.h:
 
-	RCU queue with lock-free enqueue, lock-free dequeue. RCU used to
-	provide existance guarantees.
+	Stack with wait-free push and wait-free pop_all. Both blocking
+	and non-blocking pop and traversal operations are provided.
+	This stack does _not_ specifically rely on RCU.
+	Various synchronization techniques can be used to deal with
+	pop ABA. Those are detailed in the API.
 
 urcu/wfcqueue.h:
 
-	Concurrent queue with wait-free enqueue, blocking traversal.
-	This queue does _not_ use RCU.
+	Concurrent queue with wait-free enqueue. Both blocking and
+	non-blocking dequeue, splice (move all elements from one queue
+	to another), and traversal operations are provided.
+	This queue does _not_ specifically rely on RCU. Mutual exclusion
+	is used to protect dequeue, splice (from source queue) and
+	traversal (see API for details).
 	(note: deprecates urcu/wfqueue.h)
 
 urcu/lfstack.h:
 
-	RCU stack with lock-free push, lock-free dequeue. Various
-	synchronization techniques can be used to deal with "pop" ABA.
-	Those are detailed in the API.
+	Stack with lock-free push, lock-free pop, wait-free pop_all,
+	wait-free traversal. Various synchronization techniques can be
+	used to deal with pop ABA. Those are detailed in the API.
+	This stack does _not_ specifically rely on RCU.
 	(note: deprecates urcu/rculfstack.h)
 
-urcu/wfstack.h:
+urcu/rculfqueue.h:
 
-	Stack with wait-free enqueue, blocking dequeue. This stack does
-	_not_ use RCU.
+	RCU queue with lock-free enqueue, lock-free dequeue.
+	This queue relies on RCU for existence guarantees.
 
 urcu/rculfhash.h:
 
