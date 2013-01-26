@@ -232,28 +232,6 @@ Interaction with mutexes
 	should only be taken when the RCU reader thread is "offline"
 	(this can be performed by calling rcu_thread_offline()).
 
-Usage of DEBUG_RCU
-
-	DEBUG_RCU is used to add internal debugging self-checks to the
-	RCU library. This define adds a performance penalty when enabled.
-	Can be enabled by uncommenting the corresponding line in
-	Makefile.build.inc.
-
-Usage of DEBUG_YIELD
-
-	DEBUG_YIELD is used to add random delays in the code for testing
-	purposes.
-
-SMP support
-
-	By default the library is configured to use synchronization primitives
-	adequate for SMP systems. On uniprocessor systems, support for SMP
-	systems can be disabled with:
-
-		./configure --disable-smp-support
-
-	theoretically yielding slightly better performance.
-
 Interaction with fork()
 
 	Special care must be taken for applications performing fork() without
@@ -294,3 +272,25 @@ Thread Local Storage (TLS)
 	TLS variables on systems where it is not available. This behavior
 	can be forced by specifying --disable-compiler-tls as configure
 	argument.
+
+Usage of DEBUG_RCU
+
+	DEBUG_RCU is used to add internal debugging self-checks to the
+	RCU library. This define adds a performance penalty when enabled.
+	Can be enabled by uncommenting the corresponding line in
+	Makefile.build.inc.
+
+Usage of DEBUG_YIELD
+
+	DEBUG_YIELD is used to add random delays in the code for testing
+	purposes.
+
+SMP support
+
+	By default the library is configured to use synchronization primitives
+	adequate for SMP systems. On uniprocessor systems, support for SMP
+	systems can be disabled with:
+
+		./configure --disable-smp-support
+
+	theoretically yielding slightly better performance.
