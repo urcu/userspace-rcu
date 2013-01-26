@@ -73,11 +73,11 @@ API
 See the relevant API documentation files in doc/. The APIs provided by
 Userspace RCU are, by prefix:
 
-- rcu_ : Read-Copy Update
+- rcu_ : Read-Copy Update (see doc/rcu-api.txt)
 - cmm_ : Concurrent Memory Model
 - caa_ : Concurrent Architecture Abstraction
-- cds_ : Concurrent Data Structures
-- uatomic_: Userspace Atomic
+- cds_ : Concurrent Data Structures (see doc/cds-api.txt)
+- uatomic_: Userspace Atomic (see doc/uatomic-api.txt)
 
 
 QUICK START GUIDE
