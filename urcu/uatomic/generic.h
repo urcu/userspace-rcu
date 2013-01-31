@@ -38,19 +38,19 @@ extern "C" {
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR
 static inline __attribute__((always_inline))
-void _uatomic_link_error()
+void _uatomic_link_error(void)
 {
 #ifdef ILLEGAL_INSTR
 	/* generate an illegal instruction. Cannot catch this with linker tricks
 	 * when optimizations are disabled. */
 	__asm__ __volatile__(ILLEGAL_INSTR);
 #else
-	__builtin_trap ();
+	__builtin_trap();
 #endif
 }
 
 #else /* #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR */
-extern void _uatomic_link_error ();
+extern void _uatomic_link_error(void);
 #endif /* #else #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR */
 
 /* cmpxchg */
