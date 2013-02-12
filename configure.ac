@@ -77,7 +77,7 @@ AS_CASE([$host_cpu],
 	[ia64], [ARCHTYPE="gcc"],
 	[arm*], [ARCHTYPE="arm"],
 	[mips*], [ARCHTYPE="mips"],
-	[tile*], [ARCHTYPE="tile"],
+	[tile*], [ARCHTYPE="gcc"],
 	[ARCHTYPE="unknown"]
 )
 
@@ -110,6 +110,21 @@ AS_IF([test "x$ARCHTYPE" = "xarm"],[
 		AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
 	],[
 		AC_MSG_RESULT([no])
+	])
+])
+
+# Tile-specific checks
+AS_IF([echo "$host_cpu" | grep "^tile"],[
+	AC_MSG_CHECKING([for Tile architecture type])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+				#ifndef __tilegx__
+				#error
+				#endif
+		]])
+	],[
+		AC_MSG_RESULT([ok])
+	],[
+		AC_MSG_FAILURE([URCU has only been tested on the TileGx architecture. For other Tile* architectures, please run the tests first and report the results to the maintainer so that proper support can be added.])
 	])
 ])
 
