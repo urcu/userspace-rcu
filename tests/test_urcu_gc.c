@@ -1,7 +1,7 @@
 /*
  * test_urcu_gc.c
  *
- * Userspace RCU library - test program (with baatch reclamation)
+ * Userspace RCU library - test program (with batch reclamation)
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *

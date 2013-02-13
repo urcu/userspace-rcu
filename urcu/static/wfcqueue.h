@@ -536,7 +536,7 @@ ___cds_wfcq_splice_nonblocking(
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Mutual exlusion with cds_wfcq_splice_blocking and dequeue lock is
+ * Mutual exclusion with cds_wfcq_splice_blocking and dequeue lock is
  * ensured.
  * It is valid to reuse and free a dequeued node immediately.
  */
@@ -559,7 +559,7 @@ _cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
  * dest_q must be already initialized.
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
+ * Mutual exclusion with cds_wfcq_dequeue_blocking and dequeue lock is
  * ensured.
  * Returns enum cds_wfcq_ret which indicates the state of the src or
  * dest queue. Never returns CDS_WFCQ_RET_WOULDBLOCK.

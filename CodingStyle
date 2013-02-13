@@ -1,6 +1,6 @@
 Userspace RCU Coding Style
 
-The coding style used for this project follows the the Linux kernel
+The coding style used for this project follows the Linux kernel
 guide lines. Please refer to:
 
 - Linux kernel Documentation/CodingStyle document for details,

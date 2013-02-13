@@ -281,7 +281,7 @@
  * Split-counters lazily update the global counter each 1024
  * addition/removal. It automatically keeps track of resize required.
  * We use the bucket length as indicator for need to expand for small
- * tables and machines lacking per-cpu data suppport.
+ * tables and machines lacking per-cpu data support.
  */
 #define COUNT_COMMIT_ORDER		10
 #define DEFAULT_SPLIT_COUNT_MASK	0xFUL

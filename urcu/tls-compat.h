@@ -44,7 +44,7 @@ extern "C" {
  * 	typedef int my_int_array_type[4];
  * 	DEFINE_URCU_TLS(my_int_array_type, var_name);
  *
- * Another exmaple:
+ * Another example:
  * 	typedef void (*call_rcu_flavor)(struct rcu_head *, XXXX);
  * 	DECLARE_URCU_TLS(call_rcu_flavor, p_call_rcu);
  *

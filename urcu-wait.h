@@ -148,7 +148,7 @@ void urcu_adaptative_busy_wait(struct urcu_wait_node *wait)
 		URCU_WAIT_WAITING, NULL, NULL, 0);
 skip_futex_wait:
 
-	/* Tell waker thread than we are runnning. */
+	/* Tell waker thread than we are running. */
 	uatomic_or(&wait->state, URCU_WAIT_RUNNING);
 
 	/*

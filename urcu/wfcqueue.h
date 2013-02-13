@@ -192,7 +192,7 @@ extern bool cds_wfcq_enqueue(struct cds_wfcq_head *head,
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
  * It is valid to reuse and free a dequeued node immediately.
- * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
+ * Mutual exclusion with cds_wfcq_dequeue_blocking and dequeue lock is
  * ensured.
  */
 extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
@@ -206,7 +206,7 @@ extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
  * dest_q must be already initialized.
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
- * Mutual exlusion with cds_wfcq_dequeue_blocking and dequeue lock is
+ * Mutual exclusion with cds_wfcq_dequeue_blocking and dequeue lock is
  * ensured.
  *
  * Returns enum cds_wfcq_ret which indicates the state of the src or
