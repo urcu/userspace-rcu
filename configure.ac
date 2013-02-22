@@ -231,6 +231,26 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 			AC_MSG_RESULT([no])
 		])
 
+		# Confirm that we have CPU_SET, and it actually works.
+		AC_MSG_CHECKING([whether CPU_SET works])
+		AH_TEMPLATE([HAVE_CPU_SET], [Defined to 1 if we have CPU_SET and it works])
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+				#define _GNU_SOURCE
+				#include <sched.h>
+				int main()
+				{
+					cpu_set_t foo, mask; CPU_SET (0, &foo);
+					return 0;
+				}
+			]])
+		],[
+			# Works!
+			AC_DEFINE(HAVE_CPU_SET, 1)
+			AC_MSG_RESULT([yes])
+		],[
+			AC_MSG_RESULT([no])
+		])
+
 		# Check how many arguments does sched_setaffinity take.
 		# Should be 3 or 2.
 		AC_MSG_CHECKING([how many arguments sched_setaffinity takes])
