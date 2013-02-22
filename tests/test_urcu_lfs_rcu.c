@@ -1,5 +1,5 @@
 /*
- * test_urcu_wfs.c
+ * test_urcu_lfs_rcu.c
  *
  * Userspace RCU library - example RCU-based lock-free stack
  *
@@ -66,7 +66,11 @@ static inline pid_t gettid(void)
 #define _LGPL_SOURCE
 #endif
 #include <urcu.h>
-#include <urcu/wfstack.h>
+
+/* Remove deprecation warnings from test build. */
+#define CDS_LFS_RCU_DEPRECATED
+
+#include <urcu/cds.h>
 
 static volatile int test_go, test_stop;
 
@@ -77,9 +81,9 @@ static unsigned long duration;
 /* read-side C.S. duration, in loops */
 static unsigned long wdelay;
 
-static inline void loop_sleep(unsigned long l)
+static inline void loop_sleep(unsigned long loops)
 {
-	while(l-- != 0)
+	while (loops-- != 0)
 		caa_cpu_relax();
 }
 
@@ -151,7 +155,12 @@ static DEFINE_URCU_TLS(unsigned long long, nr_successful_enqueues);
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct cds_wfs_stack s;
+struct test {
+	struct cds_lfs_node_rcu list;
+	struct rcu_head rcu;
+};
+
+static struct cds_lfs_stack_rcu s;
 
 void *thr_enqueuer(void *_count)
 {
@@ -163,17 +172,20 @@ void *thr_enqueuer(void *_count)
 
 	set_affinity();
 
+	rcu_register_thread();
+
 	while (!test_go)
 	{
 	}
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_wfs_node *node = malloc(sizeof(*node));
+		struct test *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		cds_wfs_node_init(node);
-		cds_wfs_push(&s, node);
+		cds_lfs_node_init_rcu(&node->list);
+		/* No rcu read-side is needed for push */
+		cds_lfs_push_rcu(&s, &node->list);
 		URCU_TLS(nr_successful_enqueues)++;
 
 		if (caa_unlikely(wdelay))
@@ -183,6 +195,8 @@ fail:
 		if (caa_unlikely(!test_duration_enqueue()))
 			break;
 	}
+
+	rcu_unregister_thread();
 
 	count[0] = URCU_TLS(nr_enqueues);
 	count[1] = URCU_TLS(nr_successful_enqueues);
@@ -195,6 +209,14 @@ fail:
 
 }
 
+static
+void free_node_cb(struct rcu_head *head)
+{
+	struct test *node =
+		caa_container_of(head, struct test, rcu);
+	free(node);
+}
+
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -205,25 +227,34 @@ void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
+	rcu_register_thread();
+
 	while (!test_go)
 	{
 	}
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_wfs_node *node = cds_wfs_pop_blocking(&s);
+		struct cds_lfs_node_rcu *snode;
 
-		if (node) {
-			free(node);
+		rcu_read_lock();
+		snode = cds_lfs_pop_rcu(&s);
+		rcu_read_unlock();
+		if (snode) {
+			struct test *node;
+
+			node = caa_container_of(snode, struct test, list);
+			call_rcu(&node->rcu, free_node_cb);
 			URCU_TLS(nr_successful_dequeues)++;
 		}
-
 		URCU_TLS(nr_dequeues)++;
 		if (caa_unlikely(!test_duration_dequeue()))
 			break;
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 	}
+
+	rcu_unregister_thread();
 
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
@@ -235,17 +266,20 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-void test_end(struct cds_wfs_stack *s, unsigned long long *nr_dequeues)
+void test_end(struct cds_lfs_stack_rcu *s, unsigned long long *nr_dequeues)
 {
-	struct cds_wfs_node *node;
+	struct cds_lfs_node_rcu *snode;
 
 	do {
-		node = cds_wfs_pop_blocking(s);
-		if (node) {
+		snode = cds_lfs_pop_rcu(s);
+		if (snode) {
+			struct test *node;
+
+			node = caa_container_of(snode, struct test, list);
 			free(node);
 			(*nr_dequeues)++;
 		}
-	} while (node);
+	} while (snode);
 }
 
 void show_usage(int argc, char **argv)
@@ -340,7 +374,11 @@ int main(int argc, char **argv)
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(2 * sizeof(*count_enqueuer) * nr_enqueuers);
 	count_dequeuer = malloc(2 * sizeof(*count_dequeuer) * nr_dequeuers);
-	cds_wfs_init(&s);
+	cds_lfs_init_rcu(&s);
+	err = create_all_cpu_call_rcu_data(0);
+	if (err) {
+		printf("Per-CPU call_rcu() worker threads unavailable. Using default global worker thread.\n");
+	}
 
 	next_aff = 0;
 
@@ -407,6 +445,7 @@ int main(int argc, char **argv)
 		       tot_successful_enqueues,
 		       tot_successful_dequeues + end_dequeues);
 
+	free_all_cpu_call_rcu_data();
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);
