@@ -81,7 +81,23 @@ static struct call_rcu_data *default_call_rcu_data;
  * CPUs rather than only to specific threads.
  */
 
-#if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF)
+#ifdef HAVE_SCHED_GETCPU
+
+static int urcu_sched_getcpu(void)
+{
+	return sched_getcpu();
+}
+
+#else /* #ifdef HAVE_SCHED_GETCPU */
+
+static int urcu_sched_getcpu(void)
+{
+	return -1;
+}
+
+#endif /* #else #ifdef HAVE_SCHED_GETCPU */
+
+#if defined(HAVE_SYSCONF) && defined(HAVE_SCHED_GETCPU)
 
 /*
  * Pointer to array of pointers to per-CPU call_rcu_data structures
@@ -124,7 +140,7 @@ static void alloc_cpu_call_rcu_data(void)
 	}
 }
 
-#else /* #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+#else /* #if defined(HAVE_SYSCONF) && defined(HAVE_SCHED_GETCPU) */
 
 /*
  * per_cpu_call_rcu_data should be constant, but some functions below, used both
@@ -142,12 +158,7 @@ static void alloc_cpu_call_rcu_data(void)
 {
 }
 
-static int sched_getcpu(void)
-{
-	return -1;
-}
-
-#endif /* #else #if defined(HAVE_SCHED_GETCPU) && defined(HAVE_SYSCONF) */
+#endif /* #else #if defined(HAVE_SYSCONF) && defined(HAVE_SCHED_GETCPU) */
 
 /* Acquire the specified pthread mutex. */
 
@@ -350,7 +361,7 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
  * Return a pointer to the call_rcu_data structure for the specified
  * CPU, returning NULL if there is none.  We cannot automatically
  * created it because the platform we are running on might not define
- * sched_getcpu().
+ * urcu_sched_getcpu().
  *
  * The call to this function and use of the returned call_rcu_data
  * should be protected by RCU read-side lock.
@@ -492,7 +503,7 @@ struct call_rcu_data *get_call_rcu_data(void)
 		return URCU_TLS(thread_call_rcu_data);
 
 	if (maxcpus > 0) {
-		crd = get_cpu_call_rcu_data(sched_getcpu());
+		crd = get_cpu_call_rcu_data(urcu_sched_getcpu());
 		if (crd)
 			return crd;
 	}
