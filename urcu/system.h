@@ -47,11 +47,11 @@
  * Store v into x, where x is located in shared memory. Performs the
  * required cache flush after writing. Returns v.
  */
-#define CMM_STORE_SHARED(x, v)		\
-	({				\
-		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);	\
-		cmm_smp_wmc();		\
-		_v;			\
+#define CMM_STORE_SHARED(x, v)						\
+	({								\
+		__typeof__(x) _v = _CMM_STORE_SHARED(x, v);		\
+		cmm_smp_wmc();						\
+		_v = _v;	/* Work around clang "unused result" */	\
 	})
 
 #endif /* _URCU_SYSTEM_H */
