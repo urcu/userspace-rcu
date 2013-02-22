@@ -47,6 +47,8 @@ supported, with the following exceptions:
   support. For ARM this was introduced with gcc 4.4:
     http://gcc.gnu.org/gcc-4.4/changes.html
 
+Clang version 3.0 (based on LLVM 3.0) is supported.
+
 For developers using the git tree:
 
 This source tree is based on the autotools suite from GNU to simplify
