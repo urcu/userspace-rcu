@@ -202,6 +202,49 @@ AS_IF([test "x$def_smp_support" = "xyes"], [AC_DEFINE([CONFIG_RCU_SMP], [1])])
 saved_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
+AC_CHECK_TYPES([cpu_set_t],
+	[have_cpu_set_t="yes"],
+	[have_cpu_set_t="no"],
+	[#include <sched.h>])
+
+# Confirm that we have CPU_ZERO, and it actually works.
+AC_MSG_CHECKING([whether CPU_ZERO works])
+AH_TEMPLATE([HAVE_CPU_ZERO], [Defined to 1 if we have CPU_ZERO and it works])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+		#define _GNU_SOURCE
+		#include <sched.h>
+		int main()
+		{
+			cpu_set_t foo; CPU_ZERO(&foo);
+			return 0;
+		}
+	]])
+],[
+	AC_DEFINE(HAVE_CPU_ZERO, 1)
+	AC_MSG_RESULT([yes])
+],[
+	AC_MSG_RESULT([no])
+])
+
+# Confirm that we have CPU_SET, and it actually works.
+AC_MSG_CHECKING([whether CPU_SET works])
+AH_TEMPLATE([HAVE_CPU_SET], [Defined to 1 if we have CPU_SET and it works])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+		#define _GNU_SOURCE
+		#include <sched.h>
+		int main()
+		{
+			cpu_set_t foo, mask; CPU_SET(0, &foo);
+			return 0;
+		}
+	]])
+],[
+	AC_DEFINE(HAVE_CPU_SET, 1)
+	AC_MSG_RESULT([yes])
+],[
+	AC_MSG_RESULT([no])
+])
+
 # First check if the function is available at all.
 AC_CHECK_FUNCS([sched_setaffinity],[
 	# Okay, we have it.  Check if also have cpu_set_t.  If we don't,
@@ -210,47 +253,8 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 	# version with 2 or 3 arguments.  In that case, CPU_ZERO, etc.,
 	# should also be present, but we confirm nonetheless.
 
-	AC_CHECK_TYPES([cpu_set_t],[
-		# We do have it.  Confirm that we have CPU_ZERO, and it actually works.
-		AC_MSG_CHECKING([whether CPU_ZERO works])
-		AH_TEMPLATE([HAVE_CPU_ZERO], [Defined to 1 if we have CPU_ZERO and it works])
-		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-				#define _GNU_SOURCE
-				#include <sched.h>
-				int main()
-				{
-					cpu_set_t foo; CPU_ZERO (&foo);
-					return 0;
-				}
-			]])
-		],[
-			# Works!
-			AC_DEFINE(HAVE_CPU_ZERO, 1)
-			AC_MSG_RESULT([yes])
-		],[
-			AC_MSG_RESULT([no])
-		])
-
-		# Confirm that we have CPU_SET, and it actually works.
-		AC_MSG_CHECKING([whether CPU_SET works])
-		AH_TEMPLATE([HAVE_CPU_SET], [Defined to 1 if we have CPU_SET and it works])
-		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-				#define _GNU_SOURCE
-				#include <sched.h>
-				int main()
-				{
-					cpu_set_t foo, mask; CPU_SET (0, &foo);
-					return 0;
-				}
-			]])
-		],[
-			# Works!
-			AC_DEFINE(HAVE_CPU_SET, 1)
-			AC_MSG_RESULT([yes])
-		],[
-			AC_MSG_RESULT([no])
-		])
-
+	AS_IF([test "x$have_cpu_set_t" = "xyes"], [
+		# We do have it.
 		# Check how many arguments does sched_setaffinity take.
 		# Should be 3 or 2.
 		AC_MSG_CHECKING([how many arguments sched_setaffinity takes])
@@ -259,21 +263,21 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 				int main()
 				{
 					cpu_set_t foo;
-					sched_setaffinity (0, sizeof (foo), &foo);
+					sched_setaffinity(0, sizeof (foo), &foo);
 					return 0;
 				}
 			]])
 		],
 		[sched_set_affinity_args=3],
 		[sched_set_affinity_args=2])
-		AC_DEFINE_UNQUOTED(SCHED_SETAFFINITY_ARGS, $sched_set_affinity_args,
+		AC_DEFINE_UNQUOTED(SCHED_SETAFFINITY_ARGS,
+			$sched_set_affinity_args,
 			[Defined to sched_setaffinity's number of arguments.])
 		AC_MSG_RESULT([$sched_set_affinity_args])
 	],[
 		# No cpu_set_t, always 3 args.
 		AC_DEFINE(SCHED_SETAFFINITY_ARGS, 3)
-    	],
-    	[#include <sched.h>])
+	])
 ])
 
 CFLAGS=$saved_CFLAGS
