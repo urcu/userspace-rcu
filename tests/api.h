@@ -29,6 +29,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include "cpuset.h"
 
 /*
  * Machine parameters.
@@ -65,7 +66,6 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <pthread.h>
-#include <sched.h>
 #include <sys/param.h>
 /* #include "atomic.h" */
 
@@ -230,12 +230,6 @@ static void wait_all_threads(void)
 			(void)wait_thread(tid);
 	}
 }
-
-#ifndef HAVE_CPU_SET_T
-typedef unsigned long cpu_set_t;
-# define CPU_ZERO(cpuset) do { *(cpuset) = 0; } while(0)
-# define CPU_SET(cpu, cpuset) do { *(cpuset) |= (1UL << (cpu)); } while(0)
-#endif
 
 static void run_on(int cpu)
 {
