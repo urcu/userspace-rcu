@@ -31,11 +31,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
-#include <sched.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
 #include <urcu/tls-compat.h>
+#include "cpuset.h"
 
 #ifdef __linux__
 #include <syscall.h>
@@ -108,12 +108,6 @@ static unsigned int next_aff = 0;
 static int use_affinity = 0;
 
 pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-#ifndef HAVE_CPU_SET_T
-typedef unsigned long cpu_set_t;
-# define CPU_ZERO(cpuset) do { *(cpuset) = 0; } while(0)
-# define CPU_SET(cpu, cpuset) do { *(cpuset) |= (1UL << (cpu)); } while(0)
-#endif
 
 static void set_affinity(void)
 {
