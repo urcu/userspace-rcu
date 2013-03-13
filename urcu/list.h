@@ -140,11 +140,16 @@ cds_list_splice (struct cds_list_head *add, struct cds_list_head *head)
 #define cds_list_for_each(pos, head) \
   for (pos = (head)->next; pos != (head); pos = pos->next)
 
+/* Iterate forward over the elements list. The list elements can be
+   removed from the list while doing this.  */
+#define cds_list_for_each_safe(pos, p, head) \
+  for (pos = (head)->next, p = pos->next; \
+       pos != (head); \
+       pos = p, p = pos->next)
 
 /* Iterate backward over the elements of the list.  */
 #define cds_list_for_each_prev(pos, head) \
   for (pos = (head)->prev; pos != (head); pos = pos->prev)
-
 
 /* Iterate backwards over the elements list.  The list elements can be
    removed from the list while doing this.  */
