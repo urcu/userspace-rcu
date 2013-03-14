@@ -227,7 +227,7 @@ do
 		rm $T/$tag/call_rcu
 	fi
 	( ls $T/$tag; ls $T/$lasttag ) | sort | uniq -u |
-		awk -v tag=$tag '{ print "<tr><td>" $1 "</td><td>" tag "</td></tr>" }'
+		awk -v tag=$tag '{ print "\t<tr><td>" $1 "</td><td>" tag "</td></tr>" }'
 	lasttag=$tag
 done
 
