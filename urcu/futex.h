@@ -45,7 +45,7 @@ extern "C" {
  */
 
 #ifdef CONFIG_RCU_HAVE_FUTEX
-#include <sys/syscall.h>
+#include <syscall.h>
 #define futex(...)	syscall(__NR_futex, __VA_ARGS__)
 #define futex_noasync(uaddr, op, val, timeout, uaddr2, val3)	\
 		futex(uaddr, op, val, timeout, uaddr2, val3)
