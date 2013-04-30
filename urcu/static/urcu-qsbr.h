@@ -191,6 +191,18 @@ static inline void _rcu_read_unlock(void)
 }
 
 /*
+ * Returns whether within a RCU read-side critical section.
+ *
+ * This function is less than 10 lines long.  The intent is that this
+ * function meets the 10-line criterion for LGPL, allowing this function
+ * to be invoked directly from non-LGPL code.
+ */
+static inline int _rcu_read_ongoing(void)
+{
+	return URCU_TLS(rcu_reader).ctr;
+}
+
+/*
  * This is a helper function for _rcu_quiescent_state().
  * The first cmm_smp_mb() ensures memory accesses in the prior read-side
  * critical sections are not reordered with store to

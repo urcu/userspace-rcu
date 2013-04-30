@@ -301,6 +301,11 @@ void rcu_read_unlock(void)
 	_rcu_read_unlock();
 }
 
+int rcu_read_ongoing(void)
+{
+	return _rcu_read_ongoing();
+}
+
 /*
  * only grow for now.
  */

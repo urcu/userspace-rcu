@@ -187,6 +187,11 @@ void *thr_reader(void *_count)
 
 	rcu_register_thread();
 
+	assert(rcu_read_ongoing());
+	rcu_thread_offline();
+	assert(!rcu_read_ongoing());
+	rcu_thread_online();
+
 	while (!test_go)
 	{
 	}
@@ -194,6 +199,7 @@ void *thr_reader(void *_count)
 
 	for (;;) {
 		rcu_read_lock();
+		assert(rcu_read_ongoing());
 		local_ptr = rcu_dereference(test_rcu_pointer);
 		rcu_debug_yield_read();
 		if (local_ptr)

@@ -429,6 +429,11 @@ void rcu_read_unlock(void)
 	_rcu_read_unlock();
 }
 
+int rcu_read_ongoing(void)
+{
+	return _rcu_read_ongoing();
+}
+
 void rcu_register_thread(void)
 {
 	URCU_TLS(rcu_reader).tid = pthread_self();

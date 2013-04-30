@@ -208,7 +208,7 @@ void synchronize_rcu(void)
 	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
 	struct urcu_waiters waiters;
 
-	was_online = URCU_TLS(rcu_reader).ctr;
+	was_online = rcu_read_ongoing();
 
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to.  In the "then" case, rcu_thread_offline
@@ -317,7 +317,7 @@ void synchronize_rcu(void)
 	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
 	struct urcu_waiters waiters;
 
-	was_online = URCU_TLS(rcu_reader).ctr;
+	was_online = rcu_read_ongoing();
 
 	/*
 	 * Mark the writer thread offline to make sure we don't wait for
@@ -403,6 +403,11 @@ void rcu_read_lock(void)
 void rcu_read_unlock(void)
 {
 	_rcu_read_unlock();
+}
+
+int rcu_read_ongoing(void)
+{
+	return _rcu_read_ongoing();
 }
 
 void rcu_quiescent_state(void)

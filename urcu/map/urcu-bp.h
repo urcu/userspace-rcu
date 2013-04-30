@@ -38,6 +38,8 @@
 #define _rcu_read_lock			_rcu_read_lock_bp
 #define rcu_read_unlock			rcu_read_unlock_bp
 #define _rcu_read_unlock		_rcu_read_unlock_bp
+#define rcu_read_ongoing		rcu_read_ongoing_bp
+#define _rcu_read_ongoing		_rcu_read_ongoing_bp
 #define rcu_register_thread		rcu_register_thread_bp
 #define rcu_unregister_thread		rcu_unregister_thread_bp
 #define rcu_init			rcu_init_bp

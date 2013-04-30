@@ -30,6 +30,7 @@ extern "C" {
 struct rcu_flavor_struct {
 	void (*read_lock)(void);
 	void (*read_unlock)(void);
+	int (*read_ongoing)(void);
 	void (*read_quiescent_state)(void);
 	void (*update_call_rcu)(struct rcu_head *head,
 				void (*func)(struct rcu_head *head));
@@ -46,6 +47,7 @@ struct rcu_flavor_struct {
 const struct rcu_flavor_struct x = {			\
 	.read_lock		= rcu_read_lock,	\
 	.read_unlock		= rcu_read_unlock,	\
+	.read_ongoing		= rcu_read_ongoing,	\
 	.read_quiescent_state	= rcu_quiescent_state,	\
 	.update_call_rcu	= call_rcu,		\
 	.update_synchronize_rcu	= synchronize_rcu,	\

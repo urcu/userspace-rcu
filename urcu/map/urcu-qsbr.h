@@ -38,6 +38,8 @@
 #define _rcu_read_lock			_rcu_read_lock_qsbr
 #define rcu_read_unlock			rcu_read_unlock_qsbr
 #define _rcu_read_unlock		_rcu_read_unlock_qsbr
+#define rcu_read_ongoing		rcu_read_ongoing_qsbr
+#define _rcu_read_ongoing		_rcu_read_ongoing_qsbr
 #define rcu_quiescent_state		rcu_quiescent_state_qsbr
 #define _rcu_quiescent_state		_rcu_quiescent_state_qsbr
 #define rcu_thread_offline		rcu_thread_offline_qsbr

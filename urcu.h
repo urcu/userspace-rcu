@@ -74,12 +74,15 @@ extern "C" {
 #ifdef RCU_MEMBARRIER
 #define rcu_read_lock_memb		_rcu_read_lock
 #define rcu_read_unlock_memb		_rcu_read_unlock
+#define rcu_read_ongoing_memb		_rcu_read_ongoing
 #elif defined(RCU_SIGNAL)
 #define rcu_read_lock_sig		_rcu_read_lock
 #define rcu_read_unlock_sig		_rcu_read_unlock
+#define rcu_read_ongoing_sig		_rcu_read_ongoing
 #elif defined(RCU_MB)
 #define rcu_read_lock_mb		_rcu_read_lock
 #define rcu_read_unlock_mb		_rcu_read_unlock
+#define rcu_read_ongoing_mb		_rcu_read_ongoing
 #endif
 
 #else /* !_LGPL_SOURCE */
@@ -91,6 +94,7 @@ extern "C" {
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
+extern int rcu_read_ongoing(void);
 
 #endif /* !_LGPL_SOURCE */
 

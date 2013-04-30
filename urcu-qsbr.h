@@ -70,6 +70,7 @@ extern "C" {
  */
 #define rcu_read_lock_qsbr		_rcu_read_lock
 #define rcu_read_unlock_qsbr		_rcu_read_unlock
+#define rcu_read_ongoing_qsbr		_rcu_read_ongoing
 
 #define rcu_quiescent_state_qsbr	_rcu_quiescent_state
 #define rcu_thread_offline_qsbr		_rcu_thread_offline
@@ -107,6 +108,7 @@ extern void rcu_read_unlock(void);
 
 #endif /* !RCU_DEBUG */
 
+extern int rcu_read_ongoing(void);
 extern void rcu_quiescent_state(void);
 extern void rcu_thread_offline(void);
 extern void rcu_thread_online(void);

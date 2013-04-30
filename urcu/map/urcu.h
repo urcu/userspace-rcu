@@ -69,6 +69,8 @@
 #define _rcu_read_lock			_rcu_read_lock_memb
 #define rcu_read_unlock			rcu_read_unlock_memb
 #define _rcu_read_unlock		_rcu_read_unlock_memb
+#define rcu_read_ongoing		rcu_read_ongoing_memb
+#define _rcu_read_ongoing		_rcu_read_ongoing_memb
 #define rcu_register_thread		rcu_register_thread_memb
 #define rcu_unregister_thread		rcu_unregister_thread_memb
 #define rcu_init			rcu_init_memb
@@ -115,6 +117,8 @@
 #define _rcu_read_lock			_rcu_read_lock_sig
 #define rcu_read_unlock			rcu_read_unlock_sig
 #define _rcu_read_unlock		_rcu_read_unlock_sig
+#define rcu_read_ongoing		rcu_read_ongoing_sig
+#define _rcu_read_ongoing		_rcu_read_ongoing_sig
 #define rcu_register_thread		rcu_register_thread_sig
 #define rcu_unregister_thread		rcu_unregister_thread_sig
 #define rcu_init			rcu_init_sig
@@ -158,6 +162,8 @@
 #define _rcu_read_lock			_rcu_read_lock_mb
 #define rcu_read_unlock			rcu_read_unlock_mb
 #define _rcu_read_unlock		_rcu_read_unlock_mb
+#define rcu_read_ongoing		rcu_read_ongoing_mb
+#define _rcu_read_ongoing		_rcu_read_ongoing_mb
 #define rcu_register_thread		rcu_register_thread_mb
 #define rcu_unregister_thread		rcu_unregister_thread_mb
 #define rcu_init			rcu_init_mb

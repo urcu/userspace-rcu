@@ -74,6 +74,7 @@ extern "C" {
  */
 #define rcu_read_lock_bp		_rcu_read_lock
 #define rcu_read_unlock_bp		_rcu_read_unlock
+#define rcu_read_ongoing_bp		_rcu_read_ongoing
 
 #define rcu_dereference_bp		rcu_dereference
 #define rcu_cmpxchg_pointer_bp		rcu_cmpxchg_pointer
@@ -89,6 +90,7 @@ extern "C" {
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
+extern int rcu_read_ongoing(void);
 
 extern void *rcu_dereference_sym_bp(void *p);
 #define rcu_dereference_bp(p)						     \
