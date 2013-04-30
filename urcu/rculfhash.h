@@ -439,6 +439,8 @@ int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
  *
  * Threads calling this API need to be registered RCU read-side threads.
  * This function does not (necessarily) issue memory barriers.
+ * cds_lfht_resize should *not* be called from a RCU read-side critical
+ * section.
  */
 extern
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
