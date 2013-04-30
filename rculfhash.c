@@ -1737,15 +1737,18 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
  */
 int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 {
-	int ret;
+	int ret, was_online;
 
 	/* Wait for in-flight resize operations to complete */
 	_CMM_STORE_SHARED(ht->in_progress_destroy, 1);
 	cmm_smp_mb();	/* Store destroy before load resize */
-	ht->flavor->thread_offline();
+	was_online = ht->flavor->read_ongoing();
+	if (was_online)
+		ht->flavor->thread_offline();
 	while (uatomic_read(&ht->in_progress_resize))
 		poll(NULL, 0, 100);	/* wait for 100ms */
-	ht->flavor->thread_online();
+	if (was_online)
+		ht->flavor->thread_online();
 	ret = cds_lfht_delete_bucket(ht);
 	if (ret)
 		return ret;
@@ -1881,13 +1884,18 @@ void resize_target_update_count(struct cds_lfht *ht,
 
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
+	int was_online;
+
 	resize_target_update_count(ht, new_size);
 	CMM_STORE_SHARED(ht->resize_initiated, 1);
-	ht->flavor->thread_offline();
+	was_online = ht->flavor->read_ongoing();
+	if (was_online)
+		ht->flavor->thread_offline();
 	pthread_mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
 	pthread_mutex_unlock(&ht->resize_mutex);
-	ht->flavor->thread_online();
+	if (was_online)
+		ht->flavor->thread_online();
 }
 
 static
