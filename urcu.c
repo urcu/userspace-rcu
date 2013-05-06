@@ -83,7 +83,7 @@ void __attribute__((destructor)) rcu_exit(void);
 #endif
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
-struct urcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
+struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
 
 /*
  * Written to only by each individual reader. Read by both the reader and the

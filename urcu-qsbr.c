@@ -53,7 +53,7 @@
 void __attribute__((destructor)) rcu_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
-struct urcu_gp rcu_gp = { .ctr = RCU_GP_ONLINE };
+struct rcu_gp rcu_gp = { .ctr = RCU_GP_ONLINE };
 
 /*
  * Active attempts to check for reader Q.S. before calling futex().

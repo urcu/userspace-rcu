@@ -77,8 +77,7 @@
 #define rcu_exit			rcu_exit_memb
 #define synchronize_rcu			synchronize_rcu_memb
 #define rcu_reader			rcu_reader_memb
-#define rcu_gp_ctr			rcu_gp_ctr_memb
-#define rcu_gp_futex			rcu_gp_futex_memb
+#define rcu_gp				rcu_gp_memb
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_memb
 #define get_call_rcu_thread		get_call_rcu_thread_memb
@@ -125,8 +124,7 @@
 #define rcu_exit			rcu_exit_sig
 #define synchronize_rcu			synchronize_rcu_sig
 #define rcu_reader			rcu_reader_sig
-#define rcu_gp_ctr			rcu_gp_ctr_sig
-#define rcu_gp_futex			rcu_gp_futex_sig
+#define rcu_gp				rcu_gp_sig
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_sig
 #define get_call_rcu_thread		get_call_rcu_thread_sig
@@ -170,8 +168,7 @@
 #define rcu_exit			rcu_exit_mb
 #define synchronize_rcu			synchronize_rcu_mb
 #define rcu_reader			rcu_reader_mb
-#define rcu_gp_ctr			rcu_gp_ctr_mb
-#define rcu_gp_futex			rcu_gp_futex_mb
+#define rcu_gp				rcu_gp_mb
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_mb
 #define get_call_rcu_thread		get_call_rcu_thread_mb

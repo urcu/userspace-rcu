@@ -49,8 +49,7 @@
 #define rcu_exit			rcu_exit_qsbr
 #define synchronize_rcu			synchronize_rcu_qsbr
 #define rcu_reader			rcu_reader_qsbr
-#define rcu_gp_ctr			rcu_gp_ctr_qsbr
-#define rcu_gp_futex			rcu_gp_futex_qsbr
+#define rcu_gp				rcu_gp_qsbr
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_qsbr
 #define get_call_rcu_thread		get_call_rcu_thread_qsbr

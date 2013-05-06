@@ -213,7 +213,7 @@ static inline void smp_mb_slave(int group)
 #define RCU_GP_CTR_PHASE	(1UL << (sizeof(unsigned long) << 2))
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_PHASE - 1)
 
-struct urcu_gp {
+struct rcu_gp {
 	/*
 	 * Global grace period counter.
 	 * Contains the current RCU_GP_CTR_PHASE.
@@ -226,7 +226,7 @@ struct urcu_gp {
 	int32_t futex;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
-extern struct urcu_gp rcu_gp;
+extern struct rcu_gp rcu_gp;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */

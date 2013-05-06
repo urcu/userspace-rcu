@@ -119,7 +119,7 @@ static inline void rcu_debug_yield_init(void)
 #define RCU_GP_ONLINE		(1UL << 0)
 #define RCU_GP_CTR		(1UL << 1)
 
-struct urcu_gp {
+struct rcu_gp {
 	/*
 	 * Global quiescent period counter with low-order bits unused.
 	 * Using a int rather than a char to eliminate false register
@@ -130,7 +130,7 @@ struct urcu_gp {
 	int32_t futex;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
-extern struct urcu_gp rcu_gp;
+extern struct rcu_gp rcu_gp;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
