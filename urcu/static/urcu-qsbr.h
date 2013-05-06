@@ -119,12 +119,18 @@ static inline void rcu_debug_yield_init(void)
 #define RCU_GP_ONLINE		(1UL << 0)
 #define RCU_GP_CTR		(1UL << 1)
 
-/*
- * Global quiescent period counter with low-order bits unused.
- * Using a int rather than a char to eliminate false register dependencies
- * causing stalls on some architectures.
- */
-extern unsigned long rcu_gp_ctr;
+struct urcu_gp {
+	/*
+	 * Global quiescent period counter with low-order bits unused.
+	 * Using a int rather than a char to eliminate false register
+	 * dependencies causing stalls on some architectures.
+	 */
+	unsigned long ctr;
+
+	int32_t futex;
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+
+extern struct urcu_gp rcu_gp;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
@@ -137,8 +143,6 @@ struct rcu_reader {
 
 extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
 
-extern int32_t rcu_gp_futex;
-
 /*
  * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.
  */
@@ -147,10 +151,10 @@ static inline void wake_up_gp(void)
 	if (caa_unlikely(_CMM_LOAD_SHARED(URCU_TLS(rcu_reader).waiting))) {
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).waiting, 0);
 		cmm_smp_mb();
-		if (uatomic_read(&rcu_gp_futex) != -1)
+		if (uatomic_read(&rcu_gp.futex) != -1)
 			return;
-		uatomic_set(&rcu_gp_futex, 0);
-		futex_noasync(&rcu_gp_futex, FUTEX_WAKE, 1,
+		uatomic_set(&rcu_gp.futex, 0);
+		futex_noasync(&rcu_gp.futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }
@@ -162,7 +166,7 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 	v = CMM_LOAD_SHARED(*ctr);
 	if (!v)
 		return RCU_READER_INACTIVE;
-	if (v == rcu_gp_ctr)
+	if (v == rcu_gp.ctr)
 		return RCU_READER_ACTIVE_CURRENT;
 	return RCU_READER_ACTIVE_OLD;
 }
@@ -228,7 +232,7 @@ static inline void _rcu_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
  * to be invoked directly from non-LGPL code.
  *
  * We skip the memory barriers and gp store if our local ctr already
- * matches the global rcu_gp_ctr value: this is OK because a prior
+ * matches the global rcu_gp.ctr value: this is OK because a prior
  * _rcu_quiescent_state() or _rcu_thread_online() already updated it
  * within our thread, so we have no quiescent state to report.
  */
@@ -236,7 +240,7 @@ static inline void _rcu_quiescent_state(void)
 {
 	unsigned long gp_ctr;
 
-	if ((gp_ctr = CMM_LOAD_SHARED(rcu_gp_ctr)) == URCU_TLS(rcu_reader).ctr)
+	if ((gp_ctr = CMM_LOAD_SHARED(rcu_gp.ctr)) == URCU_TLS(rcu_reader).ctr)
 		return;
 	_rcu_quiescent_state_update_and_wakeup(gp_ctr);
 }
@@ -269,7 +273,7 @@ static inline void _rcu_thread_offline(void)
 static inline void _rcu_thread_online(void)
 {
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, CMM_LOAD_SHARED(rcu_gp_ctr));
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, CMM_LOAD_SHARED(rcu_gp.ctr));
 	cmm_smp_mb();
 }
 
