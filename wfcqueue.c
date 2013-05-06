@@ -73,6 +73,14 @@ struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
 	return _cds_wfcq_dequeue_blocking(head, tail);
 }
 
+struct cds_wfcq_node *cds_wfcq_dequeue_with_state_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state)
+{
+	return _cds_wfcq_dequeue_with_state_blocking(head, tail, state);
+}
+
 enum cds_wfcq_ret cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
@@ -90,11 +98,27 @@ struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 	return ___cds_wfcq_dequeue_blocking(head, tail);
 }
 
+struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state)
+{
+	return ___cds_wfcq_dequeue_with_state_blocking(head, tail, state);
+}
+
 struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
 	return ___cds_wfcq_dequeue_nonblocking(head, tail);
+}
+
+struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state)
+{
+	return ___cds_wfcq_dequeue_with_state_nonblocking(head, tail, state);
 }
 
 enum cds_wfcq_ret __cds_wfcq_splice_blocking(

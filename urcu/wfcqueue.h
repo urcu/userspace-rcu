@@ -52,6 +52,10 @@ enum cds_wfcq_ret {
 	CDS_WFCQ_RET_SRC_EMPTY = 	2,
 };
 
+enum cds_wfcq_state {
+	CDS_WFCQ_STATE_LAST =		(1U << 0),
+};
+
 struct cds_wfcq_node {
 	struct cds_wfcq_node *next;
 };
@@ -85,12 +89,16 @@ struct cds_wfcq_tail {
 
 /* Locking performed within cds_wfcq calls. */
 #define cds_wfcq_dequeue_blocking	_cds_wfcq_dequeue_blocking
+#define cds_wfcq_dequeue_with_state_blocking	\
+					_cds_wfcq_dequeue_with_state_blocking
 #define cds_wfcq_splice_blocking	_cds_wfcq_splice_blocking
 #define cds_wfcq_first_blocking		_cds_wfcq_first_blocking
 #define cds_wfcq_next_blocking		_cds_wfcq_next_blocking
 
 /* Locking ensured by caller by holding cds_wfcq_dequeue_lock() */
 #define __cds_wfcq_dequeue_blocking	___cds_wfcq_dequeue_blocking
+#define __cds_wfcq_dequeue_with_state_blocking	\
+					___cds_wfcq_dequeue_with_state_blocking
 #define __cds_wfcq_splice_blocking	___cds_wfcq_splice_blocking
 #define __cds_wfcq_first_blocking	___cds_wfcq_first_blocking
 #define __cds_wfcq_next_blocking	___cds_wfcq_next_blocking
@@ -101,6 +109,8 @@ struct cds_wfcq_tail {
  * need to block. splice returns nonzero if it needs to block.
  */
 #define __cds_wfcq_dequeue_nonblocking	___cds_wfcq_dequeue_nonblocking
+#define __cds_wfcq_dequeue_with_state_nonblocking	\
+				___cds_wfcq_dequeue_with_state_nonblocking
 #define __cds_wfcq_splice_nonblocking	___cds_wfcq_splice_nonblocking
 #define __cds_wfcq_first_nonblocking	___cds_wfcq_first_nonblocking
 #define __cds_wfcq_next_nonblocking	___cds_wfcq_next_nonblocking
@@ -200,6 +210,17 @@ extern struct cds_wfcq_node *cds_wfcq_dequeue_blocking(
 		struct cds_wfcq_tail *tail);
 
 /*
+ * cds_wfcq_dequeue_with_state_blocking: dequeue with state.
+ *
+ * Same as cds_wfcq_dequeue_blocking, but saves whether dequeueing the
+ * last node of the queue into state (CDS_WFCQ_STATE_LAST).
+ */
+extern struct cds_wfcq_node *cds_wfcq_dequeue_with_state_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state);
+
+/*
  * cds_wfcq_splice_blocking: enqueue all src_q nodes at the end of dest_q.
  *
  * Dequeue all nodes from src_q.
@@ -232,6 +253,17 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 		struct cds_wfcq_tail *tail);
 
 /*
+ * __cds_wfcq_dequeue_with_state_blocking: dequeue with state.
+ *
+ * Same as __cds_wfcq_dequeue_blocking, but saves whether dequeueing the
+ * last node of the queue into state (CDS_WFCQ_STATE_LAST).
+ */
+extern struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state);
+
+/*
  * __cds_wfcq_dequeue_nonblocking: dequeue a node from a wait-free queue.
  *
  * Same as __cds_wfcq_dequeue_blocking, but returns CDS_WFCQ_WOULDBLOCK
@@ -240,6 +272,17 @@ extern struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 extern struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail);
+
+/*
+ * __cds_wfcq_dequeue_with_state_blocking: dequeue with state.
+ *
+ * Same as __cds_wfcq_dequeue_nonblocking, but saves whether dequeueing
+ * the last node of the queue into state (CDS_WFCQ_STATE_LAST).
+ */
+extern struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
+		struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail,
+		int *state);
 
 /*
  * __cds_wfcq_splice_blocking: enqueue all src_q nodes at the end of dest_q.

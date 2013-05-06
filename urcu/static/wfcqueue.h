@@ -350,18 +350,24 @@ ___cds_wfcq_next_nonblocking(struct cds_wfcq_head *head,
 }
 
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_with_state(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
+		int *state,
 		int blocking)
 {
 	struct cds_wfcq_node *node, *next;
 
-	if (_cds_wfcq_empty(head, tail))
+	if (state)
+		*state = 0;
+
+	if (_cds_wfcq_empty(head, tail)) {
 		return NULL;
+	}
 
 	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
-	if (!blocking && node == CDS_WFCQ_WOULDBLOCK)
+	if (!blocking && node == CDS_WFCQ_WOULDBLOCK) {
 		return CDS_WFCQ_WOULDBLOCK;
+	}
 
 	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
 		/*
@@ -379,8 +385,11 @@ ___cds_wfcq_dequeue(struct cds_wfcq_head *head,
 		 * content.
 		 */
 		_cds_wfcq_node_init(&head->node);
-		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node)
+		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node) {
+			if (state)
+				*state |= CDS_WFCQ_STATE_LAST;
 			return node;
+		}
 		next = ___cds_wfcq_node_sync_next(node, blocking);
 		/*
 		 * In nonblocking mode, if we would need to block to
@@ -404,7 +413,7 @@ ___cds_wfcq_dequeue(struct cds_wfcq_head *head,
 }
 
 /*
- * __cds_wfcq_dequeue_blocking: dequeue a node from the queue.
+ * __cds_wfcq_dequeue_with_state_blocking: dequeue node from queue, with state.
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
@@ -413,23 +422,49 @@ ___cds_wfcq_dequeue(struct cds_wfcq_head *head,
  * caller.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+___cds_wfcq_dequeue_with_state_blocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail, int *state)
 {
-	return ___cds_wfcq_dequeue(head, tail, 1);
+	return ___cds_wfcq_dequeue_with_state(head, tail, state, 1);
 }
 
 /*
- * __cds_wfcq_dequeue_nonblocking: dequeue a node from a wait-free queue.
+ * ___cds_wfcq_dequeue_blocking: dequeue node from queue.
+ *
+ * Same as __cds_wfcq_dequeue_with_state_blocking, but without saving
+ * state.
+ */
+static inline struct cds_wfcq_node *
+___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	return ___cds_wfcq_dequeue_with_state_blocking(head, tail, NULL);
+}
+
+/*
+ * __cds_wfcq_dequeue_with_state_nonblocking: dequeue node, with state.
  *
  * Same as __cds_wfcq_dequeue_blocking, but returns CDS_WFCQ_WOULDBLOCK
  * if it needs to block.
  */
 static inline struct cds_wfcq_node *
+___cds_wfcq_dequeue_with_state_nonblocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail, int *state)
+{
+	return ___cds_wfcq_dequeue_with_state(head, tail, state, 0);
+}
+
+/*
+ * ___cds_wfcq_dequeue_nonblocking: dequeue node from queue.
+ *
+ * Same as __cds_wfcq_dequeue_with_state_nonblocking, but without saving
+ * state.
+ */
+static inline struct cds_wfcq_node *
 ___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return ___cds_wfcq_dequeue(head, tail, 0);
+	return ___cds_wfcq_dequeue_with_state_nonblocking(head, tail, NULL);
 }
 
 /*
@@ -532,7 +567,7 @@ ___cds_wfcq_splice_nonblocking(
 }
 
 /*
- * cds_wfcq_dequeue_blocking: dequeue a node from a wait-free queue.
+ * cds_wfcq_dequeue_with_state_blocking: dequeue a node from a wait-free queue.
  *
  * Content written into the node before enqueue is guaranteed to be
  * consistent, but no other memory ordering is ensured.
@@ -541,15 +576,27 @@ ___cds_wfcq_splice_nonblocking(
  * It is valid to reuse and free a dequeued node immediately.
  */
 static inline struct cds_wfcq_node *
-_cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+_cds_wfcq_dequeue_with_state_blocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail, int *state)
 {
 	struct cds_wfcq_node *retval;
 
 	_cds_wfcq_dequeue_lock(head, tail);
-	retval = ___cds_wfcq_dequeue_blocking(head, tail);
+	retval = ___cds_wfcq_dequeue_with_state_blocking(head, tail, state);
 	_cds_wfcq_dequeue_unlock(head, tail);
 	return retval;
+}
+
+/*
+ * cds_wfcq_dequeue_blocking: dequeue node from queue.
+ *
+ * Same as cds_wfcq_dequeue_blocking, but without saving state.
+ */
+static inline struct cds_wfcq_node *
+_cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	return _cds_wfcq_dequeue_with_state_blocking(head, tail, NULL);
 }
 
 /*
