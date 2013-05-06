@@ -213,12 +213,20 @@ static inline void smp_mb_slave(int group)
 #define RCU_GP_CTR_PHASE	(1UL << (sizeof(unsigned long) << 2))
 #define RCU_GP_CTR_NEST_MASK	(RCU_GP_CTR_PHASE - 1)
 
-/*
- * Global quiescent period counter with low-order bits unused.
- * Using a int rather than a char to eliminate false register dependencies
- * causing stalls on some architectures.
- */
-extern unsigned long rcu_gp_ctr;
+struct urcu_gp {
+	/*
+	 * Global grace period counter.
+	 * Contains the current RCU_GP_CTR_PHASE.
+	 * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
+	 * Written to only by writer with mutex taken.
+	 * Read by both writer and readers.
+	 */
+	unsigned long ctr;
+
+	int32_t futex;
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+
+extern struct urcu_gp rcu_gp;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
@@ -231,16 +239,14 @@ struct rcu_reader {
 
 extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
 
-extern int32_t rcu_gp_futex;
-
 /*
  * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.
  */
 static inline void wake_up_gp(void)
 {
-	if (caa_unlikely(uatomic_read(&rcu_gp_futex) == -1)) {
-		uatomic_set(&rcu_gp_futex, 0);
-		futex_async(&rcu_gp_futex, FUTEX_WAKE, 1,
+	if (caa_unlikely(uatomic_read(&rcu_gp.futex) == -1)) {
+		uatomic_set(&rcu_gp.futex, 0);
+		futex_async(&rcu_gp.futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }
@@ -256,13 +262,13 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 	v = CMM_LOAD_SHARED(*ctr);
 	if (!(v & RCU_GP_CTR_NEST_MASK))
 		return RCU_READER_INACTIVE;
-	if (!((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE))
+	if (!((v ^ rcu_gp.ctr) & RCU_GP_CTR_PHASE))
 		return RCU_READER_ACTIVE_CURRENT;
 	return RCU_READER_ACTIVE_OLD;
 }
 
 /*
- * Helper for _rcu_read_lock().  The format of rcu_gp_ctr (as well as
+ * Helper for _rcu_read_lock().  The format of rcu_gp.ctr (as well as
  * the per-thread rcu_reader.ctr) has the upper bits containing a count of
  * _rcu_read_lock() nesting, and a lower-order bit that contains either zero
  * or RCU_GP_CTR_PHASE.  The smp_mb_slave() ensures that the accesses in
@@ -271,7 +277,7 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 static inline void _rcu_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp.ctr));
 		smp_mb_slave(RCU_MB_GROUP);
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp + RCU_GP_COUNT);

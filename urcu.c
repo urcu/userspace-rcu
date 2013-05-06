@@ -83,16 +83,7 @@ void __attribute__((destructor)) rcu_exit(void);
 #endif
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
-
-int32_t rcu_gp_futex;
-
-/*
- * Global grace period counter.
- * Contains the current RCU_GP_CTR_PHASE.
- * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
- * Written to only by writer with mutex taken. Read by both writer and readers.
- */
-unsigned long rcu_gp_ctr = RCU_GP_COUNT;
+struct urcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
@@ -217,8 +208,8 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	smp_mb_master(RCU_MB_GROUP);
-	if (uatomic_read(&rcu_gp_futex) == -1)
-		futex_async(&rcu_gp_futex, FUTEX_WAIT, -1,
+	if (uatomic_read(&rcu_gp.futex) == -1)
+		futex_async(&rcu_gp.futex, FUTEX_WAIT, -1,
 		      NULL, NULL, 0);
 }
 
@@ -232,12 +223,12 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 	/*
 	 * Wait for each thread URCU_TLS(rcu_reader).ctr to either
 	 * indicate quiescence (not nested), or observe the current
-	 * rcu_gp_ctr value.
+	 * rcu_gp.ctr value.
 	 */
 	for (;;) {
 		wait_loops++;
 		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_dec(&rcu_gp_futex);
+			uatomic_dec(&rcu_gp.futex);
 			/* Write futex before read reader_gp */
 			smp_mb_master(RCU_MB_GROUP);
 		}
@@ -270,7 +261,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
-				uatomic_set(&rcu_gp_futex, 0);
+				uatomic_set(&rcu_gp.futex, 0);
 			}
 			break;
 		} else {
@@ -289,7 +280,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
-				uatomic_set(&rcu_gp_futex, 0);
+				uatomic_set(&rcu_gp.futex, 0);
 			}
 			break;
 		} else {
@@ -357,10 +348,10 @@ void synchronize_rcu(void)
 
 	/*
 	 * Must finish waiting for quiescent state for original parity before
-	 * committing next rcu_gp_ctr update to memory. Failure to do so could
+	 * committing next rcu_gp.ctr update to memory. Failure to do so could
 	 * result in the writer waiting forever while new readers are always
 	 * accessing data (no progress).  Enforce compiler-order of load
-	 * URCU_TLS(rcu_reader).ctr before store to rcu_gp_ctr.
+	 * URCU_TLS(rcu_reader).ctr before store to rcu_gp.ctr.
 	 */
 	cmm_barrier();
 
@@ -372,13 +363,13 @@ void synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+	CMM_STORE_SHARED(rcu_gp.ctr, rcu_gp.ctr ^ RCU_GP_CTR_PHASE);
 
 	/*
-	 * Must commit rcu_gp_ctr update to memory before waiting for quiescent
+	 * Must commit rcu_gp.ctr update to memory before waiting for quiescent
 	 * state. Failure to do so could result in the writer waiting forever
 	 * while new readers are always accessing data (no progress). Enforce
-	 * compiler-order of store to rcu_gp_ctr before load rcu_reader ctr.
+	 * compiler-order of store to rcu_gp.ctr before load rcu_reader ctr.
 	 */
 	cmm_barrier();
 
