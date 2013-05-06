@@ -53,6 +53,12 @@ struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 	return _cds_wfs_pop_blocking(s);
 }
 
+struct cds_wfs_node *
+	cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state)
+{
+	return _cds_wfs_pop_with_state_blocking(s, state);
+}
+
 struct cds_wfs_head *cds_wfs_pop_all_blocking(struct cds_wfs_stack *s)
 {
 	return _cds_wfs_pop_all_blocking(s);
@@ -88,9 +94,22 @@ struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 	return ___cds_wfs_pop_blocking(s);
 }
 
+struct cds_wfs_node *
+	__cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state)
+{
+	return ___cds_wfs_pop_with_state_blocking(s, state);
+}
+
 struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
 {
 	return ___cds_wfs_pop_nonblocking(s);
+}
+
+struct cds_wfs_node *
+	__cds_wfs_pop_with_state_nonblocking(struct cds_wfs_stack *s,
+		int *state)
+{
+	return ___cds_wfs_pop_with_state_nonblocking(s, state);
 }
 
 struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s)

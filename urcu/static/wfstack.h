@@ -161,29 +161,37 @@ ___cds_wfs_node_sync_next(struct cds_wfs_node *node, int blocking)
 
 static inline
 struct cds_wfs_node *
-___cds_wfs_pop(struct cds_wfs_stack *s, int blocking)
+___cds_wfs_pop(struct cds_wfs_stack *s, int *state, int blocking)
 {
 	struct cds_wfs_head *head, *new_head;
 	struct cds_wfs_node *next;
 
+	if (state)
+		*state = 0;
 	for (;;) {
 		head = CMM_LOAD_SHARED(s->head);
-		if (___cds_wfs_end(head))
+		if (___cds_wfs_end(head)) {
 			return NULL;
+		}
 		next = ___cds_wfs_node_sync_next(&head->node, blocking);
-		if (!blocking && next == CDS_WFS_WOULDBLOCK)
+		if (!blocking && next == CDS_WFS_WOULDBLOCK) {
 			return CDS_WFS_WOULDBLOCK;
+		}
 		new_head = caa_container_of(next, struct cds_wfs_head, node);
-		if (uatomic_cmpxchg(&s->head, head, new_head) == head)
+		if (uatomic_cmpxchg(&s->head, head, new_head) == head) {
+			if (state && ___cds_wfs_end(new_head))
+				*state |= CDS_WFS_STATE_LAST;
 			return &head->node;
-		if (!blocking)
+		}
+		if (!blocking) {
 			return CDS_WFS_WOULDBLOCK;
+		}
 		/* busy-loop if head changed under us */
 	}
 }
 
 /*
- * __cds_wfs_pop_blocking: pop a node from the stack.
+ * __cds_wfs_pop_with_state_blocking: pop a node from the stack, with state.
  *
  * Returns NULL if stack is empty.
  *
@@ -197,12 +205,36 @@ ___cds_wfs_pop(struct cds_wfs_stack *s, int blocking)
  *     __cds_wfs_pop_blocking and __cds_wfs_pop_all callers.
  * 3) Ensuring that only ONE thread can call __cds_wfs_pop_blocking()
  *    and __cds_wfs_pop_all(). (multi-provider/single-consumer scheme).
+ *
+ * "state" saves state flags atomically sampled with pop operation.
  */
+static inline
+struct cds_wfs_node *
+___cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state)
+{
+	return ___cds_wfs_pop(s, state, 1);
+}
+
 static inline
 struct cds_wfs_node *
 ___cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	return ___cds_wfs_pop(s, 1);
+	return ___cds_wfs_pop_with_state_blocking(s, NULL);
+}
+
+/*
+ * __cds_wfs_pop_with_state_nonblocking: pop a node from the stack.
+ *
+ * Same as __cds_wfs_pop_with_state_blocking, but returns
+ * CDS_WFS_WOULDBLOCK if it needs to block.
+ *
+ * "state" saves state flags atomically sampled with pop operation.
+ */
+static inline
+struct cds_wfs_node *
+___cds_wfs_pop_with_state_nonblocking(struct cds_wfs_stack *s, int *state)
+{
+	return ___cds_wfs_pop(s, state, 0);
 }
 
 /*
@@ -215,7 +247,7 @@ static inline
 struct cds_wfs_node *
 ___cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
 {
-	return ___cds_wfs_pop(s, 0);
+	return ___cds_wfs_pop_with_state_nonblocking(s, NULL);
 }
 
 /*
@@ -280,18 +312,28 @@ static inline void _cds_wfs_pop_unlock(struct cds_wfs_stack *s)
 }
 
 /*
- * Call __cds_wfs_pop_blocking with an internal pop mutex held.
+ * Call __cds_wfs_pop_with_state_blocking with an internal pop mutex held.
+ */
+static inline
+struct cds_wfs_node *
+_cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state)
+{
+	struct cds_wfs_node *retnode;
+
+	_cds_wfs_pop_lock(s);
+	retnode = ___cds_wfs_pop_with_state_blocking(s, state);
+	_cds_wfs_pop_unlock(s);
+	return retnode;
+}
+
+/*
+ * Call _cds_wfs_pop_with_state_blocking without saving any state.
  */
 static inline
 struct cds_wfs_node *
 _cds_wfs_pop_blocking(struct cds_wfs_stack *s)
 {
-	struct cds_wfs_node *retnode;
-
-	_cds_wfs_pop_lock(s);
-	retnode = ___cds_wfs_pop_blocking(s);
-	_cds_wfs_pop_unlock(s);
-	return retnode;
+	return _cds_wfs_pop_with_state_blocking(s, NULL);
 }
 
 /*

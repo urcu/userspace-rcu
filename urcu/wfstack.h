@@ -60,6 +60,10 @@ extern "C" {
 
 #define CDS_WFS_WOULDBLOCK	((void *) -1UL)
 
+enum cds_wfs_state {
+	CDS_WFS_STATE_LAST =		(1U << 0),
+};
+
 /*
  * struct cds_wfs_node is returned by __cds_wfs_pop, and also used as
  * iterator on stack. It is not safe to dereference the node next
@@ -95,6 +99,7 @@ struct cds_wfs_stack {
 
 /* Locking performed internally */
 #define cds_wfs_pop_blocking		_cds_wfs_pop_blocking
+#define cds_wfs_pop_with_state_blocking	_cds_wfs_pop_with_state_blocking
 #define cds_wfs_pop_all_blocking	_cds_wfs_pop_all_blocking
 
 /*
@@ -111,7 +116,11 @@ struct cds_wfs_stack {
 
 /* Synchronization ensured by the caller. See synchronization table. */
 #define __cds_wfs_pop_blocking		___cds_wfs_pop_blocking
+#define __cds_wfs_pop_with_state_blocking	\
+					___cds_wfs_pop_with_state_blocking
 #define __cds_wfs_pop_nonblocking	___cds_wfs_pop_nonblocking
+#define __cds_wfs_pop_with_state_nonblocking	\
+					___cds_wfs_pop_with_state_nonblocking
 #define __cds_wfs_pop_all		___cds_wfs_pop_all
 
 #else /* !_LGPL_SOURCE */
@@ -150,6 +159,15 @@ extern int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node);
  * Calls __cds_wfs_pop_blocking with an internal pop mutex held.
  */
 extern struct cds_wfs_node *cds_wfs_pop_blocking(struct cds_wfs_stack *s);
+
+/*
+ * cds_wfs_pop_with_state_blocking: pop a node from the stack, with state.
+ *
+ * Same as cds_wfs_pop_blocking, but stores whether the stack was
+ * empty into state (CDS_WFS_STATE_LAST).
+ */
+extern struct cds_wfs_node *
+	cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state);
 
 /*
  * cds_wfs_pop_all_blocking: pop all nodes from a stack.
@@ -224,12 +242,31 @@ extern void cds_wfs_pop_unlock(struct cds_wfs_stack *s);
 extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
 
 /*
+ * __cds_wfs_pop_with_state_blocking: pop a node from the stack, with state.
+ *
+ * Same as __cds_wfs_pop_blocking, but stores whether the stack was
+ * empty into state (CDS_WFS_STATE_LAST).
+ */
+extern struct cds_wfs_node *
+	__cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state);
+
+/*
  * __cds_wfs_pop_nonblocking: pop a node from the stack.
  *
  * Same as __cds_wfs_pop_blocking, but returns CDS_WFS_WOULDBLOCK if
  * it needs to block.
  */
 extern struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s);
+
+/*
+ * __cds_wfs_pop_with_state_nonblocking: pop a node from the stack, with state.
+ *
+ * Same as __cds_wfs_pop_nonblocking, but stores whether the stack was
+ * empty into state (CDS_WFS_STATE_LAST).
+ */
+extern struct cds_wfs_node *
+	__cds_wfs_pop_with_state_nonblocking(struct cds_wfs_stack *s,
+		int *state);
 
 /*
  * __cds_wfs_pop_all: pop all nodes from a stack.
