@@ -130,12 +130,18 @@ static inline void rcu_debug_yield_init(void)
  */
 extern void rcu_bp_register(void);
 
-/*
- * Global quiescent period counter with low-order bits unused.
- * Using a int rather than a char to eliminate false register dependencies
- * causing stalls on some architectures.
- */
-extern unsigned long rcu_gp_ctr;
+struct rcu_gp {
+	/*
+	 * Global grace period counter.
+	 * Contains the current RCU_GP_CTR_PHASE.
+	 * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
+	 * Written to only by writer with mutex taken.
+	 * Read by both writer and readers.
+	 */
+	unsigned long ctr;
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+
+extern struct rcu_gp rcu_gp;
 
 struct rcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
@@ -166,13 +172,13 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 	v = CMM_LOAD_SHARED(*ctr);
 	if (!(v & RCU_GP_CTR_NEST_MASK))
 		return RCU_READER_INACTIVE;
-	if (!((v ^ rcu_gp_ctr) & RCU_GP_CTR_PHASE))
+	if (!((v ^ rcu_gp.ctr) & RCU_GP_CTR_PHASE))
 		return RCU_READER_ACTIVE_CURRENT;
 	return RCU_READER_ACTIVE_OLD;
 }
 
 /*
- * Helper for _rcu_read_lock().  The format of rcu_gp_ctr (as well as
+ * Helper for _rcu_read_lock().  The format of rcu_gp.ctr (as well as
  * the per-thread rcu_reader.ctr) has the upper bits containing a count of
  * _rcu_read_lock() nesting, and a lower-order bit that contains either zero
  * or RCU_GP_CTR_PHASE.  The smp_mb_slave() ensures that the accesses in
@@ -181,7 +187,7 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 static inline void _rcu_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, _CMM_LOAD_SHARED(rcu_gp_ctr));
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, _CMM_LOAD_SHARED(rcu_gp.ctr));
 		cmm_smp_mb();
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, tmp + RCU_GP_COUNT);

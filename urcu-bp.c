@@ -109,13 +109,7 @@ unsigned int rcu_yield_active;
 DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
 #endif
 
-/*
- * Global grace period counter.
- * Contains the current RCU_GP_CTR_PHASE.
- * Also has a RCU_GP_COUNT of 1, to accelerate the reader fast path.
- * Written to only by writer with mutex taken. Read by both writer and readers.
- */
-unsigned long rcu_gp_ctr = RCU_GP_COUNT;
+struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
 
 /*
  * Pointer to registry elements. Written to only by each individual reader. Read
@@ -174,7 +168,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 	/*
 	 * Wait for each thread URCU_TLS(rcu_reader).ctr to either
 	 * indicate quiescence (not nested), or observe the current
-	 * rcu_gp_ctr value.
+	 * rcu_gp.ctr value.
 	 */
 	for (;;) {
 		wait_loops++;
@@ -250,7 +244,7 @@ void synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
+	CMM_STORE_SHARED(rcu_gp.ctr, rcu_gp.ctr ^ RCU_GP_CTR_PHASE);
 
 	/*
 	 * Must commit qparity update to memory before waiting for other parity

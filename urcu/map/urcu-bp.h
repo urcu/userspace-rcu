@@ -46,8 +46,7 @@
 #define rcu_exit			rcu_exit_bp
 #define synchronize_rcu			synchronize_rcu_bp
 #define rcu_reader			rcu_reader_bp
-#define rcu_gp_ctr			rcu_gp_ctr_bp
-#define rcu_gp_futex			rcu_gp_futex_bp	/* unused */
+#define rcu_gp				rcu_gp_bp
 
 #define get_cpu_call_rcu_data		get_cpu_call_rcu_data_bp
 #define get_call_rcu_thread		get_call_rcu_thread_bp
