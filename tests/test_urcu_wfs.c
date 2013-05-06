@@ -165,6 +165,7 @@ static DEFINE_URCU_TLS(unsigned long long, nr_successful_dequeues);
 static DEFINE_URCU_TLS(unsigned long long, nr_successful_enqueues);
 static DEFINE_URCU_TLS(unsigned long long, nr_empty_dest_enqueues);
 static DEFINE_URCU_TLS(unsigned long long, nr_pop_all);
+static DEFINE_URCU_TLS(unsigned long long, nr_pop_last);
 
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
@@ -224,14 +225,17 @@ fail:
 static void do_test_pop(enum test_sync sync)
 {
 	struct cds_wfs_node *node;
+	int state;
 
 	if (sync == TEST_SYNC_MUTEX)
 		cds_wfs_pop_lock(&s);
-	node = __cds_wfs_pop_blocking(&s);
+	node = __cds_wfs_pop_with_state_blocking(&s, &state);
 	if (sync == TEST_SYNC_MUTEX)
 		cds_wfs_pop_unlock(&s);
 
 	if (node) {
+		if (state & CDS_WFS_STATE_LAST)
+			URCU_TLS(nr_pop_last)++;
 		free(node);
 		URCU_TLS(nr_successful_dequeues)++;
 	}
@@ -254,6 +258,7 @@ static void do_test_pop_all(enum test_sync sync)
 		return;
 
 	URCU_TLS(nr_pop_all)++;
+	URCU_TLS(nr_pop_last)++;
 
 	cds_wfs_for_each_blocking_safe(head, node, n) {
 		free(node);
@@ -302,24 +307,30 @@ static void *thr_dequeuer(void *_count)
 
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu "
-		       "pop_all %llu\n",
+		       "pop_all %llu pop_last %llu\n",
 		       pthread_self(),
 			(unsigned long) gettid(),
 		       URCU_TLS(nr_dequeues), URCU_TLS(nr_successful_dequeues),
-		       URCU_TLS(nr_pop_all));
+		       URCU_TLS(nr_pop_all),
+		       URCU_TLS(nr_pop_last));
 	count[0] = URCU_TLS(nr_dequeues);
 	count[1] = URCU_TLS(nr_successful_dequeues);
 	count[2] = URCU_TLS(nr_pop_all);
+	count[3] = URCU_TLS(nr_pop_last);
 	return ((void*)2);
 }
 
-static void test_end(struct cds_wfs_stack *s, unsigned long long *nr_dequeues)
+static void test_end(struct cds_wfs_stack *s, unsigned long long *nr_dequeues,
+		unsigned long long *nr_pop_last)
 {
 	struct cds_wfs_node *node;
+	int state;
 
 	do {
-		node = cds_wfs_pop_blocking(s);
+		node = cds_wfs_pop_with_state_blocking(s, &state);
 		if (node) {
+			if (state & CDS_WFS_STATE_LAST)
+				(*nr_pop_last)++;
 			free(node);
 			(*nr_dequeues)++;
 		}
@@ -352,7 +363,7 @@ int main(int argc, char **argv)
 	unsigned long long tot_successful_enqueues = 0,
 			   tot_successful_dequeues = 0,
 			   tot_empty_dest_enqueues = 0,
-			   tot_pop_all = 0;
+			   tot_pop_all = 0, tot_pop_last = 0;
 	unsigned long long end_dequeues = 0;
 	int i, a, retval = 0;
 
@@ -465,7 +476,7 @@ int main(int argc, char **argv)
 	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(3 * sizeof(*count_enqueuer) * nr_enqueuers);
-	count_dequeuer = malloc(3 * sizeof(*count_dequeuer) * nr_dequeuers);
+	count_dequeuer = malloc(4 * sizeof(*count_dequeuer) * nr_dequeuers);
 	cds_wfs_init(&s);
 
 	next_aff = 0;
@@ -478,7 +489,7 @@ int main(int argc, char **argv)
 	}
 	for (i = 0; i < nr_dequeuers; i++) {
 		err = pthread_create(&tid_dequeuer[i], NULL, thr_dequeuer,
-				     &count_dequeuer[3 * i]);
+				     &count_dequeuer[4 * i]);
 		if (err != 0)
 			exit(1);
 	}
@@ -518,34 +529,36 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_dequeuer[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_dequeues += count_dequeuer[3 * i];
-		tot_successful_dequeues += count_dequeuer[3 * i + 1];
-		tot_pop_all += count_dequeuer[3 * i + 2];
+		tot_dequeues += count_dequeuer[4 * i];
+		tot_successful_dequeues += count_dequeuer[4 * i + 1];
+		tot_pop_all += count_dequeuer[4 * i + 2];
+		tot_pop_last += count_dequeuer[4 * i + 3];
 	}
 	
-	test_end(&s, &end_dequeues);
+	test_end(&s, &end_dequeues, &tot_pop_last);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);
 	printf_verbose("total number of successful enqueues : %llu, "
 		       "enqueues to empty dest : %llu, "
 		       "successful dequeues %llu, "
-		       "pop_all : %llu\n",
+		       "pop_all : %llu, pop_last : %llu\n",
 		       tot_successful_enqueues,
 		       tot_empty_dest_enqueues,
 		       tot_successful_dequeues,
-		       tot_pop_all);
+		       tot_pop_all, tot_pop_last);
 	printf("SUMMARY %-25s testdur %4lu nr_enqueuers %3u wdelay %6lu "
 		"nr_dequeuers %3u "
 		"rdur %6lu nr_enqueues %12llu nr_dequeues %12llu "
 		"successful enqueues %12llu enqueues to empty dest %12llu "
 		"successful dequeues %12llu pop_all %12llu "
-		"end_dequeues %llu nr_ops %12llu\n",
+		"pop_last %llu end_dequeues %llu nr_ops %12llu\n",
 		argv[0], duration, nr_enqueuers, wdelay,
 		nr_dequeuers, rduration, tot_enqueues, tot_dequeues,
 		tot_successful_enqueues,
 		tot_empty_dest_enqueues,
-		tot_successful_dequeues, tot_pop_all, end_dequeues,
+		tot_successful_dequeues, tot_pop_all, tot_pop_last,
+		end_dequeues,
 		tot_enqueues + tot_dequeues);
 	if (tot_successful_enqueues != tot_successful_dequeues + end_dequeues) {
 		printf("WARNING! Discrepancy between nr succ. enqueues %llu vs "
@@ -555,16 +568,14 @@ int main(int argc, char **argv)
 		retval = 1;
 	}
 	/*
-	 * If only using pop_all to dequeue, the enqueuer should see
-	 * exactly as many empty queues than the number of non-empty
-	 * stacks dequeued.
+	 * The enqueuer should see exactly as many empty queues than the
+	 * number of non-empty stacks dequeued.
 	 */
-	if (test_wait_empty && test_pop_all && !test_pop
-			&& tot_empty_dest_enqueues != tot_pop_all) {
+	if (tot_empty_dest_enqueues != tot_pop_last) {
 		printf("WARNING! Discrepancy between empty enqueue (%llu) and "
-			"number of non-empty pop_all (%llu)\n",
+			"number of pop last (%llu)\n",
 			tot_empty_dest_enqueues,
-			tot_pop_all);
+			tot_pop_last);
 		retval = 1;
 	}
 	free(count_enqueuer);
