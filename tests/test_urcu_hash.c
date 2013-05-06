@@ -267,7 +267,9 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 
 void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s nr_readers nr_writers duration (s)\n", argv[0]);
+	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
+		argv[0]);
+	printf("OPTIONS:\n");
 #ifdef DEBUG_YIELD
 	printf("        [-r] [-w] (yield reader and/or writer)\n");
 #endif
@@ -291,10 +293,12 @@ printf("        [not -u nor -s] Add entries (supports redundant keys).\n");
 	printf("        [-M size] Lookup pool size.\n");
 	printf("        [-N size] Write pool size.\n");
 	printf("        [-O size] Init pool size.\n");
-	printf("        [-V] Validate lookups of init values (use with filled init pool, same lookup range, with different write range).\n");
+	printf("        [-V] Validate lookups of init values.\n");
+	printf("		(use with filled init pool, same lookup range,\n");
+	printf("		with different write range)\n");
 	printf("	[-U] Uniqueness test.\n");
 	printf("	[-C] Number of hash chains.\n");
-	printf("\n\n");
+	printf("\n");
 }
 
 int main(int argc, char **argv)

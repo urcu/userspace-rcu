@@ -255,11 +255,13 @@ void test_end(struct cds_wfq_queue *q, unsigned long long *nr_dequeues)
 
 void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s)", argv[0]);
-	printf(" [-d delay] (enqueuer period (in loops))");
-	printf(" [-c duration] (dequeuer period (in loops))");
-	printf(" [-v] (verbose output)");
-	printf(" [-a cpu#] [-a cpu#]... (affinity)");
+	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",
+		argv[0]);
+	printf("OPTIONS:\n");
+	printf("	[-d delay] (enqueuer period (in loops))\n");
+	printf("	[-c duration] (dequeuer period (in loops))\n");
+	printf("	[-v] (verbose output)\n");
+	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
 	printf("\n");
 }
 

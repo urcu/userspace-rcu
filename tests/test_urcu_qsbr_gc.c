@@ -308,16 +308,18 @@ void *thr_writer(void *data)
 
 void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s nr_readers nr_writers duration (s)", argv[0]);
+	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
+		argv[0]);
+	printf("OPTIONS:\n");
 #ifdef DEBUG_YIELD
-	printf(" [-r] [-w] (yield reader and/or writer)");
+	printf("	[-r] [-w] (yield reader and/or writer)\n");
 #endif
-	printf(" [-b batch] (batch reclaim)");
-	printf(" [-d delay] (writer period (us))");
-	printf(" [-c duration] (reader C.S. duration (in loops))");
-	printf(" [-e duration] (writer C.S. duration (in loops))");
-	printf(" [-v] (verbose output)");
-	printf(" [-a cpu#] [-a cpu#]... (affinity)");
+	printf("	[-b batch] (batch reclaim)\n");
+	printf("	[-d delay] (writer period (us))\n");
+	printf("	[-c duration] (reader C.S. duration (in loops))\n");
+	printf("	[-e duration] (writer C.S. duration (in loops))\n");
+	printf("	[-v] (verbose output)\n");
+	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
 	printf("\n");
 }
 

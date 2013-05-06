@@ -351,17 +351,19 @@ static void test_end(unsigned long long *nr_dequeues,
 
 static void show_usage(int argc, char **argv)
 {
-	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s)", argv[0]);
-	printf(" [-d delay] (enqueuer period (in loops))");
-	printf(" [-c duration] (dequeuer period (in loops))");
-	printf(" [-v] (verbose output)");
-	printf(" [-a cpu#] [-a cpu#]... (affinity)");
-	printf(" [-q] (test dequeue)");
-	printf(" [-s] (test splice, enabled by default)");
-	printf(" [-M] (use mutex external synchronization)");
-	printf("      Note: default: no external synchronization used.");
-	printf(" [-f] (force user-provided synchronization)");
-	printf(" [-w] Wait for dequeuer to empty queue");
+	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",
+		argv[0]);
+	printf("OPTIONS:\n");
+	printf("	[-d delay] (enqueuer period (in loops))\n");
+	printf("	[-c duration] (dequeuer period (in loops))\n");
+	printf("	[-v] (verbose output)\n");
+	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
+	printf("	[-q] (test dequeue)\n");
+	printf("	[-s] (test splice, enabled by default)\n");
+	printf("	[-M] (use mutex external synchronization)\n");
+	printf("		Note: default: no external synchronization used.\n");
+	printf("	[-f] (force user-provided synchronization)\n");
+	printf("	[-w] Wait for dequeuer to empty queue\n");
 	printf("\n");
 }
 
