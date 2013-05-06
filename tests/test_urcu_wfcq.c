@@ -162,6 +162,7 @@ static DEFINE_URCU_TLS(unsigned long long, nr_successful_dequeues);
 static DEFINE_URCU_TLS(unsigned long long, nr_successful_enqueues);
 static DEFINE_URCU_TLS(unsigned long long, nr_empty_dest_enqueues);
 static DEFINE_URCU_TLS(unsigned long long, nr_splice);
+static DEFINE_URCU_TLS(unsigned long long, nr_dequeue_last);
 
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
@@ -222,11 +223,17 @@ fail:
 static void do_test_dequeue(enum test_sync sync)
 {
 	struct cds_wfcq_node *node;
+	int state;
 
 	if (sync == TEST_SYNC_MUTEX)
-		node = cds_wfcq_dequeue_blocking(&head, &tail);
+		node = cds_wfcq_dequeue_with_state_blocking(&head, &tail,
+				&state);
 	else
-		node = __cds_wfcq_dequeue_blocking(&head, &tail);
+		node = __cds_wfcq_dequeue_with_state_blocking(&head, &tail,
+				&state);
+
+	if (state & CDS_WFCQ_STATE_LAST)
+		URCU_TLS(nr_dequeue_last)++;
 
 	if (node) {
 		free(node);
@@ -257,6 +264,7 @@ static void do_test_splice(enum test_sync sync)
 		break;
 	case CDS_WFCQ_RET_DEST_EMPTY:
 		URCU_TLS(nr_splice)++;
+		URCU_TLS(nr_dequeue_last)++;
 		/* ok */
 		break;
 	case CDS_WFCQ_RET_DEST_NON_EMPTY:
@@ -319,16 +327,22 @@ static void *thr_dequeuer(void *_count)
 	count[0] = URCU_TLS(nr_dequeues);
 	count[1] = URCU_TLS(nr_successful_dequeues);
 	count[2] = URCU_TLS(nr_splice);
+	count[3] = URCU_TLS(nr_dequeue_last);
 	return ((void*)2);
 }
 
-static void test_end(unsigned long long *nr_dequeues)
+static void test_end(unsigned long long *nr_dequeues,
+		unsigned long long *nr_dequeue_last)
 {
 	struct cds_wfcq_node *node;
+	int state;
 
 	do {
-		node = cds_wfcq_dequeue_blocking(&head, &tail);
+		node = cds_wfcq_dequeue_with_state_blocking(&head, &tail,
+				&state);
 		if (node) {
+			if (state & CDS_WFCQ_STATE_LAST)
+				(*nr_dequeue_last)++;
 			free(node);
 			(*nr_dequeues)++;
 		}
@@ -361,7 +375,7 @@ int main(int argc, char **argv)
 	unsigned long long tot_successful_enqueues = 0,
 			   tot_successful_dequeues = 0,
 			   tot_empty_dest_enqueues = 0,
-			   tot_splice = 0;
+			   tot_splice = 0, tot_dequeue_last = 0;
 	unsigned long long end_dequeues = 0;
 	int i, a, retval = 0;
 
@@ -474,7 +488,7 @@ int main(int argc, char **argv)
 	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
 	count_enqueuer = malloc(3 * sizeof(*count_enqueuer) * nr_enqueuers);
-	count_dequeuer = malloc(3 * sizeof(*count_dequeuer) * nr_dequeuers);
+	count_dequeuer = malloc(4 * sizeof(*count_dequeuer) * nr_dequeuers);
 	cds_wfcq_init(&head, &tail);
 
 	next_aff = 0;
@@ -487,7 +501,7 @@ int main(int argc, char **argv)
 	}
 	for (i = 0; i < nr_dequeuers; i++) {
 		err = pthread_create(&tid_dequeuer[i], NULL, thr_dequeuer,
-				     &count_dequeuer[3 * i]);
+				     &count_dequeuer[4 * i]);
 		if (err != 0)
 			exit(1);
 	}
@@ -527,34 +541,37 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_dequeuer[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_dequeues += count_dequeuer[3 * i];
-		tot_successful_dequeues += count_dequeuer[3 * i + 1];
-		tot_splice += count_dequeuer[3 * i + 2];
+		tot_dequeues += count_dequeuer[4 * i];
+		tot_successful_dequeues += count_dequeuer[4 * i + 1];
+		tot_splice += count_dequeuer[4 * i + 2];
+		tot_dequeue_last += count_dequeuer[4 * i + 3];
 	}
 	
-	test_end(&end_dequeues);
+	test_end(&end_dequeues, &tot_dequeue_last);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);
 	printf_verbose("total number of successful enqueues : %llu, "
 		       "enqueues to empty dest : %llu, "
 		       "successful dequeues %llu, "
-		       "splice : %llu\n",
+		       "splice : %llu, dequeue_last : %llu\n",
 		       tot_successful_enqueues,
 		       tot_empty_dest_enqueues,
 		       tot_successful_dequeues,
-		       tot_splice);
+		       tot_splice, tot_dequeue_last);
 	printf("SUMMARY %-25s testdur %4lu nr_enqueuers %3u wdelay %6lu "
 		"nr_dequeuers %3u "
 		"rdur %6lu nr_enqueues %12llu nr_dequeues %12llu "
 		"successful enqueues %12llu enqueues to empty dest %12llu "
 		"successful dequeues %12llu splice %12llu "
+		"dequeue_last %llu "
 		"end_dequeues %llu nr_ops %12llu\n",
 		argv[0], duration, nr_enqueuers, wdelay,
 		nr_dequeuers, rduration, tot_enqueues, tot_dequeues,
 		tot_successful_enqueues,
 		tot_empty_dest_enqueues,
-		tot_successful_dequeues, tot_splice, end_dequeues,
+		tot_successful_dequeues, tot_splice, tot_dequeue_last,
+		end_dequeues,
 		tot_enqueues + tot_dequeues);
 
 	if (tot_successful_enqueues != tot_successful_dequeues + end_dequeues) {
@@ -570,12 +587,11 @@ int main(int argc, char **argv)
 	 * exactly as many empty queues than the number of non-empty
 	 * src splice.
 	 */
-	if (test_wait_empty && test_splice && !test_dequeue
-			&& tot_empty_dest_enqueues != tot_splice) {
+	if (tot_empty_dest_enqueues != tot_dequeue_last) {
 		printf("WARNING! Discrepancy between empty enqueue (%llu) and "
-			"number of non-empty splice (%llu)\n",
+			"number of dequeue of last element (%llu)\n",
 			tot_empty_dest_enqueues,
-			tot_splice);
+			tot_dequeue_last);
 		retval = 1;
 	}
 	free(count_enqueuer);
