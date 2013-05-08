@@ -62,6 +62,24 @@
  */
 #define RCU_QS_ACTIVE_ATTEMPTS 100
 
+/*
+ * RCU_MEMBARRIER is only possibly available on Linux.
+ */
+#if defined(RCU_MEMBARRIER) && defined(__linux__)
+#include <syscall.h>
+#endif
+
+/* If the headers do not support SYS_membarrier, fall back on RCU_MB */
+#ifdef SYS_membarrier
+# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
+#else
+# define membarrier(...)		-ENOSYS
+#endif
+
+#define MEMBARRIER_EXPEDITED		(1 << 0)
+#define MEMBARRIER_DELAYED		(1 << 1)
+#define MEMBARRIER_QUERY		(1 << 16)
+
 #ifdef RCU_MEMBARRIER
 static int init_done;
 int rcu_has_sys_membarrier;
@@ -139,7 +157,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 static void smp_mb_master(int group)
 {
 	if (caa_likely(rcu_has_sys_membarrier))
-		membarrier(MEMBARRIER_EXPEDITED);
+		(void) membarrier(MEMBARRIER_EXPEDITED);
 	else
 		cmm_smp_mb();
 }
