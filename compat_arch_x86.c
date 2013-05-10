@@ -80,9 +80,9 @@ static void mutex_lock_signal_save(pthread_mutex_t *mutex, sigset_t *oldmask)
 	int ret;
 
 	/* Disable signals */
-	ret = sigemptyset(&newmask);
+	ret = sigfillset(&newmask);
 	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &newmask, oldmask);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, oldmask);
 	assert(!ret);
 	ret = pthread_mutex_lock(&compat_mutex);
 	assert(!ret);

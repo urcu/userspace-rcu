@@ -213,9 +213,9 @@ void synchronize_rcu(void)
 	sigset_t newmask, oldmask;
 	int ret;
 
-	ret = sigemptyset(&newmask);
+	ret = sigfillset(&newmask);
 	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
 	assert(!ret);
 
 	mutex_lock(&rcu_gp_lock);
@@ -385,9 +385,9 @@ void rcu_bp_register(void)
 	sigset_t newmask, oldmask;
 	int ret;
 
-	ret = sigemptyset(&newmask);
+	ret = sigfillset(&newmask);
 	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
 	assert(!ret);
 
 	/*
@@ -420,9 +420,9 @@ void rcu_bp_before_fork(void)
 	sigset_t newmask, oldmask;
 	int ret;
 
-	ret = sigemptyset(&newmask);
+	ret = sigfillset(&newmask);
 	assert(!ret);
-	ret = pthread_sigmask(SIG_SETMASK, &newmask, &oldmask);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
 	assert(!ret);
 	mutex_lock(&rcu_gp_lock);
 	saved_fork_signal_mask = oldmask;
