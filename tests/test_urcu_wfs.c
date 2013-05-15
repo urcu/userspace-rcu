@@ -270,7 +270,7 @@ static void do_test_pop_all(enum test_sync sync)
 static void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
-	unsigned int counter;
+	unsigned int counter = 0;
 
 	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
 			"dequeuer", (unsigned long) pthread_self(),
