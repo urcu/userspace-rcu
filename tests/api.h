@@ -151,9 +151,10 @@ static int __smp_thread_id(void)
 	}
 	spin_lock(&__thread_id_map_mutex);
 	for (i = 0; i < NR_THREADS; i++) {
-		if (__thread_id_map[i] == tid)
+		if (__thread_id_map[i] == tid) {
 			spin_unlock(&__thread_id_map_mutex);
 			return i;
+		}
 	}
 	spin_unlock(&__thread_id_map_mutex);
 	fprintf(stderr, "smp_thread_id: Rogue thread, id: %lu(%#lx)\n",
