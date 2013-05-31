@@ -69,6 +69,7 @@
 #define call_rcu_before_fork		call_rcu_before_fork_memb
 #define call_rcu_after_fork_parent	call_rcu_after_fork_parent_memb
 #define call_rcu_after_fork_child	call_rcu_after_fork_child_memb
+#define rcu_barrier			rcu_barrier_memb
 
 #define defer_rcu			defer_rcu_memb
 #define rcu_defer_register_thread	rcu_defer_register_thread_memb
@@ -116,6 +117,7 @@
 #define call_rcu_before_fork		call_rcu_before_fork_sig
 #define call_rcu_after_fork_parent	call_rcu_after_fork_parent_sig
 #define call_rcu_after_fork_child	call_rcu_after_fork_child_sig
+#define rcu_barrier			rcu_barrier_sig
 
 #define defer_rcu			defer_rcu_sig
 #define rcu_defer_register_thread	rcu_defer_register_thread_sig
@@ -160,6 +162,7 @@
 #define call_rcu_before_fork		call_rcu_before_fork_mb
 #define call_rcu_after_fork_parent	call_rcu_after_fork_parent_mb
 #define call_rcu_after_fork_child	call_rcu_after_fork_child_mb
+#define rcu_barrier			rcu_barrier_mb
 
 #define defer_rcu			defer_rcu_mb
 #define rcu_defer_register_thread	rcu_defer_register_thread_mb

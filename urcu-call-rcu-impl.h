@@ -64,6 +64,16 @@ struct call_rcu_data {
 	struct cds_list_head list;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
+struct call_rcu_completion {
+	int barrier_count;
+	int32_t futex;
+};
+
+struct call_rcu_completion_work {
+	struct rcu_head head;
+	struct call_rcu_completion *completion;
+};
+
 /*
  * List of all call_rcu_data structures to keep valgrind happy.
  * Protected by call_rcu_mutex.
@@ -232,6 +242,26 @@ static void call_rcu_wake_up(struct call_rcu_data *crdp)
 	if (caa_unlikely(uatomic_read(&crdp->futex) == -1)) {
 		uatomic_set(&crdp->futex, 0);
 		futex_async(&crdp->futex, FUTEX_WAKE, 1,
+		      NULL, NULL, 0);
+	}
+}
+
+static void call_rcu_completion_wait(struct call_rcu_completion *completion)
+{
+	/* Read completion barrier count before read futex */
+	cmm_smp_mb();
+	if (uatomic_read(&completion->futex) == -1)
+		futex_async(&completion->futex, FUTEX_WAIT, -1,
+		      NULL, NULL, 0);
+}
+
+static void call_rcu_completion_wake_up(struct call_rcu_completion *completion)
+{
+	/* Write to completion barrier count before reading/writing futex */
+	cmm_smp_mb();
+	if (caa_unlikely(uatomic_read(&completion->futex) == -1)) {
+		uatomic_set(&completion->futex, 0);
+		futex_async(&completion->futex, FUTEX_WAKE, 1,
 		      NULL, NULL, 0);
 	}
 }
@@ -604,6 +634,17 @@ static void wake_call_rcu_thread(struct call_rcu_data *crdp)
 		call_rcu_wake_up(crdp);
 }
 
+static void _call_rcu(struct rcu_head *head,
+		      void (*func)(struct rcu_head *head),
+		      struct call_rcu_data *crdp)
+{
+	cds_wfcq_node_init(&head->next);
+	head->func = func;
+	cds_wfcq_enqueue(&crdp->cbs_head, &crdp->cbs_tail, &head->next);
+	uatomic_inc(&crdp->qlen);
+	wake_call_rcu_thread(crdp);
+}
+
 /*
  * Schedule a function to be invoked after a following grace period.
  * This is the only function that must be called -- the others are
@@ -618,20 +659,15 @@ static void wake_call_rcu_thread(struct call_rcu_data *crdp)
  *
  * call_rcu must be called by registered RCU read-side threads.
  */
-
 void call_rcu(struct rcu_head *head,
 	      void (*func)(struct rcu_head *head))
 {
 	struct call_rcu_data *crdp;
 
-	cds_wfcq_node_init(&head->next);
-	head->func = func;
 	/* Holding rcu read-side lock across use of per-cpu crdp */
 	rcu_read_lock();
 	crdp = get_call_rcu_data();
-	cds_wfcq_enqueue(&crdp->cbs_head, &crdp->cbs_tail, &head->next);
-	uatomic_inc(&crdp->qlen);
-	wake_call_rcu_thread(crdp);
+	_call_rcu(head, func, crdp);
 	rcu_read_unlock();
 }
 
@@ -728,6 +764,89 @@ void free_all_cpu_call_rcu_data(void)
 		call_rcu_data_free(crdp[cpu]);
 	}
 	free(crdp);
+}
+
+static
+void _rcu_barrier_complete(struct rcu_head *head)
+{
+	struct call_rcu_completion_work *work;
+	struct call_rcu_completion *completion;
+
+	work = caa_container_of(head, struct call_rcu_completion_work, head);
+	completion = work->completion;
+	uatomic_dec(&completion->barrier_count);
+	call_rcu_completion_wake_up(completion);
+	free(work);
+}
+
+/*
+ * Wait for all in-flight call_rcu callbacks to complete execution.
+ */
+void rcu_barrier(void)
+{
+	struct call_rcu_data *crdp;
+	struct call_rcu_completion completion;
+	int count = 0, work_count = 0;
+	int was_online;
+
+	/* Put in offline state in QSBR. */
+	was_online = rcu_read_ongoing();
+	if (was_online)
+		rcu_thread_offline();
+	/*
+	 * Calling a rcu_barrier() within a RCU read-side critical
+	 * section is an error.
+	 */
+	if (rcu_read_ongoing()) {
+		static int warned = 0;
+
+		if (!warned) {
+			fprintf(stderr, "[error] liburcu: rcu_barrier() called from within RCU read-side critical section.\n");
+		}
+		warned = 1;
+		goto online;
+	}
+
+	call_rcu_lock(&call_rcu_mutex);
+	cds_list_for_each_entry(crdp, &call_rcu_data_list, list)
+		count++;
+
+	completion.barrier_count = count;
+
+	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
+		struct call_rcu_completion_work *work;
+
+		work = calloc(sizeof(*work), 1);
+		if (!work) {
+			static int warned = 0;
+
+			if (!warned) {
+				fprintf(stderr, "[error] liburcu: unable to allocate memory for rcu_barrier()\n");
+			}
+			warned = 1;
+			break;
+		}
+		work->completion = &completion;
+		_call_rcu(&work->head, _rcu_barrier_complete, crdp);
+		work_count++;
+	}
+	call_rcu_unlock(&call_rcu_mutex);
+
+	if (work_count != count)
+		uatomic_sub(&completion.barrier_count, count - work_count);
+
+	/* Wait for them */
+	for (;;) {
+		uatomic_dec(&completion.futex);
+		/* Decrement futex before reading barrier_count */
+		cmm_smp_mb();
+		if (!uatomic_read(&completion.barrier_count))
+			break;
+		call_rcu_completion_wait(&completion);
+	}
+online:
+	if (was_online)
+		rcu_thread_online();
 }
 
 /*

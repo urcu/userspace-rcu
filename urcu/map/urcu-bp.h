@@ -63,6 +63,7 @@
 #define call_rcu_before_fork		call_rcu_before_fork_bp
 #define call_rcu_after_fork_parent	call_rcu_after_fork_parent_bp
 #define call_rcu_after_fork_child	call_rcu_after_fork_child_bp
+#define rcu_barrier			rcu_barrier_bp
 
 #define defer_rcu			defer_rcu_bp
 #define rcu_defer_register_thread	rcu_defer_register_thread_bp

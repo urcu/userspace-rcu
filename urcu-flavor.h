@@ -41,6 +41,8 @@ struct rcu_flavor_struct {
 	void (*thread_online)(void);
 	void (*register_thread)(void);
 	void (*unregister_thread)(void);
+
+	void (*barrier)(void);
 };
 
 #define DEFINE_RCU_FLAVOR(x)				\
@@ -56,6 +58,7 @@ const struct rcu_flavor_struct x = {			\
 	.thread_online		= rcu_thread_online,	\
 	.register_thread	= rcu_register_thread,	\
 	.unregister_thread	= rcu_unregister_thread,\
+	.barrier		= rcu_barrier,		\
 }
 
 extern const struct rcu_flavor_struct rcu_flavor;

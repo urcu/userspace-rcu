@@ -92,6 +92,8 @@ void call_rcu_before_fork(void);
 void call_rcu_after_fork_parent(void);
 void call_rcu_after_fork_child(void);
 
+void rcu_barrier(void);
+
 #ifdef __cplusplus 
 }
 #endif
