@@ -290,6 +290,7 @@ AC_CONFIG_LINKS([
 AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
+	doc/examples/Makefile
 	tests/Makefile
 	liburcu.pc
 	liburcu-bp.pc
