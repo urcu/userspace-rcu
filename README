@@ -28,8 +28,9 @@ ARCHITECTURES SUPPORTED
 
 Currently, Linux x86 (i386, i486, i586, i686), x86 64-bit, PowerPC 32/64,
 S390, S390x, ARM, Alpha, ia64 and Sparcv9 32/64 are supported. Tested on
-Linux, FreeBSD 8.2/9.0, and Cygwin. Should also work on: Android, NetBSD 5,
-OpenBSD, Darwin (more testing needed before claiming support for these OS).
+Linux, FreeBSD 8.2/8.3/9.0/9.1/10.0, and Cygwin. Should also work on:
+Android, NetBSD 5, OpenBSD, Darwin (more testing needed before claiming
+support for these OS).
 
 Linux ARM depends on running a Linux kernel 2.6.15 or better, GCC 4.4 or
 better.
