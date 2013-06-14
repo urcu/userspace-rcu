@@ -62,6 +62,15 @@ void call_rcu(struct rcu_head *head,
 	call_rcu should be called from registered RCU read-side threads.
 	For the QSBR flavor, the caller should be online.
 
+void rcu_barrier(void);
+
+	Wait for all call_rcu() work initiated prior to rcu_barrier() by
+	_any_ thread on the system to have completed before rcu_barrier()
+	returns. rcu_barrier() should never be called from a call_rcu()
+	thread. This function can be used, for instance, to ensure that
+	all memory reclaim involving a shared object has completed
+	before allowing dlclose() of this shared object to complete.
+
 struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 					   int cpu_affinity);
 
