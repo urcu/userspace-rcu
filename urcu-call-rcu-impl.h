@@ -786,7 +786,7 @@ void rcu_barrier(void)
 {
 	struct call_rcu_data *crdp;
 	struct call_rcu_completion completion;
-	int count = 0, work_count = 0;
+	int count = 0;
 	int was_online;
 
 	/* Put in offline state in QSBR. */
@@ -817,23 +817,12 @@ void rcu_barrier(void)
 		struct call_rcu_completion_work *work;
 
 		work = calloc(sizeof(*work), 1);
-		if (!work) {
-			static int warned = 0;
-
-			if (!warned) {
-				fprintf(stderr, "[error] liburcu: unable to allocate memory for rcu_barrier()\n");
-			}
-			warned = 1;
-			break;
-		}
+		if (!work)
+			urcu_die(errno);
 		work->completion = &completion;
 		_call_rcu(&work->head, _rcu_barrier_complete, crdp);
-		work_count++;
 	}
 	call_rcu_unlock(&call_rcu_mutex);
-
-	if (work_count != count)
-		uatomic_sub(&completion.barrier_count, count - work_count);
 
 	/* Wait for them */
 	for (;;) {
