@@ -101,4 +101,6 @@
 	__attribute__((deprecated))
 #endif
 
+#define CAA_ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+
 #endif /* _URCU_COMPILER_H */
