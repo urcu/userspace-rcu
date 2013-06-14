@@ -162,6 +162,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 
 AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
 AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = "xx86compat"])
+AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
 
 # smp-support configure option
 AC_ARG_ENABLE([smp-support], 
