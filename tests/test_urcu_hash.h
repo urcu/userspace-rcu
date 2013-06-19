@@ -52,9 +52,6 @@
  */
 #define TEST_HASH_SEED	0x42UL
 
-/* Make this big enough to include the POWER5+ L3 cacheline size of 256B */
-#define CACHE_LINE_SIZE 4096
-
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
