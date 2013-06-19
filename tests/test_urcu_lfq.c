@@ -200,7 +200,7 @@ fail:
 	count[1] = URCU_TLS(nr_successful_enqueues);
 	printf_verbose("enqueuer thread_end, thread id : %lx, tid %lu, "
 		       "enqueues %llu successful_enqueues %llu\n",
-		       pthread_self(),
+		       (unsigned long) pthread_self(),
 			(unsigned long) gettid(),
 		       URCU_TLS(nr_enqueues), URCU_TLS(nr_successful_enqueues));
 	return ((void*)1);
@@ -257,7 +257,7 @@ void *thr_dequeuer(void *_count)
 	rcu_unregister_thread();
 	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
 		       "dequeues %llu, successful_dequeues %llu\n",
-		       pthread_self(),
+		       (unsigned long) pthread_self(),
 			(unsigned long) gettid(),
 		       URCU_TLS(nr_dequeues), URCU_TLS(nr_successful_dequeues));
 	count[0] = URCU_TLS(nr_dequeues);
