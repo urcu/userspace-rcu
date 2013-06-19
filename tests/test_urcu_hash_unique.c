@@ -113,7 +113,7 @@ void *test_hash_unique_thr_reader(void *_count)
 			"reader", (unsigned long) pthread_self(),
 			(unsigned long) gettid());
 	printf_verbose("readid : %lx, lookupfail %lu, lookupok %lu\n",
-			pthread_self(), URCU_TLS(lookup_fail),
+			(unsigned long) pthread_self(), URCU_TLS(lookup_fail),
 			URCU_TLS(lookup_ok));
 	return ((void*)1);
 
