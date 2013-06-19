@@ -1,3 +1,18 @@
+2013-06-18 Userspace RCU 0.7.7
+	* rculfhash: document destroy context limitation
+	* Fix: Use a filled signal mask to disable all signals
+	* Document: rculfhash destroy and resize side-effect in 0.7
+	* Add "sparc" host cpu to configure.ac
+	* Fix: tests/api.h use cpuset.h
+	* Fix hurd-i386: move cpuset tests outside of sched_setaffinity conditional
+	* Fix tests: finer-grained use of CPU_SET, CPU_ZERO and cpu_set_t
+	* Test for CPU_SET
+	* Fix build on architectures with HAVE_SCHED_GETCPU but without HAVE_SYSCONF
+	* README: document that Clang 3.0 (based on LLVM 3.0) is supported
+	* clang: silence "unused expression result" warning
+	* rculfhash: add assertions on node alignment
+	* uatomic: style fix
+
 2013-01-09 Userspace RCU 0.7.6
 	* Discourage use of pthread_atfork() for call_rcu handlers
 	* Fix call_rcu fork handling
