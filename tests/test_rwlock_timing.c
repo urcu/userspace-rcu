@@ -35,24 +35,7 @@
 
 #include <urcu/arch.h>
 
-#ifdef __linux__
-#include <syscall.h>
-#endif
-
-#if defined(_syscall0)
-_syscall0(pid_t, gettid)
-#elif defined(__NR_gettid)
-static inline pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-#else
-#warning "use pid as tid"
-static inline pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
+#include "thread-id.h"
 
 #include <urcu.h>
 
@@ -86,9 +69,8 @@ void *thr_reader(void *arg)
 	int i, j;
 	cycles_t time1, time2;
 
-	printf("thread_begin %s, thread id : %lx, tid %lu\n",
-			"reader", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf("thread_begin %s, tid %lu\n",
+		"reader", urcu_get_thread_id());
 	sleep(2);
 
 	time1 = caa_get_cycles();
@@ -104,9 +86,8 @@ void *thr_reader(void *arg)
 	reader_time[(unsigned long)arg] = time2 - time1;
 
 	sleep(2);
-	printf("thread_end %s, thread id : %lx, tid %lu\n",
-			"reader", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf("thread_end %s, tid %lu\n",
+		"reader", urcu_get_thread_id());
 	return ((void*)1);
 
 }
@@ -116,9 +97,8 @@ void *thr_writer(void *arg)
 	int i, j;
 	cycles_t time1, time2;
 
-	printf("thread_begin %s, thread id : %lx, tid %lu\n",
-			"writer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf("thread_begin %s, tid %lu\n",
+		"writer", urcu_get_thread_id());
 	sleep(2);
 
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
@@ -133,9 +113,8 @@ void *thr_writer(void *arg)
 		}
 	}
 
-	printf("thread_end %s, thread id : %lx, tid %lu\n",
-			"writer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf("thread_end %s, tid %lu\n",
+		"writer", urcu_get_thread_id());
 	return ((void*)2);
 }
 
@@ -160,9 +139,8 @@ int main(int argc, char **argv)
 	tid_reader = malloc(sizeof(*tid_reader) * num_read);
 	tid_writer = malloc(sizeof(*tid_writer) * num_write);
 
-	printf("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf("thread %-6s, tid %lu\n",
+		"main", urcu_get_thread_id());
 
 	for (i = 0; i < NR_READ; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,

@@ -39,28 +39,10 @@
 #include <urcu/arch.h>
 #include <urcu/tls-compat.h>
 #include "cpuset.h"
-
-#ifdef __linux__
-#include <syscall.h>
-#endif
+#include "thread-id.h"
 
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
-
-#if defined(_syscall0)
-_syscall0(pid_t, gettid)
-#elif defined(__NR_gettid)
-static inline pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-#else
-#warning "use pid as tid"
-static inline pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
@@ -166,9 +148,8 @@ void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
 
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"enqueuer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_begin %s, tid %lu\n",
+			"enqueuer", urcu_get_thread_id());
 
 	set_affinity();
 
@@ -200,11 +181,11 @@ fail:
 
 	count[0] = URCU_TLS(nr_enqueues);
 	count[1] = URCU_TLS(nr_successful_enqueues);
-	printf_verbose("enqueuer thread_end, thread id : %lx, tid %lu, "
-		       "enqueues %llu successful_enqueues %llu\n",
-		       pthread_self(),
-			(unsigned long) gettid(),
-		       URCU_TLS(nr_enqueues), URCU_TLS(nr_successful_enqueues));
+	printf_verbose("enqueuer thread_end, tid %lu, "
+			"enqueues %llu successful_enqueues %llu\n",
+			urcu_get_thread_id(),
+			URCU_TLS(nr_enqueues),
+			URCU_TLS(nr_successful_enqueues));
 	return ((void*)1);
 
 }
@@ -221,9 +202,8 @@ void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
 
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"dequeuer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_begin %s, tid %lu\n",
+			"dequeuer", urcu_get_thread_id());
 
 	set_affinity();
 
@@ -256,11 +236,11 @@ void *thr_dequeuer(void *_count)
 
 	rcu_unregister_thread();
 
-	printf_verbose("dequeuer thread_end, thread id : %lx, tid %lu, "
-		       "dequeues %llu, successful_dequeues %llu\n",
-		       pthread_self(),
-			(unsigned long) gettid(),
-		       URCU_TLS(nr_dequeues), URCU_TLS(nr_successful_dequeues));
+	printf_verbose("dequeuer thread_end, tid %lu, "
+			"dequeues %llu, successful_dequeues %llu\n",
+			urcu_get_thread_id(),
+			URCU_TLS(nr_dequeues),
+			URCU_TLS(nr_successful_dequeues));
 	count[0] = URCU_TLS(nr_dequeues);
 	count[1] = URCU_TLS(nr_successful_dequeues);
 	return ((void*)2);
@@ -368,9 +348,8 @@ int main(int argc, char **argv)
 		       duration, nr_enqueuers, nr_dequeuers);
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
-	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread %-6s, tid %lu\n",
+			"main", urcu_get_thread_id());
 
 	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
 	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);

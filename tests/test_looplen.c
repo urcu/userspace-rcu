@@ -35,25 +35,6 @@
 
 #include <urcu/arch.h>
 
-#ifdef __linux__
-#include <syscall.h>
-#endif
-
-#if defined(_syscall0)
-_syscall0(pid_t, gettid)
-#elif defined(__NR_gettid)
-static inline pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-#else
-#warning "use pid as tid"
-static inline pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
-
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #else

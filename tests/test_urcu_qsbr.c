@@ -36,28 +36,10 @@
 #include <urcu/arch.h>
 #include <urcu/tls-compat.h>
 #include "cpuset.h"
-
-#ifdef __linux__
-#include <syscall.h>
-#endif
+#include "thread-id.h"
 
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
-
-#if defined(_syscall0)
-_syscall0(pid_t, gettid)
-#elif defined(__NR_gettid)
-static inline pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-#else
-#warning "use pid as tid"
-static inline pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
@@ -179,9 +161,8 @@ void *thr_reader(void *_count)
 	unsigned long long *count = _count;
 	int *local_ptr;
 
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"reader", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_begin %s, tid %lu\n",
+			"reader", urcu_get_thread_id());
 
 	set_affinity();
 
@@ -222,9 +203,8 @@ void *thr_reader(void *_count)
 	rcu_unregister_thread();
 
 	*count = URCU_TLS(nr_reads);
-	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"reader", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_end %s, tid %lu\n",
+			"reader", urcu_get_thread_id());
 	return ((void*)1);
 
 }
@@ -234,9 +214,8 @@ void *thr_writer(void *_count)
 	unsigned long long *count = _count;
 	int *new, *old;
 
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"writer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_begin %s, tid %lu\n",
+			"writer", urcu_get_thread_id());
 
 	set_affinity();
 
@@ -263,9 +242,8 @@ void *thr_writer(void *_count)
 			loop_sleep(wdelay);
 	}
 
-	printf_verbose("thread_end %s, thread id : %lx, tid %lu\n",
-			"writer", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_end %s, tid %lu\n",
+			"writer", urcu_get_thread_id());
 	*count = URCU_TLS(nr_writes);
 	return ((void*)2);
 }
@@ -371,9 +349,8 @@ int main(int argc, char **argv)
 		duration, nr_readers, nr_writers);
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
-	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread %-6s, tid %lu\n",
+			"main", urcu_get_thread_id());
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);

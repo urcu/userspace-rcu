@@ -201,9 +201,8 @@ unsigned long test_compare(const void *key1, size_t key1_len,
 
 void *thr_count(void *arg)
 {
-	printf_verbose("thread_begin %s, thread id : %lx, tid %lu\n",
-			"counter", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread_begin %s, tid %lu\n",
+			"counter", urcu_get_thread_id());
 
 	rcu_register_thread();
 
@@ -548,9 +547,8 @@ int main(int argc, char **argv)
 		write_pool_offset, write_pool_size);
 	printf_verbose("Number of hash chains: %lu.\n",
 		nr_hash_chains);
-	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
-			"main", (unsigned long) pthread_self(),
-			(unsigned long) gettid());
+	printf_verbose("thread %-6s, tid %lu\n",
+			"main", urcu_get_thread_id());
 
 	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
 	if (!tid_reader) {
