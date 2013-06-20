@@ -14,11 +14,11 @@ SUBDIRS_PROXY = qsbr-minimal
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \
-		cd $$subdir && $(MAKE) AM_CPPFLAGS="-I../../../urcu/ -I../../../" AM_LDFLAGS='-L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all; \
+		cd $$subdir && $(MAKE) AM_CPPFLAGS="-I../../../urcu/ -I../../../" AM_LDFLAGS='-L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all; cd ..; \
 	done
 
 clean-local:
 	for subdir in $(SUBDIRS_PROXY); do \
-		cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) clean; \
+		cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) clean; cd ..; \
 	done
 endif
