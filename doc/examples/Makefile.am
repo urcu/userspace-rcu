@@ -43,8 +43,10 @@ dist_doc_examples_wfstack_DATA = \
 	wfstack/Makefile \
 	wfstack/Makefile.cds_wfs_push \
 	wfstack/Makefile.cds_wfs_pop \
+	wfstack/Makefile.cds_wfs_pop_all_blocking \
 	wfstack/cds_wfs_push.c \
-	wfstack/cds_wfs_pop.c
+	wfstack/cds_wfs_pop.c \
+	wfstack/cds_wfs_pop_all_blocking.c
 
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly

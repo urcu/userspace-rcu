@@ -88,6 +88,7 @@ doc/examples/wfcqueue/cds_wfcq_splice
 
 doc/examples/wfstack/cds_wfs_push
 doc/examples/wfstack/cds_wfs_pop
+doc/examples/wfstack/cds_wfs_pop_all_blocking
 
 #automake
 /config.h
