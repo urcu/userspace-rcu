@@ -42,7 +42,9 @@ doc_examples_wfstackdir = ${doc_examplesdir}/wfstack
 dist_doc_examples_wfstack_DATA = \
 	wfstack/Makefile \
 	wfstack/Makefile.cds_wfs_push \
-	wfstack/cds_wfs_push.c
+	wfstack/Makefile.cds_wfs_pop \
+	wfstack/cds_wfs_push.c \
+	wfstack/cds_wfs_pop.c
 
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
