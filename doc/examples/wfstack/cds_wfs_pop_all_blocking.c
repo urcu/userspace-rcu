@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	struct cds_wfs_stack mystack;	/* Stack */
 	unsigned int i;
 	int ret = 0;
-	struct cds_wfs_node *snode;
+	struct cds_wfs_node *snode, *sn;
 	struct cds_wfs_head *shead;
 
 	cds_wfs_init(&mystack);
@@ -63,13 +63,15 @@ int main(int argc, char **argv)
 
 	/*
 	 * Show the stack content, iterate in reverse order of push,
-	 * from newest to oldest.
+	 * from newest to oldest. Use cds_wfs_for_each_blocking_safe()
+	 * so we can free the nodes as we iterate.
 	 */
 	printf("mystack content:");
-	cds_wfs_for_each_blocking(shead, snode) {
+	cds_wfs_for_each_blocking_safe(shead, snode, sn) {
 		struct mynode *node =
 			caa_container_of(snode, struct mynode, node);
 		printf(" %d", node->value);
+		free(node);
 	}
 	printf("\n");
 end:
