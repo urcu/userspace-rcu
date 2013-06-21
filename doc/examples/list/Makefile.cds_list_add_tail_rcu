@@ -16,5 +16,6 @@ EXAMPLE_NAME = cds_list_add_tail_rcu
 SOURCES = $(EXAMPLE_NAME).c
 OBJECTS = $(EXAMPLE_NAME).o
 BINARY = $(EXAMPLE_NAME)
+LIBS = -lurcu
 
 include ../Makefile.examples.template
