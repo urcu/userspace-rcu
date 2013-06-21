@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	struct mynode *node, *n;
 
 	/*
-	 * Each thread need using RCU read-side need to be explicitely
+	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
 	rcu_register_thread();

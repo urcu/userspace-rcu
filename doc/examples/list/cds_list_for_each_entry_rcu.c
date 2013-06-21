@@ -10,7 +10,7 @@
  * granted, provided the above notices are retained, and a notice that
  * the code was modified is included with the above copyright notice.
  *
- * This example shows how to to a RCU linked list traversal, safely
+ * This example shows how to do a RCU linked list traversal, safely
  * against concurrent RCU updates.
  */
 
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	struct mynode *node;
 
 	/*
-	 * Each thread need using RCU read-side need to be explicitely
+	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
 	rcu_register_thread();

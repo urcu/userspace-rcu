@@ -10,7 +10,7 @@
  * granted, provided the above notices are retained, and a notice that
  * the code was modified is included with the above copyright notice.
  *
- * This example shows how to to a RCU linked list traversal, safely
+ * This example shows how to do a RCU linked list traversal, safely
  * against concurrent RCU updates. cds_list_for_each_rcu() iterates on
  * struct cds_list_head, and thus, either caa_container_of() or
  * cds_list_entry() are needed to access the container structure.
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	struct cds_list_head *pos;
 
 	/*
-	 * Each thread need using RCU read-side need to be explicitely
+	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
 	rcu_register_thread();
