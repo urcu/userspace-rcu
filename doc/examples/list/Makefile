@@ -24,6 +24,6 @@ clean:
 	$(MAKE) -f Makefile.cds_list_add_rcu clean
 	$(MAKE) -f Makefile.cds_list_add_tail_rcu clean
 	$(MAKE) -f Makefile.cds_list_del_rcu clean
-	$(MAKE) -f Makefile.cds_list_for_each_rcu
-	$(MAKE) -f Makefile.cds_list_for_each_entry_rcu
+	$(MAKE) -f Makefile.cds_list_for_each_rcu clean
+	$(MAKE) -f Makefile.cds_list_for_each_entry_rcu clean
 	$(MAKE) -f Makefile.cds_list_replace_rcu clean
