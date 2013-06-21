@@ -30,7 +30,9 @@ doc_examples_wfcqueuedir = ${doc_examplesdir}/wfcqueue
 
 dist_doc_examples_wfcqueue_DATA = \
 	wfcqueue/Makefile.cds_wfcq_enqueue \
-	wfcqueue/cds_wfcq_enqueue.c
+	wfcqueue/Makefile.cds_wfcq_dequeue \
+	wfcqueue/cds_wfcq_enqueue.c \
+	wfcqueue/cds_wfcq_dequeue.c
 
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly

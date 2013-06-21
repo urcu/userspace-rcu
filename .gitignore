@@ -83,6 +83,7 @@ doc/examples/list/cds_list_for_each_entry_rcu
 doc/examples/list/cds_list_replace_rcu
 
 doc/examples/wfcqueue/cds_wfcq_enqueue
+doc/examples/wfcqueue/cds_wfcq_dequeue
 
 #automake
 /config.h
