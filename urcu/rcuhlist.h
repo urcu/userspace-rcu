@@ -36,10 +36,9 @@ void cds_hlist_add_head_rcu(struct cds_hlist_node *newp,
 {
 	newp->next = head->next;
 	newp->prev = (struct cds_hlist_node *)head;
-	cmm_smp_wmb();
 	if (head->next)
 		head->next->prev = newp;
-	head->next = newp;
+	rcu_assign_pointer(head->next, newp);
 }
 
 /* Remove element from list. */
@@ -48,7 +47,7 @@ void cds_hlist_del_rcu(struct cds_hlist_node *elem)
 {
 	if (elem->next)
 		elem->next->prev = elem->prev;
-	elem->prev->next = elem->next;
+	CMM_STORE_SHARED(elem->prev->next, elem->next);
 }
 
 /*
