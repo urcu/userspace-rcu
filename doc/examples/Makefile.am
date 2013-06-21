@@ -29,6 +29,7 @@ dist_doc_examples_list_DATA = \
 doc_examples_wfcqueuedir = ${doc_examplesdir}/wfcqueue
 
 dist_doc_examples_wfcqueue_DATA = \
+	wfcqueue/Makefile \
 	wfcqueue/Makefile.cds_wfcq_enqueue \
 	wfcqueue/Makefile.cds_wfcq_dequeue \
 	wfcqueue/Makefile.cds_wfcq_splice \
@@ -39,6 +40,7 @@ dist_doc_examples_wfcqueue_DATA = \
 doc_examples_wfstackdir = ${doc_examplesdir}/wfstack
 
 dist_doc_examples_wfstack_DATA = \
+	wfstack/Makefile \
 	wfstack/Makefile.cds_wfs_push \
 	wfstack/cds_wfs_push.c
 
