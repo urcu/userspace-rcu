@@ -16,6 +16,6 @@ EXAMPLE_NAME = cds_wfcq_enqueue
 SOURCES = $(EXAMPLE_NAME).c
 OBJECTS = $(EXAMPLE_NAME).o
 BINARY = $(EXAMPLE_NAME)
-LIBS = -lurcu-cds
+LIBS = -lurcu-common
 
 include ../Makefile.examples.template
