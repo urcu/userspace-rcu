@@ -76,6 +76,7 @@ tests/*.log
 doc/examples/list/cds_list_add_rcu
 doc/examples/list/cds_list_add_tail_rcu
 doc/examples/list/cds_list_del_rcu
+doc/examples/list/cds_list_for_each_entry_rcu
 doc/examples/list/cds_list_replace_rcu
 
 #automake
