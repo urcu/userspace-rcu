@@ -29,9 +29,9 @@
 #include <urcu/arch.h>
 #include <urcu-pointer.h>
 
-/* Add new element at the head of the list.
- */
-static inline void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_head *head)
+/* Add new element at the head of the list. */
+static inline
+void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_head *head)
 {
 	newp->next = head->next;
 	newp->prev = head;
@@ -40,9 +40,13 @@ static inline void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_
 	head->next = newp;
 }
 
-/* replace an old entry atomically.
+/*
+ * Replace an old entry atomically with respect to concurrent RCU
+ * traversal. Mutual exclusion against concurrent updates is required
+ * though.
  */
-static inline void cds_list_replace_rcu(struct cds_list_head *old, struct cds_list_head *_new)
+static inline
+void cds_list_replace_rcu(struct cds_list_head *old, struct cds_list_head *_new)
 {
 	_new->next = old->next;
 	_new->prev = old->prev;
@@ -51,7 +55,8 @@ static inline void cds_list_replace_rcu(struct cds_list_head *old, struct cds_li
 }
 
 /* Remove element from list. */
-static inline void cds_list_del_rcu(struct cds_list_head *elem)
+static inline
+void cds_list_del_rcu(struct cds_list_head *elem)
 {
 	elem->next->prev = elem->prev;
 	elem->prev->next = elem->next;
@@ -64,15 +69,14 @@ static inline void cds_list_del_rcu(struct cds_list_head *elem)
 
 /* Iterate forward over the elements of the list.  */
 #define cds_list_for_each_rcu(pos, head) \
-  for (pos = rcu_dereference((head)->next); pos != (head); \
-       pos = rcu_dereference(pos->next))
+	for (pos = rcu_dereference((head)->next); pos != (head); \
+		pos = rcu_dereference(pos->next))
 
 
-/* Iterate through elements of the list.
- */
-#define cds_list_for_each_entry_rcu(pos, head, member)				\
-	for (pos = cds_list_entry(rcu_dereference((head)->next), __typeof__(*pos), member);	\
-	     &pos->member != (head);					\
-	     pos = cds_list_entry(rcu_dereference(pos->member.next), __typeof__(*pos), member))
+/* Iterate through elements of the list. */
+#define cds_list_for_each_entry_rcu(pos, head, member) \
+	for (pos = cds_list_entry(rcu_dereference((head)->next), __typeof__(*pos), member); \
+		&pos->member != (head); \
+		pos = cds_list_entry(rcu_dereference(pos->member.next), __typeof__(*pos), member))
 
 #endif	/* _URCU_RCULIST_H */
