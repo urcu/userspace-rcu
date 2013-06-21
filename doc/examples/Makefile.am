@@ -16,9 +16,11 @@ dist_doc_examples_list_DATA = \
 	list/Makefile.cds_list_add_rcu \
 	list/Makefile.cds_list_add_tail_rcu \
 	list/Makefile.cds_list_del_rcu \
+	list/Makefile.cds_list_replace_rcu \
 	list/cds_list_add_rcu.c \
 	list/cds_list_add_tail_rcu.c \
-	list/cds_list_del_rcu.c
+	list/cds_list_del_rcu.c \
+	list/cds_list_replace_rcu.c
 
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
