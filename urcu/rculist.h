@@ -35,9 +35,8 @@ void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_head *head)
 {
 	newp->next = head->next;
 	newp->prev = head;
-	cmm_smp_wmb();
 	head->next->prev = newp;
-	head->next = newp;
+	rcu_assign_pointer(head->next, newp);
 }
 
 /* Add new element at the tail of the list. */
@@ -70,7 +69,7 @@ static inline
 void cds_list_del_rcu(struct cds_list_head *elem)
 {
 	elem->next->prev = elem->prev;
-	elem->prev->next = elem->next;
+	CMM_STORE_SHARED(elem->prev->next, elem->next);
 }
 
 /*
