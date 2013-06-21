@@ -40,6 +40,17 @@ void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_head *head)
 	head->next = newp;
 }
 
+/* Add new element at the tail of the list. */
+static inline
+void cds_list_add_tail_rcu(struct cds_list_head *newp,
+		struct cds_list_head *head)
+{
+	newp->next = head;
+	newp->prev = head->prev;
+	rcu_assign_pointer(head->prev->next, newp);
+	head->prev = newp;
+}
+
 /*
  * Replace an old entry atomically with respect to concurrent RCU
  * traversal. Mutual exclusion against concurrent updates is required
