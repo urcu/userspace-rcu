@@ -48,6 +48,17 @@ dist_doc_examples_wfstack_DATA = \
 	wfstack/cds_wfs_pop.c \
 	wfstack/cds_wfs_pop_all_blocking.c
 
+doc_examples_lfstackdir = ${doc_examplesdir}/lfstack
+
+dist_doc_examples_lfstack_DATA = \
+	lfstack/Makefile \
+	lfstack/Makefile.cds_lfs_push \
+	lfstack/Makefile.cds_lfs_pop_blocking \
+	lfstack/Makefile.cds_lfs_pop_all_blocking \
+	lfstack/cds_lfs_push.c \
+	lfstack/cds_lfs_pop_blocking.c \
+	lfstack/cds_lfs_pop_all_blocking.c
+
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.

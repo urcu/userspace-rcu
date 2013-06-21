@@ -90,6 +90,10 @@ doc/examples/wfstack/cds_wfs_push
 doc/examples/wfstack/cds_wfs_pop
 doc/examples/wfstack/cds_wfs_pop_all_blocking
 
+doc/examples/lfstack/cds_lfs_push
+doc/examples/lfstack/cds_lfs_pop_blocking
+doc/examples/lfstack/cds_lfs_pop_all_blocking
+
 #automake
 /config.h
 .deps/
