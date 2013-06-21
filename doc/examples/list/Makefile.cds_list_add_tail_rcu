@@ -11,13 +11,10 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-all:
-	$(MAKE) -f Makefile.cds_list_add_rcu
-	$(MAKE) -f Makefile.cds_list_add_tail_rcu
-	$(MAKE) -f Makefile.cds_list_del_rcu
+EXAMPLE_NAME = cds_list_add_tail_rcu
 
-.PHONY: clean
-clean:
-	$(MAKE) -f Makefile.cds_list_add_rcu clean
-	$(MAKE) -f Makefile.cds_list_add_tail_rcu clean
-	$(MAKE) -f Makefile.cds_list_del_rcu clean
+SOURCES = $(EXAMPLE_NAME).c
+OBJECTS = $(EXAMPLE_NAME).o
+BINARY = $(EXAMPLE_NAME)
+
+include ../Makefile.examples.template

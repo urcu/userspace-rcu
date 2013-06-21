@@ -14,8 +14,10 @@ doc_examples_listdir = ${doc_examplesdir}/list
 dist_doc_examples_list_DATA = \
 	list/Makefile \
 	list/Makefile.cds_list_add_rcu \
+	list/Makefile.cds_list_add_tail_rcu \
 	list/Makefile.cds_list_del_rcu \
 	list/cds_list_add_rcu.c \
+	list/cds_list_add_tail_rcu.c \
 	list/cds_list_del_rcu.c
 
 if NO_SHARED
