@@ -36,11 +36,17 @@ dist_doc_examples_wfcqueue_DATA = \
 	wfcqueue/cds_wfcq_dequeue.c \
 	wfcqueue/cds_wfcq_splice.c
 
+doc_examples_wfstackdir = ${doc_examplesdir}/wfstack
+
+dist_doc_examples_wfstack_DATA = \
+	wfstack/Makefile.cds_wfs_push \
+	wfstack/cds_wfs_push.c
+
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = qsbr-minimal list wfcqueue
+SUBDIRS_PROXY = qsbr-minimal list wfcqueue wfstack
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \
