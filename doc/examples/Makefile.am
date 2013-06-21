@@ -16,11 +16,13 @@ dist_doc_examples_list_DATA = \
 	list/Makefile.cds_list_add_rcu \
 	list/Makefile.cds_list_add_tail_rcu \
 	list/Makefile.cds_list_del_rcu \
+	list/Makefile.cds_list_for_each_rcu \
 	list/Makefile.cds_list_for_each_entry_rcu \
 	list/Makefile.cds_list_replace_rcu \
 	list/cds_list_add_rcu.c \
 	list/cds_list_add_tail_rcu.c \
 	list/cds_list_del_rcu.c \
+	list/cds_list_for_each_rcu.c \
 	list/cds_list_for_each_entry_rcu.c \
 	list/cds_list_replace_rcu.c
 
