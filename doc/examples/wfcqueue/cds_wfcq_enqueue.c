@@ -58,7 +58,8 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * Show the queue content.
+	 * Show the queue content, iterate in the same order nodes were
+	 * enqueued, from oldest to newest.
 	 */
 	printf("myqueue content:");
 	__cds_wfcq_for_each_blocking(&myqueue_head, &myqueue_tail, qnode) {
