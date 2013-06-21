@@ -84,6 +84,7 @@ doc/examples/list/cds_list_replace_rcu
 
 doc/examples/wfcqueue/cds_wfcq_enqueue
 doc/examples/wfcqueue/cds_wfcq_dequeue
+doc/examples/wfcqueue/cds_wfcq_splice
 
 #automake
 /config.h

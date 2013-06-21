@@ -39,8 +39,7 @@ int main(int argc, char **argv)
 	cds_wfcq_init(&myqueue_head, &myqueue_tail);
 
 	/*
-	 * Adding nodes to the linked-list. Safe against concurrent
-	 * RCU traversals, require mutual exclusion with list updates.
+	 * Enqueue nodes.
 	 */
 	for (i = 0; i < CAA_ARRAY_SIZE(values); i++) {
 		struct mynode *node;
