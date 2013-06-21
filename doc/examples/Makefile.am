@@ -26,11 +26,17 @@ dist_doc_examples_list_DATA = \
 	list/cds_list_for_each_entry_rcu.c \
 	list/cds_list_replace_rcu.c
 
+doc_examples_wfcqueuedir = ${doc_examplesdir}/wfcqueue
+
+dist_doc_examples_wfcqueue_DATA = \
+	wfcqueue/Makefile.cds_wfcq_enqueue \
+	wfcqueue/cds_wfcq_enqueue.c
+
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = qsbr-minimal list
+SUBDIRS_PROXY = qsbr-minimal list wfcqueue
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \
