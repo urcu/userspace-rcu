@@ -513,14 +513,14 @@ void rcu_init(void)
 
 void rcu_exit(void)
 {
-	struct sigaction act;
-	int ret;
-
-	ret = sigaction(SIGRCU, NULL, &act);
-	if (ret)
-		urcu_die(errno);
-	assert(act.sa_sigaction == sigrcu_handler);
-	assert(cds_list_empty(&registry));
+	/*
+	 * Don't unregister the SIGRCU signal handler anymore, because
+	 * call_rcu threads could still be using it shortly before the
+	 * application exits.
+	 * Assertion disabled because call_rcu threads are now rcu
+	 * readers, and left running at exit.
+	 * assert(cds_list_empty(&registry));
+	 */
 }
 
 #endif /* #ifdef RCU_SIGNAL */
