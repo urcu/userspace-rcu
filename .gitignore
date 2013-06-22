@@ -75,6 +75,7 @@ tests/*.log
 
 doc/examples/urcu-flavors/qsbr
 doc/examples/urcu-flavors/mb
+doc/examples/urcu-flavors/membarrier
 doc/examples/urcu-flavors/signal
 
 doc/examples/list/cds_list_add_rcu
