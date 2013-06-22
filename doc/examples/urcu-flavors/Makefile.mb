@@ -11,11 +11,11 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-all:
-	$(MAKE) -f Makefile.qsbr
-	$(MAKE) -f Makefile.mb
+EXAMPLE_NAME = mb
 
-.PHONY: clean
-clean:
-	$(MAKE) -f Makefile.qsbr clean
-	$(MAKE) -f Makefile.mb clean
+SOURCES = $(EXAMPLE_NAME).c
+OBJECTS = $(EXAMPLE_NAME).o
+BINARY = $(EXAMPLE_NAME)
+LIBS = -lurcu-mb
+
+include ../Makefile.examples.template

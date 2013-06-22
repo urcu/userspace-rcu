@@ -5,7 +5,9 @@ doc_examples_urcu_flavorsdir = ${doc_examplesdir}/urcu-flavors
 dist_doc_examples_urcu_flavors_DATA = \
 	urcu-flavors/Makefile \
 	urcu-flavors/Makefile.qsbr \
-	urcu-flavors/qsbr.c
+	urcu-flavors/Makefile.mb \
+	urcu-flavors/qsbr.c \
+	urcu-flavors/mb.c
 
 dist_doc_examples_DATA = \
 	Makefile.examples.template
@@ -77,7 +79,7 @@ if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = rcu-flavor-qsbr list hlist wfcqueue wfstack lfstack
+SUBDIRS_PROXY = urcu-flavors list hlist wfcqueue wfstack lfstack
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \
