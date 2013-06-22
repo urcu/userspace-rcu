@@ -16,15 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define _LGPL_SOURCE
-#include <urcu-qsbr.h>
-#include <urcu/rculist.h>
-#include <urcu/compiler.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
+
+#include <urcu-qsbr.h>		/* QSBR RCU flavor */
+#include <urcu/rculist.h>	/* List example */
+#include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
 /*
  * This is a mock-up example where updates and RCU traversals are
@@ -110,7 +109,9 @@ int main(int argc, char **argv)
 
 	/*
 	 * For QSBR flavor, we need to explicitly announce quiescent
-	 * states.
+	 * states. Here is how it is done. This should be performed by
+	 * every online registered RCU threads in the program
+	 * periodically.
 	 */
 	rcu_quiescent_state();
 
@@ -127,7 +128,8 @@ int main(int argc, char **argv)
 
 	/*
 	 * Waiting for previously called call_rcu handlers to complete
-	 * before program exits is a good practice.
+	 * before program exits, or in library destructors, is a good
+	 * practice.
 	 */
 	rcu_barrier();
 

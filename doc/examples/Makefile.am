@@ -4,6 +4,7 @@ doc_examples_rcu_flavor_qsbrdir = ${doc_examplesdir}/rcu-flavor-qsbr
 
 dist_doc_examples_rcu_flavor_qsbr_DATA = \
 	rcu-flavor-qsbr/Makefile \
+	rcu-flavor-qsbr/Makefile.rcu-flavor-qsbr \
 	rcu-flavor-qsbr/rcu-flavor-qsbr.c
 
 dist_doc_examples_DATA = \
