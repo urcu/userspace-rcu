@@ -1,10 +1,10 @@
 doc_examplesdir = ${docdir}/examples
 
-doc_examples_qsbr_minimaldir = ${doc_examplesdir}/qsbr-minimal
+doc_examples_rcu_flavor_qsbrdir = ${doc_examplesdir}/rcu-flavor-qsbr
 
-dist_doc_examples_qsbr_minimal_DATA = \
-	qsbr-minimal/Makefile \
-	qsbr-minimal/qsbr-minimal.c
+dist_doc_examples_rcu_flavor_qsbr_DATA = \
+	rcu-flavor-qsbr/Makefile \
+	rcu-flavor-qsbr/rcu-flavor-qsbr.c
 
 dist_doc_examples_DATA = \
 	Makefile.examples.template
@@ -76,7 +76,7 @@ if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = qsbr-minimal list hlist wfcqueue wfstack lfstack
+SUBDIRS_PROXY = rcu-flavor-qsbr list hlist wfcqueue wfstack lfstack
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \

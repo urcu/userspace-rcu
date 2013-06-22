@@ -14,18 +14,18 @@
 CC = gcc
 LIBS = -lurcu-qsbr
 CFLAGS = -g -O2 -Wall
-OBJECTS = qsbr-minimal.o
+OBJECTS = rcu-flavor-qsbr.o
 
-all: qsbr-minimal
+all: rcu-flavor-qsbr
 
-qsbr-minimal: $(OBJECTS)
+rcu-flavor-qsbr: $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(AM_CFLAGS) $(AM_LDFLAGS) \
 		$(LIBS) -o $@ $(OBJECTS)
 
-qsbr-minimal.o: qsbr-minimal.c
+rcu-flavor-qsbr.o: rcu-flavor-qsbr.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(AM_CFLAGS) \
 		-c -o $@ $<
 
 .PHONY: clean
 clean:
-	rm -f *.o qsbr-minimal
+	rm -f *.o rcu-flavor-qsbr
