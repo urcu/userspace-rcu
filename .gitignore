@@ -82,6 +82,11 @@ doc/examples/list/cds_list_for_each_rcu
 doc/examples/list/cds_list_for_each_entry_rcu
 doc/examples/list/cds_list_replace_rcu
 
+doc/examples/hlist/cds_hlist_add_head_rcu
+doc/examples/hlist/cds_hlist_del_rcu
+doc/examples/hlist/cds_hlist_for_each_rcu
+doc/examples/hlist/cds_hlist_for_each_entry_rcu
+
 doc/examples/wfcqueue/cds_wfcq_enqueue
 doc/examples/wfcqueue/cds_wfcq_dequeue
 doc/examples/wfcqueue/cds_wfcq_splice

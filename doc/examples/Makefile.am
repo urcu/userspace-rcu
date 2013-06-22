@@ -26,6 +26,19 @@ dist_doc_examples_list_DATA = \
 	list/cds_list_for_each_entry_rcu.c \
 	list/cds_list_replace_rcu.c
 
+doc_examples_hlistdir = ${doc_examplesdir}/hlist
+
+dist_doc_examples_hlist_DATA = \
+	hlist/Makefile \
+	hlist/Makefile.cds_hlist_add_head_rcu \
+	hlist/Makefile.cds_hlist_del_rcu \
+	hlist/Makefile.cds_hlist_for_each_rcu \
+	hlist/Makefile.cds_hlist_for_each_entry_rcu \
+	hlist/cds_hlist_add_head_rcu.c \
+	hlist/cds_hlist_del_rcu.c \
+	hlist/cds_hlist_for_each_rcu.c \
+	hlist/cds_hlist_for_each_entry_rcu.c
+
 doc_examples_wfcqueuedir = ${doc_examplesdir}/wfcqueue
 
 dist_doc_examples_wfcqueue_DATA = \
@@ -63,7 +76,7 @@ if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = qsbr-minimal list wfcqueue wfstack
+SUBDIRS_PROXY = qsbr-minimal list hlist wfcqueue wfstack lfstack
 
 all-local:
 	for subdir in $(SUBDIRS_PROXY); do \
