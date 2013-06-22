@@ -86,20 +86,11 @@ int main(int argc, char **argv)
 	}
 
 	/*
-	 * For all RCU flavors except QSBR, we need to explicitly mark
-	 * RCU read-side critical sections with rcu_read_lock() and
-	 * rcu_read_unlock(). They can be nested. Those are no-ops for
-	 * the QSBR flavor.
-	 */
-	rcu_read_lock();
-
-	/*
 	 * RCU traversal of the linked list.
 	 */
 	cds_list_for_each_entry_rcu(node, &mylist, node) {
 		printf("Value: %" PRIu64 "\n", node->value);
 	}
-	rcu_read_unlock();
 
 	/*
 	 * Removing nodes from linked list. Safe against concurrent RCU
