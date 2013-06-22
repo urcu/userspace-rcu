@@ -14,6 +14,7 @@ dist_doc_examples_urcu_flavors_DATA = \
 	urcu-flavors/signal.c
 
 dist_doc_examples_DATA = \
+	dist-files/Makefile \
 	Makefile.examples.template
 
 doc_examples_listdir = ${doc_examplesdir}/list
@@ -83,15 +84,9 @@ if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
-SUBDIRS_PROXY = urcu-flavors list hlist wfcqueue wfstack lfstack
-
 all-local:
-	for subdir in $(SUBDIRS_PROXY); do \
-		cd $$subdir && $(MAKE) AM_CPPFLAGS="-I../../../urcu/ -I../../../" AM_LDFLAGS='-L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all && cd ..; \
-	done
+	$(MAKE) -f dist-files/Makefile AM_CPPFLAGS="-I../../../urcu/ -I../../../" AM_LDFLAGS='-L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all
 
 clean-local:
-	for subdir in $(SUBDIRS_PROXY); do \
-		cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) clean && cd ..; \
-	done
+	$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean;
 endif
