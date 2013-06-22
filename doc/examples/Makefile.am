@@ -1,11 +1,11 @@
 doc_examplesdir = ${docdir}/examples
 
-doc_examples_rcu_flavor_qsbrdir = ${doc_examplesdir}/rcu-flavor-qsbr
+doc_examples_urcu_flavorsdir = ${doc_examplesdir}/urcu-flavors
 
-dist_doc_examples_rcu_flavor_qsbr_DATA = \
-	rcu-flavor-qsbr/Makefile \
-	rcu-flavor-qsbr/Makefile.rcu-flavor-qsbr \
-	rcu-flavor-qsbr/rcu-flavor-qsbr.c
+dist_doc_examples_urcu_flavors_DATA = \
+	urcu-flavors/Makefile \
+	urcu-flavors/Makefile.qsbr \
+	urcu-flavors/qsbr.c
 
 dist_doc_examples_DATA = \
 	Makefile.examples.template

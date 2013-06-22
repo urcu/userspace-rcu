@@ -11,7 +11,7 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-EXAMPLE_NAME = rcu-flavor-qsbr
+EXAMPLE_NAME = qsbr
 
 SOURCES = $(EXAMPLE_NAME).c
 OBJECTS = $(EXAMPLE_NAME).o

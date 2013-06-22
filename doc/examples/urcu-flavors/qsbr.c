@@ -26,6 +26,8 @@
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
 /*
+ * Example showing how to use the QSBR Userspace RCU flavor.
+ *
  * This is a mock-up example where updates and RCU traversals are
  * performed by the same thread to keep things simple on purpose.
  */

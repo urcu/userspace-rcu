@@ -12,8 +12,8 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -f Makefile.rcu-flavor-qsbr
+	$(MAKE) -f Makefile.qsbr
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.rcu-flavor-qsbr clean
+	$(MAKE) -f Makefile.qsbr clean
