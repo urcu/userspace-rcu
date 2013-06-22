@@ -117,6 +117,15 @@ int main(int argc, char **argv)
 		call_rcu(&node->rcu_head, rcu_free_node);
 	}
 
+	/*
+	 * We can also wait for a quiescent state by calling
+	 * synchronize_rcu() rather than using call_rcu(). It is usually
+	 * a slower approach than call_rcu(), because the latter can
+	 * batch work. Moreover, call_rcu() can be called from a RCU
+	 * read-side critical section, but synchronize_rcu() should not.
+	 */
+	synchronize_rcu();
+
 	sleep(1);
 
 	/*

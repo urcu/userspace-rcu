@@ -127,6 +127,16 @@ int main(int argc, char **argv)
 	rcu_thread_online();
 
 	/*
+	 * We can also wait for a quiescent state by calling
+	 * synchronize_rcu() rather than using call_rcu(). It is usually
+	 * a slower approach than call_rcu(), because the latter can
+	 * batch work. Moreover, call_rcu() can be called from a RCU
+	 * read-side critical section, but synchronize_rcu() ensures the
+	 * caller thread is offline, thus acting as a quiescent state.
+	 */
+	synchronize_rcu();
+
+	/*
 	 * Waiting for previously called call_rcu handlers to complete
 	 * before program exits, or in library destructors, is a good
 	 * practice.
