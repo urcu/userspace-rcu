@@ -11,13 +11,11 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-all:
-	$(MAKE) -f Makefile.qsbr
-	$(MAKE) -f Makefile.mb
-	$(MAKE) -f Makefile.signal
+EXAMPLE_NAME = signal
 
-.PHONY: clean
-clean:
-	$(MAKE) -f Makefile.qsbr clean
-	$(MAKE) -f Makefile.mb clean
-	$(MAKE) -f Makefile.signal clean
+SOURCES = $(EXAMPLE_NAME).c
+OBJECTS = $(EXAMPLE_NAME).o
+BINARY = $(EXAMPLE_NAME)
+LIBS = -lurcu-signal
+
+include ../Makefile.examples.template
