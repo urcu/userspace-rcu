@@ -108,6 +108,12 @@ int main(int argc, char **argv)
 	 */
 	cds_list_for_each_entry_safe(node, n, &mylist, node) {
 		cds_list_del_rcu(&node->node);
+		/*
+		 * call_rcu() will ensure that the handler
+		 * "rcu_free_node" is executed after a grace period.
+		 * call_rcu() can be called from RCU read-side critical
+		 * sections.
+		 */
 		call_rcu(&node->rcu_head, rcu_free_node);
 	}
 
