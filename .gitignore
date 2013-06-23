@@ -111,6 +111,7 @@ doc/examples/rculfhash/cds_lfht_add_unique
 doc/examples/rculfhash/cds_lfht_add_replace
 doc/examples/rculfhash/cds_lfht_del
 doc/examples/rculfhash/cds_lfht_destroy
+doc/examples/rculfhash/cds_lfht_lookup
 
 #automake
 /config.h
