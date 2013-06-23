@@ -106,6 +106,9 @@ doc/examples/lfstack/cds_lfs_push
 doc/examples/lfstack/cds_lfs_pop_blocking
 doc/examples/lfstack/cds_lfs_pop_all_blocking
 
+doc/examples/rculfhash/cds_lfht_add
+doc/examples/rculfhash/cds_lfht_del
+
 #automake
 /config.h
 .deps/

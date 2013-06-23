@@ -19,6 +19,7 @@ all:
 	$(MAKE) -C rculfqueue
 	$(MAKE) -C wfstack
 	$(MAKE) -C lfstack
+	$(MAKE) -C rculfhash
 
 .PHONY: clean
 clean:
@@ -29,3 +30,4 @@ clean:
 	$(MAKE) -C rculfqueue clean
 	$(MAKE) -C wfstack clean
 	$(MAKE) -C lfstack clean
+	$(MAKE) -C rculfhash clean

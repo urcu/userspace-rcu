@@ -91,6 +91,16 @@ dist_doc_examples_rculfqueue_DATA = \
 	rculfqueue/cds_lfq_enqueue.c \
 	rculfqueue/cds_lfq_dequeue.c
 
+doc_examples_rculfhashdir = ${doc_examplesdir}/rculfhash
+
+dist_doc_examples_rculfhash_DATA = \
+	rculfhash/Makefile \
+	rculfhash/jhash.h \
+	rculfhash/Makefile.cds_lfht_add \
+	rculfhash/Makefile.cds_lfht_del \
+	rculfhash/cds_lfht_add.c \
+	rculfhash/cds_lfht_del.c
+
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.

@@ -11,19 +11,10 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-CC = gcc
-CFLAGS = -g -O2 -Wall
-
-all: $(BINARY)
-
-$(BINARY): $(OBJECTS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(AM_CFLAGS) $(AM_LDFLAGS) \
-		$(LIBS) -o $@ $(OBJECTS)
-
-$(OBJECTS): $(SOURCES) $(DEPS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(AM_CFLAGS) \
-		-c -o $@ $(SOURCES)
+all:
+	$(MAKE) -f Makefile.cds_lfht_add
+	$(MAKE) -f Makefile.cds_lfht_del
 
 .PHONY: clean
 clean:
-	rm -f *.o $(BINARY)
+	$(MAKE) -f Makefile.cds_lfht_del clean
