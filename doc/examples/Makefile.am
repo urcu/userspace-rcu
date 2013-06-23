@@ -97,8 +97,10 @@ dist_doc_examples_rculfhash_DATA = \
 	rculfhash/Makefile \
 	rculfhash/jhash.h \
 	rculfhash/Makefile.cds_lfht_add \
+	rculfhash/Makefile.cds_lfht_add_unique \
 	rculfhash/Makefile.cds_lfht_del \
 	rculfhash/cds_lfht_add.c \
+	rculfhash/cds_lfht_add_unique.c \
 	rculfhash/cds_lfht_del.c
 
 if NO_SHARED
