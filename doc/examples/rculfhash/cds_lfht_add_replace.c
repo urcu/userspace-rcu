@@ -10,8 +10,11 @@
  * granted, provided the above notices are retained, and a notice that
  * the code was modified is included with the above copyright notice.
  *
- * This example shows how to remove nodes from a RCU lock-free hash table.
- * This hash table requires using a RCU scheme.
+ * This example shows how to add nodes into a RCU lock-free hash table
+ * with cds_lfht_add_replace(), which replaces existing nodes with the
+ * same key if found.
+ * We use a "seqnum" field to show which node is staying in the hash
+ * table. This hash table requires using a RCU scheme.
  */
 
 #include <stdio.h>
@@ -28,6 +31,7 @@
  */
 struct mynode {
 	int value;			/* Node content */
+	int seqnum;			/* Our node sequence number */
 	struct cds_lfht_node node;	/* Chaining in hash table */
 	struct rcu_head rcu_head;	/* For call_rcu() */
 };
@@ -53,10 +57,9 @@ void free_node(struct rcu_head *head)
 int main(int argc, char **argv)
 {
 	int values[] = { -5, 42, 42, 36, 24, };	/* 42 is duplicated */
-	int remove_values[] = { 42, 36, 24, 123, };
 	struct cds_lfht *ht;	/* Hash table */
 	unsigned int i;
-	int ret = 0;
+	int ret = 0, seqnum = 0;
 	uint32_t seed;
 	struct cds_lfht_iter iter;	/* For iteration on hash table */
 	struct cds_lfht_node *ht_node;
@@ -99,6 +102,7 @@ int main(int argc, char **argv)
 		cds_lfht_node_init(&node->node);
 		value = values[i];
 		node->value = value;
+		node->seqnum = seqnum++;
 		hash = jhash(&value, sizeof(value), seed);
 
 		/*
@@ -106,7 +110,20 @@ int main(int argc, char **argv)
 		 * critical section.
 		 */
 		rcu_read_lock();
-		cds_lfht_add(ht, hash, &node->node);
+		ht_node = cds_lfht_add_replace(ht, hash, match, &value,
+			&node->node);
+		if (ht_node) {
+			struct mynode *ret_node =
+				caa_container_of(ht_node, struct mynode, node);
+
+			printf("Replaced node (key: %d, seqnum: %d) by (key: %d, seqnum: %d)\n",
+				ret_node->value, ret_node->seqnum,
+				node->value, node->seqnum);
+			call_rcu(&ret_node->rcu_head, free_node);
+		} else {
+			printf("Add (key: %d, seqnum: %d)\n",
+				node->value, node->seqnum);
+		}
 		rcu_read_unlock();
 	}
 
@@ -118,46 +135,8 @@ int main(int argc, char **argv)
 	printf("hash table content (random order):");
 	rcu_read_lock();
 	cds_lfht_for_each_entry(ht, &iter, node, node) {
-		printf(" %d", node->value);
-	}
-	rcu_read_unlock();
-	printf("\n");
-
-	/*
-	 * Remove one node for each key, if such a node is present.
-	 */
-	printf("removing keys (single key, not duplicates):");
-	for (i = 0; i < CAA_ARRAY_SIZE(remove_values); i++) {
-		unsigned long hash;
-		int value;
-
-		value = remove_values[i];
-		hash = jhash(&value, sizeof(value), seed);
-		printf(" %d", value);
-		rcu_read_lock();
-		cds_lfht_lookup(ht, hash, match, &value, &iter);
-		ht_node = cds_lfht_iter_get_node(&iter);
-		if (ht_node) {
-			ret = cds_lfht_del(ht, ht_node);
-			if (ret) {
-				printf(" (concurrently deleted)");
-			} else {
-				struct mynode *del_node =
-					caa_container_of(ht_node,
-						struct mynode, node);
-				call_rcu(&del_node->rcu_head, free_node);
-			}
-		} else {
-			printf(" (not found)");
-		}
-		rcu_read_unlock();
-	}
-	printf("\n");
-
-	printf("hash table content (random order):");
-	rcu_read_lock();
-	cds_lfht_for_each_entry(ht, &iter, node, node) {
-		printf(" %d", node->value);
+		printf(" (key: %d, seqnum: %d)",
+			node->value, node->seqnum);
 	}
 	rcu_read_unlock();
 	printf("\n");

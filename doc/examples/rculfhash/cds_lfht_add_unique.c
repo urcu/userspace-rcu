@@ -33,6 +33,7 @@ struct mynode {
 	struct cds_lfht_node node;	/* Chaining in hash table */
 };
 
+static
 int match(struct cds_lfht_node *ht_node, const void *_key)
 {
 	struct mynode *node =
@@ -113,11 +114,11 @@ int main(int argc, char **argv)
 			 * match. It did not add the new node to the
 			 * hash table, so we can free it on the spot.
 			 */
-			printf("Not adding duplicate key: %d, seqnum: %d\n",
+			printf("Not adding duplicate (key: %d, seqnum: %d)\n",
 				node->value, node->seqnum);
 			free(node);
 		} else {
-			printf("Add key: %d, seqnum: %d\n",
+			printf("Add (key: %d, seqnum: %d)\n",
 				node->value, node->seqnum);
 		}
 		rcu_read_unlock();
