@@ -11,17 +11,12 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-all:
-	$(MAKE) -f Makefile.cds_lfht_add
-	$(MAKE) -f Makefile.cds_lfht_add_unique
-	$(MAKE) -f Makefile.cds_lfht_add_replace
-	$(MAKE) -f Makefile.cds_lfht_del
-	$(MAKE) -f Makefile.cds_lfht_destroy
+EXAMPLE_NAME = cds_lfht_destroy
 
-.PHONY: clean
-clean:
-	$(MAKE) -f Makefile.cds_lfht_add clean
-	$(MAKE) -f Makefile.cds_lfht_add_unique clean
-	$(MAKE) -f Makefile.cds_lfht_add_replace clean
-	$(MAKE) -f Makefile.cds_lfht_del clean
-	$(MAKE) -f Makefile.cds_lfht_destroy clean
+SOURCES = $(EXAMPLE_NAME).c
+DEPS = jhash.h
+OBJECTS = $(EXAMPLE_NAME).o
+BINARY = $(EXAMPLE_NAME)
+LIBS = -lurcu-cds -lurcu
+
+include ../Makefile.examples.template
