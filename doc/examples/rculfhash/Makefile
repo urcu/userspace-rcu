@@ -18,6 +18,7 @@ all:
 	$(MAKE) -f Makefile.cds_lfht_del
 	$(MAKE) -f Makefile.cds_lfht_destroy
 	$(MAKE) -f Makefile.cds_lfht_lookup
+	$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate
 
 .PHONY: clean
 clean:
@@ -27,3 +28,4 @@ clean:
 	$(MAKE) -f Makefile.cds_lfht_del clean
 	$(MAKE) -f Makefile.cds_lfht_destroy clean
 	$(MAKE) -f Makefile.cds_lfht_lookup clean
+	$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate clean

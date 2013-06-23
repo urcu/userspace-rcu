@@ -112,6 +112,7 @@ doc/examples/rculfhash/cds_lfht_add_replace
 doc/examples/rculfhash/cds_lfht_del
 doc/examples/rculfhash/cds_lfht_destroy
 doc/examples/rculfhash/cds_lfht_lookup
+doc/examples/rculfhash/cds_lfht_for_each_entry_duplicate
 
 #automake
 /config.h

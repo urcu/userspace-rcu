@@ -102,12 +102,14 @@ dist_doc_examples_rculfhash_DATA = \
 	rculfhash/Makefile.cds_lfht_del \
 	rculfhash/Makefile.cds_lfht_destroy \
 	rculfhash/Makefile.cds_lfht_lookup \
+	rculfhash/Makefile.cds_lfht_for_each_entry_duplicate \
 	rculfhash/cds_lfht_add.c \
 	rculfhash/cds_lfht_add_unique.c \
 	rculfhash/cds_lfht_add_replace.c \
 	rculfhash/cds_lfht_del.c \
 	rculfhash/cds_lfht_destroy.c \
-	rculfhash/cds_lfht_lookup.c
+	rculfhash/cds_lfht_lookup.c \
+	rculfhash/cds_lfht_for_each_entry_duplicate.c
 
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
