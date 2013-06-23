@@ -82,6 +82,15 @@ dist_doc_examples_lfstack_DATA = \
 	lfstack/cds_lfs_pop_blocking.c \
 	lfstack/cds_lfs_pop_all_blocking.c
 
+doc_examples_rculfqueuedir = ${doc_examplesdir}/rculfqueue
+
+dist_doc_examples_rculfqueue_DATA = \
+	rculfqueue/Makefile \
+	rculfqueue/Makefile.cds_lfq_enqueue \
+	rculfqueue/Makefile.cds_lfq_dequeue \
+	rculfqueue/cds_lfq_enqueue.c \
+	rculfqueue/cds_lfq_dequeue.c
+
 if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.

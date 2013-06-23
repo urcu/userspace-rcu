@@ -12,20 +12,10 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -C hlist
-	$(MAKE) -C list
-	$(MAKE) -C urcu-flavors
-	$(MAKE) -C wfcqueue
-	$(MAKE) -C rculfqueue
-	$(MAKE) -C wfstack
-	$(MAKE) -C lfstack
+	$(MAKE) -f Makefile.cds_lfq_enqueue
+	$(MAKE) -f Makefile.cds_lfq_dequeue
 
 .PHONY: clean
 clean:
-	$(MAKE) -C hlist clean
-	$(MAKE) -C list clean
-	$(MAKE) -C urcu-flavors clean
-	$(MAKE) -C wfcqueue clean
-	$(MAKE) -C rculfqueue clean
-	$(MAKE) -C wfstack clean
-	$(MAKE) -C lfstack clean
+	$(MAKE) -f Makefile.cds_lfq_enqueue clean
+	$(MAKE) -f Makefile.cds_lfq_dequeue clean
