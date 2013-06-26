@@ -68,6 +68,8 @@ void *test_hash_rw_thr_reader(void *_count)
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"reader", urcu_get_thread_id());
 
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
+
 	set_affinity();
 
 	rcu_register_thread();
@@ -126,6 +128,8 @@ void *test_hash_rw_thr_writer(void *_count)
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
+
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
 
 	set_affinity();
 
@@ -233,6 +237,8 @@ int test_hash_rw_populate_hash(void)
 		return 0;
 
 	printf("Starting rw test\n");
+
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
 
 	if ((add_unique || add_replace) && init_populate * 10 > init_pool_size) {
 		printf("WARNING: required to populate %lu nodes (-k), but random "

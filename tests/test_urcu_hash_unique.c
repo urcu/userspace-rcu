@@ -66,6 +66,8 @@ void *test_hash_unique_thr_reader(void *_count)
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"reader", urcu_get_thread_id());
 
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
+
 	set_affinity();
 
 	rcu_register_thread();
@@ -128,6 +130,8 @@ void *test_hash_unique_thr_writer(void *_count)
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
+
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
 
 	set_affinity();
 
@@ -241,6 +245,8 @@ int test_hash_unique_populate_hash(void)
 	struct cds_lfht_node *ret_node;
 
 	printf("Starting uniqueness test.\n");
+
+	URCU_TLS(rand_lookup) = urcu_get_thread_id() ^ time(NULL);
 
 	if (!init_populate)
 		return 0;
