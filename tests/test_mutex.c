@@ -357,12 +357,12 @@ int main(int argc, char **argv)
 			"main", (unsigned long) pthread_self(),
 			(unsigned long) gettid());
 
-	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
-	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
-	count_reader = malloc(sizeof(*count_reader) * nr_readers);
-	count_writer = malloc(sizeof(*count_writer) * nr_writers);
-	tot_nr_reads = malloc(sizeof(*tot_nr_reads) * nr_readers);
-	tot_nr_writes = malloc(sizeof(*tot_nr_writes) * nr_writers);
+	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
+	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
+	count_reader = calloc(nr_readers, sizeof(*count_reader));
+	count_writer = calloc(nr_writers, sizeof(*count_writer));
+	tot_nr_reads = calloc(nr_readers, sizeof(*tot_nr_reads));
+	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
 
 	next_aff = 0;
 

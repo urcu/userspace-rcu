@@ -540,10 +540,10 @@ int main(int argc, char **argv)
 			"main", (unsigned long) pthread_self(),
 			(unsigned long) gettid());
 
-	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
-	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
-	count_reader = malloc(sizeof(*count_reader) * nr_readers);
-	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
+	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
+	count_reader = calloc(nr_readers, sizeof(*count_reader));
+	count_writer = calloc(nr_writers, sizeof(*count_writer));
 
 	err = create_all_cpu_call_rcu_data(0);
 	if (err) {

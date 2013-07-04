@@ -155,10 +155,10 @@ int main(int argc, char **argv)
 	num_read = atoi(argv[1]);
 	num_write = atoi(argv[2]);
 
-	reader_time = malloc(sizeof(*reader_time) * num_read);
-	writer_time = malloc(sizeof(*writer_time) * num_write);
-	tid_reader = malloc(sizeof(*tid_reader) * num_read);
-	tid_writer = malloc(sizeof(*tid_writer) * num_write);
+	reader_time = calloc(num_read, sizeof(*reader_time));
+	writer_time = calloc(num_write, sizeof(*writer_time));
+	tid_reader = calloc(num_read, sizeof(*tid_reader));
+	tid_writer = calloc(num_write, sizeof(*tid_writer));
 
 	printf("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", (unsigned long) pthread_self(),

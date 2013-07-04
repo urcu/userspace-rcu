@@ -364,11 +364,11 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, thread id : %lx, tid %lu\n",
 			"main", (unsigned long) pthread_self(), (unsigned long) gettid());
 
-	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
-	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
-	tot_nr_reads = malloc(sizeof(*tot_nr_reads) * nr_readers);
-	tot_nr_writes = malloc(sizeof(*tot_nr_writes) * nr_writers);
-	per_thread_lock = malloc(sizeof(*per_thread_lock) * nr_readers);
+	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
+	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
+	tot_nr_reads = calloc(nr_readers, sizeof(*tot_nr_reads));
+	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
+	per_thread_lock = calloc(nr_readers, sizeof(*per_thread_lock));
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_mutex_init(&per_thread_lock[i].lock, NULL);
 		if (err != 0)

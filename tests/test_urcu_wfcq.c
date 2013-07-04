@@ -471,10 +471,11 @@ int main(int argc, char **argv)
 			"main", (unsigned long) pthread_self(),
 			(unsigned long) gettid());
 
-	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
-	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
-	count_enqueuer = malloc(3 * sizeof(*count_enqueuer) * nr_enqueuers);
-	count_dequeuer = malloc(3 * sizeof(*count_dequeuer) * nr_dequeuers);
+	tid_enqueuer = calloc(nr_enqueuers, sizeof(*tid_enqueuer));
+	tid_dequeuer = calloc(nr_dequeuers, sizeof(*tid_dequeuer));
+	count_enqueuer = calloc(nr_enqueuers, 3 * sizeof(*count_enqueuer));
+	count_dequeuer = calloc(nr_dequeuers, 3 * sizeof(*count_dequeuer));
+
 	cds_wfcq_init(&head, &tail);
 
 	next_aff = 0;
