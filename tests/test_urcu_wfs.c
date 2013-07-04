@@ -452,10 +452,10 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, tid %lu\n",
 			"main", urcu_get_thread_id());
 
-	tid_enqueuer = malloc(sizeof(*tid_enqueuer) * nr_enqueuers);
-	tid_dequeuer = malloc(sizeof(*tid_dequeuer) * nr_dequeuers);
-	count_enqueuer = malloc(3 * sizeof(*count_enqueuer) * nr_enqueuers);
-	count_dequeuer = malloc(4 * sizeof(*count_dequeuer) * nr_dequeuers);
+	tid_enqueuer = calloc(nr_enqueuers, sizeof(*tid_enqueuer));
+	tid_dequeuer = calloc(nr_dequeuers, sizeof(*tid_dequeuer));
+	count_enqueuer = calloc(nr_enqueuers, 3 * sizeof(*count_enqueuer));
+	count_dequeuer = calloc(nr_dequeuers, 4 * sizeof(*count_dequeuer));
 	cds_wfs_init(&s);
 
 	next_aff = 0;

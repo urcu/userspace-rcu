@@ -550,22 +550,22 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, tid %lu\n",
 			"main", urcu_get_thread_id());
 
-	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
+	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
 	if (!tid_reader) {
 		mainret = 1;
 		goto end;
 	}
-	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
+	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
 	if (!tid_writer) {
 		mainret = 1;
 		goto end_free_tid_reader;
 	}
-	count_reader = malloc(sizeof(*count_reader) * nr_readers);
+	count_reader = calloc(nr_readers, sizeof(*count_reader));
 	if (!count_reader) {
 		mainret = 1;
 		goto end_free_tid_writer;
 	}
-	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+	count_writer = calloc(nr_writers, sizeof(*count_writer));
 	if (!count_writer) {
 		mainret = 1;
 		goto end_free_count_reader;

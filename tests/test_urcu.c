@@ -346,10 +346,10 @@ int main(int argc, char **argv)
 	printf_verbose("thread %-6s, tid %lu\n",
 			"main", urcu_get_thread_id());
 
-	tid_reader = malloc(sizeof(*tid_reader) * nr_readers);
-	tid_writer = malloc(sizeof(*tid_writer) * nr_writers);
-	count_reader = malloc(sizeof(*count_reader) * nr_readers);
-	count_writer = malloc(sizeof(*count_writer) * nr_writers);
+	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
+	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
+	count_reader = calloc(nr_readers, sizeof(*count_reader));
+	count_writer = calloc(nr_writers, sizeof(*count_writer));
 
 	next_aff = 0;
 
