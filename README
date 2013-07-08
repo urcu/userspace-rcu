@@ -51,6 +51,13 @@ supported, with the following exceptions:
 
 Clang version 3.0 (based on LLVM 3.0) is supported.
 
+Building on MacOS X (Darwin) requires a work-around for processor
+detection:
+  # 32-bit
+  ./configure --build=i686-apple-darwin11
+  # 64-bit
+  ./configure --build=x86_64-apple-darwin11
+
 For developers using the git tree:
 
 This source tree is based on the autotools suite from GNU to simplify
