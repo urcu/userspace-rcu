@@ -18,7 +18,7 @@ all: $(BINARY)
 
 $(BINARY): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(AM_CFLAGS) $(AM_LDFLAGS) \
-		$(LIBS) -o $@ $(OBJECTS)
+		-o $@ $(OBJECTS) $(LIBS)
 
 $(OBJECTS): $(SOURCES) $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(AM_CFLAGS) \
