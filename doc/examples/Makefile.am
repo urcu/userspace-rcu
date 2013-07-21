@@ -115,9 +115,34 @@ if NO_SHARED
 # Don't build examples if shared libraries support was explicitly
 # disabled.
 else
+# Copies are for VPATH build support.
 all-local:
+	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+		cp -fR $(srcdir)/dist-files $(builddir); \
+		cp -fR $(srcdir)/hlist $(builddir); \
+		cp -fR $(srcdir)/list $(builddir); \
+		cp -fR $(srcdir)/urcu-flavors $(builddir); \
+		cp -fR $(srcdir)/wfcqueue $(builddir); \
+		cp -fR $(srcdir)/rculfqueue $(builddir); \
+		cp -fR $(srcdir)/wfstack $(builddir); \
+		cp -fR $(srcdir)/lfstack $(builddir); \
+		cp -fR $(srcdir)/rculfhash $(builddir); \
+		cp -f $(srcdir)/Makefile.examples.template $(builddir); \
+	fi
 	$(MAKE) -f dist-files/Makefile AM_CPPFLAGS="-I../../../urcu/ -I../../../" AM_LDFLAGS='-L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all
 
 clean-local:
-	$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean;
+	$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean
+	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+		rm -f $(builddir)/Makefile.examples.template; \
+		rm -rf $(builddir)/hlist; \
+		rm -rf $(builddir)/list; \
+		rm -rf $(builddir)/urcu-flavors; \
+		rm -rf $(builddir)/wfcqueue; \
+		rm -rf $(builddir)/rculfqueue; \
+		rm -rf $(builddir)/wfstack; \
+		rm -rf $(builddir)/lfstack; \
+		rm -rf $(builddir)/rculfhash; \
+		rm -rf $(builddir)/dist-files; \
+	fi
 endif
