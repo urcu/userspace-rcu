@@ -1,7 +1,7 @@
 /*
  * test_urcu_gc.c
  *
- * Userspace RCU library - test program (with batch reclamation)
+ * Userspace RCU library - test program (with baatch reclamation)
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
@@ -21,7 +21,7 @@
  */
 
 #define _GNU_SOURCE
-#include "../config.h"
+#include "config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -41,12 +41,8 @@
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
-#ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#else
-#define rcu_debug_yield_read()
-#endif
-#include <urcu.h>
+#include <urcu-qsbr.h>
 
 struct test_array {
 	int a;
@@ -58,6 +54,10 @@ static unsigned long wdelay;
 
 static struct test_array *test_rcu_pointer;
 
+static unsigned long duration;
+
+/* read-side C.S. duration, in loops */
+static unsigned long rduration;
 static unsigned int reclaim_batch = 1;
 
 struct reclaim_queue {
@@ -67,10 +67,6 @@ struct reclaim_queue {
 
 static struct reclaim_queue *pending_reclaims;
 
-static unsigned long duration;
-
-/* read-side C.S. duration, in loops */
-static unsigned long rduration;
 
 /* write-side C.S. duration, in loops */
 static unsigned long wduration;
@@ -144,13 +140,13 @@ static int test_duration_read(void)
 static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
-static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
-
 static unsigned int nr_readers;
 static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
+static
+unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
+
 
 void rcu_copy_mutex_lock(void)
 {
@@ -191,15 +187,18 @@ void *thr_reader(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		rcu_read_lock();
-		local_ptr = rcu_dereference(test_rcu_pointer);
+		_rcu_read_lock();
+		local_ptr = _rcu_dereference(test_rcu_pointer);
 		rcu_debug_yield_read();
 		if (local_ptr)
 			assert(local_ptr->a == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		rcu_read_unlock();
+		_rcu_read_unlock();
 		URCU_TLS(nr_reads)++;
+		/* QS each 1024 reads */
+		if (caa_unlikely((URCU_TLS(nr_reads) & ((1 << 10) - 1)) == 0))
+			_rcu_quiescent_state();
 		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
@@ -267,7 +266,7 @@ void *thr_writer(void *data)
 #ifndef TEST_LOCAL_GC
 		new = malloc(sizeof(*new));
 		new->a = 8;
-		old = rcu_xchg_pointer(&test_rcu_pointer, new);
+		old = _rcu_xchg_pointer(&test_rcu_pointer, new);
 #endif
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
@@ -293,6 +292,7 @@ void show_usage(int argc, char **argv)
 #ifdef DEBUG_YIELD
 	printf("	[-r] [-w] (yield reader and/or writer)\n");
 #endif
+	printf("	[-b batch] (batch reclaim)\n");
 	printf("	[-d delay] (writer period (us))\n");
 	printf("	[-c duration] (reader C.S. duration (in loops))\n");
 	printf("	[-e duration] (writer C.S. duration (in loops))\n");

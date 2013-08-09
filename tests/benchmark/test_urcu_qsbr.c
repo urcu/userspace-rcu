@@ -1,7 +1,7 @@
 /*
- * test_urcu_gc.c
+ * test_urcu.c
  *
- * Userspace RCU library - test program (with baatch reclamation)
+ * Userspace RCU library - test program
  *
  * Copyright February 2009 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
@@ -21,7 +21,7 @@
  */
 
 #define _GNU_SOURCE
-#include "../config.h"
+#include "config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -41,32 +41,23 @@
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
+#ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#include <urcu-qsbr.h>
-
-struct test_array {
-	int a;
-};
+#else
+#define rcu_debug_yield_read()
+#endif
+#include "urcu-qsbr.h"
 
 static volatile int test_go, test_stop;
 
 static unsigned long wdelay;
 
-static struct test_array *test_rcu_pointer;
+static int *test_rcu_pointer;
 
 static unsigned long duration;
 
 /* read-side C.S. duration, in loops */
 static unsigned long rduration;
-static unsigned int reclaim_batch = 1;
-
-struct reclaim_queue {
-	void **queue;	/* Beginning of queue */
-	void **head;	/* Insert position */
-};
-
-static struct reclaim_queue *pending_reclaims;
-
 
 /* write-side C.S. duration, in loops */
 static unsigned long wduration;
@@ -113,7 +104,6 @@ static void set_affinity(void)
 		perror("Error in pthread mutex unlock");
 		exit(-1);
 	}
-
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
 #if SCHED_SETAFFINITY_ARGS == 2
@@ -144,9 +134,6 @@ static unsigned int nr_readers;
 static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
-static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
-
 
 void rcu_copy_mutex_lock(void)
 {
@@ -172,7 +159,7 @@ void rcu_copy_mutex_unlock(void)
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
-	struct test_array *local_ptr;
+	int *local_ptr;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"reader", urcu_get_thread_id());
@@ -181,28 +168,38 @@ void *thr_reader(void *_count)
 
 	rcu_register_thread();
 
+	assert(rcu_read_ongoing());
+	rcu_thread_offline();
+	assert(!rcu_read_ongoing());
+	rcu_thread_online();
+
 	while (!test_go)
 	{
 	}
 	cmm_smp_mb();
 
 	for (;;) {
-		_rcu_read_lock();
-		local_ptr = _rcu_dereference(test_rcu_pointer);
+		rcu_read_lock();
+		assert(rcu_read_ongoing());
+		local_ptr = rcu_dereference(test_rcu_pointer);
 		rcu_debug_yield_read();
 		if (local_ptr)
-			assert(local_ptr->a == 8);
+			assert(*local_ptr == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		_rcu_read_unlock();
+		rcu_read_unlock();
 		URCU_TLS(nr_reads)++;
 		/* QS each 1024 reads */
 		if (caa_unlikely((URCU_TLS(nr_reads) & ((1 << 10) - 1)) == 0))
-			_rcu_quiescent_state();
+			rcu_quiescent_state();
 		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
+	rcu_unregister_thread();
+
+	/* test extra thread registration */
+	rcu_register_thread();
 	rcu_unregister_thread();
 
 	*count = URCU_TLS(nr_reads);
@@ -212,45 +209,10 @@ void *thr_reader(void *_count)
 
 }
 
-static void rcu_gc_clear_queue(unsigned long wtidx)
+void *thr_writer(void *_count)
 {
-	void **p;
-
-	/* Wait for Q.S and empty queue */
-	synchronize_rcu();
-
-	for (p = pending_reclaims[wtidx].queue;
-			p < pending_reclaims[wtidx].head; p++) {
-		/* poison */
-		if (*p)
-			((struct test_array *)*p)->a = 0;
-		free(*p);
-	}
-	pending_reclaims[wtidx].head = pending_reclaims[wtidx].queue;
-}
-
-/* Using per-thread queue */
-static void rcu_gc_reclaim(unsigned long wtidx, void *old)
-{
-	/* Queue pointer */
-	*pending_reclaims[wtidx].head = old;
-	pending_reclaims[wtidx].head++;
-
-	if (caa_likely(pending_reclaims[wtidx].head - pending_reclaims[wtidx].queue
-			< reclaim_batch))
-		return;
-
-	rcu_gc_clear_queue(wtidx);
-}
-
-void *thr_writer(void *data)
-{
-	unsigned long wtidx = (unsigned long)data;
-#ifdef TEST_LOCAL_GC
-	struct test_array *old = NULL;
-#else
-	struct test_array *new, *old;
-#endif
+	unsigned long long *count = _count;
+	int *new, *old;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
@@ -263,14 +225,16 @@ void *thr_writer(void *data)
 	cmm_smp_mb();
 
 	for (;;) {
-#ifndef TEST_LOCAL_GC
-		new = malloc(sizeof(*new));
-		new->a = 8;
-		old = _rcu_xchg_pointer(&test_rcu_pointer, new);
-#endif
+		new = malloc(sizeof(int));
+		assert(new);
+		*new = 8;
+		old = rcu_xchg_pointer(&test_rcu_pointer, new);
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
-		rcu_gc_reclaim(wtidx, old);
+		synchronize_rcu();
+		if (old)
+			*old = 0;
+		free(old);
 		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
 			break;
@@ -280,7 +244,7 @@ void *thr_writer(void *data)
 
 	printf_verbose("thread_end %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
-	tot_nr_writes[wtidx] = URCU_TLS(nr_writes);
+	*count = URCU_TLS(nr_writes);
 	return ((void*)2);
 }
 
@@ -292,7 +256,6 @@ void show_usage(int argc, char **argv)
 #ifdef DEBUG_YIELD
 	printf("	[-r] [-w] (yield reader and/or writer)\n");
 #endif
-	printf("	[-b batch] (batch reclaim)\n");
 	printf("	[-d delay] (writer period (us))\n");
 	printf("	[-c duration] (reader C.S. duration (in loops))\n");
 	printf("	[-e duration] (writer C.S. duration (in loops))\n");
@@ -306,7 +269,7 @@ int main(int argc, char **argv)
 	int err;
 	pthread_t *tid_reader, *tid_writer;
 	void *tret;
-	unsigned long long *count_reader;
+	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
 
@@ -339,10 +302,10 @@ int main(int argc, char **argv)
 		switch (argv[i][1]) {
 #ifdef DEBUG_YIELD
 		case 'r':
-			rcu_yield_active |= RCU_YIELD_READ;
+			rcu_yield_active |= RCU_RCU_YIELD_READ;
 			break;
 		case 'w':
-			rcu_yield_active |= RCU_YIELD_WRITE;
+			rcu_yield_active |= RCU_RCU_YIELD_WRITE;
 			break;
 #endif
 		case 'a':
@@ -354,13 +317,6 @@ int main(int argc, char **argv)
 			cpu_affinities[next_aff++] = a;
 			use_affinity = 1;
 			printf_verbose("Adding CPU %d affinity\n", a);
-			break;
-		case 'b':
-			if (argc < i + 2) {
-				show_usage(argc, argv);
-				return -1;
-			}
-			reclaim_batch = atol(argv[++i]);
 			break;
 		case 'c':
 			if (argc < i + 2) {
@@ -399,18 +355,7 @@ int main(int argc, char **argv)
 	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
 	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
 	count_reader = calloc(nr_readers, sizeof(*count_reader));
-	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
-	pending_reclaims = calloc(nr_writers, sizeof(*pending_reclaims));
-	if (reclaim_batch * sizeof(*pending_reclaims[i].queue)
-			< CAA_CACHE_LINE_SIZE)
-		for (i = 0; i < nr_writers; i++)
-			pending_reclaims[i].queue = calloc(1, CAA_CACHE_LINE_SIZE);
-	else
-		for (i = 0; i < nr_writers; i++)
-			pending_reclaims[i].queue = calloc(reclaim_batch,
-					sizeof(*pending_reclaims[i].queue));
-	for (i = 0; i < nr_writers; i++)
-		pending_reclaims[i].head = pending_reclaims[i].queue;
+	count_writer = calloc(nr_writers, sizeof(*count_writer));
 
 	next_aff = 0;
 
@@ -422,7 +367,7 @@ int main(int argc, char **argv)
 	}
 	for (i = 0; i < nr_writers; i++) {
 		err = pthread_create(&tid_writer[i], NULL, thr_writer,
-				     (void *)(long)i);
+				     &count_writer[i]);
 		if (err != 0)
 			exit(1);
 	}
@@ -445,26 +390,21 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_writes += tot_nr_writes[i];
-		rcu_gc_clear_queue(i);
+		tot_writes += count_writer[i];
 	}
 	
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu wdur %6lu "
 		"nr_writers %3u "
-		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu "
-		"batch %u\n",
+		"wdelay %6lu nr_reads %12llu nr_writes %12llu nr_ops %12llu\n",
 		argv[0], duration, nr_readers, rduration, wduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
-		tot_reads + tot_writes, reclaim_batch);
+		tot_reads + tot_writes);
+	free(test_rcu_pointer);
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
-	free(tot_nr_writes);
-	for (i = 0; i < nr_writers; i++)
-		free(pending_reclaims[i].queue);
-	free(pending_reclaims);
-
+	free(count_writer);
 	return 0;
 }

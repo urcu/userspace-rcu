@@ -2,7 +2,7 @@
 #define _INCLUDE_API_H
 
 #define _GNU_SOURCE
-#include "../config.h"
+#include "config.h"
 
 /*
  * common.h: Common Linux kernel-isms.

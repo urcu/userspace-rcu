@@ -293,6 +293,10 @@ AC_CONFIG_FILES([
 	doc/Makefile
 	doc/examples/Makefile
 	tests/Makefile
+	tests/common/Makefile
+	tests/unit/Makefile
+	tests/benchmark/Makefile
+	tests/regression/Makefile
 	liburcu.pc
 	liburcu-bp.pc
 	liburcu-cds.pc

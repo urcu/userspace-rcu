@@ -29,8 +29,7 @@ EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \
 		LICENSE compat_arch_x86.c \
 		urcu-call-rcu-impl.h urcu-defer-impl.h \
-		rculfhash-internal.h \
-		$(top_srcdir)/tests/*.sh
+		rculfhash-internal.h
 
 if COMPAT_ARCH
 COMPAT=compat_arch_@ARCHTYPE@.c
@@ -84,3 +83,9 @@ pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
 dist_doc_DATA = README ChangeLog
 
 dist_noinst_DATA = CodingStyle
+
+.PHONY: bench regtest
+bench:
+	cd tests && $(MAKE) $(AM_MAKEFLAGS) bench
+regtest:
+	cd tests && $(MAKE) $(AM_MAKEFLAGS) regtest

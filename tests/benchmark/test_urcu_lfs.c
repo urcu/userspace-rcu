@@ -1,9 +1,9 @@
 /*
- * test_urcu_wfq.c
+ * test_urcu_lfs.c
  *
- * Userspace RCU library - example RCU-based lock-free queue
+ * Userspace RCU library - example lock-free stack
  *
- * Copyright February 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright 2010-2012 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright February 2010 - Paolo Bonzini <pbonzini@redhat.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@
  */
 
 #define _GNU_SOURCE
-#include "../config.h"
+#include "config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -47,12 +47,18 @@
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #endif
-
-/* Remove deprecation warnings from test build. */
-#define CDS_WFQ_DEPRECATED
-
 #include <urcu.h>
-#include <urcu/wfqueue.h>
+#include <urcu/cds.h>
+
+/*
+ * External synchronization used.
+ */
+enum test_sync {
+	TEST_SYNC_NONE = 0,
+	TEST_SYNC_RCU,
+};
+
+static enum test_sync test_sync;
 
 static volatile int test_go, test_stop;
 
@@ -71,10 +77,12 @@ static inline void loop_sleep(unsigned long loops)
 
 static int verbose_mode;
 
+static int test_pop, test_pop_all;
+
 #define printf_verbose(fmt, args...)		\
 	do {					\
 		if (verbose_mode)		\
-			printf(fmt, args);	\
+			printf(fmt, ## args);	\
 	} while (0)
 
 static unsigned int cpu_affinities[NR_CPUS];
@@ -138,9 +146,14 @@ static DEFINE_URCU_TLS(unsigned long long, nr_successful_enqueues);
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct cds_wfq_queue q;
+struct test {
+	struct cds_lfs_node list;
+	struct rcu_head rcu;
+};
 
-void *thr_enqueuer(void *_count)
+static struct cds_lfs_stack s;
+
+static void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
 
@@ -149,17 +162,19 @@ void *thr_enqueuer(void *_count)
 
 	set_affinity();
 
+	rcu_register_thread();
+
 	while (!test_go)
 	{
 	}
 	cmm_smp_mb();
 
 	for (;;) {
-		struct cds_wfq_node *node = malloc(sizeof(*node));
+		struct test *node = malloc(sizeof(*node));
 		if (!node)
 			goto fail;
-		cds_wfq_node_init(node);
-		cds_wfq_enqueue(&q, node);
+		cds_lfs_node_init(&node->list);
+		cds_lfs_push(&s, &node->list);
 		URCU_TLS(nr_successful_enqueues)++;
 
 		if (caa_unlikely(wdelay))
@@ -169,6 +184,8 @@ fail:
 		if (caa_unlikely(!test_duration_enqueue()))
 			break;
 	}
+
+	rcu_unregister_thread();
 
 	count[0] = URCU_TLS(nr_enqueues);
 	count[1] = URCU_TLS(nr_successful_enqueues);
@@ -181,34 +198,101 @@ fail:
 
 }
 
-void *thr_dequeuer(void *_count)
+static
+void free_node_cb(struct rcu_head *head)
+{
+	struct test *node =
+		caa_container_of(head, struct test, rcu);
+	free(node);
+}
+
+static
+void do_test_pop(enum test_sync sync)
+{
+	struct cds_lfs_node *snode;
+
+	if (sync == TEST_SYNC_RCU)
+		rcu_read_lock();
+	snode = __cds_lfs_pop(&s);
+	if (sync == TEST_SYNC_RCU)
+		rcu_read_unlock();
+	if (snode) {
+		struct test *node;
+
+		node = caa_container_of(snode,
+			struct test, list);
+		if (sync == TEST_SYNC_RCU)
+			call_rcu(&node->rcu, free_node_cb);
+		else
+			free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+	}
+	URCU_TLS(nr_dequeues)++;
+}
+
+static
+void do_test_pop_all(enum test_sync sync)
+{
+	struct cds_lfs_node *snode;
+	struct cds_lfs_head *head;
+	struct cds_lfs_node *n;
+
+	head = __cds_lfs_pop_all(&s);
+	cds_lfs_for_each_safe(head, snode, n) {
+		struct test *node;
+
+		node = caa_container_of(snode, struct test, list);
+		if (sync == TEST_SYNC_RCU)
+			call_rcu(&node->rcu, free_node_cb);
+		else
+			free(node);
+		URCU_TLS(nr_successful_dequeues)++;
+		URCU_TLS(nr_dequeues)++;
+	}
+
+}
+
+static void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
+	unsigned int counter = 0;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"dequeuer", urcu_get_thread_id());
 
 	set_affinity();
 
+	rcu_register_thread();
+
 	while (!test_go)
 	{
 	}
 	cmm_smp_mb();
 
-	for (;;) {
-		struct cds_wfq_node *node = cds_wfq_dequeue_blocking(&q);
+	assert(test_pop || test_pop_all);
 
-		if (node) {
-			free(node);
-			URCU_TLS(nr_successful_dequeues)++;
+	for (;;) {
+		if (test_pop && test_pop_all) {
+			/* both pop and pop all */
+			if (counter & 1)
+				do_test_pop(test_sync);
+			else
+				do_test_pop_all(test_sync);
+			counter++;
+		} else {
+			if (test_pop)
+				do_test_pop(test_sync);
+			else
+				do_test_pop_all(test_sync);
 		}
 
-		URCU_TLS(nr_dequeues)++;
 		if (caa_unlikely(!test_duration_dequeue()))
 			break;
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 	}
+
+	rcu_unregister_thread();
 
 	printf_verbose("dequeuer thread_end, tid %lu, "
 			"dequeues %llu, successful_dequeues %llu\n",
@@ -220,20 +304,23 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-void test_end(struct cds_wfq_queue *q, unsigned long long *nr_dequeues)
+static void test_end(struct cds_lfs_stack *s, unsigned long long *nr_dequeues)
 {
-	struct cds_wfq_node *node;
+	struct cds_lfs_node *snode;
 
 	do {
-		node = cds_wfq_dequeue_blocking(q);
-		if (node) {
+		snode = __cds_lfs_pop(s);
+		if (snode) {
+			struct test *node;
+
+			node = caa_container_of(snode, struct test, list);
 			free(node);
 			(*nr_dequeues)++;
 		}
-	} while (node);
+	} while (snode);
 }
 
-void show_usage(int argc, char **argv)
+static void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",
 		argv[0]);
@@ -242,6 +329,10 @@ void show_usage(int argc, char **argv)
 	printf("	[-c duration] (dequeuer period (in loops))\n");
 	printf("	[-v] (verbose output)\n");
 	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
+	printf("	[-p] (test pop)\n");
+	printf("	[-P] (test pop_all, enabled by default)\n");
+	printf("	[-R] (use RCU external synchronization)\n");
+	printf("		Note: default: no external synchronization used.\n");
 	printf("\n");
 }
 
@@ -311,12 +402,33 @@ int main(int argc, char **argv)
 		case 'v':
 			verbose_mode = 1;
 			break;
+		case 'p':
+			test_pop = 1;
+			break;
+		case 'P':
+			test_pop_all = 1;
+			break;
+		case 'R':
+			test_sync = TEST_SYNC_RCU;
+			break;
 		}
 	}
+
+	/* activate pop_all test by default */
+	if (!test_pop && !test_pop_all)
+		test_pop_all = 1;
 
 	printf_verbose("running test for %lu seconds, %u enqueuers, "
 		       "%u dequeuers.\n",
 		       duration, nr_enqueuers, nr_dequeuers);
+	if (test_pop)
+		printf_verbose("pop test activated.\n");
+	if (test_pop_all)
+		printf_verbose("pop_all test activated.\n");
+	if (test_sync == TEST_SYNC_RCU)
+		printf_verbose("External sync: RCU.\n");
+	else
+		printf_verbose("External sync: none.\n");
 	printf_verbose("Writer delay : %lu loops.\n", rduration);
 	printf_verbose("Reader duration : %lu loops.\n", wdelay);
 	printf_verbose("thread %-6s, tid %lu\n",
@@ -326,7 +438,11 @@ int main(int argc, char **argv)
 	tid_dequeuer = calloc(nr_dequeuers, sizeof(*tid_dequeuer));
 	count_enqueuer = calloc(nr_enqueuers, 2 * sizeof(*count_enqueuer));
 	count_dequeuer = calloc(nr_dequeuers, 2 * sizeof(*count_dequeuer));
-	cds_wfq_init(&q);
+	cds_lfs_init(&s);
+	err = create_all_cpu_call_rcu_data(0);
+	if (err) {
+		printf("Per-CPU call_rcu() worker threads unavailable. Using default global worker thread.\n");
+	}
 
 	next_aff = 0;
 
@@ -370,7 +486,7 @@ int main(int argc, char **argv)
 		tot_successful_dequeues += count_dequeuer[2 * i + 1];
 	}
 	
-	test_end(&q, &end_dequeues);
+	test_end(&s, &end_dequeues);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);
@@ -393,6 +509,7 @@ int main(int argc, char **argv)
 		       tot_successful_enqueues,
 		       tot_successful_dequeues + end_dequeues);
 
+	free_all_cpu_call_rcu_data();
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);

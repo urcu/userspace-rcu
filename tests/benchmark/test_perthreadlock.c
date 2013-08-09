@@ -21,7 +21,7 @@
  */
 
 #define _GNU_SOURCE
-#include "../config.h"
+#include "config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -44,15 +44,25 @@
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
 #else
-#define rcu_debug_yield_read()
+#define debug_yield_read()
 #endif
 #include <urcu.h>
+
+struct test_array {
+	int a;
+};
+
+struct per_thread_lock {
+	pthread_mutex_t lock;
+} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
+
+static struct per_thread_lock *per_thread_lock;
 
 static volatile int test_go, test_stop;
 
 static unsigned long wdelay;
 
-static int *test_rcu_pointer;
+static volatile struct test_array test_array = { 8 };
 
 static unsigned long duration;
 
@@ -104,7 +114,6 @@ static void set_affinity(void)
 		perror("Error in pthread mutex unlock");
 		exit(-1);
 	}
-
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
 #if SCHED_SETAFFINITY_ARGS == 2
@@ -130,6 +139,11 @@ static int test_duration_read(void)
 
 static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
+
+static
+unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
+static
+unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_reads;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;
@@ -157,56 +171,41 @@ void rcu_copy_mutex_unlock(void)
 	}
 }
 
-void *thr_reader(void *_count)
+void *thr_reader(void *data)
 {
-	unsigned long long *count = _count;
-	int *local_ptr;
+	unsigned long tidx = (unsigned long)data;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"reader", urcu_get_thread_id());
 
 	set_affinity();
 
-	rcu_register_thread();
-	assert(!rcu_read_ongoing());
-
 	while (!test_go)
 	{
 	}
-	cmm_smp_mb();
 
 	for (;;) {
-		rcu_read_lock();
-		assert(rcu_read_ongoing());
-		local_ptr = rcu_dereference(test_rcu_pointer);
-		rcu_debug_yield_read();
-		if (local_ptr)
-			assert(*local_ptr == 8);
+		pthread_mutex_lock(&per_thread_lock[tidx].lock);
+		assert(test_array.a == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		rcu_read_unlock();
+		pthread_mutex_unlock(&per_thread_lock[tidx].lock);
 		URCU_TLS(nr_reads)++;
 		if (caa_unlikely(!test_duration_read()))
 			break;
 	}
 
-	rcu_unregister_thread();
-
-	/* test extra thread registration */
-	rcu_register_thread();
-	rcu_unregister_thread();
-
-	*count = URCU_TLS(nr_reads);
+	tot_nr_reads[tidx] = URCU_TLS(nr_reads);
 	printf_verbose("thread_end %s, tid %lu\n",
 			"reader", urcu_get_thread_id());
 	return ((void*)1);
 
 }
 
-void *thr_writer(void *_count)
+void *thr_writer(void *data)
 {
-	unsigned long long *count = _count;
-	int *new, *old;
+	unsigned long wtidx = (unsigned long)data;
+	long tidx;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
@@ -219,16 +218,16 @@ void *thr_writer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		new = malloc(sizeof(int));
-		assert(new);
-		*new = 8;
-		old = rcu_xchg_pointer(&test_rcu_pointer, new);
+		for (tidx = 0; tidx < nr_readers; tidx++) {
+			pthread_mutex_lock(&per_thread_lock[tidx].lock);
+		}
+		test_array.a = 0;
+		test_array.a = 8;
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
-		synchronize_rcu();
-		if (old)
-			*old = 0;
-		free(old);
+		for (tidx = (long)nr_readers - 1; tidx >= 0; tidx--) {
+			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+		}
 		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
 			break;
@@ -238,7 +237,7 @@ void *thr_writer(void *_count)
 
 	printf_verbose("thread_end %s, tid %lu\n",
 			"writer", urcu_get_thread_id());
-	*count = URCU_TLS(nr_writes);
+	tot_nr_writes[wtidx] = URCU_TLS(nr_writes);
 	return ((void*)2);
 }
 
@@ -263,7 +262,6 @@ int main(int argc, char **argv)
 	int err;
 	pthread_t *tid_reader, *tid_writer;
 	void *tret;
-	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
 
@@ -271,6 +269,7 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
+	cmm_smp_mb();
 
 	err = sscanf(argv[1], "%u", &nr_readers);
 	if (err != 1) {
@@ -296,10 +295,10 @@ int main(int argc, char **argv)
 		switch (argv[i][1]) {
 #ifdef DEBUG_YIELD
 		case 'r':
-			rcu_yield_active |= RCU_YIELD_READ;
+			yield_active |= YIELD_READ;
 			break;
 		case 'w':
-			rcu_yield_active |= RCU_YIELD_WRITE;
+			yield_active |= YIELD_WRITE;
 			break;
 #endif
 		case 'a':
@@ -348,20 +347,26 @@ int main(int argc, char **argv)
 
 	tid_reader = calloc(nr_readers, sizeof(*tid_reader));
 	tid_writer = calloc(nr_writers, sizeof(*tid_writer));
-	count_reader = calloc(nr_readers, sizeof(*count_reader));
-	count_writer = calloc(nr_writers, sizeof(*count_writer));
+	tot_nr_reads = calloc(nr_readers, sizeof(*tot_nr_reads));
+	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
+	per_thread_lock = calloc(nr_readers, sizeof(*per_thread_lock));
+	for (i = 0; i < nr_readers; i++) {
+		err = pthread_mutex_init(&per_thread_lock[i].lock, NULL);
+		if (err != 0)
+			exit(1);
+	}
 
 	next_aff = 0;
 
 	for (i = 0; i < nr_readers; i++) {
 		err = pthread_create(&tid_reader[i], NULL, thr_reader,
-				     &count_reader[i]);
+				     (void *)(long)i);
 		if (err != 0)
 			exit(1);
 	}
 	for (i = 0; i < nr_writers; i++) {
 		err = pthread_create(&tid_writer[i], NULL, thr_writer,
-				     &count_writer[i]);
+				     (void *)(long)i);
 		if (err != 0)
 			exit(1);
 	}
@@ -378,15 +383,15 @@ int main(int argc, char **argv)
 		err = pthread_join(tid_reader[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_reads += count_reader[i];
+		tot_reads += tot_nr_reads[i];
 	}
 	for (i = 0; i < nr_writers; i++) {
 		err = pthread_join(tid_writer[i], &tret);
 		if (err != 0)
 			exit(1);
-		tot_writes += count_writer[i];
+		tot_writes += tot_nr_writes[i];
 	}
-	
+
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu wdur %6lu "
@@ -395,10 +400,11 @@ int main(int argc, char **argv)
 		argv[0], duration, nr_readers, rduration, wduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes);
-	free(test_rcu_pointer);
+
 	free(tid_reader);
 	free(tid_writer);
-	free(count_reader);
-	free(count_writer);
+	free(tot_nr_reads);
+	free(tot_nr_writes);
+	free(per_thread_lock);
 	return 0;
 }
