@@ -304,3 +304,18 @@ SMP support
 		./configure --disable-smp-support
 
 	theoretically yielding slightly better performance.
+
+MAKE TARGETS
+------------
+
+In addition to the usual "make check" target, Userspace RCU features
+"make regtest" and "make bench" targets.
+
+make check:   Short tests, meant to be run when rebuilding or porting
+              Userspace RCU.
+
+make regtest: Long (many hours) test, meant to be run when modifying
+              Userspace RCU or porting it to a new architecture or
+              operating system.
+
+make bench:   Long (many hours) benchmarks.
