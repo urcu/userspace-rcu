@@ -101,6 +101,19 @@ Usage of all urcu libraries
 	  instead of inlines, so your application can link with the library.
 	* Linking with one of the libraries below is always necessary even for
 	  LGPL and GPL applications.
+	* Define URCU_INLINE_SMALL_FUNCTIONS before including Userspace RCU
+	  headers if you want Userspace RCU to inline small functions (10
+	  lines or less) into the application. It can be used by applications
+	  distributed under any kind of license, and does *not* make the
+	  application a derived work of Userspace RCU.
+
+	  Those small inlined functions are guaranteed to match the library
+	  content as long as the library major version is unchanged.
+	  Therefore, the application *must* be compiled with headers matching
+	  the library major version number. Applications using
+	  URCU_INLINE_SMALL_FUNCTIONS may be unable to use debugging
+	  features of Userspace RCU without being recompiled.
+
 
 Usage of liburcu
 

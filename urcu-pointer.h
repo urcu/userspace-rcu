@@ -34,7 +34,7 @@
 extern "C" {
 #endif 
 
-#ifdef _LGPL_SOURCE
+#if defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)
 
 #include <urcu/static/urcu-pointer.h>
 
@@ -62,7 +62,7 @@ extern "C" {
 #define rcu_xchg_pointer	_rcu_xchg_pointer
 #define rcu_set_pointer		_rcu_set_pointer
 
-#else /* !_LGPL_SOURCE */
+#else /* !(defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)) */
 
 extern void *rcu_dereference_sym(void *p);
 #define rcu_dereference(p)						     \
@@ -108,7 +108,7 @@ extern void *rcu_set_pointer_sym(void **p, void *v);
 					    _________pv);		     \
 	} while (0)
 
-#endif /* !_LGPL_SOURCE */
+#endif /* !(defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)) */
 
 /*
  * void rcu_assign_pointer(type *ptr, type *new)
