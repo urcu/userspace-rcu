@@ -1,3 +1,9 @@
+2013-09-06 Userspace RCU 0.7.8
+	* Fix: hash table growth (for small tables) should be limited
+	* Document build work-around on MacOS X
+	* Fix tests: use of uninitialized variables
+	* tests: add missing unsigned long casts to pthread_self()
+
 2013-06-18 Userspace RCU 0.7.7
 	* rculfhash: document destroy context limitation
 	* Fix: Use a filled signal mask to disable all signals
