@@ -1,3 +1,214 @@
+2013-09-06 Userspace RCU 0.8.0
+	* Fix: hash table growth (for small tables) should be limited
+	* Fix: doc/examples cross-build
+	* Introduce URCU_INLINE_SMALL_FUNCTIONS
+	* Add missing tests/common/Makefile.am
+	* README: document make check/regtest/bench
+	* tests: split in check, regtest and bench targets
+	* Cleanup: doc/examples makefile
+	* Fix: doc/examples VPATH build
+	* doc/examples: Move the LIBS after the OBJECTS in the Makefile
+	* Document build work-around on MacOS X
+	* Fix tests: use of uninitialized variables
+	* test_urcu_hash*: initialize TLS seeds
+	* doc/examples: cds_lfht_for_each_entry_duplicate
+	* doc/examples: cds_lfht_lookup
+	* doc/examples: cds_lfht_destroy
+	* doc/examples: cds_lfht_add_replace
+	* doc/examples: cds_lfht_add_unique
+	* doc/examples: cds_lfht_add/cds_lfht_del
+	* doc/examples: add rculfqueue example
+	* doc/examples: add synchronize_rcu()
+	* doc/examples: add bp flavor
+	* doc/examples: add dist toplevel makefile
+	* doc/examples: add membarrier flavor
+	* doc/examples: document call_rcu()
+	* doc/examples: update qsbr example
+	* urcu signal: remove assertion on exit
+	* doc/examples: signal flavor
+	* doc/examples: add mb flavor
+	* doc/examples: update qsbr
+	* doc/examples: introduce urcu-flavors examples directory
+	* doc/examples: enhance rcu-flavor-qsbr example
+	* doc/examples: rename qsbr-minimal to rcu-flavor-qsbr
+	* doc/examples: automake stop on error
+	* doc/examples: hlist
+	* hlist/rcuhlist update
+	* doc/examples: fix typo in list example
+	* rcuhlist: make pointer stores atomic
+	* hlist, rcuhlist: cleanup coding style
+	* doc/examples: lfstack
+	* doc/examples: update cds_wfs_pop_all_blocking
+	* doc/examples: cds_wfs_pop_all_blocking
+	* doc/examples: cds_wfs_pop
+	* doc/examples: add missing Makefile
+	* doc/examples: cds_wfs_push
+	* doc/wfcqueue: cds_wfcq_splice
+	* doc/examples: add cds_wfcq_dequeue
+	* doc/examples: wfcq needs to link against urcu-common
+	* doc/examples: update queue comment
+	* doc/examples: fix make clean
+	* gitignore: add qsbr-minimal
+	* doc/examples: cds_wfcq_enqueue
+	* doc/examples: Move LIBS to each makefile
+	* doc/examples: cds_list_for_each_rcu
+	* doc/examples: cds_list_for_each_entry_rcu
+	* doc/examples: cds_list_replace_rcu
+	* doc/examples: cds_list_add_tail_rcu
+	* doc/examples: cds_list_del_rcu
+	* doc/examples: cds_list_add_rcu
+	* rculist: ensure atomic updates of next pointers
+	* rculist: implement cds_list_add_tail_rcu
+	* rculist.h and list.h style cleanup
+	* example makefile: add missing cd ..
+	* Update gitignore
+	* Fix: examples Makefile on FreeBSD
+	* hash table test: don't redefine CACHE_LINE_SIZE
+	* tests: use thread-id.h wrapper
+	* Implement thread-id.h wrapper
+	* tests: add missing unsigned long casts to pthread_self()
+	* Fix: don't build examples in static builds
+	* Add QSBR minimal example
+	* compiler.h: implement CAA_ARRAY_SIZE()
+	* document rcu barrier
+	* rcu barrier: handle OOM die urcu_die
+	* Implement rcu_barrier()
+	* rculfhash: document destroy context limitations
+	* Add MIPS to README
+	* Update README
+	* Update README testing info about FreeBSD
+	* test: fix api.h missing if brackets
+	* tests: fix incorrect counter
+	* Fix: membarrier fallback symbol conflict
+	* Fix: Use a filled signal mask to disable all signals
+	* urcu-bp: introduce struct urcu_gp
+	* Fix: struct urcu_gp broke multiflavor
+	* Cleanup test usage printout
+	* wfstack tests: use pop "last" state info
+	* wfstack: return whether pop is popping the last element
+	* wfcqueue tests: use dequeue empty state
+	* wfcqueue: return whether dequeue is dequeuing last element
+	* urcu: avoid false sharing for rcu_gp_ctr
+	* urcu: make the code of urcu-qsbr as normal urcu
+	* rculfhash: detect if resize/destroy are called within RCU read-side C.S.
+	* Documentation: rculfhash: cds_lfht_resize not within read-side C.S.
+	* fix: rculfhash don't change qsbr online state
+	* Add rcu_read_ongoing() API to each urcu flavor
+	* Add "sparc" host cpu to configure.ac
+	* futex: include syscall.h instead of sys/syscall.h
+	* Add tab to output in order to allow easy nesting of tables.
+	* Remove urcu-api-list.sh from dist tarball
+	* Add urcu-api-list.sh script
+	* list: implement cds_list_for_each_safe()
+	* Fix: tests/api.h use cpuset.h
+	* Fix hurd-i386: move cpuset tests outside of sched_setaffinity conditional
+	* Fix tests: finer-grained use of CPU_SET, CPU_ZERO and cpu_set_t
+	* Test for CPU_SET
+	* Fix build on architectures with HAVE_SCHED_GETCPU but without HAVE_SYSCONF
+	* README: document that Clang 3.0 (based on LLVM 3.0) is supported
+	* clang: silence "unused expression result" warning
+	* rculfhash: add assertions on node alignment
+	* Spelling cleanups within comments and documentation
+	* Fix configure checks for Tile
+	* uatomic: style fix
+	* doc/cds-api.txt: expand documentation
+	* README: document each API file
+	* README: reorganize
+	* Add compilation support for the TileGX architecture
+	* wfstack: add nonblocking to _LGPL_SOURCE API
+	* Discourage use of pthread_atfork() for call_rcu handlers
+	* Fix call_rcu fork handling
+	* test: fork handling
+	* rculfhash: add cds_lfht_replace to the write operations in the comments
+	* urcu: fix comments for cds_list_for_each_prev()
+	* documentation: fix rcu-api.txt duplicates
+	* test wfcq: remove unneeded urcu.h include
+	* test wfs: remove unneeded urcu.h include
+	* urcu: declare test_urcu_multiflavor functions
+	* urcu: remove the wrong comma
+	* wfstack: implement nonblocking pop and next
+	* wfcqueue: document first/next return values
+	* wfstack: update comments about cds_wfs_empty/first being wait-free
+	* wfstack API: rename cds_wfs_first_blocking to cds_wfs_first
+	* wfstack test: test if number of push to empty vs pop_all match
+	* wfstack: document first/next return values
+	* test wfstack: enforce external mutex if needed by default
+	* test wfcqueue: enforce external mutex if needed by default
+	* urcu-mb/signal/membarrier: batch concurrent synchronize_rcu()
+	* urcu-wait: move queue management code into urcu-wait.h
+	* urcu-wait: move wait code into separate file
+	* urcu-qsbr: batch concurrent synchronize_rcu()
+	* tests: use standard malloc/free for synchronize_rcu()
+	* urcu-bp: move quiescent threads to separate list
+	* urcu-mb/signal/membarrier: move quiescent threads to separate list
+	* urcu-qsbr: move offline threads to separate list
+	* urcu-bp: improve 2-phase wait scheme
+	* urcu-mb/signal/membarrier: improve 2-phase wait scheme
+	* urcu-qsbr: improve 2-phase wait scheme
+	* wfcqueue: implement mutex-free splice
+	* wfcqueue: document empty criterion
+	* urcu-call-rcu: use wait-free splice return value
+	* test wfcqueue: add tests for queue state return value
+	* wfcqueue: enqueue and splice return queue state
+	* Fix: wfcqueue nonblocking dequeue
+	* wfcqueue: Fix lock and unlock functions
+	* runtests: Make path of time binary configurable
+	* urcu-qsbr: skip Q.S. reporting if already reported
+	* Fix TLS detection: test with linker, add --disable-compiler-tls
+	* Cleanup: cast pthread_self() return value to unsigned long
+	* Fallback mechanism not working on platform where TLS is unsupported
+	* Revert "Fix: cross-build: configure.ac should use --target, not --host"
+	* Fix: cross-build: configure.ac should use --target, not --host
+	* test_urcu_wfcq: add splice and nosync tests
+	* test_urcu_wfs: cleanup
+	* test_urcu_lfs: cleanup
+	* Fix static linking: add missing static for _defer_rcu
+	* tests: report error value for make check
+	* Add multiflavor test program
+	* Fix static linking: fix symbol name namespaces
+	* Fix static linking: add missing static to thr_defer
+	* Fix static linking: add missing static
+	* deprecation: fix build with gcc < 4.5
+	* wfstack.c: update copyright notice
+	* Update wfstack copyright notice
+	* Comment fix: update associated LGPL header name
+	* Update cds-api.txt following API deprecations
+	* Deprecate wfqueue
+	* Deprecate rculfstack
+	* wfcqueue: introduce nonblocking API
+	* lfstack: test pop_all and pop
+	* lfstack: implement empty, pop_all and iterators, document API
+	* lfstack: implement test
+	* lfstack: implement lock-free stack
+	* wfstack: implement pop_all and iteration tests
+	* wfstack: implement cds_wfs_pop_all and iterators, document API
+	* rculfhash test: fix trivial memleak and return node leak and errors
+	* rculfhash: add missing extern
+	* Cleanup: fix cppcheck errors
+	* wfcqueue: remove ancient comment
+	* test_urcu_lfq: remove rcu_defer_register_thread() from test_urcu_lfq
+	* test_urcu_lfq: test for the proper pointer
+	* test_urcu_lfs: remove rcu_defer_register_thread() from test_urcu_lfs
+	* test_urcu_lfs: test for the proper pointer
+	* wfcqueue: clarify locking usage
+	* Document APIs in README
+	* Test cleanup: replace "l" parameter by "loops"
+	* Add wfcqueue header to cds.h
+	* Fix: urcu-bp, urcu, urcu-qsbr should include wfcqueue
+	* Fix: call_rcu list corruption on teardown (documentation)
+	* call_rcu: remove head field alignement, explain wfcqueue motivation
+	* wfcqueue: update credits in patch documentation
+	* wfcqueue documentation: hint at for_each iterators
+	* Fix urcu-call-rcu-impl.h: false-sharing
+	* call_rcu: use wfcqueue, eliminate false-sharing
+	* wfcqueue test
+	* wfcqueue: implement concurrency-efficient queue
+	* Ensure that read-side functions meet 10-line LGPL criterion
+	* tls-compat.h: document sigaltstack(2) limitation
+	* urcu: add notice to URCU_TLS() for it is not strictly async-signal-safe
+	* Document sigaltstack(2) limitation
+	* Documentation: update LICENSE file
+
 2012-08-27 Userspace RCU 0.7.4
 	* rculfhash API documentation: document destroy RCU read-lock constraint
 	* Fix: rculfhash should be offline while waiting for resize to complete
