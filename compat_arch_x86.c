@@ -27,6 +27,14 @@
 #include <urcu/uatomic.h>
 
 /*
+ * Using attribute "weak" for __rcu_cas_avail and
+ * __urcu_x86_compat_mutex. Those are globally visible by the entire
+ * program, even though many shared objects may have their own version.
+ * The first version that gets loaded will be used by the entire
+ * program (executable and all shared objects).
+ */
+
+/*
  * It does not really matter if the constructor is called before using
  * the library, as long as the caller checks if __rcu_cas_avail < 0 and calls
  * compat_arch_init() explicitely if needed.
@@ -38,9 +46,11 @@ int __attribute__((constructor)) __rcu_cas_init(void);
  *  1: available
  *  0: unavailable
  */
+__attribute__((weak))
 int __rcu_cas_avail = -1;
 
-static pthread_mutex_t compat_mutex = PTHREAD_MUTEX_INITIALIZER;
+__attribute__((weak))
+pthread_mutex_t __urcu_x86_compat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * get_eflags/set_eflags/compare_and_swap_is_available imported from glibc
@@ -84,7 +94,7 @@ static void mutex_lock_signal_save(pthread_mutex_t *mutex, sigset_t *oldmask)
 	assert(!ret);
 	ret = pthread_sigmask(SIG_BLOCK, &newmask, oldmask);
 	assert(!ret);
-	ret = pthread_mutex_lock(&compat_mutex);
+	ret = pthread_mutex_lock(&__urcu_x86_compat_mutex);
 	assert(!ret);
 }
 
@@ -92,7 +102,7 @@ static void mutex_lock_signal_restore(pthread_mutex_t *mutex, sigset_t *oldmask)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&compat_mutex);
+	ret = pthread_mutex_unlock(&__urcu_x86_compat_mutex);
 	assert(!ret);
 	ret = pthread_sigmask(SIG_SETMASK, oldmask, NULL);
 	assert(!ret);
@@ -103,7 +113,7 @@ unsigned long _compat_uatomic_set(void *addr, unsigned long _new, int len)
 	sigset_t mask;
 	unsigned long result;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 		*(unsigned char *)addr = (unsigned char)_new;
@@ -125,7 +135,7 @@ unsigned long _compat_uatomic_set(void *addr, unsigned long _new, int len)
 		result = 0;
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 	return result;
 }
 
@@ -134,7 +144,7 @@ unsigned long _compat_uatomic_xchg(void *addr, unsigned long _new, int len)
 	sigset_t mask;
 	unsigned long retval;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 		retval = *(unsigned char *)addr;
@@ -156,7 +166,7 @@ unsigned long _compat_uatomic_xchg(void *addr, unsigned long _new, int len)
 		retval = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 	return retval;
 }
 
@@ -166,7 +176,7 @@ unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 	unsigned long retval;
 	sigset_t mask;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 	{
@@ -200,7 +210,7 @@ unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
 		retval = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 	return retval;
 }
 
@@ -208,7 +218,7 @@ void _compat_uatomic_or(void *addr, unsigned long v, int len)
 {
 	sigset_t mask;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 		*(unsigned char *)addr |= (unsigned char)v;
@@ -226,14 +236,14 @@ void _compat_uatomic_or(void *addr, unsigned long v, int len)
 		 */
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 }
 
 void _compat_uatomic_and(void *addr, unsigned long v, int len)
 {
 	sigset_t mask;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 		*(unsigned char *)addr &= (unsigned char)v;
@@ -251,7 +261,7 @@ void _compat_uatomic_and(void *addr, unsigned long v, int len)
 		 */
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 }
 
 unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
@@ -259,7 +269,7 @@ unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
 	sigset_t mask;
 	unsigned long result;
 
-	mutex_lock_signal_save(&compat_mutex, &mask);
+	mutex_lock_signal_save(&__urcu_x86_compat_mutex, &mask);
 	switch (len) {
 	case 1:
 		*(unsigned char *)addr += (unsigned char)v;
@@ -281,7 +291,7 @@ unsigned long _compat_uatomic_add_return(void *addr, unsigned long v, int len)
 		result = 0;	/* silence gcc warnings */
 		__asm__ __volatile__("ud2");
 	}
-	mutex_lock_signal_restore(&compat_mutex, &mask);
+	mutex_lock_signal_restore(&__urcu_x86_compat_mutex, &mask);
 	return result;
 }
 
