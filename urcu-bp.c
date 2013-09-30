@@ -305,26 +305,37 @@ int rcu_read_ongoing(void)
  */
 static void resize_arena(struct registry_arena *arena, size_t len)
 {
-	void *new_arena;
+	void *new_p;
+	size_t old_len;
+
+	old_len = arena->len;
 
 	if (!arena->p)
-		new_arena = mmap(arena->p, len,
-				 PROT_READ | PROT_WRITE,
-				 MAP_ANONYMOUS | MAP_PRIVATE,
-				 -1, 0);
+		new_p = mmap(arena->p, len,
+			PROT_READ | PROT_WRITE,
+			MAP_ANONYMOUS | MAP_PRIVATE,
+			-1, 0);
 	else
-		new_arena = mremap_wrapper(arena->p, arena->len,
-				   	len, MREMAP_MAYMOVE);
-	assert(new_arena != MAP_FAILED);
+		new_p = mremap_wrapper(arena->p, old_len,
+			len, MREMAP_MAYMOVE);
+	assert(new_p != MAP_FAILED);
 
 	/*
-	 * re-used the same region ?
+	 * Zero the newly allocated memory. Since mmap() does not
+	 * clearly specify if memory is zeroed or not (although it is
+	 * very likely that it is), be extra careful by not expecting
+	 * the new range to be zeroed by mremap.
 	 */
-	if (new_arena == arena->p)
-		return;
+	bzero(new_p + old_len, len - old_len);
 
-	bzero(new_arena + arena->len, len - arena->len);
-	arena->p = new_arena;
+	/*
+	 * If we did not re-use the same region, we need to update the
+	 * arena pointer.
+	 */
+	if (new_p != arena->p)
+		arena->p = new_p;
+
+	arena->len = len;
 }
 
 /* Called with signals off and mutex locked */
