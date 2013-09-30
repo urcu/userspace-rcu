@@ -52,7 +52,7 @@ struct test_array {
 	int a;
 };
 
-static pthread_mutex_t lock;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static volatile int test_go, test_stop;
 
