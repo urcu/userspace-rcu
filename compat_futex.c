@@ -31,8 +31,18 @@
 #include <urcu/arch.h>
 #include <urcu/futex.h>
 
-static pthread_mutex_t compat_futex_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t compat_futex_cond = PTHREAD_COND_INITIALIZER;
+/*
+ * Using attribute "weak" for __urcu_compat_futex_lock and
+ * __urcu_compat_futex_cond. Those are globally visible by the entire
+ * program, even though many shared objects may have their own version.
+ * The first version that gets loaded will be used by the entire program
+ * (executable and all shared objects).
+ */
+
+__attribute__((weak))
+pthread_mutex_t __urcu_compat_futex_lock = PTHREAD_MUTEX_INITIALIZER;
+__attribute__((weak))
+pthread_cond_t __urcu_compat_futex_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * _NOT SIGNAL-SAFE_. pthread_cond is not signal-safe anyway. Though.
@@ -58,22 +68,22 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	 */
 	cmm_smp_mb();
 
-	ret = pthread_mutex_lock(&compat_futex_lock);
+	ret = pthread_mutex_lock(&__urcu_compat_futex_lock);
 	assert(!ret);
 	switch (op) {
 	case FUTEX_WAIT:
 		if (*uaddr != val)
 			goto end;
-		pthread_cond_wait(&compat_futex_cond, &compat_futex_lock);
+		pthread_cond_wait(&__urcu_compat_futex_cond, &__urcu_compat_futex_lock);
 		break;
 	case FUTEX_WAKE:
-		pthread_cond_broadcast(&compat_futex_cond);
+		pthread_cond_broadcast(&__urcu_compat_futex_cond);
 		break;
 	default:
 		gret = -EINVAL;
 	}
 end:
-	ret = pthread_mutex_unlock(&compat_futex_lock);
+	ret = pthread_mutex_unlock(&__urcu_compat_futex_lock);
 	assert(!ret);
 	return gret;
 }
