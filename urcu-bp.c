@@ -66,34 +66,25 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 #define MREMAP_FIXED	2
 
 /*
- * mremap wrapper for non-Linux systems. Maps a RW, anonymous private mapping.
+ * mremap wrapper for non-Linux systems not allowing MAYMOVE.
  * This is not generic.
 */
 static
 void *mremap_wrapper(void *old_address, size_t old_size,
 		size_t new_size, int flags)
 {
-	void *new_address;
+	assert(!(flags & MREMAP_MAYMOVE));
 
-	assert(flags & MREMAP_MAYMOVE);
-	assert(!(flags & MREMAP_FIXED));
-	new_address = mmap(old_address, new_size,
-			   PROT_READ | PROT_WRITE,
-			   MAP_ANONYMOUS | MAP_PRIVATE,
-			   -1, 0);
-	if (new_address == MAP_FAILED)
-		return MAP_FAILED;
-	if (old_address) {
-		memcpy(new_address, old_address, old_size);
-		munmap(old_address, old_size);
-	}
-	return new_address;
+	return MAP_FAILED;
 }
 #endif
 
 /* Sleep delay in us */
 #define RCU_SLEEP_DELAY		1000
-#define ARENA_INIT_ALLOC	16
+#define INIT_NR_THREADS		8
+#define ARENA_INIT_ALLOC		\
+	sizeof(struct registry_chunk)	\
+	+ INIT_NR_THREADS * sizeof(struct rcu_reader)
 
 /*
  * Active attempts to check for reader Q.S. before calling sleep().
@@ -119,13 +110,20 @@ DEFINE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 
-struct registry_arena {
-	void *p;
-	size_t len;
-	size_t used;
+struct registry_chunk {
+	size_t data_len;		/* data length */
+	size_t used;			/* data used */
+	struct cds_list_head node;	/* chunk_list node */
+	char data[];
 };
 
-static struct registry_arena registry_arena;
+struct registry_arena {
+	struct cds_list_head chunk_list;
+};
+
+static struct registry_arena registry_arena = {
+	.chunk_list = CDS_LIST_HEAD_INIT(registry_arena.chunk_list),
+};
 
 /* Saved fork signal mask, protected by rcu_gp_lock */
 static sigset_t saved_fork_signal_mask;
@@ -301,91 +299,150 @@ int rcu_read_ongoing(void)
 }
 
 /*
- * only grow for now.
+ * Only grow for now. If empty, allocate a ARENA_INIT_ALLOC sized chunk.
+ * Else, try expanding the last chunk. If this fails, allocate a new
+ * chunk twice as big as the last chunk.
+ * Memory used by chunks _never_ moves. A chunk could theoretically be
+ * freed when all "used" slots are released, but we don't do it at this
+ * point.
  */
-static void resize_arena(struct registry_arena *arena, size_t len)
+static
+void expand_arena(struct registry_arena *arena)
 {
-	void *new_p;
-	size_t old_len;
+	struct registry_chunk *new_chunk, *last_chunk;
+	size_t old_chunk_len, new_chunk_len;
 
-	old_len = arena->len;
-
-	if (!arena->p)
-		new_p = mmap(arena->p, len,
+	/* No chunk. */
+	if (cds_list_empty(&arena->chunk_list)) {
+		assert(ARENA_INIT_ALLOC >=
+			sizeof(struct registry_chunk)
+			+ sizeof(struct rcu_reader));
+		new_chunk_len = ARENA_INIT_ALLOC;
+		new_chunk = mmap(NULL, new_chunk_len,
 			PROT_READ | PROT_WRITE,
 			MAP_ANONYMOUS | MAP_PRIVATE,
 			-1, 0);
-	else
-		new_p = mremap_wrapper(arena->p, old_len,
-			len, MREMAP_MAYMOVE);
-	assert(new_p != MAP_FAILED);
+		if (new_chunk == MAP_FAILED)
+			abort();
+		bzero(new_chunk, new_chunk_len);
+		new_chunk->data_len =
+			new_chunk_len - sizeof(struct registry_chunk);
+		cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
+		return;		/* We're done. */
+	}
 
-	/*
-	 * Zero the newly allocated memory. Since mmap() does not
-	 * clearly specify if memory is zeroed or not (although it is
-	 * very likely that it is), be extra careful by not expecting
-	 * the new range to be zeroed by mremap.
-	 */
-	bzero(new_p + old_len, len - old_len);
+	/* Try expanding last chunk. */
+	last_chunk = cds_list_entry(arena->chunk_list.prev,
+		struct registry_chunk, node);
+	old_chunk_len =
+		last_chunk->data_len + sizeof(struct registry_chunk);
+	new_chunk_len = old_chunk_len << 1;
 
-	/*
-	 * If we did not re-use the same region, we need to update the
-	 * arena pointer.
-	 */
-	if (new_p != arena->p)
-		arena->p = new_p;
+	/* Don't allow memory mapping to move, just expand. */
+	new_chunk = mremap_wrapper(last_chunk, old_chunk_len,
+		new_chunk_len, 0);
+	if (new_chunk != MAP_FAILED) {
+		/* Should not have moved. */
+		assert(new_chunk == last_chunk);
+		bzero((char *) last_chunk + old_chunk_len,
+			new_chunk_len - old_chunk_len);
+		last_chunk->data_len =
+			new_chunk_len - sizeof(struct registry_chunk);
+		return;		/* We're done. */
+	}
 
-	arena->len = len;
+	/* Remap did not succeed, we need to add a new chunk. */
+	new_chunk = mmap(NULL, new_chunk_len,
+		PROT_READ | PROT_WRITE,
+		MAP_ANONYMOUS | MAP_PRIVATE,
+		-1, 0);
+	if (new_chunk == MAP_FAILED)
+		abort();
+	bzero(new_chunk, new_chunk_len);
+	new_chunk->data_len =
+		new_chunk_len - sizeof(struct registry_chunk);
+	cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
+}
+
+static
+struct rcu_reader *arena_alloc(struct registry_arena *arena)
+{
+	struct registry_chunk *chunk;
+	struct rcu_reader *rcu_reader_reg;
+	int expand_done = 0;	/* Only allow to expand once per alloc */
+	size_t len = sizeof(struct rcu_reader);
+
+retry:
+	cds_list_for_each_entry(chunk, &arena->chunk_list, node) {
+		if (chunk->data_len - chunk->used < len)
+			continue;
+		/* Find spot */
+		for (rcu_reader_reg = (struct rcu_reader *) &chunk->data[0];
+				rcu_reader_reg < (struct rcu_reader *) &chunk->data[chunk->data_len];
+				rcu_reader_reg++) {
+			if (!rcu_reader_reg->alloc) {
+				rcu_reader_reg->alloc = 1;
+				chunk->used += len;
+				return rcu_reader_reg;
+			}
+		}
+	}
+
+	if (!expand_done) {
+		expand_arena(arena);
+		expand_done = 1;
+		goto retry;
+	}
+
+	return NULL;
 }
 
 /* Called with signals off and mutex locked */
-static void add_thread(void)
+static
+void add_thread(void)
 {
 	struct rcu_reader *rcu_reader_reg;
 
-	if (registry_arena.len
-	    < registry_arena.used + sizeof(struct rcu_reader))
-		resize_arena(&registry_arena,
-		caa_max(registry_arena.len << 1, ARENA_INIT_ALLOC));
-	/*
-	 * Find a free spot.
-	 */
-	for (rcu_reader_reg = registry_arena.p;
-	     (void *)rcu_reader_reg < registry_arena.p + registry_arena.len;
-	     rcu_reader_reg++) {
-		if (!rcu_reader_reg->alloc)
-			break;
-	}
-	rcu_reader_reg->alloc = 1;
-	registry_arena.used += sizeof(struct rcu_reader);
+	rcu_reader_reg = arena_alloc(&registry_arena);
+	if (!rcu_reader_reg)
+		abort();
 
 	/* Add to registry */
 	rcu_reader_reg->tid = pthread_self();
 	assert(rcu_reader_reg->ctr == 0);
 	cds_list_add(&rcu_reader_reg->node, &registry);
+	/*
+	 * Reader threads are pointing to the reader registry. This is
+	 * why its memory should never be relocated.
+	 */
 	URCU_TLS(rcu_reader) = rcu_reader_reg;
 }
 
 /* Called with signals off and mutex locked */
 static void rcu_gc_registry(void)
 {
+	struct registry_chunk *chunk;
 	struct rcu_reader *rcu_reader_reg;
-	pthread_t tid;
-	int ret;
 
-	for (rcu_reader_reg = registry_arena.p;
-	     (void *)rcu_reader_reg < registry_arena.p + registry_arena.len;
-	     rcu_reader_reg++) {
-		if (!rcu_reader_reg->alloc)
-			continue;
-		tid = rcu_reader_reg->tid;
-		ret = pthread_kill(tid, 0);
-		assert(ret != EINVAL);
-		if (ret == ESRCH) {
-			cds_list_del(&rcu_reader_reg->node);
-			rcu_reader_reg->ctr = 0;
-			rcu_reader_reg->alloc = 0;
-			registry_arena.used -= sizeof(struct rcu_reader);
+	cds_list_for_each_entry(chunk, &registry_arena.chunk_list, node) {
+		for (rcu_reader_reg = (struct rcu_reader *) &chunk->data[0];
+				rcu_reader_reg < (struct rcu_reader *) &chunk->data[chunk->data_len];
+				rcu_reader_reg++) {
+			pthread_t tid;
+			int ret;
+
+			if (!rcu_reader_reg->alloc)
+				continue;
+			tid = rcu_reader_reg->tid;
+			ret = pthread_kill(tid, 0);
+			assert(ret != EINVAL);
+			if (ret == ESRCH) {
+				cds_list_del(&rcu_reader_reg->node);
+				rcu_reader_reg->ctr = 0;
+				rcu_reader_reg->alloc = 0;
+				chunk->used -= sizeof(struct rcu_reader);
+			}
+
 		}
 	}
 }
@@ -417,8 +474,12 @@ end:
 
 void rcu_bp_exit(void)
 {
-	if (registry_arena.p)
-		munmap(registry_arena.p, registry_arena.len);
+	struct registry_chunk *chunk, *tmp;
+
+	cds_list_for_each_entry_safe(chunk, tmp,
+			&registry_arena.chunk_list, node) {
+		munmap(chunk, chunk->data_len + sizeof(struct registry_chunk));
+	}
 }
 
 /*
