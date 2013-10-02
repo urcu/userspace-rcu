@@ -91,9 +91,17 @@ void *mremap_wrapper(void *old_address, size_t old_size,
  */
 #define RCU_QS_ACTIVE_ATTEMPTS 100
 
+static
+void __attribute__((constructor)) rcu_bp_init(void);
+static
 void __attribute__((destructor)) rcu_bp_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
+static int initialized;
+
+static pthread_key_t urcu_bp_key;
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
@@ -118,7 +126,7 @@ static CDS_LIST_HEAD(registry);
 
 struct registry_chunk {
 	size_t data_len;		/* data length */
-	size_t used;			/* data used */
+	size_t used;			/* amount of data used */
 	struct cds_list_head node;	/* chunk_list node */
 	char data[];
 };
@@ -133,8 +141,6 @@ static struct registry_arena registry_arena = {
 
 /* Saved fork signal mask, protected by rcu_gp_lock */
 static sigset_t saved_fork_signal_mask;
-
-static void rcu_gc_registry(void);
 
 static void mutex_lock(pthread_mutex_t *mutex)
 {
@@ -227,9 +233,6 @@ void synchronize_rcu(void)
 	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
 	cmm_smp_mb();
-
-	/* Remove old registry elements */
-	rcu_gc_registry();
 
 	/*
 	 * Wait for previous parity to be empty of readers.
@@ -377,9 +380,13 @@ static
 void add_thread(void)
 {
 	struct rcu_reader *rcu_reader_reg;
+	int ret;
 
 	rcu_reader_reg = arena_alloc(&registry_arena);
 	if (!rcu_reader_reg)
+		abort();
+	ret = pthread_setspecific(urcu_bp_key, rcu_reader_reg);
+	if (ret)
 		abort();
 
 	/* Add to registry */
@@ -393,33 +400,42 @@ void add_thread(void)
 	URCU_TLS(rcu_reader) = rcu_reader_reg;
 }
 
-/* Called with signals off and mutex locked */
-static void rcu_gc_registry(void)
+/* Called with mutex locked */
+static
+void cleanup_thread(struct registry_chunk *chunk,
+		struct rcu_reader *rcu_reader_reg)
+{
+	rcu_reader_reg->ctr = 0;
+	cds_list_del(&rcu_reader_reg->node);
+	rcu_reader_reg->tid = 0;
+	rcu_reader_reg->alloc = 0;
+	chunk->used -= sizeof(struct rcu_reader);
+}
+
+static
+struct registry_chunk *find_chunk(struct rcu_reader *rcu_reader_reg)
 {
 	struct registry_chunk *chunk;
-	struct rcu_reader *rcu_reader_reg;
 
 	cds_list_for_each_entry(chunk, &registry_arena.chunk_list, node) {
-		for (rcu_reader_reg = (struct rcu_reader *) &chunk->data[0];
-				rcu_reader_reg < (struct rcu_reader *) &chunk->data[chunk->data_len];
-				rcu_reader_reg++) {
-			pthread_t tid;
-			int ret;
-
-			if (!rcu_reader_reg->alloc)
-				continue;
-			tid = rcu_reader_reg->tid;
-			ret = pthread_kill(tid, 0);
-			assert(ret != EINVAL);
-			if (ret == ESRCH) {
-				cds_list_del(&rcu_reader_reg->node);
-				rcu_reader_reg->ctr = 0;
-				rcu_reader_reg->alloc = 0;
-				chunk->used -= sizeof(struct rcu_reader);
-			}
-
-		}
+		if (rcu_reader_reg < (struct rcu_reader *) &chunk->data[0])
+			continue;
+		if (rcu_reader_reg >= (struct rcu_reader *) &chunk->data[chunk->data_len])
+			continue;
+		return chunk;
 	}
+	return NULL;
+}
+
+/* Called with signals off and mutex locked */
+static
+void remove_thread(void)
+{
+	struct rcu_reader *rcu_reader_reg;
+
+	rcu_reader_reg = URCU_TLS(rcu_reader);
+	cleanup_thread(find_chunk(rcu_reader_reg), rcu_reader_reg);
+	URCU_TLS(rcu_reader) = NULL;
 }
 
 /* Disable signals, take mutex, add to registry */
@@ -429,32 +445,95 @@ void rcu_bp_register(void)
 	int ret;
 
 	ret = sigfillset(&newmask);
-	assert(!ret);
+	if (ret)
+		abort();
 	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
-	assert(!ret);
+	if (ret)
+		abort();
 
 	/*
 	 * Check if a signal concurrently registered our thread since
-	 * the check in rcu_read_lock(). */
+	 * the check in rcu_read_lock().
+	 */
 	if (URCU_TLS(rcu_reader))
 		goto end;
+
+	/*
+	 * Take care of early registration before urcu_bp constructor.
+	 */
+	rcu_bp_init();
 
 	mutex_lock(&rcu_gp_lock);
 	add_thread();
 	mutex_unlock(&rcu_gp_lock);
 end:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
-	assert(!ret);
+	if (ret)
+		abort();
 }
 
+/* Disable signals, take mutex, remove from registry */
+static
+void rcu_bp_unregister(void)
+{
+	sigset_t newmask, oldmask;
+	int ret;
+
+	ret = sigfillset(&newmask);
+	if (ret)
+		abort();
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
+	if (ret)
+		abort();
+
+	mutex_lock(&rcu_gp_lock);
+	remove_thread();
+	mutex_unlock(&rcu_gp_lock);
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	if (ret)
+		abort();
+}
+
+/*
+ * Remove thread from the registry when it exits, and flag it as
+ * destroyed so garbage collection can take care of it.
+ */
+static
+void urcu_bp_thread_exit_notifier(void *rcu_key)
+{
+	assert(rcu_key == URCU_TLS(rcu_reader));
+	rcu_bp_unregister();
+}
+
+static
+void rcu_bp_init(void)
+{
+	mutex_lock(&init_lock);
+	if (!initialized) {
+		int ret;
+
+		ret = pthread_key_create(&urcu_bp_key,
+				urcu_bp_thread_exit_notifier);
+		if (ret)
+			abort();
+		initialized = 1;
+	}
+	mutex_unlock(&init_lock);
+}
+
+static
 void rcu_bp_exit(void)
 {
 	struct registry_chunk *chunk, *tmp;
+	int ret;
 
 	cds_list_for_each_entry_safe(chunk, tmp,
 			&registry_arena.chunk_list, node) {
 		munmap(chunk, chunk->data_len + sizeof(struct registry_chunk));
 	}
+	ret = pthread_key_delete(urcu_bp_key);
+	if (ret)
+		abort();
 }
 
 /*
@@ -486,12 +565,35 @@ void rcu_bp_after_fork_parent(void)
 	assert(!ret);
 }
 
+/*
+ * Prune all entries from registry except our own thread. Fits the Linux
+ * fork behavior. Called with rcu_gp_lock held.
+ */
+static
+void urcu_bp_prune_registry(void)
+{
+	struct registry_chunk *chunk;
+	struct rcu_reader *rcu_reader_reg;
+
+	cds_list_for_each_entry(chunk, &registry_arena.chunk_list, node) {
+		for (rcu_reader_reg = (struct rcu_reader *) &chunk->data[0];
+				rcu_reader_reg < (struct rcu_reader *) &chunk->data[chunk->data_len];
+				rcu_reader_reg++) {
+			if (!rcu_reader_reg->alloc)
+				continue;
+			if (rcu_reader_reg->tid == pthread_self())
+				continue;
+			cleanup_thread(chunk, rcu_reader_reg);
+		}
+	}
+}
+
 void rcu_bp_after_fork_child(void)
 {
 	sigset_t oldmask;
 	int ret;
 
-	rcu_gc_registry();
+	urcu_bp_prune_registry();
 	oldmask = saved_fork_signal_mask;
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
