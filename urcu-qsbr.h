@@ -91,7 +91,7 @@ extern "C" {
  * library debugging & tracing features we could come up with.
  */
 
-#if (!defined(BUILD_QSBR_LIB) && defined(RCU_DEBUG))
+#if (!defined(BUILD_QSBR_LIB) && !defined(RCU_DEBUG))
 
 static inline void rcu_read_lock(void)
 {
