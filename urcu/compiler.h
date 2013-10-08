@@ -86,10 +86,15 @@
 #define URCU_FORCE_CAST(type, arg)	((type) (arg))
 #endif
 
-#define caa_is_signed_type(type)	(((type) (-1)) < 0)
+#define caa_is_signed_type(type)	((type) -1 < (type) 0)
 
-#define caa_cast_long_keep_sign(v)	\
-	(caa_is_signed_type(__typeof__(v)) ? (long) (v) : (unsigned long) (v))
+/*
+ * Sign-extend to long if needed, and output type is unsigned long.
+ */
+#define caa_cast_long_keep_sign(v)		\
+	(caa_is_signed_type(__typeof__(v)) ?	\
+		(unsigned long) (long) (v) :	\
+		(unsigned long) (v))
 
 #if defined (__GNUC__) \
 	&& ((__GNUC_MAJOR__ == 4) && (__GNUC_MINOR__ >= 5)	\
