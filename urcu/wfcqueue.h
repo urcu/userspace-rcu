@@ -231,7 +231,7 @@ extern struct cds_wfcq_node *cds_wfcq_dequeue_with_state_blocking(
  * ensured.
  *
  * Returns enum cds_wfcq_ret which indicates the state of the src or
- * dest queue. Cannot block.
+ * dest queue.
  */
 extern enum cds_wfcq_ret cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *dest_q_head,
