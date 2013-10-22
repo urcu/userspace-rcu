@@ -332,3 +332,9 @@ make regtest: Long (many hours) test, meant to be run when modifying
               operating system.
 
 make bench:   Long (many hours) benchmarks.
+
+CONTACTS
+--------
+
+You can contact the maintainers on the following mailing list:
+lttng-dev@lists.lttng.org
