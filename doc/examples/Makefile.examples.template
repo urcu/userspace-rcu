@@ -11,7 +11,9 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
+ifndef CC
 CC = gcc
+endif
 CFLAGS = -g -O2 -Wall
 
 all: $(BINARY)
