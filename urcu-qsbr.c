@@ -69,11 +69,11 @@ unsigned long rcu_gp_ctr = RCU_GP_ONLINE;
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
+__DEFINE_URCU_TLS_GLOBAL(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
 unsigned int yield_active;
-DEFINE_URCU_TLS(unsigned int, rand_yield);
+__DEFINE_URCU_TLS_GLOBAL(unsigned int, rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
