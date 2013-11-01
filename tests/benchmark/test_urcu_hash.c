@@ -82,13 +82,13 @@ int (*get_populate_hash_cb(void))(void)
 	return test_hash_cb[test_choice].populate_hash;
 }
 
-DEFINE_URCU_TLS(unsigned int, rand_lookup);
-DEFINE_URCU_TLS(unsigned long, nr_add);
-DEFINE_URCU_TLS(unsigned long, nr_addexist);
-DEFINE_URCU_TLS(unsigned long, nr_del);
-DEFINE_URCU_TLS(unsigned long, nr_delnoent);
-DEFINE_URCU_TLS(unsigned long, lookup_fail);
-DEFINE_URCU_TLS(unsigned long, lookup_ok);
+__DEFINE_URCU_TLS_GLOBAL(unsigned int, rand_lookup);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, nr_add);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, nr_addexist);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, nr_del);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, nr_delnoent);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, lookup_fail);
+__DEFINE_URCU_TLS_GLOBAL(unsigned long, lookup_ok);
 
 struct cds_lfht *test_ht;
 

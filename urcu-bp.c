@@ -105,7 +105,7 @@ static pthread_key_t urcu_bp_key;
 
 #ifdef DEBUG_YIELD
 unsigned int rcu_yield_active;
-DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
+__DEFINE_URCU_TLS_GLOBAL(unsigned int, rcu_rand_yield);
 #endif
 
 struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
@@ -114,7 +114,7 @@ struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
  * Pointer to registry elements. Written to only by each individual reader. Read
  * by both the reader and the writers.
  */
-DEFINE_URCU_TLS(struct rcu_reader *, rcu_reader);
+__DEFINE_URCU_TLS_GLOBAL(struct rcu_reader *, rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 

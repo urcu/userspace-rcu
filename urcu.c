@@ -107,11 +107,11 @@ struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
+__DEFINE_URCU_TLS_GLOBAL(struct rcu_reader, rcu_reader);
 
 #ifdef DEBUG_YIELD
 unsigned int rcu_yield_active;
-DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
+__DEFINE_URCU_TLS_GLOBAL(unsigned int, rcu_rand_yield);
 #endif
 
 static CDS_LIST_HEAD(registry);
