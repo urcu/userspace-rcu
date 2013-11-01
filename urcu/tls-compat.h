@@ -74,6 +74,10 @@ extern "C" {
 
 #else /* #ifndef CONFIG_RCU_TLS */
 
+/*
+ * The *_1() macros ensure macro parameters are expanded.
+ */
+
 # include <pthread.h>
 
 struct urcu_tls {
@@ -82,14 +86,16 @@ struct urcu_tls {
 	int init_done;
 };
 
-# define DECLARE_URCU_TLS(type, name)				\
+# define DECLARE_URCU_TLS_1(type, name)				\
 	type *__tls_access_ ## name(void)
+# define DECLARE_URCU_TLS(type, name)				\
+	DECLARE_URCU_TLS_1(type, name)
 
 /*
  * Note: we don't free memory at process exit, since it will be dealt
  * with by the OS.
  */
-# define DEFINE_URCU_TLS(type, name)				\
+# define DEFINE_URCU_TLS_1(type, name)				\
 	type *__tls_access_ ## name(void)			\
 	{							\
 		static struct urcu_tls __tls_ ## name = {	\
@@ -118,7 +124,12 @@ struct urcu_tls {
 		return __tls_p;					\
 	}
 
-# define URCU_TLS(name)		(*__tls_access_ ## name())
+# define DEFINE_URCU_TLS(type, name)				\
+	DEFINE_URCU_TLS_1(type, name)
+
+# define URCU_TLS_1(name)	(*__tls_access_ ## name())
+
+# define URCU_TLS(name)		URCU_TLS_1(name)
 
 #endif	/* #else #ifndef CONFIG_RCU_TLS */
 
