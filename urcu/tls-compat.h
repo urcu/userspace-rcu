@@ -140,7 +140,7 @@ struct urcu_tls {
 	}
 
 /*
- * Define with an without macro expansion to handle erroneous callers.
+ * Define with and without macro expansion to handle erroneous callers.
  * Trigger an abort() if the caller application uses the clashing symbol
  * if a weak symbol is overridden.
  */
