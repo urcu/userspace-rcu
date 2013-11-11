@@ -35,7 +35,6 @@
 #include <errno.h>
 
 #include <urcu/arch.h>
-#include <urcu/tls-compat.h>
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
