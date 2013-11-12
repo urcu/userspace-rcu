@@ -1,3 +1,16 @@
+2013-11-12 Userspace RCU 0.7.9
+	* tls-compat: fix comment typo
+	* Keep ABI compatible with already compiled LGPL applications
+	* Fix: tls-compat multi-lib conflict
+	* gcc warning fixes: -Wsign-compare and -Wextra
+	* Fix: urcu-qsbr: reversed logic on RCU_DEBUG
+	* Fix: urcu-bp segfault in glibc pthread_kill()
+	* Fix urcu-bp: don't move registry
+	* Fix: compat futex duplicated lock and completion
+	* Fix: i386 compat code duplicated mutex instances
+	* Fix: urcu-bp: Bulletproof RCU arena resize bug
+	* Fix: test_mutex.c uninitialized mutex
+
 2013-09-06 Userspace RCU 0.7.8
 	* Fix: hash table growth (for small tables) should be limited
 	* Document build work-around on MacOS X
