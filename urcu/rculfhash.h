@@ -132,7 +132,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
  * @min_nr_alloc_buckets: the minimum number of allocated buckets.
  *                        (must be power of two)
  * @max_nr_buckets: the maximum number of hash table buckets allowed.
- *                  (must be power of two)
+ *                  (must be power of two, 0 is accepted, means
+ *                  "infinite")
  * @flags: hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
  *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
