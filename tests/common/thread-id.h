@@ -42,6 +42,11 @@ unsigned long urcu_get_thread_id(void)
 {
 	return (unsigned long) pthread_getthreadid_np();
 }
+#elif defined(__Android__)
+/*
+ * Do not redefine gettid() as it is already included
+ * in bionic through <unistd.h>.
+ */
 #else
 # warning "use pid as thread ID"
 static inline
