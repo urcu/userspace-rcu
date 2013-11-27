@@ -1,4 +1,6 @@
+if !TARGET_IS_ANDROID
 AM_LDFLAGS=-lpthread
+endif
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
 
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
