@@ -17,9 +17,8 @@
  * provided the above notices are retained, and a notice that the code was
  * modified is included with the above copyright notice.
  */
-
 #ifdef __linux__
-# include <syscall.h>
+# include <urcu/syscall-compat.h>
 
 # if defined(_syscall0)
 _syscall0(pid_t, gettid)

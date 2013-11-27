@@ -66,7 +66,7 @@
  * RCU_MEMBARRIER is only possibly available on Linux.
  */
 #if defined(RCU_MEMBARRIER) && defined(__linux__)
-#include <syscall.h>
+#include <urcu/syscall-compat.h>
 #endif
 
 /* If the headers do not support SYS_membarrier, fall back on RCU_MB */
