@@ -41,6 +41,7 @@
 #include <urcu/list.h>
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
+#include <urcu/rand-compat.h>
 
 #ifdef __cplusplus
 extern "C" {
