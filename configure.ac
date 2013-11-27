@@ -82,6 +82,11 @@ AS_CASE([$host_cpu],
 	[ARCHTYPE="unknown"]
 )
 
+AS_CASE([$host],[*-*-linux-androideabi],
+	[AM_CONDITIONAL(TARGET_IS_ANDROID, true)],
+	[AM_CONDITIONAL(TARGET_IS_ANDROID, false)]
+)
+
 AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
