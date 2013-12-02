@@ -5,7 +5,7 @@ INCLUDES = -I$(top_builddir)/urcu
 #Add the -version-info directly here since we are only building
 # library that use the version-info
 AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION)
-if !TARGET_IS_ANDROID
+if !LIBC_INCLUDES_PTHREAD
 AM_LDFLAGS+=-lpthread
 endif
 AM_CFLAGS=-Wall

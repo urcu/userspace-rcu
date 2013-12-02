@@ -165,6 +165,15 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 	compat_futex_test=1
 ])
 
+# Check for pthread
+AC_CHECK_LIB([pthread], [pthread_create],
+	[AM_CONDITIONAL(LIBC_INCLUDES_PTHREAD, false)],
+	[AC_CHECK_LIB([c], [pthread_create],
+		[AM_CONDITIONAL(LIBC_INCLUDES_PTHREAD, true)],
+		[AC_MSG_ERROR([Cannot find libpthread. Use [LDFLAGS]=-Ldir to specify its location.])]
+	)]
+)
+
 AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
 AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = "xx86compat"])
 AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])

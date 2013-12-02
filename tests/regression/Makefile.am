@@ -1,4 +1,4 @@
-if !TARGET_IS_ANDROID
+if !LIBC_INCLUDES_PTHREAD
 AM_LDFLAGS=-lpthread
 endif
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
