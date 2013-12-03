@@ -93,14 +93,18 @@ void cds_hlist_del(struct cds_hlist_node *elem)
 			entry = cds_hlist_entry(pos, __typeof__(*entry), member))
 
 #define cds_hlist_for_each_entry_2(entry, head, member) \
-	for (entry = cds_hlist_entry((head)->next, __typeof__(*entry), member); \
-		&entry->member != NULL; \
-		entry = cds_hlist_entry(entry->member.next, __typeof__(*entry), member))
+	for (entry = ((head)->next == NULL ? NULL \
+			: cds_hlist_entry((head)->next, __typeof__(*entry), member)); \
+		entry != NULL; \
+		entry = (entry->member.next == NULL ? NULL \
+			: cds_hlist_entry(entry->member.next, __typeof__(*entry), member)))
 
 #define cds_hlist_for_each_entry_safe_2(entry, e, head, member) \
-	for (entry = cds_hlist_entry((head)->next, __typeof__(*entry), member); \
-		(&entry->member != NULL) && (e = cds_hlist_entry(entry->member.next, \
-						__typeof__(*entry), member), 1); \
+	for (entry = ((head)->next == NULL ? NULL \
+			: cds_hlist_entry((head)->next, __typeof__(*entry), member)); \
+		(entry != NULL) && (e = (entry->member.next == NULL ? NULL \
+					: cds_hlist_entry(entry->member.next, \
+						__typeof__(*entry), member), 1)); \
 		entry = e)
 
 #endif	/* _KCOMPAT_HLIST_H */
