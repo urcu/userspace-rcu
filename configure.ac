@@ -140,7 +140,10 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 	#For now, using lock; addl compatibility mode even for i686, because the
 	#Pentium III is seen as a i686, but lacks mfence instruction.
 	#Only using fence for x86_64.
-	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686"],[
+	#
+	#k1om is the name for the Intel MIC family (Xeon Phi). It is an x86_64
+	#variant but lacks fence instructions.
+	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686" -a "x$host_vendor" != "xk1om"],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
 	],[
