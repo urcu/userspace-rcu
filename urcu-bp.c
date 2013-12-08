@@ -92,6 +92,9 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 #define RCU_QS_ACTIVE_ATTEMPTS 100
 
 static
+int rcu_bp_refcount;
+
+static
 void __attribute__((constructor)) rcu_bp_init(void);
 static
 void __attribute__((destructor)) rcu_bp_exit(void);
@@ -429,11 +432,8 @@ struct registry_chunk *find_chunk(struct rcu_reader *rcu_reader_reg)
 
 /* Called with signals off and mutex locked */
 static
-void remove_thread(void)
+void remove_thread(struct rcu_reader *rcu_reader_reg)
 {
-	struct rcu_reader *rcu_reader_reg;
-
-	rcu_reader_reg = URCU_TLS(rcu_reader);
 	cleanup_thread(find_chunk(rcu_reader_reg), rcu_reader_reg);
 	URCU_TLS(rcu_reader) = NULL;
 }
@@ -474,7 +474,7 @@ end:
 
 /* Disable signals, take mutex, remove from registry */
 static
-void rcu_bp_unregister(void)
+void rcu_bp_unregister(struct rcu_reader *rcu_reader_reg)
 {
 	sigset_t newmask, oldmask;
 	int ret;
@@ -487,11 +487,12 @@ void rcu_bp_unregister(void)
 		abort();
 
 	mutex_lock(&rcu_gp_lock);
-	remove_thread();
+	remove_thread(rcu_reader_reg);
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	if (ret)
 		abort();
+	rcu_bp_exit();
 }
 
 /*
@@ -501,15 +502,14 @@ void rcu_bp_unregister(void)
 static
 void urcu_bp_thread_exit_notifier(void *rcu_key)
 {
-	assert(rcu_key == URCU_TLS(rcu_reader));
-	rcu_bp_unregister();
+	rcu_bp_unregister(rcu_key);
 }
 
 static
 void rcu_bp_init(void)
 {
 	mutex_lock(&init_lock);
-	if (!initialized) {
+	if (!rcu_bp_refcount++) {
 		int ret;
 
 		ret = pthread_key_create(&urcu_bp_key,
@@ -524,16 +524,21 @@ void rcu_bp_init(void)
 static
 void rcu_bp_exit(void)
 {
-	struct registry_chunk *chunk, *tmp;
-	int ret;
+	mutex_lock(&init_lock);
+	if (!--rcu_bp_refcount) {
+		struct registry_chunk *chunk, *tmp;
+		int ret;
 
-	cds_list_for_each_entry_safe(chunk, tmp,
-			&registry_arena.chunk_list, node) {
-		munmap(chunk, chunk->data_len + sizeof(struct registry_chunk));
+		cds_list_for_each_entry_safe(chunk, tmp,
+				&registry_arena.chunk_list, node) {
+			munmap(chunk, chunk->data_len
+					+ sizeof(struct registry_chunk));
+		}
+		ret = pthread_key_delete(urcu_bp_key);
+		if (ret)
+			abort();
 	}
-	ret = pthread_key_delete(urcu_bp_key);
-	if (ret)
-		abort();
+	mutex_unlock(&init_lock);
 }
 
 /*
