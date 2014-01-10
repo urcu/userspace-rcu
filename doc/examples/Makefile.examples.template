@@ -11,8 +11,8 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-ifndef CC
-CC = gcc
+ifdef AM_CC
+CC = $(AM_CC)
 endif
 CFLAGS = -g -O2 -Wall
 

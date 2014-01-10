@@ -128,7 +128,7 @@ all-local:
 			cp -fR $(srcdir)/$$subdir $(builddir); \
 		done; \
 	fi
-	$(MAKE) -f dist-files/Makefile AM_CPPFLAGS="$(CPPFLAGS) -I../../../urcu/ -I../../../" AM_CFLAGS='$(CFLAGS)' AM_LDFLAGS='$(LDFLAGS) -L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all
+	$(MAKE) -f dist-files/Makefile AM_CC="$(CC)" AM_CPPFLAGS="$(CPPFLAGS) -I../../../urcu/ -I../../../" AM_CFLAGS='$(CFLAGS)' AM_LDFLAGS='$(LDFLAGS) -L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all
 
 clean-local:
 	$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean
