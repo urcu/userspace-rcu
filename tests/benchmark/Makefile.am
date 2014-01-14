@@ -31,13 +31,11 @@ COMPAT+=$(top_srcdir)/compat_futex.c
 endif
 
 URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_QSBR=xxxxxxxx$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_MB uses urcu.c but -DRCU_MB must be defined
 URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_SIGNAL uses urcu.c but -DRCU_SIGNAL must be defined
 URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_DEFER=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
@@ -124,7 +122,8 @@ test_urcu_qsbr_dynamic_link_SOURCES = test_urcu_qsbr.c
 test_urcu_qsbr_dynamic_link_LDADD = $(URCU_QSBR_LIB)
 test_urcu_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_defer_SOURCES = test_urcu_defer.c $(URCU_DEFER)
+test_urcu_defer_SOURCES = test_urcu_defer.c
+test_urcu_defer_LDADD = $(URCU_LIB)
 
 test_cycles_per_loop_SOURCES = test_cycles_per_loop.c
 
