@@ -35,7 +35,6 @@ URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c 
 URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_SIGNAL uses urcu.c but -DRCU_SIGNAL must be defined
 URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
@@ -132,9 +131,11 @@ test_urcu_assign_SOURCES = test_urcu_assign.c $(URCU)
 test_urcu_assign_dynamic_link_SOURCES = test_urcu_assign.c $(URCU)
 test_urcu_assign_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_bp_SOURCES = test_urcu_bp.c $(URCU_BP)
+test_urcu_bp_SOURCES = test_urcu_bp.c
+test_urcu_bp_LDADD = $(URCU_BP_LIB)
 
-test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c $(URCU_BP)
+test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c
+test_urcu_bp_dynamic_link_LDADD = $(URCU_BP_LIB)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_lfq_SOURCES = test_urcu_lfq.c $(URCU)
