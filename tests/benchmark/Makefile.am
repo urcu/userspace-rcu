@@ -31,7 +31,7 @@ COMPAT+=$(top_srcdir)/compat_futex.c
 endif
 
 URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_QSBR=$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
+URCU_QSBR=xxxxxxxx$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_MB uses urcu.c but -DRCU_MB must be defined
 URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_SIGNAL uses urcu.c but -DRCU_SIGNAL must be defined
@@ -60,9 +60,11 @@ test_urcu_yield_SOURCES = test_urcu.c $(URCU)
 test_urcu_yield_CFLAGS = -DDEBUG_YIELD $(AM_CFLAGS)
 
 
-test_urcu_qsbr_SOURCES = test_urcu_qsbr.c $(URCU_QSBR)
+test_urcu_qsbr_SOURCES = test_urcu_qsbr.c
+test_urcu_qsbr_LDADD = $(URCU_QSBR_LIB)
 
-test_urcu_qsbr_timing_SOURCES = test_urcu_qsbr_timing.c $(URCU_QSBR)
+test_urcu_qsbr_timing_SOURCES = test_urcu_qsbr_timing.c
+test_urcu_qsbr_timing_LDADD = $(URCU_QSBR_LIB)
 
 
 test_urcu_mb_SOURCES = test_urcu.c $(URCU_MB)
@@ -102,9 +104,11 @@ test_urcu_signal_gc_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 test_urcu_mb_gc_SOURCES = test_urcu_gc.c $(URCU_MB)
 test_urcu_mb_gc_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
-test_urcu_qsbr_gc_SOURCES = test_urcu_qsbr_gc.c $(URCU_QSBR)
+test_urcu_qsbr_gc_SOURCES = test_urcu_qsbr_gc.c
+test_urcu_qsbr_gc_LDADD = $(URCU_QSBR_LIB)
 
-test_urcu_qsbr_lgc_SOURCES = test_urcu_qsbr_gc.c $(URCU_QSBR)
+test_urcu_qsbr_lgc_SOURCES = test_urcu_qsbr_gc.c
+test_urcu_qsbr_lgc_LDADD = $(URCU_QSBR_LIB)
 test_urcu_qsbr_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
 test_urcu_lgc_SOURCES = test_urcu_gc.c $(URCU)
@@ -116,7 +120,8 @@ test_urcu_signal_lgc_CFLAGS = -DRCU_SIGNAL -DTEST_LOCAL_GC $(AM_CFLAGS)
 test_urcu_mb_lgc_SOURCES = test_urcu_gc.c $(URCU_MB)
 test_urcu_mb_lgc_CFLAGS = -DTEST_LOCAL_GC -DRCU_MB $(AM_CFLAGS)
 
-test_urcu_qsbr_dynamic_link_SOURCES = test_urcu_qsbr.c $(URCU_QSBR)
+test_urcu_qsbr_dynamic_link_SOURCES = test_urcu_qsbr.c
+test_urcu_qsbr_dynamic_link_LDADD = $(URCU_QSBR_LIB)
 test_urcu_qsbr_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_defer_SOURCES = test_urcu_defer.c $(URCU_DEFER)
