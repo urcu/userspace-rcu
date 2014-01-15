@@ -32,8 +32,6 @@ if COMPAT_FUTEX
 COMPAT+=$(top_srcdir)/compat_futex.c
 endif
 
-URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
 URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
@@ -46,15 +44,18 @@ DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
 
 EXTRA_DIST = *.sh
 
-test_urcu_SOURCES = test_urcu.c $(URCU)
+test_urcu_SOURCES = test_urcu.c
+test_urcu_LDADD = $(URCU_LIB)
 
-test_urcu_dynamic_link_SOURCES = test_urcu.c $(URCU)
+test_urcu_dynamic_link_SOURCES = test_urcu.c
+test_urcu_dynamic_link_LDADD = $(URCU_LIB)
 test_urcu_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_timing_SOURCES = test_urcu_timing.c $(URCU)
+test_urcu_timing_SOURCES = test_urcu_timing.c
+test_urcu_timing_LDADD = $(URCU_LIB)
 
-test_urcu_yield_SOURCES = test_urcu.c $(URCU)
-test_urcu_yield_LDADD = $(DEBUG_YIELD_LIB)
+test_urcu_yield_SOURCES = test_urcu.c
+test_urcu_yield_LDADD = $(URCU_LIB) $(DEBUG_YIELD_LIB)
 test_urcu_yield_CFLAGS = -DDEBUG_YIELD $(AM_CFLAGS)
 
 
@@ -99,11 +100,12 @@ test_perthreadlock_timing_LDADD = $(URCU_SIGNAL_LIB)
 test_perthreadlock_SOURCES = test_perthreadlock.c
 test_perthreadlock_LDADD = $(URCU_SIGNAL_LIB)
 
-test_mutex_SOURCES = test_mutex.c $(URCU)
+test_mutex_SOURCES = test_mutex.c
 
 test_looplen_SOURCES = test_looplen.c
 
-test_urcu_gc_SOURCES = test_urcu_gc.c $(URCU)
+test_urcu_gc_SOURCES = test_urcu_gc.c
+test_urcu_gc_LDADD = $(URCU_LIB)
 
 test_urcu_signal_gc_SOURCES = test_urcu_gc.c
 test_urcu_signal_gc_LDADD = $(URCU_SIGNAL_LIB)
@@ -120,7 +122,8 @@ test_urcu_qsbr_lgc_SOURCES = test_urcu_qsbr_gc.c
 test_urcu_qsbr_lgc_LDADD = $(URCU_QSBR_LIB)
 test_urcu_qsbr_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
-test_urcu_lgc_SOURCES = test_urcu_gc.c $(URCU)
+test_urcu_lgc_SOURCES = test_urcu_gc.c
+test_urcu_lgc_LDADD = $(URCU_LIB)
 test_urcu_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
 test_urcu_signal_lgc_SOURCES = test_urcu_gc.c
@@ -140,9 +143,11 @@ test_urcu_defer_LDADD = $(URCU_LIB)
 
 test_cycles_per_loop_SOURCES = test_cycles_per_loop.c
 
-test_urcu_assign_SOURCES = test_urcu_assign.c $(URCU)
+test_urcu_assign_SOURCES = test_urcu_assign.c
+test_urcu_assign_LDADD = $(URCU_LIB)
 
-test_urcu_assign_dynamic_link_SOURCES = test_urcu_assign.c $(URCU)
+test_urcu_assign_dynamic_link_SOURCES = test_urcu_assign.c
+test_urcu_assign_dynamic_link_LDADD = $(URCU_LIB)
 test_urcu_assign_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
 test_urcu_bp_SOURCES = test_urcu_bp.c
@@ -152,12 +157,12 @@ test_urcu_bp_dynamic_link_SOURCES = test_urcu_bp.c
 test_urcu_bp_dynamic_link_LDADD = $(URCU_BP_LIB)
 test_urcu_bp_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 
-test_urcu_lfq_SOURCES = test_urcu_lfq.c $(URCU)
-test_urcu_lfq_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfq_SOURCES = test_urcu_lfq.c
+test_urcu_lfq_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c $(URCU)
+test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_lfq_dynlink_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfq_dynlink_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
 test_urcu_wfq_SOURCES = test_urcu_wfq.c $(COMPAT)
 test_urcu_wfq_LDADD = $(URCU_COMMON_LIB)
@@ -173,19 +178,19 @@ test_urcu_wfcq_dynlink_SOURCES = test_urcu_wfcq.c
 test_urcu_wfcq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfcq_dynlink_LDADD = $(URCU_COMMON_LIB)
 
-test_urcu_lfs_SOURCES = test_urcu_lfs.c $(URCU)
-test_urcu_lfs_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfs_SOURCES = test_urcu_lfs.c
+test_urcu_lfs_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_lfs_rcu_SOURCES = test_urcu_lfs_rcu.c $(URCU)
-test_urcu_lfs_rcu_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfs_rcu_SOURCES = test_urcu_lfs_rcu.c
+test_urcu_lfs_rcu_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_lfs_dynlink_SOURCES = test_urcu_lfs.c $(URCU)
+test_urcu_lfs_dynlink_SOURCES = test_urcu_lfs.c
 test_urcu_lfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_lfs_dynlink_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfs_dynlink_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_lfs_rcu_dynlink_SOURCES = test_urcu_lfs_rcu.c $(URCU)
+test_urcu_lfs_rcu_dynlink_SOURCES = test_urcu_lfs_rcu.c
 test_urcu_lfs_rcu_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_urcu_lfs_rcu_dynlink_LDADD = $(URCU_CDS_LIB)
+test_urcu_lfs_rcu_dynlink_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
 test_urcu_wfs_SOURCES = test_urcu_wfs.c $(COMPAT)
 test_urcu_wfs_LDADD = $(URCU_COMMON_LIB)
