@@ -39,6 +39,7 @@
 #include <urcu/tls-compat.h>
 #include "cpuset.h"
 #include "thread-id.h"
+#include "../common/debug-yield.h"
 
 #define DEFAULT_HASH_SIZE	32
 #define DEFAULT_MIN_ALLOC_SIZE	1

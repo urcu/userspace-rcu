@@ -76,7 +76,4 @@
 
 #define rcu_flavor			rcu_flavor_qsbr
 
-#define rcu_yield_active		rcu_yield_active_memb_qsbr
-#define rcu_rand_yield			rcu_rand_yield_memb_qsbr
-
 #endif /* _URCU_QSBR_MAP_H */

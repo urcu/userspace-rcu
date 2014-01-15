@@ -43,8 +43,6 @@
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#else
-#define debug_yield_read()
 #endif
 #include <urcu.h>
 
@@ -246,9 +244,6 @@ void show_usage(int argc, char **argv)
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
 		argv[0]);
 	printf("OPTIONS:\n");
-#ifdef DEBUG_YIELD
-	printf("	[-r] [-w] (yield reader and/or writer)\n");
-#endif
 	printf("	[-d delay] (writer period (us))\n");
 	printf("	[-c duration] (reader C.S. duration (in loops))\n");
 	printf("	[-e duration] (writer C.S. duration (in loops))\n");
@@ -293,14 +288,6 @@ int main(int argc, char **argv)
 		if (argv[i][0] != '-')
 			continue;
 		switch (argv[i][1]) {
-#ifdef DEBUG_YIELD
-		case 'r':
-			yield_active |= YIELD_READ;
-			break;
-		case 'w':
-			yield_active |= YIELD_WRITE;
-			break;
-#endif
 		case 'a':
 			if (argc < i + 2) {
 				show_usage(argc, argv);

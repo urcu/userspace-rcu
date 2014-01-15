@@ -109,11 +109,6 @@ struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
  */
 __DEFINE_URCU_TLS_GLOBAL(struct rcu_reader, rcu_reader);
 
-#ifdef DEBUG_YIELD
-unsigned int rcu_yield_active;
-__DEFINE_URCU_TLS_GLOBAL(unsigned int, rcu_rand_yield);
-#endif
-
 static CDS_LIST_HEAD(registry);
 
 /*
