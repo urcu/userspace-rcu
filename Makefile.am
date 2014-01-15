@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS=-I config
 
-INCLUDES = -I$(top_builddir)/urcu
+AM_CPPFLAGS = -I$(top_builddir)/urcu
 
 #Add the -version-info directly here since we are only building
 # library that use the version-info
