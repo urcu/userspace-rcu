@@ -22,16 +22,6 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
 	test_urcu_lfs_rcu_dynlink
 
-if COMPAT_ARCH
-COMPAT=$(top_srcdir)/compat_arch_@ARCHTYPE@.c
-else
-COMPAT=
-endif
-
-if COMPAT_FUTEX
-COMPAT+=$(top_srcdir)/compat_futex.c
-endif
-
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
 URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
@@ -164,14 +154,14 @@ test_urcu_lfq_dynlink_SOURCES = test_urcu_lfq.c
 test_urcu_lfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfq_dynlink_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_wfq_SOURCES = test_urcu_wfq.c $(COMPAT)
+test_urcu_wfq_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_wfq_dynlink_SOURCES = test_urcu_wfq.c
 test_urcu_wfq_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfq_dynlink_LDADD = $(URCU_COMMON_LIB)
 
-test_urcu_wfcq_SOURCES = test_urcu_wfcq.c $(COMPAT)
+test_urcu_wfcq_SOURCES = test_urcu_wfcq.c
 test_urcu_wfcq_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_wfcq_dynlink_SOURCES = test_urcu_wfcq.c
@@ -192,7 +182,7 @@ test_urcu_lfs_rcu_dynlink_SOURCES = test_urcu_lfs_rcu.c
 test_urcu_lfs_rcu_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_lfs_rcu_dynlink_LDADD = $(URCU_LIB) $(URCU_CDS_LIB)
 
-test_urcu_wfs_SOURCES = test_urcu_wfs.c $(COMPAT)
+test_urcu_wfs_SOURCES = test_urcu_wfs.c
 test_urcu_wfs_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_wfs_dynlink_SOURCES = test_urcu_wfs.c
@@ -200,9 +190,9 @@ test_urcu_wfs_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_wfs_dynlink_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_hash_SOURCES = test_urcu_hash.c test_urcu_hash.h \
-		test_urcu_hash_rw.c test_urcu_hash_unique.c $(COMPAT)
+		test_urcu_hash_rw.c test_urcu_hash_unique.c
 test_urcu_hash_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
-test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_CDS_LIB)
+test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_COMMON_LIB) $(URCU_CDS_LIB)
 
 .PHONY: bench
 
