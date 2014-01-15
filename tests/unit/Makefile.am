@@ -9,25 +9,6 @@ noinst_PROGRAMS = test_uatomic \
 
 noinst_HEADERS = test_urcu_multiflavor.h
 
-if COMPAT_ARCH
-COMPAT=$(top_srcdir)/compat_arch_@ARCHTYPE@.c
-else
-COMPAT=
-endif
-
-if COMPAT_FUTEX
-COMPAT+=$(top_srcdir)/compat_futex.c
-endif
-
-URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_QSBR=$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-# URCU_MB uses urcu.c but -DRCU_MB must be defined
-URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-# URCU_SIGNAL uses urcu.c but -DRCU_SIGNAL must be defined
-URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_BP=$(top_srcdir)/urcu-bp.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-URCU_DEFER=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
 URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
@@ -36,7 +17,8 @@ URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
-test_uatomic_SOURCES = test_uatomic.c $(COMPAT)
+test_uatomic_SOURCES = test_uatomic.c
+test_uatomic_LDADD = $(URCU_COMMON_LIB)
 
 test_urcu_multiflavor_SOURCES = test_urcu_multiflavor.c \
 	test_urcu_multiflavor-memb.c \
