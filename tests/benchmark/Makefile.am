@@ -33,8 +33,6 @@ endif
 URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 # URCU_MB uses urcu.c but -DRCU_MB must be defined
 URCU_MB=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
-# URCU_SIGNAL uses urcu.c but -DRCU_SIGNAL must be defined
-URCU_SIGNAL=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfcqueue.c $(COMPAT)
 
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
 URCU_LIB=$(top_builddir)/liburcu.la
@@ -71,27 +69,34 @@ test_urcu_mb_SOURCES = test_urcu.c $(URCU_MB)
 test_urcu_mb_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 
 
-test_urcu_signal_SOURCES = test_urcu.c $(URCU_SIGNAL)
+test_urcu_signal_SOURCES = test_urcu.c
+test_urcu_signal_LDADD = $(URCU_SIGNAL_LIB)
 test_urcu_signal_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 
-test_urcu_signal_dynamic_link_SOURCES = test_urcu.c $(URCU_SIGNAL)
+test_urcu_signal_dynamic_link_SOURCES = test_urcu.c
+test_urcu_signal_dynamic_link_LDADD = $(URCU_SIGNAL_LIB)
 test_urcu_signal_dynamic_link_CFLAGS = -DRCU_SIGNAL -DDYNAMIC_LINK_TEST \
 					$(AM_CFLAGS)
 
-test_urcu_signal_timing_SOURCES = test_urcu_timing.c $(URCU_SIGNAL)
+test_urcu_signal_timing_SOURCES = test_urcu_timing.c
+test_urcu_signal_timing_LDADD = $(URCU_SIGNAL_LIB)
 test_urcu_signal_timing_CFLAGS= -DRCU_SIGNAL $(AM_CFLAGS)
 
-test_urcu_signal_yield_SOURCES = test_urcu.c $(URCU_SIGNAL)
-test_urcu_signal_yield_LDADD = $(DEBUG_YIELD_LIB)
+test_urcu_signal_yield_SOURCES = test_urcu.c
+test_urcu_signal_yield_LDADD = $(URCU_SIGNAL_LIB) $(DEBUG_YIELD_LIB)
 test_urcu_signal_yield_CFLAGS = -DRCU_SIGNAL -DDEBUG_YIELD $(AM_CFLAGS)
 
-test_rwlock_timing_SOURCES = test_rwlock_timing.c $(URCU_SIGNAL)
+test_rwlock_timing_SOURCES = test_rwlock_timing.c
+test_rwlock_timing_LDADD = $(URCU_SIGNAL_LIB)
 
-test_rwlock_SOURCES = test_rwlock.c $(URCU_SIGNAL)
+test_rwlock_SOURCES = test_rwlock.c
+test_rwlock_LDADD = $(URCU_SIGNAL_LIB)
 
-test_perthreadlock_timing_SOURCES = test_perthreadlock_timing.c $(URCU_SIGNAL)
+test_perthreadlock_timing_SOURCES = test_perthreadlock_timing.c
+test_perthreadlock_timing_LDADD = $(URCU_SIGNAL_LIB)
 
-test_perthreadlock_SOURCES = test_perthreadlock.c $(URCU_SIGNAL)
+test_perthreadlock_SOURCES = test_perthreadlock.c
+test_perthreadlock_LDADD = $(URCU_SIGNAL_LIB)
 
 test_mutex_SOURCES = test_mutex.c $(URCU)
 
@@ -99,7 +104,8 @@ test_looplen_SOURCES = test_looplen.c
 
 test_urcu_gc_SOURCES = test_urcu_gc.c $(URCU)
 
-test_urcu_signal_gc_SOURCES = test_urcu_gc.c $(URCU_SIGNAL)
+test_urcu_signal_gc_SOURCES = test_urcu_gc.c
+test_urcu_signal_gc_LDADD = $(URCU_SIGNAL_LIB)
 test_urcu_signal_gc_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 
 test_urcu_mb_gc_SOURCES = test_urcu_gc.c $(URCU_MB)
@@ -115,7 +121,8 @@ test_urcu_qsbr_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 test_urcu_lgc_SOURCES = test_urcu_gc.c $(URCU)
 test_urcu_lgc_CFLAGS = -DTEST_LOCAL_GC $(AM_CFLAGS)
 
-test_urcu_signal_lgc_SOURCES = test_urcu_gc.c $(URCU_SIGNAL)
+test_urcu_signal_lgc_SOURCES = test_urcu_gc.c
+test_urcu_signal_lgc_LDADD = $(URCU_SIGNAL_LIB)
 test_urcu_signal_lgc_CFLAGS = -DRCU_SIGNAL -DTEST_LOCAL_GC $(AM_CFLAGS)
 
 test_urcu_mb_lgc_SOURCES = test_urcu_gc.c $(URCU_MB)
