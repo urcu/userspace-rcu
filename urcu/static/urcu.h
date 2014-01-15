@@ -85,61 +85,6 @@ enum rcu_state {
 #define rcu_assert(args...)
 #endif
 
-#ifdef DEBUG_YIELD
-#include <sched.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-
-#define RCU_YIELD_READ 	(1 << 0)
-#define RCU_YIELD_WRITE	(1 << 1)
-
-/*
- * Updates with RCU_SIGNAL are much slower. Account this in the delay.
- */
-#ifdef RCU_SIGNAL
-/* maximum sleep delay, in us */
-#define MAX_SLEEP 30000
-#else
-#define MAX_SLEEP 50
-#endif
-
-extern unsigned int rcu_yield_active;
-extern DECLARE_URCU_TLS(unsigned int, rcu_rand_yield);
-
-static inline void rcu_debug_yield_read(void)
-{
-	if (rcu_yield_active & RCU_YIELD_READ)
-		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
-}
-
-static inline void rcu_debug_yield_write(void)
-{
-	if (rcu_yield_active & RCU_YIELD_WRITE)
-		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
-}
-
-static inline void rcu_debug_yield_init(void)
-{
-	URCU_TLS(rcu_rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
-}
-#else
-static inline void rcu_debug_yield_read(void)
-{
-}
-
-static inline void rcu_debug_yield_write(void)
-{
-}
-
-static inline void rcu_debug_yield_init(void)
-{
-
-}
-#endif
-
 /*
  * RCU memory barrier broadcast group. Currently, only broadcast to all process
  * threads is supported (group 0).

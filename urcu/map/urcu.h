@@ -80,9 +80,6 @@
 
 #define rcu_flavor			rcu_flavor_memb
 
-#define rcu_yield_active		rcu_yield_active_memb
-#define rcu_rand_yield			rcu_rand_yield_memb
-
 /* Specific to MEMBARRIER flavor */
 #define rcu_has_sys_membarrier		rcu_has_sys_membarrier_memb
 
@@ -128,9 +125,6 @@
 
 #define rcu_flavor			rcu_flavor_sig
 
-#define rcu_yield_active		rcu_yield_active_sig
-#define rcu_rand_yield			rcu_rand_yield_sig
-
 #elif defined(RCU_MB)
 
 #define rcu_read_lock			rcu_read_lock_mb
@@ -172,9 +166,6 @@
 #define rcu_defer_exit			rcu_defer_exit_mb
 
 #define rcu_flavor			rcu_flavor_mb
-
-#define rcu_yield_active		rcu_yield_active_mb
-#define rcu_rand_yield			rcu_rand_yield_mb
 
 #else
 

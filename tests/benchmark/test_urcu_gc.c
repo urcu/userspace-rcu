@@ -37,14 +37,13 @@
 #include <urcu/tls-compat.h>
 #include "cpuset.h"
 #include "thread-id.h"
+#include "../common/debug-yield.h"
 
 /* hardcoded number of CPUs */
 #define NR_CPUS 16384
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE
-#else
-#define rcu_debug_yield_read()
 #endif
 #include <urcu.h>
 
@@ -290,9 +289,7 @@ void show_usage(int argc, char **argv)
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
 		argv[0]);
 	printf("OPTIONS:\n");
-#ifdef DEBUG_YIELD
 	printf("	[-r] [-w] (yield reader and/or writer)\n");
-#endif
 	printf("	[-d delay] (writer period (us))\n");
 	printf("	[-c duration] (reader C.S. duration (in loops))\n");
 	printf("	[-e duration] (writer C.S. duration (in loops))\n");
@@ -337,14 +334,12 @@ int main(int argc, char **argv)
 		if (argv[i][0] != '-')
 			continue;
 		switch (argv[i][1]) {
-#ifdef DEBUG_YIELD
 		case 'r':
-			rcu_yield_active |= RCU_YIELD_READ;
+			rcu_debug_yield_enable(RCU_YIELD_READ);
 			break;
 		case 'w':
-			rcu_yield_active |= RCU_YIELD_WRITE;
+			rcu_debug_yield_enable(RCU_YIELD_WRITE);
 			break;
-#endif
 		case 'a':
 			if (argc < i + 2) {
 				show_usage(argc, argv);

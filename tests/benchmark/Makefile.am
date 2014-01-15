@@ -46,6 +46,8 @@ URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
+DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
+
 EXTRA_DIST = *.sh
 
 test_urcu_SOURCES = test_urcu.c $(URCU)
@@ -56,6 +58,7 @@ test_urcu_dynamic_link_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_timing_SOURCES = test_urcu_timing.c $(URCU)
 
 test_urcu_yield_SOURCES = test_urcu.c $(URCU)
+test_urcu_yield_LDADD = $(DEBUG_YIELD_LIB)
 test_urcu_yield_CFLAGS = -DDEBUG_YIELD $(AM_CFLAGS)
 
 
@@ -81,6 +84,7 @@ test_urcu_signal_timing_SOURCES = test_urcu_timing.c $(URCU_SIGNAL)
 test_urcu_signal_timing_CFLAGS= -DRCU_SIGNAL $(AM_CFLAGS)
 
 test_urcu_signal_yield_SOURCES = test_urcu.c $(URCU_SIGNAL)
+test_urcu_signal_yield_LDADD = $(DEBUG_YIELD_LIB)
 test_urcu_signal_yield_CFLAGS = -DRCU_SIGNAL -DDEBUG_YIELD $(AM_CFLAGS)
 
 test_rwlock_timing_SOURCES = test_rwlock_timing.c $(URCU_SIGNAL)

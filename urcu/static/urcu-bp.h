@@ -64,58 +64,6 @@ enum rcu_state {
 	RCU_READER_INACTIVE,
 };
 
-#ifdef DEBUG_YIELD
-#include <sched.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-
-#define RCU_YIELD_READ 	(1 << 0)
-#define RCU_YIELD_WRITE	(1 << 1)
-
-/*
- * Updates without RCU_MB are much slower. Account this in
- * the delay.
- */
-/* maximum sleep delay, in us */
-#define MAX_SLEEP 50
-
-extern unsigned int rcu_yield_active;
-extern DECLARE_URCU_TLS(unsigned int, rcu_rand_yield);
-
-static inline void rcu_debug_yield_read(void)
-{
-	if (rcu_yield_active & RCU_YIELD_READ)
-		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
-}
-
-static inline void rcu_debug_yield_write(void)
-{
-	if (rcu_yield_active & RCU_YIELD_WRITE)
-		if (rand_r(&URCU_TLS(rcu_rand_yield)) & 0x1)
-			usleep(rand_r(&URCU_TLS(rcu_rand_yield)) % MAX_SLEEP);
-}
-
-static inline void rcu_debug_yield_init(void)
-{
-	URCU_TLS(rcu_rand_yield) = time(NULL) ^ (unsigned long) pthread_self();
-}
-#else
-static inline void rcu_debug_yield_read(void)
-{
-}
-
-static inline void rcu_debug_yield_write(void)
-{
-}
-
-static inline void rcu_debug_yield_init(void)
-{
-
-}
-#endif
-
 /*
  * The trick here is that RCU_GP_CTR_PHASE must be a multiple of 8 so we can use a
  * full 8-bits, 16-bits or 32-bits bitmask for the lower order bits.
