@@ -127,16 +127,30 @@ all-local:
 		for subdir in $(SUBDIRS_PROXY); do \
 			cp -fR $(srcdir)/$$subdir $(builddir); \
 		done; \
-	fi
-	$(MAKE) -f dist-files/Makefile AM_CC="$(CC)" AM_CPPFLAGS="$(CPPFLAGS) -I../../../urcu/ -I../../../" AM_CFLAGS='$(CFLAGS)' AM_LDFLAGS='$(LDFLAGS) -L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all
+	fi; \
+	if [ x"$(shell echo "$(top_srcdir)" | grep "^/" | wc -l)" = x"1" ]; then \
+		echo "Examples: absolute top_srcdir path $(top_srcdir)"; \
+		rel_src_subdir=""; \
+	else \
+		echo "Examples: relative top_srcdir path $(top_srcdir)"; \
+		rel_src_subdir="../"; \
+	fi; \
+	if [ x"$(shell echo "$(top_builddir)" | grep "^/" | wc -l)" = x"1" ]; then \
+		echo "Examples: absolute top_builddir path $(top_builddir)"; \
+		rel_build_subdir=""; \
+	else \
+		echo "Examples: relative top_builddir path $(top_builddir)"; \
+		rel_build_subdir="../"; \
+	fi; \
+	$(MAKE) -f dist-files/Makefile AM_CC="$(CC)" AM_CPPFLAGS="$(CPPFLAGS) -I$$rel_src_subdir/$(top_srcdir)/ -I$$rel_build_subdir$(top_builddir)/" AM_CFLAGS='$(CFLAGS)' AM_LDFLAGS='$(LDFLAGS) -L../../../.libs/ -Wl,-rpath="$(PWD)/../../.libs/"' $(AM_MAKEFLAGS) all;
 
 clean-local:
-	$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean
-	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+	@$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean; \
+	if [ x"$(srcdir)" != x"$(builddir)" ]; then \
 		for subdir in $(SUBDIRS_PROXY); do \
 			rm -rf $(builddir)/$$subdir; \
 		done; \
 		rm -f $(builddir)/Makefile.examples.template; \
 		rm -rf $(builddir)/dist-files; \
-	fi
+	fi;
 endif
