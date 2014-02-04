@@ -1,3 +1,5 @@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)
+
 noinst_HEADERS = cpuset.h thread-id.h
 
 noinst_LTLIBRARIES = libdebug-yield.la
