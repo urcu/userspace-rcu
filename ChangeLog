@@ -1,3 +1,23 @@
+2014-02-28 Userspace RCU 0.8.2
+	* Fix: out of tree build: doc/examples
+	* Fix: out of tree build tests/common
+	* tests/unit: use lib rather than source
+	* automake: Rename INCLUDES to AM_CPPFLAGS (new name)
+	* tests regressions: use lib rather than recompile from source
+	* tests: use common lib rather than recompile compat sources
+	* urcu tests: use lib rather than compile from source
+	* urcu mb tests: use lib rather than recompile from source
+	* urcu signal tests: use library rather than recompile source
+	* tests: move yield debug to common test library
+	* tests urcu bp: use lib rather than recompile source
+	* test_urcu_defer: link on urcu lib rather than recompile source
+	* tests/benchmark: use urcu qsbr lib rather than recompile from source
+	* Pass the CC variable to the example Makefiles
+	* Fix: urcu-bp interaction with threads vs constructors/destructors
+	* Fix undefined NULL pointer arithmetic
+	* Blacklist ARM gcc 4.8.0, 4.8.1, 4.8.2
+	* rculfhash: document max_nr_buckets = 0
+
 2013-11-12 Userspace RCU 0.8.1
 	* tls-compat: fix comment typo
 	* Keep ABI compatible with already compiled LGPL applications
