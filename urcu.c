@@ -247,12 +247,12 @@ void update_counter_and_wait(void)
 	 * Wait for each thread URCU_TLS(rcu_reader).ctr count to become 0.
 	 */
 	for (;;) {
+		if (wait_loops < RCU_QS_ACTIVE_ATTEMPTS)
+			wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
 			smp_mb_master(RCU_MB_GROUP);
-		} else {
-			wait_loops++;
 		}
 
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
