@@ -121,7 +121,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
 			struct cds_list_head *qsreaders)
 {
-	int wait_loops = 0;
+	unsigned int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
 	/*
@@ -130,7 +130,6 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 	 * current rcu_gp.ctr value.
 	 */
 	for (;;) {
-		wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_set(&rcu_gp.futex, -1);
 			/*
@@ -143,6 +142,8 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			}
 			/* Write futex before read reader_gp */
 			cmm_smp_mb();
+		} else {
+			wait_loops++;
 		}
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
 			switch (rcu_reader_state(&index->ctr)) {

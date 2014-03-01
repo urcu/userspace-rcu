@@ -79,8 +79,8 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 }
 #endif
 
-/* Sleep delay in us */
-#define RCU_SLEEP_DELAY		1000
+/* Sleep delay in ms */
+#define RCU_SLEEP_DELAY_MS	10
 #define INIT_NR_THREADS		8
 #define ARENA_INIT_ALLOC		\
 	sizeof(struct registry_chunk)	\
@@ -169,7 +169,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
 			struct cds_list_head *qsreaders)
 {
-	int wait_loops = 0;
+	unsigned int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
 	/*
@@ -178,7 +178,9 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 	 * rcu_gp.ctr value.
 	 */
 	for (;;) {
-		wait_loops++;
+		if (wait_loops < RCU_QS_ACTIVE_ATTEMPTS)
+			wait_loops++;
+
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
 			switch (rcu_reader_state(&index->ctr)) {
 			case RCU_READER_ACTIVE_CURRENT:
@@ -205,8 +207,8 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 		if (cds_list_empty(input_readers)) {
 			break;
 		} else {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
-				usleep(RCU_SLEEP_DELAY);
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
+				(void) poll(NULL, 0, RCU_SLEEP_DELAY_MS);
 			else
 				caa_cpu_relax();
 		}
