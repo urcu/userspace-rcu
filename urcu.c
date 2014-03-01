@@ -242,12 +242,12 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 	 * rcu_gp.ctr value.
 	 */
 	for (;;) {
+		if (wait_loops < RCU_QS_ACTIVE_ATTEMPTS)
+			wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&rcu_gp.futex);
 			/* Write futex before read reader_gp */
 			smp_mb_master(RCU_MB_GROUP);
-		} else {
-			wait_loops++;
 		}
 
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
