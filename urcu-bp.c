@@ -79,8 +79,8 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 }
 #endif
 
-/* Sleep delay in us */
-#define RCU_SLEEP_DELAY		1000
+/* Sleep delay in ms */
+#define RCU_SLEEP_DELAY_MS	10
 #define INIT_NR_THREADS		8
 #define ARENA_INIT_ALLOC		\
 	sizeof(struct registry_chunk)	\
@@ -174,7 +174,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
-	int wait_loops = 0;
+	unsigned int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
@@ -198,7 +198,9 @@ void update_counter_and_wait(void)
 	 * Wait for each thread rcu_reader.ctr count to become 0.
 	 */
 	for (;;) {
-		wait_loops++;
+		if (wait_loops < RCU_QS_ACTIVE_ATTEMPTS)
+			wait_loops++;
+
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_old_gp_ongoing(&index->ctr))
 				cds_list_move(&index->node, &qsreaders);
@@ -207,8 +209,8 @@ void update_counter_and_wait(void)
 		if (cds_list_empty(&registry)) {
 			break;
 		} else {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
-				usleep(RCU_SLEEP_DELAY);
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
+				(void) poll(NULL, 0, RCU_SLEEP_DELAY_MS);
 			else
 				caa_cpu_relax();
 		}

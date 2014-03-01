@@ -52,9 +52,9 @@
 /*
  * If a reader is really non-cooperative and refuses to commit its
  * rcu_active_readers count to memory (there is no barrier in the reader
- * per-se), kick it after a few loops waiting for it.
+ * per-se), kick it after 10 loops waiting for it.
  */
-#define KICK_READER_LOOPS 10000
+#define KICK_READER_LOOPS 	10
 
 /*
  * Active attempts to check for reader Q.S. before calling futex().
@@ -218,8 +218,11 @@ static void wait_gp(void)
 void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
-	int wait_loops = 0;
+	unsigned int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
+#ifdef HAS_INCOHERENT_CACHES
+	unsigned int wait_gp_loops = 0;
+#endif /* HAS_INCOHERENT_CACHES */
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
 	CMM_STORE_SHARED(rcu_gp_ctr, rcu_gp_ctr ^ RCU_GP_CTR_PHASE);
@@ -244,11 +247,12 @@ void update_counter_and_wait(void)
 	 * Wait for each thread URCU_TLS(rcu_reader).ctr count to become 0.
 	 */
 	for (;;) {
-		wait_loops++;
-		if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_dec(&gp_futex);
 			/* Write futex before read reader_gp */
 			smp_mb_master(RCU_MB_GROUP);
+		} else {
+			wait_loops++;
 		}
 
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
@@ -258,14 +262,14 @@ void update_counter_and_wait(void)
 
 #ifndef HAS_INCOHERENT_CACHES
 		if (cds_list_empty(&registry)) {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
 		} else {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS)
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
 				wait_gp();
 			else
 				caa_cpu_relax();
@@ -277,22 +281,21 @@ void update_counter_and_wait(void)
 		 * for too long.
 		 */
 		if (cds_list_empty(&registry)) {
-			if (wait_loops == RCU_QS_ACTIVE_ATTEMPTS) {
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master(RCU_MB_GROUP);
 				uatomic_set(&gp_futex, 0);
 			}
 			break;
 		} else {
-			switch (wait_loops) {
-			case RCU_QS_ACTIVE_ATTEMPTS:
-				wait_gp();
-				break; /* only escape switch */
-			case KICK_READER_LOOPS:
+			if (wait_gp_loops == KICK_READER_LOOPS) {
 				smp_mb_master(RCU_MB_GROUP);
-				wait_loops = 0;
-				break; /* only escape switch */
-			default:
+				wait_gp_loops = 0;
+			}
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
+				wait_gp();
+				wait_gp_loops++;
+			} else {
 				caa_cpu_relax();
 			}
 		}

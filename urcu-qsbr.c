@@ -119,7 +119,7 @@ static void wait_gp(void)
 static void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
-	int wait_loops = 0;
+	unsigned int wait_loops = 0;
 	struct rcu_reader *index, *tmp;
 
 #if (CAA_BITS_PER_LONG < 64)
@@ -150,7 +150,6 @@ static void update_counter_and_wait(void)
 	 * Wait for each thread rcu_reader_qs_gp count to become 0.
 	 */
 	for (;;) {
-		wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 			uatomic_set(&gp_futex, -1);
 			/*
@@ -163,6 +162,8 @@ static void update_counter_and_wait(void)
 			}
 			/* Write futex before read reader_gp */
 			cmm_smp_mb();
+		} else {
+			wait_loops++;
 		}
 		cds_list_for_each_entry_safe(index, tmp, &registry, node) {
 			if (!rcu_gp_ongoing(&index->ctr))
