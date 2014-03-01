@@ -1,3 +1,6 @@
+2014-03-01 Userspace RCU 0.8.3
+	* Fix: high cpu usage in synchronize_rcu with long RCU read-side C.S.
+
 2014-02-28 Userspace RCU 0.8.2
 	* Fix: out of tree build: doc/examples
 	* Fix: out of tree build tests/common
