@@ -13,6 +13,7 @@ AC_CONFIG_MACRO_DIR([config])
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
+AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 m4_include([config/ax_tls.m4])
