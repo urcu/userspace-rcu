@@ -97,7 +97,7 @@ int rcu_bp_refcount;
 static
 void __attribute__((constructor)) rcu_bp_init(void);
 static
-void __attribute__((destructor)) rcu_bp_exit(void);
+void __attribute__((destructor)) _rcu_bp_exit(void);
 
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -519,7 +519,7 @@ void rcu_bp_unregister(struct rcu_reader *rcu_reader_reg)
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	if (ret)
 		abort();
-	rcu_bp_exit();
+	_rcu_bp_exit();
 }
 
 /*
@@ -549,7 +549,7 @@ void rcu_bp_init(void)
 }
 
 static
-void rcu_bp_exit(void)
+void _rcu_bp_exit(void)
 {
 	mutex_lock(&init_lock);
 	if (!--rcu_bp_refcount) {
@@ -566,6 +566,15 @@ void rcu_bp_exit(void)
 			abort();
 	}
 	mutex_unlock(&init_lock);
+}
+
+/*
+ * Keep ABI compability within stable versions. This has never been
+ * exposed through a header, but needs to stay in the .so until the
+ * soname is bumped.
+ */
+void rcu_bp_exit(void)
+{
 }
 
 /*
