@@ -267,6 +267,8 @@ static void *call_rcu_thread(void *arg)
 			uatomic_or(&crdp->flags, URCU_CALL_RCU_PAUSED);
 			while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSE) != 0)
 				poll(NULL, 0, 1);
+			uatomic_and(&crdp->flags, ~URCU_CALL_RCU_PAUSED);
+			cmm_smp_mb__after_uatomic_and();
 			rcu_register_thread();
 		}
 
@@ -763,6 +765,10 @@ void call_rcu_after_fork_parent(void)
 
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list)
 		uatomic_and(&crdp->flags, ~URCU_CALL_RCU_PAUSE);
+	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
+		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSED) != 0)
+			poll(NULL, 0, 1);
+	}
 	call_rcu_unlock(&call_rcu_mutex);
 }
 
