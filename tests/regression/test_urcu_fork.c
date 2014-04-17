@@ -44,6 +44,13 @@
 #endif
 #include <urcu.h>
 
+/* We generate children 3 levels deep */
+#define FORK_DEPTH	3
+/* Each generation spawns 10 children */
+#define NR_FORK		10
+
+static int fork_generation;
+
 struct test_node {
 	int somedata;
 	struct rcu_head head;
@@ -80,10 +87,71 @@ static void test_rcu(void)
 	rcu_unregister_thread();
 }
 
-int main(int argc, char **argv)
+/*
+ * Return 0 if child, > 0 if parent, < 0 on error.
+ */
+static int do_fork(const char *execname)
 {
 	pid_t pid;
-	int ret;
+
+	fprintf(stderr, "%s parent pid: %d, before fork\n",
+		execname, (int) getpid());
+
+	call_rcu_before_fork();
+	pid = fork();
+	if (pid == 0) {
+		/* child */
+		fork_generation++;
+
+		call_rcu_after_fork_child();
+		fprintf(stderr, "%s child pid: %d, after fork\n",
+			execname, (int) getpid());
+		test_rcu();
+		fprintf(stderr, "%s child pid: %d, after rcu test\n",
+			execname, (int) getpid());
+		if (fork_generation >= FORK_DEPTH)
+			exit(EXIT_SUCCESS);
+		return 0;
+	} else if (pid > 0) {
+		int status;
+
+		/* parent */
+		call_rcu_after_fork_parent();
+		fprintf(stderr, "%s parent pid: %d, after fork\n",
+			execname, (int) getpid());
+		test_rcu();
+		fprintf(stderr, "%s parent pid: %d, after rcu test\n",
+			execname, (int) getpid());
+		for (;;) {
+			pid = wait(&status);
+			if (pid < 0) {
+				perror("wait");
+				return -1;
+			}
+			if (WIFEXITED(status)) {
+				fprintf(stderr, "child %u exited normally with status %u\n",
+					pid, WEXITSTATUS(status));
+				if (WEXITSTATUS(status))
+					return -1;
+				break;
+			} else if (WIFSIGNALED(status)) {
+				fprintf(stderr, "child %u was terminated by signal %u\n",
+					pid, WTERMSIG(status));
+				return -1;
+			} else {
+				continue;
+			}
+		}
+		return 1;
+	} else {
+		perror("fork");
+		return -1;
+	}
+}
+
+int main(int argc, char **argv)
+{
+	unsigned int i;
 
 #if 0
 	/* pthread_atfork does not work with malloc/free in callbacks */
@@ -97,51 +165,21 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	test_rcu();
+restart:
+	for (i = 0; i < NR_FORK; i++) {
+		int ret;
 
-	synchronize_rcu();
-
-	fprintf(stderr, "%s parent pid: %d, before fork\n",
-		argv[0], (int) getpid());
-
-	call_rcu_before_fork();
-	pid = fork();
-
-	if (pid == 0) {
-		/* child */
-		call_rcu_after_fork_child();
-		fprintf(stderr, "%s child pid: %d, after fork\n",
-			argv[0], (int) getpid());
 		test_rcu();
-		fprintf(stderr, "%s child pid: %d, after rcu test\n",
-			argv[0], (int) getpid());
-	} else if (pid > 0) {
-		int status;
-
-		/* parent */
-		call_rcu_after_fork_parent();
-		fprintf(stderr, "%s parent pid: %d, after fork\n",
-			argv[0], (int) getpid());
-		test_rcu();
-		fprintf(stderr, "%s parent pid: %d, after rcu test\n",
-			argv[0], (int) getpid());
-		for (;;) {
-			pid = wait(&status);
-			if (WIFEXITED(status)) {
-				fprintf(stderr, "child %u exited normally with status %u\n",
-					pid, WEXITSTATUS(status));
-				break;
-			} else if (WIFSIGNALED(status)) {
-				fprintf(stderr, "child %u was terminated by signal %u\n",
-					pid, WTERMSIG(status));
-				break;
-			} else {
-				continue;
-			}
-		}
-	} else {
-		perror("fork");
-		exit(EXIT_FAILURE);
+		synchronize_rcu();
+		ret = do_fork(argv[0]);
+		if (ret == 0)		/* child */
+			goto restart;
+		else if (ret < 0)
+			goto error;
+		/* else parent, continue. */
 	}
 	exit(EXIT_SUCCESS);
+
+error:
+	exit(EXIT_FAILURE);
 }
