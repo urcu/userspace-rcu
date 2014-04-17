@@ -27,7 +27,8 @@ ARCHITECTURES SUPPORTED
 -----------------------
 
 Currently, Linux x86 (i386, i486, i586, i686), x86 64-bit, PowerPC 32/64,
-S390, S390x, ARM, MIPS, Alpha, ia64 and Sparcv9 32/64 are supported.
+S390, S390x, ARM 32/64, MIPS, Alpha, ia64, Sparcv9 32/64, Tilera, and
+hppa/PA-RISC are supported.
 Tested on Linux, FreeBSD 8.2/8.3/9.0/9.1/10.0 i386/amd64, and Cygwin.
 Should also work on: Android, NetBSD 5, OpenBSD, Darwin (more testing
 needed before claiming support for these OS).
