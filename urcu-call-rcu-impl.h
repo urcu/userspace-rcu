@@ -814,6 +814,7 @@ void rcu_barrier(void)
 		count++;
 
 	completion.barrier_count = count;
+	completion.futex = 0;
 
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
 		struct call_rcu_completion_work *work;
