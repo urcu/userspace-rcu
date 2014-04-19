@@ -42,6 +42,7 @@
 #include "urcu/list.h"
 #include "urcu/futex.h"
 #include "urcu/tls-compat.h"
+#include "urcu/ref.h"
 #include "urcu-die.h"
 
 /* Data structure that identifies a call_rcu thread. */
@@ -67,6 +68,7 @@ struct call_rcu_data {
 struct call_rcu_completion {
 	int barrier_count;
 	int32_t futex;
+	struct urcu_ref ref;
 };
 
 struct call_rcu_completion_work {
@@ -769,6 +771,15 @@ void free_all_cpu_call_rcu_data(void)
 }
 
 static
+void free_completion(struct urcu_ref *ref)
+{
+	struct call_rcu_completion *completion;
+
+	completion = caa_container_of(ref, struct call_rcu_completion, ref);
+	free(completion);
+}
+
+static
 void _rcu_barrier_complete(struct rcu_head *head)
 {
 	struct call_rcu_completion_work *work;
@@ -776,8 +787,9 @@ void _rcu_barrier_complete(struct rcu_head *head)
 
 	work = caa_container_of(head, struct call_rcu_completion_work, head);
 	completion = work->completion;
-	uatomic_dec(&completion->barrier_count);
-	call_rcu_completion_wake_up(completion);
+	if (!uatomic_sub_return(&completion->barrier_count, 1))
+		call_rcu_completion_wake_up(completion);
+	urcu_ref_put(&completion->ref, free_completion);
 	free(work);
 }
 
@@ -787,7 +799,7 @@ void _rcu_barrier_complete(struct rcu_head *head)
 void rcu_barrier(void)
 {
 	struct call_rcu_data *crdp;
-	struct call_rcu_completion completion;
+	struct call_rcu_completion *completion;
 	int count = 0;
 	int was_online;
 
@@ -809,12 +821,17 @@ void rcu_barrier(void)
 		goto online;
 	}
 
+	completion = calloc(sizeof(*completion), 1);
+	if (!completion)
+		urcu_die(errno);
+
 	call_rcu_lock(&call_rcu_mutex);
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list)
 		count++;
 
-	completion.barrier_count = count;
-	completion.futex = 0;
+	/* Referenced by rcu_barrier() and each call_rcu thread. */
+	urcu_ref_set(&completion->ref, count + 1);
+	completion->barrier_count = count;
 
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
 		struct call_rcu_completion_work *work;
@@ -822,20 +839,23 @@ void rcu_barrier(void)
 		work = calloc(sizeof(*work), 1);
 		if (!work)
 			urcu_die(errno);
-		work->completion = &completion;
+		work->completion = completion;
 		_call_rcu(&work->head, _rcu_barrier_complete, crdp);
 	}
 	call_rcu_unlock(&call_rcu_mutex);
 
 	/* Wait for them */
 	for (;;) {
-		uatomic_dec(&completion.futex);
+		uatomic_dec(&completion->futex);
 		/* Decrement futex before reading barrier_count */
 		cmm_smp_mb();
-		if (!uatomic_read(&completion.barrier_count))
+		if (!uatomic_read(&completion->barrier_count))
 			break;
-		call_rcu_completion_wait(&completion);
+		call_rcu_completion_wait(completion);
 	}
+
+	urcu_ref_put(&completion->ref, free_completion);
+
 online:
 	if (was_online)
 		rcu_thread_online();
