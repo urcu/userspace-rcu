@@ -104,7 +104,7 @@ void cds_hlist_del(struct cds_hlist_node *elem)
 			: cds_hlist_entry((head)->next, __typeof__(*entry), member)); \
 		(entry != NULL) && (e = (entry->member.next == NULL ? NULL \
 					: cds_hlist_entry(entry->member.next, \
-						__typeof__(*entry), member), 1)); \
+						__typeof__(*entry), member)), 1); \
 		entry = e)
 
 #endif	/* _KCOMPAT_HLIST_H */
