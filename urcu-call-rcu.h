@@ -64,7 +64,7 @@ struct rcu_head {
 /*
  * Exported functions
  *
- * Important: see rcu-api.txt in userspace-rcu documentation for
+ * Important: see rcu-api.md in userspace-rcu documentation for
  * call_rcu family of functions usage detail, including the surrounding
  * RCU usage required when using these primitives.
  */
