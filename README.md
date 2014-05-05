@@ -115,13 +115,13 @@ API
 See the relevant API documentation files in `doc/`. The APIs provided by
 Userspace RCU are, by prefix:
 
-  - `rcu_`: Read-Copy Update (see [`doc/rcu-api.txt`](doc/rcu-api.txt))
+  - `rcu_`: Read-Copy Update (see [`doc/rcu-api.md`](doc/rcu-api.md))
   - `cmm_`: Concurrent Memory Model
   - `caa_`: Concurrent Architecture Abstraction
   - `cds_`: Concurrent Data Structures
-    (see [`doc/cds-api.txt`](doc/cds-api.txt))
+    (see [`doc/cds-api.md`](doc/cds-api.md))
   - `uatomic_`: Userspace Atomic
-    (see [`doc/uatomic-api.txt`](doc/uatomic-api.txt))
+    (see [`doc/uatomic-api.md`](doc/uatomic-api.md))
 
 
 Quick start guide
@@ -262,7 +262,7 @@ Its API is currently experimental. It may change in future library releases.
     grace periods.  A number of additional functions are provided
     to manage the helper threads used by `call_rcu()`, but reasonable
     defaults are used if these additional functions are not invoked.
-    See [`doc/rcu-api.txt`](doc/rcu-api.txt) in userspace-rcu documentation
+    See [`doc/rcu-api.md`](doc/rcu-api.md) in userspace-rcu documentation
     for more details.
 
 
