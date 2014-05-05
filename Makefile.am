@@ -84,7 +84,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
 	liburcu-signal.pc liburcu-mb.pc
 
-dist_doc_DATA = README ChangeLog
+dist_doc_DATA = README.md ChangeLog
 
 dist_noinst_DATA = CodingStyle
 
