@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Userspace-RCU by urcu</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Userspace-RCU</h1>
+          <h2>liburcu is a LGPLv2.1 userspace RCU (read-copy-update) library. This data synchronization library provides read-side access which scales linearly with the number of cores. </h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/urcu/userspace-rcu/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/urcu/userspace-rcu/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/urcu/userspace-rcu" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>
+<a name="userspace-rcu-implementation" class="anchor" href="#userspace-rcu-implementation"><span class="octicon octicon-link"></span></a>Userspace RCU Implementation</h1>
+
+<p>by Mathieu Desnoyers and Paul E. McKenney</p>
+
+<h2>
+<a name="building" class="anchor" href="#building"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<pre><code>./bootstrap # skip if using tarball
+./configure
+make
+make install
+ldconfig
+</code></pre>
+
+<p>Hints:</p>
+
+<ul>
+<li>
+<p>Forcing 32-bit build:</p>
+
+<pre><code>CFLAGS="-m32 -g -O2" ./configure
+</code></pre>
+</li>
+<li>
+<p>Forcing 64-bit build:</p>
+
+<pre><code>CFLAGS="-m64 -g -O2" ./configure
+</code></pre>
+</li>
+<li>
+<p>Forcing a 32-bit build with 386 backward compatibility:</p>
+
+<pre><code>CFLAGS="-m32 -g -O2" ./configure --host=i386-pc-linux-gnu
+</code></pre>
+</li>
+<li>
+<p>Forcing a 32-bit build for Sparcv9 (typical for Sparc v9)</p>
+
+<pre><code>CFLAGS="-m32 -Wa,-Av9a -g -O2" ./configure
+</code></pre>
+</li>
+</ul><h2>
+<a name="architectures-supported" class="anchor" href="#architectures-supported"><span class="octicon octicon-link"></span></a>Architectures supported</h2>
+
+<p>Currently, the following architectures are supported:</p>
+
+<ul>
+<li>Linux x86 (i386, i486, i586, i686)</li>
+<li>x86 64-bit</li>
+<li>PowerPC 32/64</li>
+<li>S390, S390x</li>
+<li>ARM 32/64</li>
+<li>MIPS</li>
+<li>Alpha</li>
+<li>ia64</li>
+<li>Sparcv9 32/64</li>
+<li>Tilera</li>
+<li>hppa/PA-RISC</li>
+</ul><p>Tested on Linux, FreeBSD 8.2/8.3/9.0/9.1/10.0 i386/amd64, and Cygwin.
+Should also work on:</p>
+
+<ul>
+<li>Android</li>
+<li>NetBSD 5</li>
+<li>OpenBSD</li>
+<li>Darwin</li>
+</ul><p>(more testing needed before claiming support for these OS).</p>
+
+<p>Linux ARM depends on running a Linux kernel 2.6.15 or better, GCC 4.4 or
+better.</p>
+
+<p>The GCC compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
+supported, with the following exceptions:</p>
+
+<ul>
+<li>GCC 3.3 and 3.4 have a bug that prevents them from generating volatile
+accesses to offsets in a TLS structure on 32-bit x86. These versions are
+therefore not compatible with <code>liburcu</code> on x86 32-bit
+(i386, i486, i586, i686).
+The problem has been reported to the GCC community:
+<a href="http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html">http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html</a>
+</li>
+<li>GCC 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
+See <a href="http://kerneltrap.org/node/7507">http://kerneltrap.org/node/7507</a>
+</li>
+<li>Alpha, ia64 and ARM architectures depend on GCC 4.x with atomic builtins
+support. For ARM this was introduced with GCC 4.4:
+<a href="http://gcc.gnu.org/gcc-4.4/changes.html">http://gcc.gnu.org/gcc-4.4/changes.html</a>.</li>
+</ul><p>Clang version 3.0 (based on LLVM 3.0) is supported.</p>
+
+<p>Building on MacOS X (Darwin) requires a work-around for processor
+detection:</p>
+
+<ul>
+<li>
+<p>32-bit:</p>
+
+<pre><code>./configure --build=i686-apple-darwin11
+</code></pre>
+</li>
+<li>
+<p>64-bit:</p>
+
+<pre><code>./configure --build=x86_64-apple-darwin11
+</code></pre>
+</li>
+</ul><p>For developers using the Git tree:</p>
+
+<p>This source tree is based on the autotools suite from GNU to simplify
+portability. Here are some things you should have on your system in order to
+compile the git repository tree :</p>
+
+<ul>
+<li>GNU autotools (automake &gt;=1.10, autoconf &gt;=2.50, autoheader &gt;=2.50)
+(make sure your system wide <code>automake</code> points to a recent version!)</li>
+<li>GNU Libtool &gt;=2.2
+(for more information, go to <a href="http://www.gnu.org/software/autoconf/">http://www.gnu.org/software/autoconf/</a>)</li>
+</ul><p>If you get the tree from the repository, you will need to use the <code>bootstrap</code>
+script in the root of the tree. It calls all the GNU tools needed to prepare
+the tree configuration.</p>
+
+<p>Test scripts provided in the <code>tests/</code> directory of the source tree depend
+on <code>bash</code> and the <code>seq</code> program.</p>
+
+<h2>
+<a name="api" class="anchor" href="#api"><span class="octicon octicon-link"></span></a>API</h2>
+
+<p>See the relevant API documentation files in <code>doc/</code>. The APIs provided by
+Userspace RCU are, by prefix:</p>
+
+<ul>
+<li>
+<code>rcu_</code>: Read-Copy Update (see <a href="doc/rcu-api.md"><code>doc/rcu-api.md</code></a>)</li>
+<li>
+<code>cmm_</code>: Concurrent Memory Model</li>
+<li>
+<code>caa_</code>: Concurrent Architecture Abstraction</li>
+<li>
+<code>cds_</code>: Concurrent Data Structures
+(see <a href="doc/cds-api.md"><code>doc/cds-api.md</code></a>)</li>
+<li>
+<code>uatomic_</code>: Userspace Atomic
+(see <a href="doc/uatomic-api.md"><code>doc/uatomic-api.md</code></a>)</li>
+</ul><h2>
+<a name="quick-start-guide" class="anchor" href="#quick-start-guide"><span class="octicon octicon-link"></span></a>Quick start guide</h2>
+
+<h3>
+<a name="usage-of-all-urcu-libraries" class="anchor" href="#usage-of-all-urcu-libraries"><span class="octicon octicon-link"></span></a>Usage of all urcu libraries:</h3>
+
+<ul>
+<li>Define <code>_LGPL_SOURCE</code> (only) if your code is LGPL or GPL compatible
+before including the <code>urcu.h</code> or <code>urcu-qsbr.h</code> header. If your application
+is distributed under another license, function calls will be generated
+instead of inlines, so your application can link with the library.</li>
+<li>Linking with one of the libraries below is always necessary even for
+LGPL and GPL applications.</li>
+<li>Define <code>URCU_INLINE_SMALL_FUNCTIONS</code> before including Userspace RCU
+headers if you want Userspace RCU to inline small functions (10
+lines or less) into the application. It can be used by applications
+distributed under any kind of license, and does <em>not</em> make the
+application a derived work of Userspace RCU.</li>
+</ul><p>Those small inlined functions are guaranteed to match the library
+content as long as the library major version is unchanged.
+Therefore, the application <em>must</em> be compiled with headers matching
+the library major version number. Applications using
+<code>URCU_INLINE_SMALL_FUNCTIONS</code> may be unable to use debugging
+features of Userspace RCU without being recompiled.</p>
+
+<h3>
+<a name="usage-of-liburcu" class="anchor" href="#usage-of-liburcu"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu</code>
+</h3>
+
+<ol>
+<li><code>#include &lt;urcu.h&gt;</code></li>
+<li>Link the application with <code>-lurcu</code>
+</li>
+</ol><p>This is the preferred version of the library, in terms of
+grace-period detection speed, read-side speed and flexibility.
+Dynamically detects kernel support for <code>sys_membarrier()</code>. Falls back
+on <code>urcu-mb</code> scheme if support is not present, which has slower
+read-side.</p>
+
+<h3>
+<a name="usage-of-liburcu-qsbr" class="anchor" href="#usage-of-liburcu-qsbr"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu-qsbr</code>
+</h3>
+
+<ol>
+<li><code>#include &lt;urcu-qsbr.h&gt;</code></li>
+<li>Link with <code>-lurcu-qsbr</code>
+</li>
+</ol><p>The QSBR flavor of RCU needs to have each reader thread executing
+<code>rcu_quiescent_state()</code> periodically to progress. <code>rcu_thread_online()</code>
+and <code>rcu_thread_offline()</code> can be used to mark long periods for which
+the threads are not active. It provides the fastest read-side at the
+expense of more intrusiveness in the application code.</p>
+
+<h3>
+<a name="usage-of-liburcu-mb" class="anchor" href="#usage-of-liburcu-mb"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu-mb</code>
+</h3>
+
+<ol>
+<li><code>#include &lt;urcu.h&gt;</code></li>
+<li>Compile any <code>_LGPL_SOURCE</code> code using this library with <code>-DRCU_MB</code>
+</li>
+<li>Link with <code>-lurcu-mb</code>
+</li>
+</ol><p>This version of the urcu library uses memory barriers on the writer
+and reader sides. This results in faster grace-period detection, but
+results in slower reads.</p>
+
+<h3>
+<a name="usage-of-liburcu-signal" class="anchor" href="#usage-of-liburcu-signal"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu-signal</code>
+</h3>
+
+<ol>
+<li><code>#include &lt;urcu.h&gt;</code></li>
+<li>Compile any <code>_LGPL_SOURCE</code> code using this library with <code>-DRCU_SIGNAL</code>
+</li>
+<li>Link the application with <code>-lurcu-signal</code>
+</li>
+</ol><p>Version of the library that requires a signal, typically <code>SIGUSR1</code>. Can
+be overridden with <code>-DSIGRCU</code> by modifying <code>Makefile.build.inc</code>.</p>
+
+<h3>
+<a name="usage-of-liburcu-bp" class="anchor" href="#usage-of-liburcu-bp"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu-bp</code>
+</h3>
+
+<ol>
+<li><code>#include &lt;urcu-bp.h&gt;</code></li>
+<li>Link with <code>-lurcu-bp</code>
+</li>
+</ol><p>The BP library flavor stands for "bulletproof". It is specifically
+designed to help tracing library to hook on applications without
+requiring to modify these applications. <code>rcu_init()</code>,
+<code>rcu_register_thread()</code> and <code>rcu_unregister_thread()</code> all become nops.
+The state is dealt with by the library internally at the expense of
+read-side and write-side performance.</p>
+
+<h3>
+<a name="initialization" class="anchor" href="#initialization"><span class="octicon octicon-link"></span></a>Initialization</h3>
+
+<p>Each thread that has reader critical sections (that uses
+<code>rcu_read_lock()</code>/<code>rcu_read_unlock()</code> must first register to the URCU
+library. This is done by calling <code>rcu_register_thread()</code>. Unregistration
+must be performed before exiting the thread by using
+<code>rcu_unregister_thread()</code>.</p>
+
+<h3>
+<a name="reading" class="anchor" href="#reading"><span class="octicon octicon-link"></span></a>Reading</h3>
+
+<p>Reader critical sections must be protected by locating them between
+calls to <code>rcu_read_lock()</code> and <code>rcu_read_unlock()</code>. Inside that lock,
+<code>rcu_dereference()</code> may be called to read an RCU protected pointer.</p>
+
+<h3>
+<a name="writing" class="anchor" href="#writing"><span class="octicon octicon-link"></span></a>Writing</h3>
+
+<p><code>rcu_assign_pointer()</code> and <code>rcu_xchg_pointer()</code> may be called anywhere.
+After, <code>synchronize_rcu()</code> must be called. When it returns, the old
+values are not in usage anymore.</p>
+
+<h3>
+<a name="usage-of-liburcu-defer" class="anchor" href="#usage-of-liburcu-defer"><span class="octicon octicon-link"></span></a>Usage of <code>liburcu-defer</code>
+</h3>
+
+<ul>
+<li>Follow instructions for either <code>liburcu</code>, <code>liburcu-qsbr</code>,
+<code>liburcu-mb</code>, <code>liburcu-signal</code>, or <code>liburcu-bp</code> above.
+The <code>liburcu-defer</code> functionality is pulled into each of
+those library modules.</li>
+<li>Provides <code>defer_rcu()</code> primitive to enqueue delayed callbacks. Queued
+callbacks are executed in batch periodically after a grace period.
+Do <em>not</em> use <code>defer_rcu()</code> within a read-side critical section, because
+it may call <code>synchronize_rcu()</code> if the thread queue is full.
+This can lead to deadlock or worse.</li>
+<li>Requires that <code>rcu_defer_barrier()</code> must be called in library destructor
+if a library queues callbacks and is expected to be unloaded with
+<code>dlclose()</code>.</li>
+</ul><p>Its API is currently experimental. It may change in future library releases.</p>
+
+<h3>
+<a name="usage-of-urcu-call-rcu" class="anchor" href="#usage-of-urcu-call-rcu"><span class="octicon octicon-link"></span></a>Usage of <code>urcu-call-rcu</code>
+</h3>
+
+<ul>
+<li>Follow instructions for either <code>liburcu</code>, <code>liburcu-qsbr</code>,
+<code>liburcu-mb</code>, <code>liburcu-signal</code>, or <code>liburcu-bp</code> above.
+The <code>urcu-call-rcu</code> functionality is pulled into each of
+those library modules.</li>
+<li>Provides the <code>call_rcu()</code> primitive to enqueue delayed callbacks
+in a manner similar to <code>defer_rcu()</code>, but without ever delaying
+for a grace period.  On the other hand, <code>call_rcu()</code>'s best-case
+overhead is not quite as good as that of <code>defer_rcu()</code>.</li>
+<li>Provides <code>call_rcu()</code> to allow asynchronous handling of RCU
+grace periods.  A number of additional functions are provided
+to manage the helper threads used by <code>call_rcu()</code>, but reasonable
+defaults are used if these additional functions are not invoked.
+See <a href="doc/rcu-api.md"><code>doc/rcu-api.md</code></a> in userspace-rcu documentation
+for more details.</li>
+</ul><h3>
+<a name="being-careful-with-signals" class="anchor" href="#being-careful-with-signals"><span class="octicon octicon-link"></span></a>Being careful with signals</h3>
+
+<p>The <code>liburcu</code> library uses signals internally. The signal handler is
+registered with the <code>SA_RESTART</code> flag. However, these signals may cause
+some non-restartable system calls to fail with <code>errno = EINTR</code>. Care
+should be taken to restart system calls manually if they fail with this
+error. A list of non-restartable system calls may be found in
+<code>signal(7)</code>. The <code>liburcu-mb</code> and <code>liburcu-qsbr</code> versions of the Userspace RCU
+library do not require any signal.</p>
+
+<p>Read-side critical sections are allowed in a signal handler,
+except those setup with <code>sigaltstack(2)</code>, with <code>liburcu</code> and
+<code>liburcu-mb</code>. Be careful, however, to disable these signals
+between thread creation and calls to <code>rcu_register_thread()</code>, because a
+signal handler nesting on an unregistered thread would not be
+allowed to call <code>rcu_read_lock()</code>.</p>
+
+<p>Read-side critical sections are <em>not</em> allowed in a signal handler with
+<code>liburcu-qsbr</code>, unless signals are disabled explicitly around each
+<code>rcu_quiescent_state()</code> calls, when threads are put offline and around
+calls to <code>synchronize_rcu()</code>. Even then, we do not recommend it.</p>
+
+<h3>
+<a name="interaction-with-mutexes" class="anchor" href="#interaction-with-mutexes"><span class="octicon octicon-link"></span></a>Interaction with mutexes</h3>
+
+<p>One must be careful to do not cause deadlocks due to interaction of
+<code>synchronize_rcu()</code> and RCU read-side with mutexes. If <code>synchronize_rcu()</code>
+is called with a mutex held, this mutex (or any mutex which has this
+mutex in its dependency chain) should not be acquired from within a RCU
+read-side critical section.</p>
+
+<p>This is especially important to understand in the context of the
+QSBR flavor: a registered reader thread being "online" by
+default should be considered as within a RCU read-side critical
+section unless explicitly put "offline". Therefore, if
+<code>synchronize_rcu()</code> is called with a mutex held, this mutex, as
+well as any mutex which has this mutex in its dependency chain
+should only be taken when the RCU reader thread is "offline"
+(this can be performed by calling <code>rcu_thread_offline()</code>).</p>
+
+<h3>
+<a name="interaction-with-fork" class="anchor" href="#interaction-with-fork"><span class="octicon octicon-link"></span></a>Interaction with <code>fork()</code>
+</h3>
+
+<p>Special care must be taken for applications performing <code>fork()</code> without
+any following <code>exec()</code>. This is caused by the fact that Linux only clones
+the thread calling <code>fork()</code>, and thus never replicates any of the other
+parent thread into the child process. Most <code>liburcu</code> implementations
+require that all registrations (as reader, <code>defer_rcu</code> and <code>call_rcu</code>
+threads) should be released before a <code>fork()</code> is performed, except for the
+rather common scenario where <code>fork()</code> is immediately followed by <code>exec()</code> in
+the child process. The only implementation not subject to that rule is
+<code>liburcu-bp</code>, which is designed to handle <code>fork()</code> by calling
+<code>rcu_bp_before_fork</code>, <code>rcu_bp_after_fork_parent</code> and
+<code>rcu_bp_after_fork_child</code>.</p>
+
+<p>Applications that use <code>call_rcu()</code> and that <code>fork()</code> without
+doing an immediate <code>exec()</code> must take special action.  The parent
+must invoke <code>call_rcu_before_fork()</code> before the <code>fork()</code> and
+<code>call_rcu_after_fork_parent()</code> after the <code>fork()</code>. The child
+process must invoke <code>call_rcu_after_fork_child()</code>.
+Even though these three APIs are suitable for passing to
+<code>pthread_atfork()</code>, use of <code>pthread_atfork()</code> is <strong>STRONGLY
+DISCOURAGED</strong> for programs calling the glibc memory allocator
+(<code>malloc()</code>, <code>calloc()</code>, <code>free()</code>, ...) within <code>call_rcu</code> callbacks.
+This is due to limitations in the way glibc memory allocator
+handles calls to the memory allocator from concurrent threads
+while the <code>pthread_atfork()</code> handlers are executing.</p>
+
+<p>Combining e.g.:</p>
+
+<ul>
+<li>call to <code>free()</code> from callbacks executed within <code>call_rcu</code> worker
+threads,</li>
+<li>executing <code>call_rcu</code> atfork handlers within the glibc pthread
+atfork mechanism,</li>
+</ul><p>will sometimes trigger interesting process hangs. This usually
+hangs on a memory allocator lock within glibc.</p>
+
+<h3>
+<a name="thread-local-storage-tls" class="anchor" href="#thread-local-storage-tls"><span class="octicon octicon-link"></span></a>Thread Local Storage (TLS)</h3>
+
+<p>Userspace RCU can fall back on <code>pthread_getspecific()</code> to emulate
+TLS variables on systems where it is not available. This behavior
+can be forced by specifying <code>--disable-compiler-tls</code> as configure
+argument.</p>
+
+<h3>
+<a name="usage-of-debug_rcu" class="anchor" href="#usage-of-debug_rcu"><span class="octicon octicon-link"></span></a>Usage of <code>DEBUG_RCU</code>
+</h3>
+
+<p><code>DEBUG_RCU</code> is used to add internal debugging self-checks to the
+RCU library. This define adds a performance penalty when enabled.
+Can be enabled by uncommenting the corresponding line in
+<code>Makefile.build.inc</code>.</p>
+
+<h3>
+<a name="usage-of-debug_yield" class="anchor" href="#usage-of-debug_yield"><span class="octicon octicon-link"></span></a>Usage of <code>DEBUG_YIELD</code>
+</h3>
+
+<p><code>DEBUG_YIELD</code> is used to add random delays in the code for testing
+purposes.</p>
+
+<h3>
+<a name="smp-support" class="anchor" href="#smp-support"><span class="octicon octicon-link"></span></a>SMP support</h3>
+
+<p>By default the library is configured to use synchronization primitives
+adequate for SMP systems. On uniprocessor systems, support for SMP
+systems can be disabled with:</p>
+
+<pre><code>./configure --disable-smp-support
+</code></pre>
+
+<p>theoretically yielding slightly better performance.</p>
+
+<h2>
+<a name="make-targets" class="anchor" href="#make-targets"><span class="octicon octicon-link"></span></a>Make targets</h2>
+
+<p>In addition to the usual <code>make check</code> target, Userspace RCU features
+<code>make regtest</code> and <code>make bench</code> targets:</p>
+
+<ul>
+<li>
+<code>make check</code>: short tests, meant to be run when rebuilding or
+porting Userspace RCU.</li>
+<li>
+<code>make regtest</code>: long (many hours) test, meant to be run when
+modifying Userspace RCU or porting it to a new architecture or
+operating system.</li>
+<li>
+<code>make bench</code>: long (many hours) benchmarks.</li>
+</ul><h2>
+<a name="contacts" class="anchor" href="#contacts"><span class="octicon octicon-link"></span></a>Contacts</h2>
+
+<p>You can contact the maintainers on the following mailing list:
+<code>lttng-dev@lists.lttng.org</code>.</p>
+        </section>
+
+        <footer>
+          Userspace-RCU is maintained by <a href="https://github.com/urcu">urcu</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
