@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < duration; i++) {
 		sleep(1);
 		if (verbose_mode)
-			write (1, ".", 1);
+			(void) write(1, ".", 1);
 	}
 
 	test_stop = 1;
