@@ -1188,7 +1188,10 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	}
 	partition_len = len >> cds_lfht_get_count_order_ulong(nr_threads);
 	work = calloc(nr_threads, sizeof(*work));
-	assert(work);
+	if (!work) {
+		dbg_printf("error allocating for resize, single-threading\n");
+		goto fallback;
+	}
 	for (thread = 0; thread < nr_threads; thread++) {
 		work[thread].ht = ht;
 		work[thread].i = i;
@@ -1204,6 +1207,11 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		assert(!ret);
 	}
 	free(work);
+	return;
+fallback:
+	ht->flavor->thread_online();
+	fct(ht, i, 0, len);
+	ht->flavor->thread_offline();
 }
 
 /*
