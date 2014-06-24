@@ -1170,7 +1170,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		void (*fct)(struct cds_lfht *ht, unsigned long i,
 			unsigned long start, unsigned long len))
 {
-	unsigned long partition_len;
+	unsigned long partition_len, start = 0;
 	struct partition_resize_work *work;
 	int thread, ret;
 	unsigned long nr_threads;
@@ -1200,6 +1200,17 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		work[thread].fct = fct;
 		ret = pthread_create(&(work[thread].thread_id), ht->resize_attr,
 			partition_resize_thread, &work[thread]);
+		if (ret == EAGAIN) {
+			/*
+			 * Out of resources: wait and join the threads
+			 * we've created, then handle leftovers.
+			 */
+			dbg_printf("error spawning for resize, single-threading\n");
+			start = work[thread].start;
+			len -= start;
+			nr_threads = thread;
+			break;
+		}
 		assert(!ret);
 	}
 	for (thread = 0; thread < nr_threads; thread++) {
@@ -1207,10 +1218,17 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		assert(!ret);
 	}
 	free(work);
-	return;
+
+	/*
+	 * A pthread_create failure above will either lead in us having
+	 * no threads to join or starting at a non-zero offset,
+	 * fallback to single thread processing of leftovers.
+	 */
+	if (start == 0 && nr_threads > 0)
+		return;
 fallback:
 	ht->flavor->thread_online();
-	fct(ht, i, 0, len);
+	fct(ht, i, start, len);
 	ht->flavor->thread_offline();
 }
 
