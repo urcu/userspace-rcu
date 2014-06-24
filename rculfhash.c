@@ -1175,6 +1175,10 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	int thread, ret;
 	unsigned long nr_threads;
 
+	assert(nr_cpus_mask != -1);
+	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD)
+		goto fallback;
+
 	/*
 	 * Note: nr_cpus_mask + 1 is always power of 2.
 	 * We spawn just the number of threads we need to satisfy the minimum
@@ -1267,13 +1271,6 @@ static
 void init_table_populate(struct cds_lfht *ht, unsigned long i,
 			 unsigned long len)
 {
-	assert(nr_cpus_mask != -1);
-	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD) {
-		ht->flavor->thread_online();
-		init_table_populate_partition(ht, i, 0, len);
-		ht->flavor->thread_offline();
-		return;
-	}
 	partition_resize_helper(ht, i, len, init_table_populate_partition);
 }
 
@@ -1366,14 +1363,6 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 static
 void remove_table(struct cds_lfht *ht, unsigned long i, unsigned long len)
 {
-
-	assert(nr_cpus_mask != -1);
-	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD) {
-		ht->flavor->thread_online();
-		remove_table_partition(ht, i, 0, len);
-		ht->flavor->thread_offline();
-		return;
-	}
 	partition_resize_helper(ht, i, len, remove_table_partition);
 }
 
