@@ -66,7 +66,7 @@ extern "C" {
 #endif
 #endif
 
-#define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory");
+#define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory")
 
 #define rdtscll(val)							  \
 	do {						  		  \
