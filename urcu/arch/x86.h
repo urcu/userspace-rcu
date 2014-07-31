@@ -60,7 +60,7 @@ extern "C" {
 #define cmm_wmb()   __asm__ __volatile__ ("lock; addl $0,0(%%esp)"::: "memory")
 #endif
 
-#define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory");
+#define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory")
 
 #define rdtscll(val)							  \
 	do {						  		  \
