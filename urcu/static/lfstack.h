@@ -78,6 +78,15 @@ void _cds_lfs_init(struct cds_lfs_stack *s)
 	assert(!ret);
 }
 
+/*
+ * ___cds_lfs_init: initialize lock-free stack.
+ */
+static inline
+void ___cds_lfs_init(struct __cds_lfs_stack *s)
+{
+	s->head = NULL;
+}
+
 static inline
 bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
 {
@@ -90,9 +99,9 @@ bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
  * No memory barrier is issued. No mutual exclusion is required.
  */
 static inline
-bool _cds_lfs_empty(struct cds_lfs_stack *s)
+bool _cds_lfs_empty(cds_lfs_stack_ptr_t s)
 {
-	return ___cds_lfs_empty_head(CMM_LOAD_SHARED(s->head));
+	return ___cds_lfs_empty_head(CMM_LOAD_SHARED(s._s->head));
 }
 
 /*
@@ -125,9 +134,10 @@ bool _cds_lfs_empty(struct cds_lfs_stack *s)
  * Returns non-zero otherwise.
  */
 static inline
-bool _cds_lfs_push(struct cds_lfs_stack *s,
+bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
 		  struct cds_lfs_node *node)
 {
+	struct __cds_lfs_stack *s = u_s._s;
 	struct cds_lfs_head *head = NULL;
 	struct cds_lfs_head *new_head =
 		caa_container_of(node, struct cds_lfs_head, node);
@@ -168,8 +178,10 @@ bool _cds_lfs_push(struct cds_lfs_stack *s,
  *    __cds_lfs_pop_all(). (multi-provider/single-consumer scheme).
  */
 static inline
-struct cds_lfs_node *___cds_lfs_pop(struct cds_lfs_stack *s)
+struct cds_lfs_node *___cds_lfs_pop(cds_lfs_stack_ptr_t u_s)
 {
+	struct __cds_lfs_stack *s = u_s._s;
+
 	for (;;) {
 		struct cds_lfs_head *head, *next_head;
 		struct cds_lfs_node *next;
@@ -211,8 +223,10 @@ struct cds_lfs_node *___cds_lfs_pop(struct cds_lfs_stack *s)
  *    __cds_lfs_pop_all(). (multi-provider/single-consumer scheme).
  */
 static inline
-struct cds_lfs_head *___cds_lfs_pop_all(struct cds_lfs_stack *s)
+struct cds_lfs_head *___cds_lfs_pop_all(cds_lfs_stack_ptr_t u_s)
 {
+	struct __cds_lfs_stack *s = u_s._s;
+
 	/*
 	 * Implicit memory barrier after uatomic_xchg() matches implicit
 	 * memory barrier before uatomic_cmpxchg() in cds_lfs_push. It
