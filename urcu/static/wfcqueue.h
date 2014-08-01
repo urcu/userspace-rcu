@@ -107,6 +107,17 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
 }
 
 /*
+ * __cds_wfcq_init: initialize wait-free queue.
+ */
+static inline void ___cds_wfcq_init(struct __cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	/* Set queue head and tail */
+	_cds_wfcq_node_init(&head->node);
+	tail->p = &head->node;
+}
+
+/*
  * cds_wfcq_empty: return whether wait-free queue is empty.
  *
  * No memory barrier is issued. No mutual exclusion is required.
@@ -118,9 +129,10 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
  * make a queue appear empty if an enqueuer is preempted for a long time
  * between xchg() and setting the previous node's next pointer.
  */
-static inline bool _cds_wfcq_empty(struct cds_wfcq_head *head,
+static inline bool _cds_wfcq_empty(cds_wfcq_head_ptr_t u_head,
 		struct cds_wfcq_tail *tail)
 {
+	struct __cds_wfcq_head *head = u_head._h;
 	/*
 	 * Queue is empty if no node is pointed by head->node.next nor
 	 * tail->p. Even though the tail->p check is sufficient to find
@@ -150,11 +162,12 @@ static inline void _cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
 	assert(!ret);
 }
 
-static inline bool ___cds_wfcq_append(struct cds_wfcq_head *head,
+static inline bool ___cds_wfcq_append(cds_wfcq_head_ptr_t u_head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *new_head,
 		struct cds_wfcq_node *new_tail)
 {
+	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *old_tail;
 
 	/*
@@ -190,7 +203,7 @@ static inline bool ___cds_wfcq_append(struct cds_wfcq_head *head,
  * Returns false if the queue was empty prior to adding the node.
  * Returns true otherwise.
  */
-static inline bool _cds_wfcq_enqueue(struct cds_wfcq_head *head,
+static inline bool _cds_wfcq_enqueue(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *new_tail)
 {
@@ -237,10 +250,11 @@ ___cds_wfcq_node_sync_next(struct cds_wfcq_node *node, int blocking)
 }
 
 static inline struct cds_wfcq_node *
-___cds_wfcq_first(struct cds_wfcq_head *head,
+___cds_wfcq_first(cds_wfcq_head_ptr_t u_head,
 		struct cds_wfcq_tail *tail,
 		int blocking)
 {
+	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *node;
 
 	if (_cds_wfcq_empty(head, tail))
@@ -266,7 +280,7 @@ ___cds_wfcq_first(struct cds_wfcq_head *head,
  * Returns NULL if queue is empty, first node otherwise.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_first_blocking(struct cds_wfcq_head *head,
+___cds_wfcq_first_blocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail)
 {
 	return ___cds_wfcq_first(head, tail, 1);
@@ -280,14 +294,14 @@ ___cds_wfcq_first_blocking(struct cds_wfcq_head *head,
  * it needs to block.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_first_nonblocking(struct cds_wfcq_head *head,
+___cds_wfcq_first_nonblocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail)
 {
 	return ___cds_wfcq_first(head, tail, 0);
 }
 
 static inline struct cds_wfcq_node *
-___cds_wfcq_next(struct cds_wfcq_head *head,
+___cds_wfcq_next(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node,
 		int blocking)
@@ -328,7 +342,7 @@ ___cds_wfcq_next(struct cds_wfcq_head *head,
  * otherwise.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_next_blocking(struct cds_wfcq_head *head,
+___cds_wfcq_next_blocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
@@ -342,7 +356,7 @@ ___cds_wfcq_next_blocking(struct cds_wfcq_head *head,
  * it needs to block.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_next_nonblocking(struct cds_wfcq_head *head,
+___cds_wfcq_next_nonblocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
@@ -350,11 +364,12 @@ ___cds_wfcq_next_nonblocking(struct cds_wfcq_head *head,
 }
 
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_with_state(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		struct cds_wfcq_tail *tail,
 		int *state,
 		int blocking)
 {
+	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *node, *next;
 
 	if (state)
@@ -422,7 +437,7 @@ ___cds_wfcq_dequeue_with_state(struct cds_wfcq_head *head,
  * caller.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_with_state_blocking(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail, int *state)
 {
 	return ___cds_wfcq_dequeue_with_state(head, tail, state, 1);
@@ -435,7 +450,7 @@ ___cds_wfcq_dequeue_with_state_blocking(struct cds_wfcq_head *head,
  * state.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_blocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail)
 {
 	return ___cds_wfcq_dequeue_with_state_blocking(head, tail, NULL);
@@ -448,7 +463,7 @@ ___cds_wfcq_dequeue_blocking(struct cds_wfcq_head *head,
  * if it needs to block.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_with_state_nonblocking(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail, int *state)
 {
 	return ___cds_wfcq_dequeue_with_state(head, tail, state, 0);
@@ -461,7 +476,7 @@ ___cds_wfcq_dequeue_with_state_nonblocking(struct cds_wfcq_head *head,
  * state.
  */
 static inline struct cds_wfcq_node *
-___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
+___cds_wfcq_dequeue_nonblocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail)
 {
 	return ___cds_wfcq_dequeue_with_state_nonblocking(head, tail, NULL);
@@ -479,12 +494,14 @@ ___cds_wfcq_dequeue_nonblocking(struct cds_wfcq_head *head,
  */
 static inline enum cds_wfcq_ret
 ___cds_wfcq_splice(
-		struct cds_wfcq_head *dest_q_head,
+		cds_wfcq_head_ptr_t u_dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
+		cds_wfcq_head_ptr_t u_src_q_head,
 		struct cds_wfcq_tail *src_q_tail,
 		int blocking)
 {
+	struct __cds_wfcq_head *dest_q_head = u_dest_q_head._h;
+	struct __cds_wfcq_head *src_q_head = u_src_q_head._h;
 	struct cds_wfcq_node *head, *tail;
 	int attempt = 0;
 
@@ -540,9 +557,9 @@ ___cds_wfcq_splice(
  */
 static inline enum cds_wfcq_ret
 ___cds_wfcq_splice_blocking(
-		struct cds_wfcq_head *dest_q_head,
+		cds_wfcq_head_ptr_t dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
+		cds_wfcq_head_ptr_t src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
 	return ___cds_wfcq_splice(dest_q_head, dest_q_tail,
@@ -557,9 +574,9 @@ ___cds_wfcq_splice_blocking(
  */
 static inline enum cds_wfcq_ret
 ___cds_wfcq_splice_nonblocking(
-		struct cds_wfcq_head *dest_q_head,
+		cds_wfcq_head_ptr_t dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
+		cds_wfcq_head_ptr_t src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
 	return ___cds_wfcq_splice(dest_q_head, dest_q_tail,
