@@ -77,6 +77,14 @@ void _cds_wfs_node_init(struct cds_wfs_node *node)
 }
 
 /*
+ * __cds_wfs_init: initialize wait-free stack.
+ */
+static inline void ___cds_wfs_init(struct __cds_wfs_stack *s)
+{
+	s->head = CDS_WFS_END;
+}
+
+/*
  * cds_wfs_init: initialize wait-free stack.
  */
 static inline
@@ -99,8 +107,10 @@ static inline bool ___cds_wfs_end(void *node)
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-static inline bool _cds_wfs_empty(struct cds_wfs_stack *s)
+static inline bool _cds_wfs_empty(cds_wfs_stack_ptr_t u_stack)
 {
+	struct __cds_wfs_stack *s = u_stack._s;
+
 	return ___cds_wfs_end(CMM_LOAD_SHARED(s->head));
 }
 
@@ -114,8 +124,9 @@ static inline bool _cds_wfs_empty(struct cds_wfs_stack *s)
  * Returns non-zero otherwise.
  */
 static inline
-int _cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
+int _cds_wfs_push(cds_wfs_stack_ptr_t u_stack, struct cds_wfs_node *node)
 {
+	struct __cds_wfs_stack *s = u_stack._s;
 	struct cds_wfs_head *old_head, *new_head;
 
 	assert(node->next == NULL);
@@ -269,8 +280,9 @@ ___cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
  */
 static inline
 struct cds_wfs_head *
-___cds_wfs_pop_all(struct cds_wfs_stack *s)
+___cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack)
 {
+	struct __cds_wfs_stack *s = u_stack._s;
 	struct cds_wfs_head *head;
 
 	/*

@@ -83,10 +83,24 @@ struct cds_wfs_head {
 	struct cds_wfs_node node;
 };
 
+struct __cds_wfs_stack {
+	struct cds_wfs_head *head;
+};
+
 struct cds_wfs_stack {
 	struct cds_wfs_head *head;
 	pthread_mutex_t lock;
 };
+
+/*
+ * The transparent union allows calling functions that work on both
+ * struct cds_wfs_stack and struct __cds_wfs_stack on any of those two
+ * types.
+ */
+typedef union __attribute__((__transparent_union__)) {
+	struct __cds_wfs_stack *_s;
+	struct cds_wfs_stack *s;
+} cds_wfs_stack_ptr_t;
 
 #ifdef _LGPL_SOURCE
 
@@ -136,11 +150,16 @@ extern void cds_wfs_node_init(struct cds_wfs_node *node);
 extern void cds_wfs_init(struct cds_wfs_stack *s);
 
 /*
+ * __cds_wfs_init: initialize wait-free stack.
+ */
+extern void __cds_wfs_init(struct __cds_wfs_stack *s);
+
+/*
  * cds_wfs_empty: return whether wait-free stack is empty.
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-extern bool cds_wfs_empty(struct cds_wfs_stack *s);
+extern bool cds_wfs_empty(cds_wfs_stack_ptr_t u_stack);
 
 /*
  * cds_wfs_push: push a node into the stack.
@@ -151,7 +170,7 @@ extern bool cds_wfs_empty(struct cds_wfs_stack *s);
  * Returns 0 if the stack was empty prior to adding the node.
  * Returns non-zero otherwise.
  */
-extern int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node);
+extern int cds_wfs_push(cds_wfs_stack_ptr_t u_stack, struct cds_wfs_node *node);
 
 /*
  * cds_wfs_pop_blocking: pop a node from the stack.

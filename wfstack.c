@@ -38,6 +38,11 @@ void cds_wfs_init(struct cds_wfs_stack *s)
 	_cds_wfs_init(s);
 }
 
+void __cds_wfs_init(struct __cds_wfs_stack *s)
+{
+	___cds_wfs_init(s);
+}
+
 bool cds_wfs_empty(struct cds_wfs_stack *s)
 {
 	return _cds_wfs_empty(s);
@@ -112,7 +117,7 @@ struct cds_wfs_node *
 	return ___cds_wfs_pop_with_state_nonblocking(s, state);
 }
 
-struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s)
+struct cds_wfs_head *__cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack)
 {
-	return ___cds_wfs_pop_all(s);
+	return ___cds_wfs_pop_all(u_stack);
 }
