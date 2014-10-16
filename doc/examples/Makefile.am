@@ -122,10 +122,10 @@ SUBDIRS_PROXY = hlist list urcu-flavors wfcqueue rculfqueue \
 # Copies are for VPATH build support.
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		cp -fR $(srcdir)/dist-files $(builddir); \
-		cp -f $(srcdir)/Makefile.examples.template $(builddir); \
+		cp -pfR $(srcdir)/dist-files $(builddir); \
+		cp -pf $(srcdir)/Makefile.examples.template $(builddir); \
 		for subdir in $(SUBDIRS_PROXY); do \
-			cp -fR $(srcdir)/$$subdir $(builddir); \
+			cp -pfR $(srcdir)/$$subdir $(builddir); \
 		done; \
 	fi; \
 	if [ x"$(shell echo "$(top_srcdir)" | grep "^/" | wc -l)" = x"1" ]; then \
