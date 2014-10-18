@@ -35,8 +35,8 @@ void cds_list_add_rcu(struct cds_list_head *newp, struct cds_list_head *head)
 {
 	newp->next = head->next;
 	newp->prev = head;
-	head->next->prev = newp;
-	rcu_assign_pointer(head->next, newp);
+	rcu_assign_pointer(head->next->prev, newp);
+	CMM_STORE_SHARED(head->next, newp);
 }
 
 /* Add new element at the tail of the list. */
@@ -47,7 +47,7 @@ void cds_list_add_tail_rcu(struct cds_list_head *newp,
 	newp->next = head;
 	newp->prev = head->prev;
 	rcu_assign_pointer(head->prev->next, newp);
-	head->prev = newp;
+	CMM_STORE_SHARED(head->prev, newp);
 }
 
 /*
@@ -61,14 +61,14 @@ void cds_list_replace_rcu(struct cds_list_head *old, struct cds_list_head *_new)
 	_new->next = old->next;
 	_new->prev = old->prev;
 	rcu_assign_pointer(_new->prev->next, _new);
-	_new->next->prev = _new;
+	CMM_STORE_SHARED(_new->next->prev, _new);
 }
 
 /* Remove element from list. */
 static inline
 void cds_list_del_rcu(struct cds_list_head *elem)
 {
-	elem->next->prev = elem->prev;
+	CMM_STORE_SHARED(elem->next->prev, elem->prev);
 	CMM_STORE_SHARED(elem->prev->next, elem->next);
 }
 
