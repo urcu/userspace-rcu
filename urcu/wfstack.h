@@ -108,6 +108,7 @@ typedef union __attribute__((__transparent_union__)) {
 
 #define cds_wfs_node_init		_cds_wfs_node_init
 #define cds_wfs_init			_cds_wfs_init
+#define __cds_wfs_init			___cds_wfs_init
 #define cds_wfs_empty			_cds_wfs_empty
 #define cds_wfs_push			_cds_wfs_push
 
@@ -258,7 +259,7 @@ extern void cds_wfs_pop_unlock(struct cds_wfs_stack *s);
  * 3) Ensuring that only ONE thread can call __cds_wfs_pop_blocking()
  *    and __cds_wfs_pop_all(). (multi-provider/single-consumer scheme).
  */
-extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
+extern struct cds_wfs_node *__cds_wfs_pop_blocking(cds_wfs_stack_ptr_t u_stack);
 
 /*
  * __cds_wfs_pop_with_state_blocking: pop a node from the stack, with state.
@@ -267,7 +268,8 @@ extern struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s);
  * empty into state (CDS_WFS_STATE_LAST).
  */
 extern struct cds_wfs_node *
-	__cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state);
+	__cds_wfs_pop_with_state_blocking(cds_wfs_stack_ptr_t u_stack,
+		int *state);
 
 /*
  * __cds_wfs_pop_nonblocking: pop a node from the stack.
@@ -275,7 +277,7 @@ extern struct cds_wfs_node *
  * Same as __cds_wfs_pop_blocking, but returns CDS_WFS_WOULDBLOCK if
  * it needs to block.
  */
-extern struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s);
+extern struct cds_wfs_node *__cds_wfs_pop_nonblocking(cds_wfs_stack_ptr_t u_stack);
 
 /*
  * __cds_wfs_pop_with_state_nonblocking: pop a node from the stack, with state.
@@ -284,7 +286,7 @@ extern struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s);
  * empty into state (CDS_WFS_STATE_LAST).
  */
 extern struct cds_wfs_node *
-	__cds_wfs_pop_with_state_nonblocking(struct cds_wfs_stack *s,
+	__cds_wfs_pop_with_state_nonblocking(cds_wfs_stack_ptr_t u_stack,
 		int *state);
 
 /*
@@ -304,7 +306,7 @@ extern struct cds_wfs_node *
  * 3) Ensuring that only ONE thread can call __cds_wfs_pop_blocking()
  *    and __cds_wfs_pop_all(). (multi-provider/single-consumer scheme).
  */
-extern struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s);
+extern struct cds_wfs_head *__cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack);
 
 #endif /* !_LGPL_SOURCE */
 
