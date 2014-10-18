@@ -41,9 +41,9 @@
 #include "urcu/static/urcu.h"
 #include "urcu-pointer.h"
 #include "urcu/tls-compat.h"
+#include "urcu/waitqueue-lifo.h"
 
 #include "urcu-die.h"
-#include "urcu-wait.h"
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #undef _LGPL_SOURCE

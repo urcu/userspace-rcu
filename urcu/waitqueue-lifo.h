@@ -1,12 +1,12 @@
-#ifndef _URCU_WAIT_H
-#define _URCU_WAIT_H
+#ifndef _URCU_WAITQUEUE_LIFO_H
+#define _URCU_WAITQUEUE_LIFO_H
 
 /*
- * urcu-wait.h
+ * urcu/waitqueue-lifo.h
  *
- * Userspace RCU library wait/wakeup management
+ * Userspace RCU library - wait queue scheme with LIFO semantic
  *
- * Copyright (c) 2012 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ * Copyright (c) 2012-2014 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 
 #include <urcu/uatomic.h>
 #include <urcu/wfstack.h>
+#include <urcu/futex.h>
 
 /*
  * Number of busy-loop attempts before waiting on futex for grace period
@@ -56,17 +57,23 @@ struct urcu_wait_node {
 	struct urcu_wait_node name
 
 struct urcu_wait_queue {
-	struct cds_wfs_stack stack;
+	struct __cds_wfs_stack stack;
 };
 
 #define URCU_WAIT_QUEUE_HEAD_INIT(name)			\
-	{ .stack.head = CDS_WFS_END, .stack.lock = PTHREAD_MUTEX_INITIALIZER }
+	{ .stack.head = CDS_WFS_END, }
 
 #define DECLARE_URCU_WAIT_QUEUE(name)			\
 	struct urcu_wait_queue name
 
 #define DEFINE_URCU_WAIT_QUEUE(name)			\
 	struct urcu_wait_queue name = URCU_WAIT_QUEUE_HEAD_INIT(name)
+
+static inline
+void urcu_wait_queue_init(struct urcu_wait_queue *queue)
+{
+	__cds_wfs_init(&queue->stack);
+}
 
 struct urcu_waiters {
 	struct cds_wfs_head *head;
@@ -103,6 +110,13 @@ void urcu_wait_set_state(struct urcu_wait_node *node,
 }
 
 static inline
+void urcu_wait_or_state(struct urcu_wait_node *node,
+		enum urcu_wait_state state)
+{
+	uatomic_or(&node->state, state);
+}
+
+static inline
 void urcu_wait_node_init(struct urcu_wait_node *node,
 		enum urcu_wait_state state)
 {
@@ -120,8 +134,13 @@ static inline
 void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
 	cmm_smp_mb();
-	assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
-	uatomic_set(&wait->state, URCU_WAIT_WAKEUP);
+	/*
+	 * "or" of WAKEUP flag rather than "set" is useful for multiple
+	 * concurrent wakeup sources. Note that "WAIT_TEARDOWN" becomes
+	 * useless when we use multiple wakeup sources: lifetime of the
+	 * "value" should then be handled by the caller.
+	 */
+	uatomic_or(&wait->state, URCU_WAIT_WAKEUP);
 	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING))
 		futex_noasync(&wait->state, FUTEX_WAKE, 1, NULL, NULL, 0);
 	/* Allow teardown of struct urcu_wait memory. */
@@ -165,21 +184,72 @@ skip_futex_wait:
 	assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
 }
 
+/*
+ * Need mutual exclusion against other wakeup and move waiters
+ * operations. It is provided by the caller.
+ */
 static inline
-void urcu_wake_all_waiters(struct urcu_waiters *waiters)
+int urcu_dequeue_wake_single(struct urcu_wait_queue *queue)
+{
+	struct cds_wfs_node *node;
+	struct urcu_wait_node *wait_node;
+	int wakeup_done = 0;
+
+	node = __cds_wfs_pop_blocking(&queue->stack);
+	if (!node)
+		return -ENOENT;
+	wait_node = caa_container_of(node, struct urcu_wait_node, node);
+	CMM_STORE_SHARED(wait_node->node.next, NULL);
+	/* Don't wake already running threads */
+	if (!(wait_node->state & URCU_WAIT_RUNNING)) {
+		urcu_adaptative_wake_up(wait_node);
+		wakeup_done = 1;
+	}
+	return wakeup_done;
+}
+
+/*
+ * Need mutual exclusion against other wakeup and move waiters
+ * operations. It is provided by the caller.
+ */
+static inline
+int urcu_dequeue_wake_n(struct urcu_wait_queue *queue, int n)
+{
+	int nr_wakeup = 0;
+
+	for (;;) {
+		int ret;
+
+		ret = urcu_dequeue_wake_single(queue);
+		if (ret < 0)
+			return nr_wakeup;
+		else if (ret > 0)
+			nr_wakeup++;
+		else
+			break;
+	}
+	return nr_wakeup;
+}
+
+static inline
+int urcu_wake_all_waiters(struct urcu_waiters *waiters)
 {
 	struct cds_wfs_node *iter, *iter_n;
+	int nr_wakeup = 0;
 
 	/* Wake all waiters in our stack head */
 	cds_wfs_for_each_blocking_safe(waiters->head, iter, iter_n) {
 		struct urcu_wait_node *wait_node =
 			caa_container_of(iter, struct urcu_wait_node, node);
 
+		CMM_STORE_SHARED(wait_node->node.next, NULL);
 		/* Don't wake already running threads */
 		if (wait_node->state & URCU_WAIT_RUNNING)
 			continue;
 		urcu_adaptative_wake_up(wait_node);
+		nr_wakeup++;
 	}
+	return nr_wakeup;
 }
 
-#endif /* _URCU_WAIT_H */
+#endif /* _URCU_WAITQUEUE_LIFO_H */

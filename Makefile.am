@@ -21,13 +21,14 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/ref.h urcu/cds.h urcu/urcu_ref.h urcu/urcu-futex.h \
 		urcu/uatomic_arch.h urcu/rculfhash.h urcu/wfcqueue.h \
 		urcu/lfstack.h urcu/syscall-compat.h \
+		urcu/waitqueue-lifo.h urcu/workqueue-fifo.h \
 		$(top_srcdir)/urcu/map/*.h \
 		$(top_srcdir)/urcu/static/*.h \
 		urcu/rand-compat.h \
 		urcu/tls-compat.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
-dist_noinst_HEADERS = urcu-die.h urcu-wait.h
+dist_noinst_HEADERS = urcu-die.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \

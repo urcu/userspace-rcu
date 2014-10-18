@@ -367,7 +367,8 @@ static inline struct cds_wfcq_node *
 ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		struct cds_wfcq_tail *tail,
 		int *state,
-		int blocking)
+		int blocking,
+		int safe)
 {
 	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *node, *next;
@@ -385,6 +386,8 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 	}
 
 	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+		struct cds_wfcq_node *ret_node;
+
 		/*
 		 * @node is probably the only node in the queue.
 		 * Try to move the tail to &q->head.
@@ -400,7 +403,15 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		 * content.
 		 */
 		_cds_wfcq_node_init(&head->node);
-		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node) {
+		if (safe) {
+			ret_node = uatomic_cmpxchg(&tail->p, node,
+					&head->node);
+		} else {
+			ret_node = tail->p;
+			if (ret_node == node)
+				tail->p = &head->node;
+		}
+		if (ret_node == node) {
 			if (state)
 				*state |= CDS_WFCQ_STATE_LAST;
 			return node;
@@ -440,7 +451,7 @@ static inline struct cds_wfcq_node *
 ___cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail, int *state)
 {
-	return ___cds_wfcq_dequeue_with_state(head, tail, state, 1);
+	return ___cds_wfcq_dequeue_with_state(head, tail, state, 1, 1);
 }
 
 /*
@@ -466,7 +477,7 @@ static inline struct cds_wfcq_node *
 ___cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail, int *state)
 {
-	return ___cds_wfcq_dequeue_with_state(head, tail, state, 0);
+	return ___cds_wfcq_dequeue_with_state(head, tail, state, 0, 1);
 }
 
 /*
