@@ -1,3 +1,14 @@
+2014-10-21 Userspace RCU 0.8.5
+	* Fix: preserve example files' timestamps when copying
+	* rculfhash: remove duplicated code
+	* rculfhash: handle pthread_create failures
+	* rculfhash: fall back to single-threaded resize on calloc failure
+	* x86: drop extra semi-colon in caa_cpu_relax
+	* Fix: Use after free in rcu_barrier()
+	* Fix: rcu_barrier(): uninitialized futex field
+	* call_rcu threads should clear their PAUSED flag when they unpause
+	* Fix: bring back dummy rcu_bp_exit symbol
+
 2014-03-08 Userspace RCU 0.8.4
 	* Fix: move wait loop increment before first conditional block
 
