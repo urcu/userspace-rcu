@@ -220,17 +220,18 @@ int __urcu_steal_work(struct urcu_workqueue *queue,
 }
 
 static inline
-void ___urcu_wakeup_sibling(struct urcu_worker *sibling)
+bool ___urcu_wakeup_sibling(struct urcu_worker *sibling)
 {
-	urcu_adaptative_wake_up(&sibling->wait_node);
+	return urcu_adaptative_wake_up(&sibling->wait_node);
 }
 
 static inline
-void __urcu_wakeup_siblings(struct urcu_workqueue *queue,
+bool __urcu_wakeup_siblings(struct urcu_workqueue *queue,
 		struct urcu_worker *worker)
 {
 	struct urcu_worker *sibling_prev, *sibling_next;
 	struct cds_list_head *sibling_node;
+	bool wakeup_performed = 0;
 
 	if (!(worker->flags & URCU_WORKER_STEAL))
 		return;
@@ -247,7 +248,9 @@ void __urcu_wakeup_siblings(struct urcu_workqueue *queue,
 	sibling_next = caa_container_of(sibling_node, struct urcu_worker,
 			sibling_node);
 	if (sibling_next != worker)
-		___urcu_wakeup_sibling(sibling_next);
+		wakeup_performed = ___urcu_wakeup_sibling(sibling_next);
+	if (wakeup_performed)
+		goto end;
 
 	sibling_node = rcu_dereference(worker->sibling_node.prev);
 	if (sibling_node == &queue->sibling_head)
@@ -255,9 +258,11 @@ void __urcu_wakeup_siblings(struct urcu_workqueue *queue,
 	sibling_prev = caa_container_of(sibling_node, struct urcu_worker,
 			sibling_node);
 	if (sibling_prev != worker && sibling_prev != sibling_next)
-		___urcu_wakeup_sibling(sibling_prev);
-
+		wakeup_performed = ___urcu_wakeup_sibling(sibling_prev);
+end:
 	rcu_read_unlock();
+
+	return wakeup_performed;
 }
 
 static inline
@@ -324,7 +329,7 @@ do_work:
 	 * We will be busy handling the work batch, awaken siblings so
 	 * they can steal from us.
 	 */
-	__urcu_wakeup_siblings(queue, worker);
+	(void) __urcu_wakeup_siblings(queue, worker);
 }
 
 static inline

@@ -129,10 +129,14 @@ void urcu_wait_node_init(struct urcu_wait_node *node,
  * throughout its execution. In this scheme, the waiter owns the node
  * memory, and we only allow it to free this memory when it receives the
  * URCU_WAIT_TEARDOWN flag.
+ * Return true if wakeup is performed, false if thread was already
+ * running.
  */
 static inline
-void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
+bool urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
+	bool wakeup_performed = false;
+
 	cmm_smp_mb();
 	/*
 	 * "or" of WAKEUP flag rather than "set" is useful for multiple
@@ -141,10 +145,13 @@ void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 	 * "value" should then be handled by the caller.
 	 */
 	uatomic_or(&wait->state, URCU_WAIT_WAKEUP);
-	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING))
+	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
 		futex_noasync(&wait->state, FUTEX_WAKE, 1, NULL, NULL, 0);
+		wakeup_performed = true;
+	}
 	/* Allow teardown of struct urcu_wait memory. */
 	uatomic_or(&wait->state, URCU_WAIT_TEARDOWN);
+	return wakeup_performed;
 }
 
 /*
@@ -193,7 +200,7 @@ int urcu_dequeue_wake_single(struct urcu_wait_queue *queue)
 {
 	struct cds_wfs_node *node;
 	struct urcu_wait_node *wait_node;
-	int wakeup_done = 0;
+	int ret = 0;
 
 	node = __cds_wfs_pop_blocking(&queue->stack);
 	if (!node)
@@ -201,11 +208,9 @@ int urcu_dequeue_wake_single(struct urcu_wait_queue *queue)
 	wait_node = caa_container_of(node, struct urcu_wait_node, node);
 	CMM_STORE_SHARED(wait_node->node.next, NULL);
 	/* Don't wake already running threads */
-	if (!(wait_node->state & URCU_WAIT_RUNNING)) {
-		urcu_adaptative_wake_up(wait_node);
-		wakeup_done = 1;
-	}
-	return wakeup_done;
+	if (!(wait_node->state & URCU_WAIT_RUNNING))
+		ret = urcu_adaptative_wake_up(wait_node);
+	return ret;
 }
 
 /*
@@ -246,8 +251,8 @@ int urcu_wake_all_waiters(struct urcu_waiters *waiters)
 		/* Don't wake already running threads */
 		if (wait_node->state & URCU_WAIT_RUNNING)
 			continue;
-		urcu_adaptative_wake_up(wait_node);
-		nr_wakeup++;
+		if (urcu_adaptative_wake_up(wait_node))
+			nr_wakeup++;
 	}
 	return nr_wakeup;
 }
