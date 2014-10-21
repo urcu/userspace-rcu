@@ -1,3 +1,11 @@
+2014-10-21 Userspace RCU 0.7.13
+	* rculfhash: remove duplicated code
+	* rculfhash: handle pthread_create failures
+	* rculfhash: fall back to single-threaded resize on calloc failure
+	* x86: drop extra semi-colon in caa_cpu_relax
+	* call_rcu threads should clear their PAUSED flag when they unpause
+	* Fix: bring back dummy rcu_bp_exit symbol
+
 2014-03-08 Userspace RCU 0.7.12
 	* Fix: move wait loop increment before first conditional block
 
