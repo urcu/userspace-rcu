@@ -173,6 +173,11 @@ static inline
 void ___urcu_steal_work(struct urcu_worker *worker,
 		struct urcu_worker *sibling)
 {
+	/*
+	 * Don't bother grabbing the sibling queue lock if it is empty.
+	 */
+	if (cds_wfcq_empty(&sibling->head, &sibling->tail))
+		return;
 	cds_wfcq_dequeue_lock(&sibling->head, &sibling->tail);
 	(void) __cds_wfcq_splice_blocking(&worker->head,
 			&worker->tail,
@@ -331,12 +336,19 @@ struct urcu_work *urcu_dequeue_work(struct urcu_worker *worker)
 	 * If we are registered for work stealing, we need to dequeue
 	 * safely against siblings.
 	 */
-	if (worker->flags & URCU_WORKER_STEAL)
+	if (worker->flags & URCU_WORKER_STEAL) {
+		/*
+		 * Don't bother grabbing the worker queue lock if it is
+		 * empty.
+		 */
+		if (cds_wfcq_empty(&worker->head, &worker->tail))
+			return NULL;
 		node = cds_wfcq_dequeue_blocking(&worker->head,
 				&worker->tail);
-	else
+	} else {
 		node = ___cds_wfcq_dequeue_with_state(&worker->head,
 				&worker->tail, NULL, 1, 0);
+	}
 	if (!node)
 		return NULL;
 	return caa_container_of(node, struct urcu_work, node);
