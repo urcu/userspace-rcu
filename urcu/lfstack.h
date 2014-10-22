@@ -81,6 +81,7 @@ struct cds_lfs_stack {
 
 #define cds_lfs_node_init		_cds_lfs_node_init
 #define cds_lfs_init			_cds_lfs_init
+#define __cds_lfs_init			___cds_lfs_init
 #define cds_lfs_empty			_cds_lfs_empty
 #define cds_lfs_push			_cds_lfs_push
 
