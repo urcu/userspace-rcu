@@ -24,7 +24,7 @@
  */
 
 #include <urcu/uatomic.h>
-#include <urcu/wfstack.h>
+#include <urcu/lfstack.h>
 #include <urcu/futex.h>
 
 /*
@@ -43,7 +43,7 @@ enum urcu_wait_state {
 };
 
 struct urcu_wait_node {
-	struct cds_wfs_node node;
+	struct cds_lfs_node node;
 	int32_t state;	/* enum urcu_wait_state */
 };
 
@@ -57,11 +57,11 @@ struct urcu_wait_node {
 	struct urcu_wait_node name
 
 struct urcu_wait_queue {
-	struct __cds_wfs_stack stack;
+	struct __cds_lfs_stack stack;
 };
 
 #define URCU_WAIT_QUEUE_HEAD_INIT(name)			\
-	{ .stack.head = CDS_WFS_END, }
+	{ .stack.head = CDS_LFS_END, }
 
 #define DECLARE_URCU_WAIT_QUEUE(name)			\
 	struct urcu_wait_queue name
@@ -72,11 +72,11 @@ struct urcu_wait_queue {
 static inline
 void urcu_wait_queue_init(struct urcu_wait_queue *queue)
 {
-	__cds_wfs_init(&queue->stack);
+	__cds_lfs_init(&queue->stack);
 }
 
 struct urcu_waiters {
-	struct cds_wfs_head *head;
+	struct cds_lfs_head *head;
 };
 
 /*
@@ -88,7 +88,7 @@ static inline
 bool urcu_wait_add(struct urcu_wait_queue *queue,
 		struct urcu_wait_node *node)
 {
-	return cds_wfs_push(&queue->stack, &node->node);
+	return cds_lfs_push(&queue->stack, &node->node);
 }
 
 /*
@@ -99,7 +99,7 @@ static inline
 void urcu_move_waiters(struct urcu_waiters *waiters,
 		struct urcu_wait_queue *queue)
 {
-	waiters->head = __cds_wfs_pop_all(&queue->stack);
+	waiters->head = __cds_lfs_pop_all(&queue->stack);
 }
 
 static inline
@@ -121,7 +121,7 @@ void urcu_wait_node_init(struct urcu_wait_node *node,
 		enum urcu_wait_state state)
 {
 	urcu_wait_set_state(node, state);
-	cds_wfs_node_init(&node->node);
+	cds_lfs_node_init(&node->node);
 }
 
 /*
@@ -198,11 +198,11 @@ skip_futex_wait:
 static inline
 int urcu_dequeue_wake_single(struct urcu_wait_queue *queue)
 {
-	struct cds_wfs_node *node;
+	struct cds_lfs_node *node;
 	struct urcu_wait_node *wait_node;
 	int ret = 0;
 
-	node = __cds_wfs_pop_blocking(&queue->stack);
+	node = __cds_lfs_pop(&queue->stack);
 	if (!node)
 		return -ENOENT;
 	wait_node = caa_container_of(node, struct urcu_wait_node, node);
@@ -239,11 +239,11 @@ int urcu_dequeue_wake_n(struct urcu_wait_queue *queue, int n)
 static inline
 int urcu_wake_all_waiters(struct urcu_waiters *waiters)
 {
-	struct cds_wfs_node *iter, *iter_n;
+	struct cds_lfs_node *iter, *iter_n;
 	int nr_wakeup = 0;
 
 	/* Wake all waiters in our stack head */
-	cds_wfs_for_each_blocking_safe(waiters->head, iter, iter_n) {
+	cds_lfs_for_each_safe(waiters->head, iter, iter_n) {
 		struct urcu_wait_node *wait_node =
 			caa_container_of(iter, struct urcu_wait_node, node);
 

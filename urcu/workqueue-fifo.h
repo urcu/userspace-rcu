@@ -24,7 +24,7 @@
  */
 
 #include <urcu/uatomic.h>
-#include <urcu/wfstack.h>
+#include <urcu/lfstack.h>
 #include <urcu/waitqueue-lifo.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/rculist.h>
@@ -315,7 +315,7 @@ void urcu_accept_work(struct urcu_workqueue *queue,
 		 * NULL next pointer. We are therefore not in
 		 * the queue.
 		 */
-		cds_wfs_node_init(&worker->wait_node.node);
+		cds_lfs_node_init(&worker->wait_node.node);
 		/* Protect stack dequeue against ABA */
 		synchronize_rcu();
 		was_empty = !urcu_wait_add(&queue->waitqueue,
