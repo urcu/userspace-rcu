@@ -36,6 +36,8 @@
 extern "C" {
 #endif
 
+#define CDS_LFS_END			NULL
+
 /*
  * Lock-free stack.
  *
@@ -73,7 +75,7 @@ void _cds_lfs_init(struct cds_lfs_stack *s)
 {
         int ret;
 
-	s->head = NULL;
+	s->head = CDS_LFS_END;
 	ret = pthread_mutex_init(&s->lock, NULL);
 	assert(!ret);
 }
@@ -84,13 +86,13 @@ void _cds_lfs_init(struct cds_lfs_stack *s)
 static inline
 void ___cds_lfs_init(struct __cds_lfs_stack *s)
 {
-	s->head = NULL;
+	s->head = CDS_LFS_END;
 }
 
 static inline
 bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
 {
-	return head == NULL;
+	return head == CDS_LFS_END;
 }
 
 /*
@@ -138,7 +140,7 @@ bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
 		  struct cds_lfs_node *node)
 {
 	struct __cds_lfs_stack *s = u_s._s;
-	struct cds_lfs_head *head = NULL;
+	struct cds_lfs_head *head = CDS_LFS_END;
 	struct cds_lfs_head *new_head =
 		caa_container_of(node, struct cds_lfs_head, node);
 
@@ -237,7 +239,7 @@ struct cds_lfs_head *___cds_lfs_pop_all(cds_lfs_stack_ptr_t u_s)
 	 * taking care to order writes to each node prior to the full
 	 * memory barrier after this uatomic_xchg().
 	 */
-	return uatomic_xchg(&s->head, NULL);
+	return uatomic_xchg(&s->head, CDS_LFS_END);
 }
 
 /*
