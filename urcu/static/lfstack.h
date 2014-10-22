@@ -158,7 +158,7 @@ bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
 		if (old_head == head)
 			break;
 	}
-	return ___cds_lfs_empty_head(head);
+	return !___cds_lfs_empty_head(head);
 }
 
 /*
