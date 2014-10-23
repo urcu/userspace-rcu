@@ -159,13 +159,10 @@ void urcu_worker_unregister(struct urcu_workqueue *queue,
 	}
 
 	/*
-	 * Wait for grace period before freeing or reusing
-	 * "worker" because used by RCU linked list.
-	 * Also prevents ABA for waitqueue stack dequeue: matches RCU
-	 * read-side critical sections around dequeue and move all
-	 * operations on waitqueue).
+	 * Make sure we are removed from waitqueue.
 	 */
-	synchronize_rcu();
+	if (CMM_LOAD_SHARED(worker->wait_node.node.next))
+		__urcu_workqueue_wakeup_all(queue);
 
 	/*
 	 * Put any local work we still have back into the workqueue.
@@ -184,6 +181,15 @@ void urcu_worker_unregister(struct urcu_workqueue *queue,
 		(void) urcu_dequeue_wake_single(&queue->waitqueue);
 		rcu_read_unlock();	/* Protect stack dequeue */
 	}
+
+	/*
+	 * Wait for grace period before freeing or reusing
+	 * "worker" because used by RCU linked list.
+	 * Also prevents ABA for waitqueue stack dequeue: matches RCU
+	 * read-side critical sections around dequeue and move all
+	 * operations on waitqueue).
+	 */
+	synchronize_rcu();
 }
 
 /*
