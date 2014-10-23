@@ -60,6 +60,8 @@ static unsigned long duration;
 
 static unsigned long dispatch_delay_loops;
 
+static unsigned long max_queue_len;
+
 static inline void loop_sleep(unsigned long loops)
 {
 	while (loops-- != 0)
@@ -153,10 +155,19 @@ static void *thr_dispatcher(void *_count)
 
 	for (;;) {
 		struct test_work *work = malloc(sizeof(*work));
+		enum urcu_enqueue_ret ret;
+
 		if (!work)
 			goto fail;
-		printf_verbose("queue work %p\n", work);
-		urcu_queue_work(&workqueue, &work->w);
+retry:
+		printf_verbose("attempt queue work %p\n", work);
+		ret = urcu_queue_work(&workqueue, &work->w);
+		if (ret == URCU_ENQUEUE_FULL) {
+			printf_verbose("queue work %p (queue full)\n", work);
+			(void) poll(NULL, 0, 10);
+			goto retry;
+		}
+		printf_verbose("queue work %p (ok)\n", work);
 		URCU_TLS(nr_enqueues)++;
 
 		if (caa_unlikely(dispatch_delay_loops))
@@ -187,8 +198,8 @@ static void *thr_worker(void *_count)
 	set_affinity();
 
 	rcu_register_thread();
-	urcu_worker_init(&worker, URCU_WORKER_STEAL);
-	//urcu_worker_init(&worker, 0);
+	urcu_worker_init(&workqueue, &worker, URCU_WORKER_STEAL);
+	//urcu_worker_init(&workqueue, &worker, 0);
 	urcu_worker_register(&workqueue, &worker);
 
 	while (!test_go)
@@ -199,7 +210,7 @@ static void *thr_worker(void *_count)
 	for (;;) {
 		enum urcu_accept_ret ret;
 
-		ret = urcu_accept_work(&workqueue, &worker);
+		ret = urcu_accept_work(&worker);
 		if (ret == URCU_ACCEPT_SHUTDOWN)
 			break;
 		for (;;) {
@@ -239,6 +250,7 @@ static void show_usage(int argc, char **argv)
 	printf("	[-v] (verbose output)\n");
 	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
 	printf("	[-w] Wait for worker to empty stack\n");
+	printf("	[-m len] (Max queue length. 0 means infinite.))\n");
 	printf("\n");
 }
 
@@ -289,6 +301,13 @@ int main(int argc, char **argv)
 			use_affinity = 1;
 			printf_verbose("Adding CPU %d affinity\n", a);
 			break;
+		case 'm':
+			if (argc < i + 2) {
+				show_usage(argc, argv);
+				return -1;
+			}
+			max_queue_len = atol(argv[++i]);
+			break;
 		case 'c':
 			if (argc < i + 2) {
 				show_usage(argc, argv);
@@ -326,7 +345,7 @@ int main(int argc, char **argv)
 	tid_worker = calloc(nr_workers, sizeof(*tid_worker));
 	count_dispatcher = calloc(nr_dispatchers, sizeof(*count_dispatcher));
 	count_worker = calloc(nr_workers, sizeof(*count_worker));
-	urcu_workqueue_init(&workqueue);
+	urcu_workqueue_init(&workqueue, max_queue_len);
 
 	next_aff = 0;
 
@@ -380,9 +399,9 @@ int main(int argc, char **argv)
 
 	printf("SUMMARY %-25s testdur %4lu nr_dispatchers %3u dispatch_delay_loops %6lu "
 		"work_loops %lu nr_workers %3u "
-		"nr_enqueues %12llu nr_dequeues %12llu\n",
+		"nr_enqueues %12llu nr_dequeues %12llu max_queue_len %lu\n",
 		argv[0], duration, nr_dispatchers, dispatch_delay_loops, work_loops,
-		nr_workers, tot_enqueues, tot_dequeues);
+		nr_workers, tot_enqueues, tot_dequeues, max_queue_len);
 	free(count_dispatcher);
 	free(count_worker);
 	free(tid_dispatcher);
