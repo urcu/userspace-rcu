@@ -67,6 +67,8 @@ struct urcu_workqueue {
 	/* Maximum number of work entries (approximate). 0 means infinite. */
 	unsigned long nr_work_max;
 	unsigned long nr_work;		/* Current number of work items */
+
+	int worker_flags;		/* Worker flags */
 	bool shutdown;			/* Shutdown performed */
 };
 
@@ -91,7 +93,8 @@ enum urcu_worker_flags {
 
 static inline
 void urcu_workqueue_init(struct urcu_workqueue *queue,
-		unsigned long max_queue_len)
+		unsigned long max_queue_len,
+		int worker_flags)
 {
 	__cds_wfcq_init(&queue->head, &queue->tail);
 	urcu_wait_queue_init(&queue->waitqueue);
@@ -156,14 +159,14 @@ void __urcu_workqueue_wakeup_all(struct urcu_workqueue *queue)
 
 static inline
 void urcu_worker_init(struct urcu_workqueue *queue,
-		struct urcu_worker *worker, int flags)
+		struct urcu_worker *worker)
 {
 	cds_wfcq_init(&worker->head, &worker->tail);
-	worker->flags = flags;
 	urcu_wait_node_init(&worker->wait_node, URCU_WAIT_RUNNING);
 	worker->own = NULL;
 	worker->wait_node.node.next = NULL;
 	worker->queue = queue;
+	worker->flags = queue->worker_flags;
 }
 
 static inline

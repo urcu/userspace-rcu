@@ -62,6 +62,8 @@ static unsigned long dispatch_delay_loops;
 
 static unsigned long max_queue_len;
 
+static int test_steal;
+
 static inline void loop_sleep(unsigned long loops)
 {
 	while (loops-- != 0)
@@ -198,8 +200,7 @@ static void *thr_worker(void *_count)
 	set_affinity();
 
 	rcu_register_thread();
-	urcu_worker_init(&workqueue, &worker, URCU_WORKER_STEAL);
-	//urcu_worker_init(&workqueue, &worker, 0);
+	urcu_worker_init(&workqueue, &worker);
 	urcu_worker_register(&workqueue, &worker);
 
 	while (!test_go)
@@ -251,6 +252,7 @@ static void show_usage(int argc, char **argv)
 	printf("	[-a cpu#] [-a cpu#]... (affinity)\n");
 	printf("	[-w] Wait for worker to empty stack\n");
 	printf("	[-m len] (Max queue length. 0 means infinite.))\n");
+	printf("	[-s] (Enable work-stealing between workers.))\n");
 	printf("\n");
 }
 
@@ -263,6 +265,7 @@ int main(int argc, char **argv)
 	unsigned long long tot_enqueues = 0, tot_dequeues = 0;
 	unsigned long long end_dequeues = 0;
 	int i, a, retval = 0;
+	int worker_flags = 0;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -328,6 +331,9 @@ int main(int argc, char **argv)
 		case 'w':
 			test_wait_empty = 1;
 			break;
+		case 's':
+			test_steal = 1;
+			break;
 		}
 	}
 
@@ -345,7 +351,9 @@ int main(int argc, char **argv)
 	tid_worker = calloc(nr_workers, sizeof(*tid_worker));
 	count_dispatcher = calloc(nr_dispatchers, sizeof(*count_dispatcher));
 	count_worker = calloc(nr_workers, sizeof(*count_worker));
-	urcu_workqueue_init(&workqueue, max_queue_len);
+	if (test_steal)
+		worker_flags |= URCU_WORKER_STEAL;
+	urcu_workqueue_init(&workqueue, max_queue_len, worker_flags);
 
 	next_aff = 0;
 
@@ -399,9 +407,11 @@ int main(int argc, char **argv)
 
 	printf("SUMMARY %-25s testdur %4lu nr_dispatchers %3u dispatch_delay_loops %6lu "
 		"work_loops %lu nr_workers %3u "
-		"nr_enqueues %12llu nr_dequeues %12llu max_queue_len %lu\n",
+		"nr_enqueues %12llu nr_dequeues %12llu max_queue_len %lu "
+		"work_stealing %s\n",
 		argv[0], duration, nr_dispatchers, dispatch_delay_loops, work_loops,
-		nr_workers, tot_enqueues, tot_dequeues, max_queue_len);
+		nr_workers, tot_enqueues, tot_dequeues, max_queue_len,
+		test_steal ? "enabled" : "disabled");
 	free(count_dispatcher);
 	free(count_worker);
 	free(tid_dispatcher);
