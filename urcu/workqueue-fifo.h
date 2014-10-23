@@ -139,6 +139,7 @@ void urcu_worker_init(struct urcu_worker *worker, int flags)
 	worker->flags = flags;
 	urcu_wait_node_init(&worker->wait_node, URCU_WAIT_RUNNING);
 	worker->own = NULL;
+	worker->wait_node.node.next = NULL;
 }
 
 static inline
