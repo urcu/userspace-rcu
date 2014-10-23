@@ -31,6 +31,11 @@
 #include <pthread.h>
 #include <assert.h>
 
+enum urcu_accept_ret {
+	URCU_ACCEPT_WORK	= 0,
+	URCU_ACCEPT_SHUTDOWN	= 1,
+};
+
 /*
  * We use RCU to steal work from siblings. Therefore, one of RCU flavors
  * need to be included before this header. All worker that participate
@@ -53,6 +58,8 @@ struct urcu_workqueue {
 	/* RCU linked list head of siblings for work stealing. */
 	struct cds_list_head sibling_head;
 	pthread_mutex_t sibling_lock;	/* Protect sibling list updates */
+
+	bool shutdown;			/* Shutdown performed */
 };
 
 struct urcu_worker {
@@ -75,6 +82,7 @@ void urcu_workqueue_init(struct urcu_workqueue *queue)
 	__cds_wfcq_init(&queue->head, &queue->tail);
 	urcu_wait_queue_init(&queue->waitqueue);
 	CDS_INIT_LIST_HEAD(&queue->sibling_head);
+	queue->shutdown = false;
 }
 
 static inline
@@ -108,7 +116,7 @@ void urcu_queue_work(struct urcu_workqueue *queue, struct urcu_work *work)
 }
 
 static inline
-void urcu_workqueue_wakeup_all(struct urcu_workqueue *queue)
+void __urcu_workqueue_wakeup_all(struct urcu_workqueue *queue)
 {
 	struct urcu_waiters waiters;
 
@@ -284,9 +292,8 @@ end:
 }
 
 static inline
-void urcu_accept_work(struct urcu_workqueue *queue,
-		struct urcu_worker *worker,
-		int blocking)
+enum urcu_accept_ret urcu_accept_work(struct urcu_workqueue *queue,
+		struct urcu_worker *worker)
 {
 	enum cds_wfcq_ret wfcq_ret;
 
@@ -302,8 +309,9 @@ void urcu_accept_work(struct urcu_workqueue *queue,
 	/* Try to steal work from sibling instead of blocking */
 	if (__urcu_steal_work(queue, worker))
 		goto do_work;
-	if (!blocking)
-		return;
+	/* No more work to do, check shutdown state */
+	if (CMM_LOAD_SHARED(queue->shutdown))
+		return URCU_ACCEPT_SHUTDOWN;
 	urcu_wait_set_state(&worker->wait_node,
 			URCU_WAIT_WAITING);
 	if (!CMM_LOAD_SHARED(worker->wait_node.node.next)) {
@@ -353,6 +361,7 @@ do_work:
 	 * they can steal from us.
 	 */
 	(void) __urcu_wakeup_siblings(queue, worker);
+	return URCU_ACCEPT_WORK;
 }
 
 static inline
@@ -380,6 +389,15 @@ struct urcu_work *urcu_dequeue_work(struct urcu_worker *worker)
 	if (!node)
 		return NULL;
 	return caa_container_of(node, struct urcu_work, node);
+}
+
+static inline
+void urcu_workqueue_shutdown(struct urcu_workqueue *queue)
+{
+	/* Set shutdown */
+	CMM_STORE_SHARED(queue->shutdown, true);
+	/* Wakeup all workers */
+	__urcu_workqueue_wakeup_all(queue);
 }
 
 #endif /* _URCU_WORKQUEUE_FIFO_H */

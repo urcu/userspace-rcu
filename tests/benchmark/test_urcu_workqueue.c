@@ -52,7 +52,7 @@
 #include <urcu/wfstack.h>
 #include <urcu/workqueue-fifo.h>
 
-static volatile int test_go, test_stop_enqueue, test_stop_dequeue;
+static volatile int test_go, test_stop_enqueue;
 
 static unsigned long work_loops;
 
@@ -119,11 +119,6 @@ static void set_affinity(void)
 /*
  * returns 0 if test should end.
  */
-static int test_duration_dequeue(void)
-{
-	return !test_stop_dequeue;
-}
-
 static int test_duration_enqueue(void)
 {
 	return !test_stop_enqueue;
@@ -185,7 +180,6 @@ static void *thr_worker(void *_count)
 	unsigned long long *count = _count;
 	unsigned int counter = 0;
 	struct urcu_worker worker;
-	int blocking = 1;
 
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"worker", urcu_get_thread_id());
@@ -203,9 +197,11 @@ static void *thr_worker(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
-		int batch_work_count = 0;
+		enum urcu_accept_ret ret;
 
-		urcu_accept_work(&workqueue, &worker, blocking);
+		ret = urcu_accept_work(&workqueue, &worker);
+		if (ret == URCU_ACCEPT_SHUTDOWN)
+			break;
 		for (;;) {
 			struct urcu_work *work;
 			struct test_work *t;
@@ -215,17 +211,11 @@ static void *thr_worker(void *_count)
 				break;
 			t = caa_container_of(work, struct test_work, w);
 			printf_verbose("dequeue work %p\n", t);
-			batch_work_count++;
 			URCU_TLS(nr_dequeues)++;
 			if (caa_unlikely(work_loops))
 				loop_sleep(work_loops);
 			free(t);
 		}
-		if (!test_duration_dequeue())
-			blocking = 0;
-		if (caa_unlikely(!test_duration_dequeue()
-				&& !batch_work_count))
-			break;
 	}
 end:
 	urcu_worker_unregister(&workqueue, &worker);
@@ -373,10 +363,7 @@ int main(int argc, char **argv)
 			sleep(1);
 		}
 	}
-	test_stop_dequeue = 1;
-
-	/* Send finish to all workers */
-	urcu_workqueue_wakeup_all(&workqueue);
+	urcu_workqueue_shutdown(&workqueue);
 
 	for (i = 0; i < nr_dispatchers; i++) {
 		err = pthread_join(tid_dispatcher[i], &tret);
