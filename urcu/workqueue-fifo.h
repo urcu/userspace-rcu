@@ -502,4 +502,29 @@ void urcu_workqueue_shutdown(struct urcu_workqueue *queue)
 	__urcu_workqueue_wakeup_all(queue);
 }
 
+/*
+ * Use to let dispatcher steal work from the entire queue in case of
+ * stall. The "worker" parameter need to be intialized, but is usually
+ * not registered.
+ */
+static inline
+bool urcu_workqueue_steal_all(struct urcu_workqueue *queue,
+		struct urcu_worker *worker)
+{
+	struct urcu_worker *sibling;
+	bool has_work = false;
+
+	rcu_read_lock();
+	/* Steal from each worker */
+	cds_list_for_each_entry_rcu(sibling, &queue->sibling_head,
+			sibling_node)
+		has_work |= ___urcu_grab_work(worker, &sibling->head,
+					&sibling->tail, 1);
+	rcu_read_unlock();
+
+	/* Steal from global workqueue */
+	has_work |= ___urcu_grab_work(worker, &queue->head, &queue->tail, 0);
+	return has_work;
+}
+
 #endif /* _URCU_WORKQUEUE_FIFO_H */
