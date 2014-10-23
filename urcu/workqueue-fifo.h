@@ -192,12 +192,10 @@ bool ___urcu_steal_work(struct urcu_worker *worker,
 	 */
 	if (cds_wfcq_empty(&sibling->head, &sibling->tail))
 		return false;
-	cds_wfcq_dequeue_lock(&sibling->head, &sibling->tail);
-	splice_ret = __cds_wfcq_splice_blocking(&worker->head,
+	splice_ret = cds_wfcq_splice_blocking(&worker->head,
 			&worker->tail,
 			&sibling->head,
 			&sibling->tail);
-	cds_wfcq_dequeue_unlock(&sibling->head, &sibling->tail);
 	/* Ensure that we preserve FIFO work order. */
 	assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
 	return splice_ret != CDS_WFCQ_RET_SRC_EMPTY;
