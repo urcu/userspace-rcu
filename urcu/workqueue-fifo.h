@@ -366,7 +366,8 @@ enum urcu_accept_ret urcu_accept_work(struct urcu_workqueue *queue,
 
 	has_work = ___urcu_grab_work(worker, &queue->head, &queue->tail, 0);
 	/* Don't wait if we have work to do. */
-	if (has_work || !cds_wfcq_empty(&worker->head, &worker->tail))
+	if (has_work || worker->own
+			|| !cds_wfcq_empty(&worker->head, &worker->tail))
 		goto do_work;
 	/* Try to steal work from sibling instead of blocking */
 	if (__urcu_steal_work(queue, worker))
