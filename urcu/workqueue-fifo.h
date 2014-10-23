@@ -86,6 +86,7 @@ void urcu_workqueue_init(struct urcu_workqueue *queue)
 	__cds_wfcq_init(&queue->head, &queue->tail);
 	urcu_wait_queue_init(&queue->waitqueue);
 	CDS_INIT_LIST_HEAD(&queue->sibling_head);
+	pthread_mutex_init(&queue->sibling_lock, NULL);
 	queue->shutdown = false;
 }
 
@@ -204,7 +205,7 @@ bool ___urcu_grab_work(struct urcu_worker *worker,
 		bool steal)
 {
 	enum cds_wfcq_ret splice_ret;
-	struct cds_wfcq_head tmp_head;
+	struct __cds_wfcq_head tmp_head;
 	struct cds_wfcq_tail tmp_tail;
 	struct cds_wfcq_node *node;
 
@@ -213,7 +214,7 @@ bool ___urcu_grab_work(struct urcu_worker *worker,
 	 */
 	if (cds_wfcq_empty(src_head, src_tail))
 		return false;
-	cds_wfcq_init(&tmp_head, &tmp_tail);
+	__cds_wfcq_init(&tmp_head, &tmp_tail);
 
 	/* Ensure that we preserve FIFO work order. */
 	assert(!steal || worker->own == NULL);
@@ -254,7 +255,7 @@ got_node:
 	}
 
 	/* Splice into worker workqueue. */
-	splice_ret = cds_wfcq_splice_blocking(&worker->head,
+	splice_ret = __cds_wfcq_splice_blocking(&worker->head,
 			&worker->tail,
 			&tmp_head,
 			&tmp_tail);
