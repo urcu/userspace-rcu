@@ -89,12 +89,11 @@
 #define caa_is_signed_type(type)	((type) -1 < (type) 0)
 
 /*
- * Sign-extend to long if needed, and output type is unsigned long.
+ * Cast to unsigned long, sign-extending if @v is signed.
+ * Note: casting to a larger type or to same type size keeps the sign of
+ * the expression being cast (see C99 6.3.1.3).
  */
-#define caa_cast_long_keep_sign(v)		\
-	(caa_is_signed_type(__typeof__(v)) ?	\
-		(unsigned long) (long) (v) :	\
-		(unsigned long) (v))
+#define caa_cast_long_keep_sign(v)	((unsigned long) (v))
 
 /*
  * Don't allow compiling with buggy compiler.
