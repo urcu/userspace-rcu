@@ -45,6 +45,7 @@ enum urcu_wait_state {
 struct urcu_wait_node {
 	struct cds_lfs_node node;
 	int32_t state;	/* enum urcu_wait_state */
+	int in_waitqueue;
 };
 
 #define URCU_WAIT_NODE_INIT(name, _state)		\
@@ -88,6 +89,8 @@ static inline
 bool urcu_wait_add(struct urcu_wait_queue *queue,
 		struct urcu_wait_node *node)
 {
+	cds_lfs_node_init(&node->node);
+	CMM_STORE_SHARED(node->in_waitqueue, true);
 	return cds_lfs_push(&queue->stack, &node->node);
 }
 
@@ -122,6 +125,13 @@ void urcu_wait_node_init(struct urcu_wait_node *node,
 {
 	urcu_wait_set_state(node, state);
 	cds_lfs_node_init(&node->node);
+	node->in_waitqueue = false;
+}
+
+static inline
+bool urcu_in_waitqueue(struct urcu_wait_node *node)
+{
+	return CMM_LOAD_SHARED(node->in_waitqueue);
 }
 
 /*
@@ -206,7 +216,7 @@ int urcu_dequeue_wake_single(struct urcu_wait_queue *queue)
 	if (!node)
 		return -ENOENT;
 	wait_node = caa_container_of(node, struct urcu_wait_node, node);
-	CMM_STORE_SHARED(wait_node->node.next, NULL);
+	CMM_STORE_SHARED(wait_node->in_waitqueue, false);
 	/* Don't wake already running threads */
 	if (!(wait_node->state & URCU_WAIT_RUNNING))
 		ret = urcu_adaptative_wake_up(wait_node);
@@ -247,7 +257,7 @@ int urcu_wake_all_waiters(struct urcu_waiters *waiters)
 		struct urcu_wait_node *wait_node =
 			caa_container_of(iter, struct urcu_wait_node, node);
 
-		CMM_STORE_SHARED(wait_node->node.next, NULL);
+		CMM_STORE_SHARED(wait_node->in_waitqueue, false);
 		/* Don't wake already running threads */
 		if (wait_node->state & URCU_WAIT_RUNNING)
 			continue;

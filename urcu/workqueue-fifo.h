@@ -195,7 +195,7 @@ void urcu_worker_unregister(struct urcu_workqueue *queue,
 	/*
 	 * Make sure we are removed from waitqueue.
 	 */
-	if (CMM_LOAD_SHARED(worker->wait_node.node.next))
+	if (urcu_in_waitqueue(&worker->wait_node))
 		__urcu_workqueue_wakeup_all(queue);
 
 	/*
@@ -404,14 +404,9 @@ enum urcu_accept_ret urcu_accept_work(struct urcu_worker *worker)
 		return URCU_ACCEPT_SHUTDOWN;
 	urcu_wait_set_state(&worker->wait_node,
 			URCU_WAIT_WAITING);
-	if (!CMM_LOAD_SHARED(worker->wait_node.node.next)) {
+	if (!urcu_in_waitqueue(&worker->wait_node)) {
 		int was_empty;
 
-		/*
-		 * NULL next pointer. We are therefore not in
-		 * the queue.
-		 */
-		cds_lfs_node_init(&worker->wait_node.node);
 		/* Protect stack dequeue against ABA */
 		synchronize_rcu();
 		was_empty = !urcu_wait_add(&queue->waitqueue,
@@ -433,13 +428,11 @@ enum urcu_accept_ret urcu_accept_work(struct urcu_worker *worker)
 		}
 	} else {
 		/*
-		 * Non-NULL next pointer. We are therefore in
-		 * the queue, or the dispatcher just removed us
-		 * from it (after we read the next pointer), and
-		 * is therefore awakening us. The state will
-		 * therefore have been changed from WAITING to
-		 * some other state, which will let the busy
-		 * wait pass through.
+		 * We are in the queue, or the dispatcher just removed
+		 * us from it (after we read the next pointer), and is
+		 * therefore awakening us. The state will therefore have
+		 * been changed from WAITING to some other state, which
+		 * will let the busy wait pass through.
 		 */
 	}
 	urcu_adaptative_busy_wait(&worker->wait_node);
