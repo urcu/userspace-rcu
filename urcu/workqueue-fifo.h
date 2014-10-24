@@ -514,13 +514,15 @@ bool urcu_workqueue_steal_all(struct urcu_workqueue *queue,
 	struct urcu_worker *sibling;
 	bool has_work = false;
 
-	rcu_read_lock();
-	/* Steal from each worker */
-	cds_list_for_each_entry_rcu(sibling, &queue->sibling_head,
-			sibling_node)
-		has_work |= ___urcu_grab_work(worker, &sibling->head,
-					&sibling->tail, 1);
-	rcu_read_unlock();
+	if (worker->flags & URCU_WORKER_STEAL) {
+		rcu_read_lock();
+		/* Steal from each worker */
+		cds_list_for_each_entry_rcu(sibling, &queue->sibling_head,
+				sibling_node)
+			has_work |= ___urcu_grab_work(worker, &sibling->head,
+						&sibling->tail, 1);
+		rcu_read_unlock();
+	}
 
 	/* Steal from global workqueue */
 	has_work |= ___urcu_grab_work(worker, &queue->head, &queue->tail, 0);
