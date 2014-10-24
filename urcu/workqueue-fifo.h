@@ -69,7 +69,7 @@ struct urcu_workqueue {
 	unsigned long nr_work;		/* Current number of work items */
 
 	int worker_flags;		/* Worker flags */
-	bool shutdown;			/* Shutdown performed */
+	int shutdown;			/* Shutdown performed */
 };
 
 struct urcu_worker {
