@@ -1,3 +1,9 @@
+2014-11-04 Userspace RCU 0.8.6
+	* Fix: silence gcc -Wextra warning
+	* compiler: use __GNUC__ instead of the undefined __GNUC_MAJOR__
+	* Fix: lfstack reversed empty/non-empty return value
+	* lfstack: fix: add missing __cds_lfs_init
+
 2014-10-21 Userspace RCU 0.8.5
 	* Fix: preserve example files' timestamps when copying
 	* rculfhash: remove duplicated code
