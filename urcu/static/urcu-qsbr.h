@@ -43,6 +43,7 @@
 #include <urcu/list.h>
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
+#include <urcu/urcu-checker.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -132,6 +133,7 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
  */
 static inline void _rcu_read_lock(void)
 {
+	rcu_read_lock_debug();
 	rcu_assert(URCU_TLS(rcu_reader).ctr);
 }
 
@@ -144,6 +146,7 @@ static inline void _rcu_read_lock(void)
  */
 static inline void _rcu_read_unlock(void)
 {
+	rcu_read_unlock_debug();
 }
 
 /*

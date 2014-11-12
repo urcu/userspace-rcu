@@ -24,7 +24,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		$(top_srcdir)/urcu/map/*.h \
 		$(top_srcdir)/urcu/static/*.h \
 		urcu/rand-compat.h \
-		urcu/tls-compat.h
+		urcu/tls-compat.h urcu/urcu-checker.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h
@@ -57,7 +57,8 @@ lib_LTLIBRARIES = liburcu-common.la \
 # liburcu-common contains wait-free queues (needed by call_rcu) as well
 # as futex fallbacks.
 #
-liburcu_common_la_SOURCES = wfqueue.c wfcqueue.c wfstack.c $(COMPAT)
+liburcu_common_la_SOURCES = wfqueue.c wfcqueue.c wfstack.c $(COMPAT) \
+		urcu-checker.c
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_la_LIBADD = liburcu-common.la

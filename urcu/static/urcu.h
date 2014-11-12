@@ -42,6 +42,7 @@
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
 #include <urcu/rand-compat.h>
+#include <urcu/urcu-checker.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -219,6 +220,7 @@ static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
+	rcu_read_lock_debug();
 	cmm_barrier();
 	tmp = URCU_TLS(rcu_reader).ctr;
 	_rcu_read_lock_update(tmp);
@@ -255,6 +257,7 @@ static inline void _rcu_read_unlock(void)
 	tmp = URCU_TLS(rcu_reader).ctr;
 	_rcu_read_unlock_update_and_wakeup(tmp);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
+	rcu_read_unlock_debug();
 }
 
 /*

@@ -88,8 +88,8 @@ extern "C" {
  * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
-extern void rcu_read_lock(void);
-extern void rcu_read_unlock(void);
+extern void test_rcu_read_lock(void);
+extern void test_rcu_read_unlock(void);
 extern int rcu_read_ongoing(void);
 
 extern void *rcu_dereference_sym_bp(void *p);

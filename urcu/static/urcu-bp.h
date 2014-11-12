@@ -39,6 +39,7 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/tls-compat.h>
+#include <urcu/urcu-checker.h>
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
@@ -155,6 +156,7 @@ static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
+	rcu_read_lock_debug();
 	if (caa_unlikely(!URCU_TLS(rcu_reader)))
 		rcu_bp_register(); /* If not yet registered. */
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
@@ -175,6 +177,7 @@ static inline void _rcu_read_unlock(void)
 	cmm_smp_mb();
 	_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, URCU_TLS(rcu_reader)->ctr - RCU_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
+	rcu_read_unlock_debug();
 }
 
 /*

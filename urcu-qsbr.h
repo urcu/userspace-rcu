@@ -108,6 +108,9 @@ extern void rcu_read_unlock(void);
 
 #endif /* !RCU_DEBUG */
 
+#define test_rcu_read_lock		rcu_read_lock_qsbr
+#define test_rcu_read_unlock		rcu_read_unlock_qsbr
+
 extern int rcu_read_ongoing(void);
 extern void rcu_quiescent_state(void);
 extern void rcu_thread_offline(void);

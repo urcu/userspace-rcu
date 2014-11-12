@@ -29,6 +29,7 @@
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/uatomic.h>
+#include <urcu/urcu-checker.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +45,11 @@ extern "C" {
  * Fetch a RCU-protected pointer. Typically used to copy the variable ptr to a
  * local variable.
  */
-#define rcu_dereference		_rcu_dereference
+#define rcu_dereference(p)				\
+	({						\
+		rcu_read_ongoing_check_debug(__func__);	\
+		_rcu_dereference(p);			\
+	})
 
 /*
  * type *rcu_cmpxchg_pointer(type **ptr, type *new, type *old)

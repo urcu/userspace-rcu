@@ -23,12 +23,12 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_lfs_rcu_dynlink
 
 URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
-URCU_LIB=$(top_builddir)/liburcu.la
-URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
-URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
-URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
-URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
-URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
+URCU_LIB=$(top_builddir)/liburcu.la $(URCU_COMMON_LIB)
+URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la $(URCU_COMMON_LIB)
+URCU_MB_LIB=$(top_builddir)/liburcu-mb.la $(URCU_COMMON_LIB)
+URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la $(URCU_COMMON_LIB)
+URCU_BP_LIB=$(top_builddir)/liburcu-bp.la $(URCU_COMMON_LIB)
+URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la $(URCU_COMMON_LIB)
 
 DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
 

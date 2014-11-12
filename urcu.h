@@ -33,6 +33,9 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <urcu/tls-compat.h>
+#include <stdio.h>
+#include <assert.h>
 
 /*
  * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
