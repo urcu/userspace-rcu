@@ -163,12 +163,14 @@ void rcu_read_ongoing_check_debug(const char *func)
 
 	if (r->stackend == 0) {
 		struct backtrace bt;
+		char *func;
 
+		func = get_symbol(__builtin_return_address(0));
 		err_printf("rcu_dereference() used outside of critical section at %p <%s>\n",
-			__builtin_return_address(0),
-			get_symbol(__builtin_return_address(0)));
+			__builtin_return_address(0), func);
 		save_backtrace(&bt);
 		print_bt(&bt);
 		free_backtrace(&bt);
+		free(func);
 	}
 }
