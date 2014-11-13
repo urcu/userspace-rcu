@@ -622,12 +622,12 @@ void call_rcu(struct rcu_head *head,
 	cds_wfq_node_init(&head->next);
 	head->func = func;
 	/* Holding rcu read-side lock across use of per-cpu crdp */
-	rcu_read_lock();
+	_rcu_read_lock();
 	crdp = get_call_rcu_data();
 	cds_wfq_enqueue(&crdp->cbs, &head->next);
 	uatomic_inc(&crdp->qlen);
 	wake_call_rcu_thread(crdp);
-	rcu_read_unlock();
+	_rcu_read_unlock();
 }
 
 /*
