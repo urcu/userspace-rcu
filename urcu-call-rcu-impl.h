@@ -669,10 +669,10 @@ void call_rcu(struct rcu_head *head,
 	struct call_rcu_data *crdp;
 
 	/* Holding rcu read-side lock across use of per-cpu crdp */
-	rcu_read_lock();
+	_rcu_read_lock();
 	crdp = get_call_rcu_data();
 	_call_rcu(head, func, crdp);
-	rcu_read_unlock();
+	_rcu_read_unlock();
 }
 
 /*
@@ -804,14 +804,14 @@ void rcu_barrier(void)
 	int was_online;
 
 	/* Put in offline state in QSBR. */
-	was_online = rcu_read_ongoing();
+	was_online = _rcu_read_ongoing();
 	if (was_online)
 		rcu_thread_offline();
 	/*
 	 * Calling a rcu_barrier() within a RCU read-side critical
 	 * section is an error.
 	 */
-	if (rcu_read_ongoing()) {
+	if (_rcu_read_ongoing()) {
 		static int warned = 0;
 
 		if (!warned) {
