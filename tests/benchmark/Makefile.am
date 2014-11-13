@@ -1,7 +1,7 @@
 if !LIBC_INCLUDES_PTHREAD
 AM_LDFLAGS=-lpthread
 endif
-AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
+AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g -ldl
 
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \

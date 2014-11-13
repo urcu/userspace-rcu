@@ -59,6 +59,7 @@ lib_LTLIBRARIES = liburcu-common.la \
 #
 liburcu_common_la_SOURCES = wfqueue.c wfcqueue.c wfstack.c $(COMPAT) \
 		urcu-checker.c
+liburcu_common_la_LDFLAGS = -ldl
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_la_LIBADD = liburcu-common.la
