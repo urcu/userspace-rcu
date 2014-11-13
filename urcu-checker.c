@@ -67,7 +67,7 @@ static inline pid_t gettid(void)
 		(long) getpid(), (long) gettid(), ## args)
 
 struct urcu_debug_entry {
-	void *ip;
+	char *func;
 	int depth;
 };
 
@@ -145,16 +145,32 @@ void print_bt(struct backtrace *bt)
 void rcu_read_lock_debug(void)
 {
 	struct urcu_debug_stack *r = &URCU_TLS(rcu_debug_stack);
+	char *func = get_symbol(__builtin_return_address(0));
 
-	r->stack[r->stackend++].ip = __builtin_return_address(0);
+	r->stack[r->stackend++].func = func;
 }
 
 void rcu_read_unlock_debug(void)
 {
 	struct urcu_debug_stack *r = &URCU_TLS(rcu_debug_stack);
+	char *func = get_symbol(__builtin_return_address(0));
 
 	assert(r->stackend != 0);
-	r->stack[--r->stackend].ip = NULL;
+	if (r->stack[r->stackend - 1].func && func &&
+			strcmp(r->stack[r->stackend - 1].func,
+				func) != 0) {
+		struct backtrace bt;
+
+		err_printf("URCU lock/unlock caller mismatch: lock by <%s> unlock by <%s>\n",
+			r->stack[r->stackend - 1].func, func);
+		save_backtrace(&bt);
+		print_bt(&bt);
+		free_backtrace(&bt);
+	}
+	r->stackend--;
+	free(r->stack[r->stackend].func);
+	r->stack[r->stackend].func = NULL;
+	free(func);
 }
 
 void rcu_read_ongoing_check_debug(const char *func)
@@ -163,12 +179,13 @@ void rcu_read_ongoing_check_debug(const char *func)
 
 	if (r->stackend == 0) {
 		struct backtrace bt;
+		char *func = get_symbol(__builtin_return_address(0));
 
 		err_printf("rcu_dereference() used outside of critical section at %p <%s>\n",
-			__builtin_return_address(0),
-			get_symbol(__builtin_return_address(0)));
+			__builtin_return_address(0), func);
 		save_backtrace(&bt);
 		print_bt(&bt);
 		free_backtrace(&bt);
+		free(func);
 	}
 }

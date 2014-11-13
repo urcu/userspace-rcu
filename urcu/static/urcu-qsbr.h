@@ -131,7 +131,8 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_lock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_lock(void)
 {
 	rcu_read_lock_debug();
 	rcu_assert(URCU_TLS(rcu_reader).ctr);
@@ -144,7 +145,8 @@ static inline void _rcu_read_lock(void)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_unlock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_unlock(void)
 {
 	rcu_read_unlock_debug();
 }

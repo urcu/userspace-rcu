@@ -216,7 +216,8 @@ static inline void _rcu_read_lock_update(unsigned long tmp)
  * intent is that this function meets the 10-line criterion in LGPL,
  * allowing this function to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_lock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
@@ -250,7 +251,8 @@ static inline void _rcu_read_unlock_update_and_wakeup(unsigned long tmp)
  * helper are smaller than 10 lines of code, and are intended to be
  * usable by non-LGPL code, as called out in LGPL.
  */
-static inline void _rcu_read_unlock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_unlock(void)
 {
 	unsigned long tmp;
 

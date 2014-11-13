@@ -152,7 +152,8 @@ static inline void _rcu_read_lock_update(unsigned long tmp)
  * intent is that this function meets the 10-line criterion in LGPL,
  * allowing this function to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_lock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
@@ -169,7 +170,8 @@ static inline void _rcu_read_lock(void)
  * 10 lines of code, and is intended to be usable by non-LGPL code, as
  * called out in LGPL.
  */
-static inline void _rcu_read_unlock(void)
+static inline __attribute__((always_inline))
+void _rcu_read_unlock(void)
 {
 	/*
 	 * Finish using rcu before decrementing the pointer.
