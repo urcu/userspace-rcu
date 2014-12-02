@@ -106,11 +106,6 @@ static int initialized;
 
 static pthread_key_t urcu_bp_key;
 
-#ifdef DEBUG_YIELD
-unsigned int rcu_yield_active;
-DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
-#endif
-
 struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
 
 /*

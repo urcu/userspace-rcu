@@ -66,11 +66,6 @@ struct rcu_gp rcu_gp = { .ctr = RCU_GP_ONLINE };
  */
 DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
-#ifdef DEBUG_YIELD
-unsigned int rcu_yield_active;
-DEFINE_URCU_TLS(unsigned int, rcu_rand_yield);
-#endif
-
 static CDS_LIST_HEAD(registry);
 
 /*
