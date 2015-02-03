@@ -129,7 +129,7 @@ extern "C" {
  * them. It also makes sure the compiler does not reorder code initializing the
  * data structure before its publication.
  *
- * Should match rcu_dereference_pointer().
+ * Should match rcu_dereference().
  *
  * This macro is less than 10 lines long.  The intent is that this macro
  * meets the 10-line criterion in LGPL, allowing this function to be
