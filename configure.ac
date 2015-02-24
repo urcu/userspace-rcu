@@ -61,6 +61,9 @@ AC_CHECK_FUNCS(
 	[bzero gettimeofday munmap sched_getcpu strtoul sysconf gettid memeset strerror]
 )
 
+# Check for headers
+AC_CHECK_HEADERS([limits.h stddef.h sys/time.h])
+
 # Find arch type
 AS_CASE([$host_cpu],
 	[i386], [ARCHTYPE="x86" && SUBARCHTYPE="x86compat"],
