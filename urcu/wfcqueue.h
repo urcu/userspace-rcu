@@ -79,10 +79,10 @@ struct cds_wfcq_head {
  * struct cds_wfcq_head and struct __cds_wfcq_head on any of those two
  * types.
  */
-typedef union __attribute__((__transparent_union__)) {
+typedef union {
 	struct __cds_wfcq_head *_h;
 	struct cds_wfcq_head *h;
-} cds_wfcq_head_ptr_t;
+} __attribute__((__transparent_union__)) cds_wfcq_head_ptr_t;
 
 struct cds_wfcq_tail {
 	struct cds_wfcq_node *p;

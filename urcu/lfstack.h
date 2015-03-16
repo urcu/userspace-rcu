@@ -84,10 +84,10 @@ struct cds_lfs_stack {
  * struct cds_lfs_stack and struct __cds_lfs_stack on any of those two
  * types.
  */
-typedef union __attribute__((__transparent_union__)) {
+typedef union {
 	struct __cds_lfs_stack *_s;
 	struct cds_lfs_stack *s;
-} cds_lfs_stack_ptr_t;
+} __attribute__((__transparent_union__)) cds_lfs_stack_ptr_t;
 
 #ifdef _LGPL_SOURCE
 

@@ -97,10 +97,10 @@ struct cds_wfs_stack {
  * struct cds_wfs_stack and struct __cds_wfs_stack on any of those two
  * types.
  */
-typedef union __attribute__((__transparent_union__)) {
+typedef union {
 	struct __cds_wfs_stack *_s;
 	struct cds_wfs_stack *s;
-} cds_wfs_stack_ptr_t;
+} __attribute__((__transparent_union__)) cds_wfs_stack_ptr_t;
 
 #ifdef _LGPL_SOURCE
 
