@@ -72,17 +72,26 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	assert(!ret);
 	switch (op) {
 	case FUTEX_WAIT:
-		if (*uaddr != val)
-			goto end;
-		pthread_cond_wait(&__urcu_compat_futex_cond, &__urcu_compat_futex_lock);
+		/*
+		 * Wait until *uaddr is changed to something else than "val".
+		 * Comparing *uaddr content against val figures out which
+		 * thread has been awakened.
+		 */
+		while (*uaddr == val)
+			pthread_cond_wait(&__urcu_compat_futex_cond,
+				&__urcu_compat_futex_lock);
 		break;
 	case FUTEX_WAKE:
+		/*
+		 * Each wake is sending a broadcast, thus attempting wakeup of
+		 * all awaiting threads, independently of their respective
+		 * uaddr.
+		 */
 		pthread_cond_broadcast(&__urcu_compat_futex_cond);
 		break;
 	default:
 		gret = -EINVAL;
 	}
-end:
 	ret = pthread_mutex_unlock(&__urcu_compat_futex_lock);
 	assert(!ret);
 	return gret;
