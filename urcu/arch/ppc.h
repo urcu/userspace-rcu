@@ -58,6 +58,7 @@ extern "C" {
 #define cmm_smp_wmb()    __asm__ __volatile__ (LWSYNC_OPCODE:::"memory")
 
 #define mftbl()						\
+	__extension__					\
 	({ 						\
 		unsigned long rval;			\
 		__asm__ __volatile__ ("mftbl %0" : "=r" (rval));	\
@@ -65,6 +66,7 @@ extern "C" {
 	})
 
 #define mftbu()						\
+	__extension__					\
 	({						\
 		unsigned long rval;			\
 		__asm__ __volatile__ ("mftbu %0" : "=r" (rval));	\
@@ -72,6 +74,7 @@ extern "C" {
 	})
 
 #define mftb()						\
+	__extension__					\
 	({						\
 		unsigned long long rval;		\
 		__asm__ __volatile__ ("mftb %0" : "=r" (rval));		\

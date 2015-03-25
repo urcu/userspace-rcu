@@ -64,6 +64,7 @@
  * @member: name of the field within the object.
  */
 #define caa_container_of(ptr, type, member)				\
+	__extension__							\
 	({								\
 		const __typeof__(((type *) NULL)->member) * __ptr = (ptr); \
 		(type *)((char *)__ptr - offsetof(type, member));	\

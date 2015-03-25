@@ -94,6 +94,7 @@ extern int rcu_read_ongoing(void);
 
 extern void *rcu_dereference_sym_bp(void *p);
 #define rcu_dereference_bp(p)						     \
+	__extension__							     \
 	({								     \
 		__typeof__(p) _________p1 = URCU_FORCE_CAST(__typeof__(p),   \
 			rcu_dereference_sym_bp(URCU_FORCE_CAST(void *, p))); \
@@ -102,6 +103,7 @@ extern void *rcu_dereference_sym_bp(void *p);
 
 extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer_bp(p, old, _new)				     \
+	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pold = (old);			     \
 		__typeof__(*(p)) _________pnew = (_new);		     \
@@ -114,6 +116,7 @@ extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new);
 
 extern void *rcu_xchg_pointer_sym_bp(void **p, void *v);
 #define rcu_xchg_pointer_bp(p, v)					     \
+	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pv = (v);			     \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)),\
@@ -124,6 +127,7 @@ extern void *rcu_xchg_pointer_sym_bp(void **p, void *v);
 
 extern void *rcu_set_pointer_sym_bp(void **p, void *v);
 #define rcu_set_pointer_bp(p, v)					     \
+	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pv = (v);			     \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
