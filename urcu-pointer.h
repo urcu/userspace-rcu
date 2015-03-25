@@ -66,6 +66,7 @@ extern "C" {
 
 extern void *rcu_dereference_sym(void *p);
 #define rcu_dereference(p)						     \
+	__extension__							     \
 	({								     \
 		__typeof__(p) _________p1 =	URCU_FORCE_CAST(__typeof__(p), \
 			rcu_dereference_sym(URCU_FORCE_CAST(void *, p)));    \
@@ -74,6 +75,7 @@ extern void *rcu_dereference_sym(void *p);
 
 extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 #define rcu_cmpxchg_pointer(p, old, _new)				     \
+	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pold = (old);			     \
 		__typeof__(*(p)) _________pnew = (_new);		     \
@@ -86,6 +88,7 @@ extern void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new);
 
 extern void *rcu_xchg_pointer_sym(void **p, void *v);
 #define rcu_xchg_pointer(p, v)						     \
+	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pv = (v);		             \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
