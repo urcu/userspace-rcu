@@ -64,7 +64,9 @@ extern "C" {
  * meets the 10-line criterion in LGPL, allowing this function to be
  * expanded directly in non-LGPL code.
  */
-#define _rcu_dereference(p)     ({					\
+#define _rcu_dereference(p)						\
+				__extension__				\
+				({					\
 				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p); \
 				cmm_smp_read_barrier_depends();		\
 				(_________p1);				\
@@ -82,6 +84,7 @@ extern "C" {
  * expanded directly in non-LGPL code.
  */
 #define _rcu_cmpxchg_pointer(p, old, _new)				\
+	__extension__							\
 	({								\
 		__typeof__(*p) _________pold = (old);			\
 		__typeof__(*p) _________pnew = (_new);			\
@@ -101,6 +104,7 @@ extern "C" {
  * expanded directly in non-LGPL code.
  */
 #define _rcu_xchg_pointer(p, v)				\
+	__extension__					\
 	({						\
 		__typeof__(*p) _________pv = (v);	\
 		if (!__builtin_constant_p(v) ||		\
