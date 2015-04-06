@@ -268,7 +268,7 @@ long long get_microseconds(void)
 	struct { \
 		__typeof__(type) v \
 			__attribute__((__aligned__(CAA_CACHE_LINE_SIZE))); \
-	} __per_thread_##name[NR_THREADS];
+	} __per_thread_##name[NR_THREADS]
 #define DECLARE_PER_THREAD(type, name) extern DEFINE_PER_THREAD(type, name)
 
 #define per_thread(name, thread) __per_thread_##name[thread].v

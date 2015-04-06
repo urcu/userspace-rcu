@@ -426,7 +426,7 @@ unsigned int fls_u32(uint32_t x)
 {
 	int r;
 
-	asm("bsrl %1,%0\n\t"
+	__asm__ ("bsrl %1,%0\n\t"
 	    "jnz 1f\n\t"
 	    "movl $-1,%0\n\t"
 	    "1:\n\t"
@@ -442,7 +442,7 @@ unsigned int fls_u64(uint64_t x)
 {
 	long r;
 
-	asm("bsrq %1,%0\n\t"
+	__asm__ ("bsrq %1,%0\n\t"
 	    "jnz 1f\n\t"
 	    "movq $-1,%0\n\t"
 	    "1:\n\t"
