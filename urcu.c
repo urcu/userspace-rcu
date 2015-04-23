@@ -100,7 +100,21 @@ void __attribute__((constructor)) rcu_init(void);
 void __attribute__((destructor)) rcu_exit(void);
 #endif
 
+/*
+ * rcu_gp_lock ensures mutual exclusion between threads calling
+ * synchronize_rcu().
+ */
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
+/*
+ * rcu_registry_lock ensures mutual exclusion between threads
+ * registering and unregistering themselves to/from the registry, and
+ * with threads reading that registry from synchronize_rcu(). However,
+ * this lock is not held all the way through the completion of awaiting
+ * for the grace period. It is sporadically released between iterations
+ * on the registry.
+ * rcu_registry_lock may nest inside rcu_gp_lock.
+ */
+static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
 
 /*
@@ -226,6 +240,10 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
+/*
+ * Always called with rcu_registry lock held. Releases this lock between
+ * iterations and grabs it again. Holds the lock when it returns.
+ */
 static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
 			struct cds_list_head *qsreaders)
@@ -282,10 +300,14 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			}
 			break;
 		} else {
+			/* Temporarily unlock the registry lock. */
+			mutex_unlock(&rcu_registry_lock);
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
 				wait_gp();
 			else
 				caa_cpu_relax();
+			/* Re-lock the registry lock before the next loop. */
+			mutex_lock(&rcu_registry_lock);
 		}
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
@@ -305,12 +327,16 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 				smp_mb_master(RCU_MB_GROUP);
 				wait_gp_loops = 0;
 			}
+			/* Temporarily unlock the registry lock. */
+			mutex_unlock(&rcu_registry_lock);
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				wait_gp();
 				wait_gp_loops++;
 			} else {
 				caa_cpu_relax();
 			}
+			/* Re-lock the registry lock before the next loop. */
+			mutex_lock(&rcu_registry_lock);
 		}
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
@@ -348,17 +374,23 @@ void synchronize_rcu(void)
 	 */
 	urcu_move_waiters(&waiters, &gp_waiters);
 
+	mutex_lock(&rcu_registry_lock);
+
 	if (cds_list_empty(&registry))
 		goto out;
 
-	/* All threads should read qparity before accessing data structure
-	 * where new ptr points to. Must be done within rcu_gp_lock because it
-	 * iterates on reader threads.*/
+	/*
+	 * All threads should read qparity before accessing data structure
+	 * where new ptr points to. Must be done within rcu_registry_lock
+	 * because it iterates on reader threads.
+	 */
 	/* Write new ptr before changing the qparity */
 	smp_mb_master(RCU_MB_GROUP);
 
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
+	 * wait_for_readers() can release and grab again rcu_registry_lock
+	 * interally.
 	 */
 	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
 
@@ -399,6 +431,8 @@ void synchronize_rcu(void)
 
 	/*
 	 * Wait for readers to observe new parity or be quiescent.
+	 * wait_for_readers() can release and grab again rcu_registry_lock
+	 * interally.
 	 */
 	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
 
@@ -407,11 +441,14 @@ void synchronize_rcu(void)
 	 */
 	cds_list_splice(&qsreaders, &registry);
 
-	/* Finish waiting for reader threads before letting the old ptr being
-	 * freed. Must be done within rcu_gp_lock because it iterates on reader
-	 * threads. */
+	/*
+	 * Finish waiting for reader threads before letting the old ptr
+	 * being freed. Must be done within rcu_registry_lock because it
+	 * iterates on reader threads.
+	 */
 	smp_mb_master(RCU_MB_GROUP);
 out:
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 
 	/*
@@ -447,17 +484,17 @@ void rcu_register_thread(void)
 	assert(URCU_TLS(rcu_reader).need_mb == 0);
 	assert(!(URCU_TLS(rcu_reader).ctr & RCU_GP_CTR_NEST_MASK));
 
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	rcu_init();	/* In case gcc does not support constructor attribute */
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 }
 
 void rcu_unregister_thread(void)
 {
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	cds_list_del(&URCU_TLS(rcu_reader).node);
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 }
 
 #ifdef RCU_MEMBARRIER
@@ -488,9 +525,9 @@ static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
  * rcu_init constructor. Called when the library is linked, but also when
  * reader threads are calling rcu_register_thread().
  * Should only be called by a single thread at a given time. This is ensured by
- * holing the rcu_gp_lock from rcu_register_thread() or by running at library
- * load time, which should not be executed by multiple threads nor concurrently
- * with rcu_register_thread() anyway.
+ * holing the rcu_registry_lock from rcu_register_thread() or by running
+ * at library load time, which should not be executed by multiple
+ * threads nor concurrently with rcu_register_thread() anyway.
  */
 void rcu_init(void)
 {

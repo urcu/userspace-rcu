@@ -99,7 +99,21 @@ void __attribute__((constructor)) rcu_bp_init(void);
 static
 void __attribute__((destructor)) rcu_bp_exit(void);
 
+/*
+ * rcu_gp_lock ensures mutual exclusion between threads calling
+ * synchronize_rcu().
+ */
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
+/*
+ * rcu_registry_lock ensures mutual exclusion between threads
+ * registering and unregistering themselves to/from the registry, and
+ * with threads reading that registry from synchronize_rcu(). However,
+ * this lock is not held all the way through the completion of awaiting
+ * for the grace period. It is sporadically released between iterations
+ * on the registry.
+ * rcu_registry_lock may nest inside rcu_gp_lock.
+ */
+static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 static int initialized;
@@ -160,6 +174,10 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 		urcu_die(ret);
 }
 
+/*
+ * Always called with rcu_registry lock held. Releases this lock between
+ * iterations and grabs it again. Holds the lock when it returns.
+ */
 static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
 			struct cds_list_head *qsreaders)
@@ -202,10 +220,14 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 		if (cds_list_empty(input_readers)) {
 			break;
 		} else {
+			/* Temporarily unlock the registry lock. */
+			mutex_unlock(&rcu_registry_lock);
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
 				(void) poll(NULL, 0, RCU_SLEEP_DELAY_MS);
 			else
 				caa_cpu_relax();
+			/* Re-lock the registry lock before the next loop. */
+			mutex_lock(&rcu_registry_lock);
 		}
 	}
 }
@@ -224,6 +246,8 @@ void synchronize_rcu(void)
 
 	mutex_lock(&rcu_gp_lock);
 
+	mutex_lock(&rcu_registry_lock);
+
 	if (cds_list_empty(&registry))
 		goto out;
 
@@ -234,6 +258,8 @@ void synchronize_rcu(void)
 
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
+	 * wait_for_readers() can release and grab again rcu_registry_lock
+	 * interally.
 	 */
 	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
 
@@ -263,6 +289,8 @@ void synchronize_rcu(void)
 
 	/*
 	 * Wait for readers to observe new parity or be quiescent.
+	 * wait_for_readers() can release and grab again rcu_registry_lock
+	 * interally.
 	 */
 	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
 
@@ -277,6 +305,7 @@ void synchronize_rcu(void)
 	 */
 	cmm_smp_mb();
 out:
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
@@ -485,9 +514,9 @@ void rcu_bp_register(void)
 	 */
 	rcu_bp_init();
 
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	add_thread();
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 end:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	if (ret)
@@ -508,9 +537,9 @@ void rcu_bp_unregister(struct rcu_reader *rcu_reader_reg)
 	if (ret)
 		abort();
 
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	remove_thread(rcu_reader_reg);
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	if (ret)
 		abort();
@@ -564,9 +593,10 @@ void rcu_bp_exit(void)
 }
 
 /*
- * Holding the rcu_gp_lock across fork will make sure we fork() don't race with
- * a concurrent thread executing with this same lock held. This ensures that the
- * registry is in a coherent state in the child.
+ * Holding the rcu_gp_lock and rcu_registry_lock across fork will make
+ * sure we fork() don't race with a concurrent thread executing with
+ * any of those locks held. This ensures that the registry and data
+ * protected by rcu_gp_lock are in a coherent state in the child.
  */
 void rcu_bp_before_fork(void)
 {
@@ -578,6 +608,7 @@ void rcu_bp_before_fork(void)
 	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
 	assert(!ret);
 	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	saved_fork_signal_mask = oldmask;
 }
 
@@ -587,6 +618,7 @@ void rcu_bp_after_fork_parent(void)
 	int ret;
 
 	oldmask = saved_fork_signal_mask;
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
@@ -594,7 +626,7 @@ void rcu_bp_after_fork_parent(void)
 
 /*
  * Prune all entries from registry except our own thread. Fits the Linux
- * fork behavior. Called with rcu_gp_lock held.
+ * fork behavior. Called with rcu_gp_lock and rcu_registry_lock held.
  */
 static
 void urcu_bp_prune_registry(void)
@@ -622,6 +654,7 @@ void rcu_bp_after_fork_child(void)
 
 	urcu_bp_prune_registry();
 	oldmask = saved_fork_signal_mask;
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
