@@ -51,7 +51,21 @@
 
 void __attribute__((destructor)) rcu_exit(void);
 
+/*
+ * rcu_gp_lock ensures mutual exclusion between threads calling
+ * synchronize_rcu().
+ */
 static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
+/*
+ * rcu_registry_lock ensures mutual exclusion between threads
+ * registering and unregistering themselves to/from the registry, and
+ * with threads reading that registry from synchronize_rcu(). However,
+ * this lock is not held all the way through the completion of awaiting
+ * for the grace period. It is sporadically released between iterations
+ * on the registry.
+ * rcu_registry_lock may nest inside rcu_gp_lock.
+ */
+static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int32_t gp_futex;
 
@@ -116,6 +130,10 @@ static void wait_gp(void)
 		      NULL, NULL, 0);
 }
 
+/*
+ * Always called with rcu_registry lock held. Releases this lock between
+ * iterations and grabs it again. Holds the lock when it returns.
+ */
 static void update_counter_and_wait(void)
 {
 	CDS_LIST_HEAD(qsreaders);
@@ -178,6 +196,8 @@ static void update_counter_and_wait(void)
 			}
 			break;
 		} else {
+			/* Temporarily unlock the registry lock. */
+			mutex_unlock(&rcu_registry_lock);
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				wait_gp();
 			} else {
@@ -187,6 +207,8 @@ static void update_counter_and_wait(void)
 				cmm_smp_mb();
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 			}
+			/* Re-lock the registry lock before the next loop. */
+			mutex_lock(&rcu_registry_lock);
 		}
 	}
 	/* put back the reader list in the registry */
@@ -219,12 +241,15 @@ void synchronize_rcu(void)
 		cmm_smp_mb();
 
 	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 
 	if (cds_list_empty(&registry))
 		goto out;
 
 	/*
 	 * Wait for previous parity to be empty of readers.
+	 * update_counter_and_wait() can release and grab again
+	 * rcu_registry_lock interally.
 	 */
 	update_counter_and_wait();	/* 0 -> 1, wait readers in parity 0 */
 
@@ -247,9 +272,12 @@ void synchronize_rcu(void)
 
 	/*
 	 * Wait for previous parity to be empty of readers.
+	 * update_counter_and_wait() can release and grab again
+	 * rcu_registry_lock interally.
 	 */
 	update_counter_and_wait();	/* 1 -> 0, wait readers in parity 1 */
 out:
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 
 	/*
@@ -279,10 +307,16 @@ void synchronize_rcu(void)
 		cmm_smp_mb();
 
 	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	if (cds_list_empty(&registry))
 		goto out;
+	/*
+	 * update_counter_and_wait() can release and grab again
+	 * rcu_registry_lock interally.
+	 */
 	update_counter_and_wait();
 out:
+	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
 
 	if (was_online)
@@ -326,9 +360,9 @@ void rcu_register_thread(void)
 	URCU_TLS(rcu_reader).tid = pthread_self();
 	assert(URCU_TLS(rcu_reader).ctr == 0);
 
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 	_rcu_thread_online();
 }
 
@@ -339,9 +373,9 @@ void rcu_unregister_thread(void)
 	 * with a waiting writer.
 	 */
 	_rcu_thread_offline();
-	mutex_lock(&rcu_gp_lock);
+	mutex_lock(&rcu_registry_lock);
 	cds_list_del(&URCU_TLS(rcu_reader).node);
-	mutex_unlock(&rcu_gp_lock);
+	mutex_unlock(&rcu_registry_lock);
 }
 
 void rcu_exit(void)
