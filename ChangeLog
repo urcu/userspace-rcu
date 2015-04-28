@@ -1,3 +1,12 @@
+2015-04-28 Userspace RCU 0.7.14
+	* Fix: call rcu should call internal RCU API
+	* Fix: deadlock when thread join is issued in read-side C.S.
+	* Fix: rename RCU_DEBUG to DEBUG_RCU in urcu-qsbr.h
+	* Mark braced-groups within expressions with __extension__
+	* Fix: compat_futex_noasync race condition
+	* Fix: documentation: urcu-pointer.h: s/rcu_dereference_pointer/rcu_dereference/
+	* Fix: silence gcc -Wextra warning
+
 2014-10-21 Userspace RCU 0.7.13
 	* rculfhash: remove duplicated code
 	* rculfhash: handle pthread_create failures
