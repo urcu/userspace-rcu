@@ -171,6 +171,15 @@ void cds_list_splice(struct cds_list_head *add, struct cds_list_head *head)
 		&pos->member != (head); \
 		pos = p, p = cds_list_entry(pos->member.next, __typeof__(*pos), member))
 
+/*
+ * Same as cds_list_for_each_entry_safe, but starts from "pos" which should
+ * point to an entry within the list.
+ */
+#define cds_list_for_each_entry_safe_from(pos, p, head, member) \
+        for (p = cds_list_entry(pos->member.next, __typeof__(*pos), member); \
+                &pos->member != (head); \
+                pos = p, p = cds_list_entry(pos->member.next, __typeof__(*pos), member))
+
 static inline
 int cds_list_empty(struct cds_list_head *head)
 {
