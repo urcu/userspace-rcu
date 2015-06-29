@@ -45,6 +45,9 @@
 #include "urcu/ref.h"
 #include "urcu-die.h"
 
+#define SET_AFFINITY_CHECK_PERIOD		(1U << 8)	/* 256 */
+#define SET_AFFINITY_CHECK_PERIOD_MASK		(SET_AFFINITY_CHECK_PERIOD - 1)
+
 /* Data structure that identifies a call_rcu thread. */
 
 struct call_rcu_data {
@@ -62,6 +65,7 @@ struct call_rcu_data {
 	unsigned long qlen; /* maintained for debugging. */
 	pthread_t tid;
 	int cpu_affinity;
+	unsigned long gp_count;
 	struct cds_list_head list;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
@@ -203,22 +207,42 @@ static void call_rcu_unlock(pthread_mutex_t *pmp)
 		urcu_die(ret);
 }
 
+/*
+ * Periodically retry setting CPU affinity if we migrate.
+ * Losing affinity can be caused by CPU hotunplug/hotplug, or by
+ * cpuset(7).
+ */
 #if HAVE_SCHED_SETAFFINITY
 static
 int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 {
 	cpu_set_t mask;
+	int ret;
 
 	if (crdp->cpu_affinity < 0)
+		return 0;
+	if (++crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
+		return 0;
+	if (urcu_sched_getcpu() == crdp->cpu_affinity)
 		return 0;
 
 	CPU_ZERO(&mask);
 	CPU_SET(crdp->cpu_affinity, &mask);
 #if SCHED_SETAFFINITY_ARGS == 2
-	return sched_setaffinity(0, &mask);
+	ret = sched_setaffinity(0, &mask);
 #else
-	return sched_setaffinity(0, sizeof(mask), &mask);
+	ret = sched_setaffinity(0, sizeof(mask), &mask);
 #endif
+	/*
+	 * EINVAL is fine: can be caused by hotunplugged CPUs, or by
+	 * cpuset(7). This is why we should always retry if we detect
+	 * migration.
+	 */
+	if (ret && errno == EINVAL) {
+		ret = 0;
+		errno = 0;
+	}
+	return ret;
 }
 #else
 static
@@ -275,10 +299,8 @@ static void *call_rcu_thread(void *arg)
 	unsigned long cbcount;
 	struct call_rcu_data *crdp = (struct call_rcu_data *) arg;
 	int rt = !!(uatomic_read(&crdp->flags) & URCU_CALL_RCU_RT);
-	int ret;
 
-	ret = set_thread_cpu_affinity(crdp);
-	if (ret)
+	if (set_thread_cpu_affinity(crdp))
 		urcu_die(errno);
 
 	/*
@@ -297,6 +319,9 @@ static void *call_rcu_thread(void *arg)
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
+
+		if (set_thread_cpu_affinity(crdp))
+			urcu_die(errno);
 
 		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSE) {
 			/*
@@ -391,6 +416,7 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 	crdp->flags = flags;
 	cds_list_add(&crdp->list, &call_rcu_data_list);
 	crdp->cpu_affinity = cpu_affinity;
+	crdp->gp_count = 0;
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
 	*crdpp = crdp;
 	ret = pthread_create(&crdp->tid, NULL, call_rcu_thread, crdp);
