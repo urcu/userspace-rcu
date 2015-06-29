@@ -98,7 +98,7 @@ ___cds_wfq_node_sync_next(struct cds_wfq_node *node)
 	 */
 	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
 		if (++attempt >= WFQ_ADAPT_ATTEMPTS) {
-			poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
+			(void) poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
 			attempt = 0;
 		} else
 			caa_cpu_relax();
