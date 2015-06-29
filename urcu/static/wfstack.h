@@ -160,7 +160,7 @@ ___cds_wfs_node_sync_next(struct cds_wfs_node *node, int blocking)
 		if (!blocking)
 			return CDS_WFS_WOULDBLOCK;
 		if (++attempt >= CDS_WFS_ADAPT_ATTEMPTS) {
-			poll(NULL, 0, CDS_WFS_WAIT);	/* Wait for 10ms */
+			(void) poll(NULL, 0, CDS_WFS_WAIT);	/* Wait for 10ms */
 			attempt = 0;
 		} else {
 			caa_cpu_relax();

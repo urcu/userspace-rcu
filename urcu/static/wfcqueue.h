@@ -221,7 +221,7 @@ ___cds_wfcq_busy_wait(int *attempt, int blocking)
 	if (!blocking)
 		return 1;
 	if (++(*attempt) >= WFCQ_ADAPT_ATTEMPTS) {
-		poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
+		(void) poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
 		*attempt = 0;
 	} else {
 		caa_cpu_relax();
