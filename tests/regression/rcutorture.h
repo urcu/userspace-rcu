@@ -129,7 +129,7 @@ void *rcu_read_perf_test(void *arg)
 	uatomic_inc(&nthreadsrunning);
 	put_thread_offline();
 	while (goflag == GOFLAG_INIT)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	put_thread_online();
 	while (goflag == GOFLAG_RUN) {
 		for (i = 0; i < RCU_READ_RUN; i++) {
@@ -167,7 +167,7 @@ void *rcu_update_perf_test(void *arg)
 	}
 	uatomic_inc(&nthreadsrunning);
 	while (goflag == GOFLAG_INIT)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
 		synchronize_rcu();
 		n_updates_local++;
@@ -190,7 +190,7 @@ void perftestrun(int nthreads, int nreaders, int nupdaters)
 
 	cmm_smp_mb();
 	while (uatomic_read(&nthreadsrunning) < nthreads)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	goflag = GOFLAG_RUN;
 	cmm_smp_mb();
 	sleep(duration);
@@ -289,7 +289,7 @@ void *rcu_read_stress_test(void *arg)
 	rcu_register_thread();
 	put_thread_offline();
 	while (goflag == GOFLAG_INIT)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	put_thread_online();
 	while (goflag == GOFLAG_RUN) {
 		rcu_read_lock();
@@ -345,7 +345,7 @@ void *rcu_update_stress_test(void *arg)
 	struct rcu_head rh;
 
 	while (goflag == GOFLAG_INIT)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
 		i = rcu_stress_idx + 1;
 		if (i >= RCU_STRESS_PIPE_LEN)
@@ -396,10 +396,10 @@ void *rcu_fake_update_stress_test(void *arg)
 		}
 	}
 	while (goflag == GOFLAG_INIT)
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
 		synchronize_rcu();
-		poll(NULL, 0, 1);
+		(void) poll(NULL, 0, 1);
 	}
 	return NULL;
 }
