@@ -148,7 +148,7 @@ static void mutex_lock_defer(pthread_mutex_t *mutex)
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR)
 			urcu_die(ret);
-		poll(NULL,0,10);
+		(void) poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
@@ -373,7 +373,7 @@ static void *thr_defer(void *args)
 		 */
 		wait_defer();
 		/* Sleeping after wait_defer to let many callbacks enqueue */
-		poll(NULL,0,100);	/* wait for 100ms */
+		(void) poll(NULL,0,100);	/* wait for 100ms */
 		rcu_defer_barrier();
 	}
 
