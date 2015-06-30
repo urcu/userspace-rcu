@@ -23,28 +23,18 @@
 #include <stdlib.h>
 #include "test_urcu_multiflavor.h"
 
+#include "tap.h"
+
 int main(int argc, char **argv)
 {
-	int ret;
+	plan_tests(5);
 
-	ret = test_mf_memb();
-	if (ret)
-		goto failure;
-	ret = test_mf_mb();
-	if (ret)
-		goto failure;
-	ret = test_mf_signal();
-	if (ret)
-		goto failure;
-	ret = test_mf_qsbr();
-	if (ret)
-		goto failure;
-	ret = test_mf_bp();
-	if (ret)
-		goto failure;
+	ok1(!test_mf_memb());
 
-	exit(EXIT_SUCCESS);
+	ok1(!test_mf_mb());
+	ok1(!test_mf_signal());
+	ok1(!test_mf_qsbr());
+	ok1(!test_mf_bp());
 
-failure:
-	exit(EXIT_FAILURE);
+	return exit_status();
 }

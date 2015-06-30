@@ -1,4 +1,4 @@
-SUBDIRS = common unit benchmark regression
+SUBDIRS = utils common unit benchmark regression
 
 .PHONY: bench regtest
 

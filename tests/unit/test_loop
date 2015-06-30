@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR=$(dirname $0)
+
+while [ 0 ]; do
+	$DIR/run.sh $DIR/unit_tests
+	if [ "$?" != "0" ]; then
+		break;
+	fi
+done
+
+echo "$0: ********* STOPPED BECAUSE OF ERROR *********"

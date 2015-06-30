@@ -1,0 +1,3 @@
+./test_uatomic
+./test_urcu_multiflavor
+./test_urcu_multiflavor_dynlink

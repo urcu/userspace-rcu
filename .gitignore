@@ -8,6 +8,8 @@ tests/unit/test_uatomic
 tests/unit/test_urcu_multiflavor
 tests/unit/test_urcu_multiflavor_dynlink
 
+tests/utils/libtap.a
+
 tests/regression/rcutorture_qsbr
 tests/regression/rcutorture_urcu
 tests/regression/rcutorture_urcu_bp
