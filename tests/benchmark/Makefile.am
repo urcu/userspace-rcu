@@ -1,6 +1,22 @@
 AM_LDFLAGS=-lpthread
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
 
+SCRIPT_LIST = common.sh \
+	runall.sh \
+	runhash.sh \
+	runtests.sh \
+	runpaul-phase1.sh \
+	runpaul-phase2.sh \
+	runpaul-phase3.sh \
+	runpaul-phase4.sh \
+	runpaul-phase5.sh \
+	runpaul-phase6.sh \
+	runpaul-phase7.sh \
+	runtests-batch.sh \
+	subphase4.sh
+
+dist_noinst_SCRIPTS = $(SCRIPT_LIST)
+
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \
         test_rwlock_timing test_rwlock test_perthreadlock_timing \
@@ -29,8 +45,6 @@ URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
 
 DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
-
-EXTRA_DIST = *.sh
 
 test_urcu_SOURCES = test_urcu.c
 test_urcu_LDADD = $(URCU_LIB)
@@ -191,6 +205,20 @@ test_urcu_hash_SOURCES = test_urcu_hash.c test_urcu_hash.h \
 		test_urcu_hash_rw.c test_urcu_hash_unique.c
 test_urcu_hash_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
 test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_COMMON_LIB) $(URCU_CDS_LIB)
+
+all-local:
+	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+		for script in $(SCRIPT_LIST); do \
+			cp -f $(srcdir)/$$script $(builddir); \
+		done; \
+	fi
+
+clean-local:
+	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+		for script in $(SCRIPT_LIST); do \
+			rm -f $(builddir)/$$script; \
+		done; \
+	fi
 
 .PHONY: bench
 
