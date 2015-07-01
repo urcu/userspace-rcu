@@ -149,7 +149,7 @@ static void mutex_lock(pthread_mutex_t *mutex)
 			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
 			cmm_smp_mb();
 		}
-		poll(NULL,0,10);
+		(void) poll(NULL, 0, 10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
@@ -217,7 +217,7 @@ static void force_mb_all_readers(void)
 	cds_list_for_each_entry(index, &registry, node) {
 		while (CMM_LOAD_SHARED(index->need_mb)) {
 			pthread_kill(index->tid, SIGRCU);
-			poll(NULL, 0, 1);
+			(void) poll(NULL, 0, 1);
 		}
 	}
 	cmm_smp_mb();	/* read ->need_mb before ending the barrier */
