@@ -25,6 +25,7 @@
 
 #include <urcu/uatomic.h>
 #include <urcu/wfstack.h>
+#include "urcu-die.h"
 
 /*
  * Number of busy-loop attempts before waiting on futex for grace period
@@ -122,8 +123,11 @@ void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 	cmm_smp_mb();
 	assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
 	uatomic_set(&wait->state, URCU_WAIT_WAKEUP);
-	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING))
-		futex_noasync(&wait->state, FUTEX_WAKE, 1, NULL, NULL, 0);
+	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
+		if (futex_noasync(&wait->state, FUTEX_WAKE, 1,
+				NULL, NULL, 0) < 0)
+			urcu_die(errno);
+	}
 	/* Allow teardown of struct urcu_wait memory. */
 	uatomic_or(&wait->state, URCU_WAIT_TEARDOWN);
 }
@@ -144,8 +148,20 @@ void urcu_adaptative_busy_wait(struct urcu_wait_node *wait)
 			goto skip_futex_wait;
 		caa_cpu_relax();
 	}
-	futex_noasync(&wait->state, FUTEX_WAIT,
-		URCU_WAIT_WAITING, NULL, NULL, 0);
+	while (futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING,
+			NULL, NULL, 0)) {
+		switch (errno) {
+		case EWOULDBLOCK:
+			/* Value already changed. */
+			goto skip_futex_wait;
+		case EINTR:
+			/* Retry if interrupted by signal. */
+			break;	/* Get out of switch. */
+		default:
+			/* Unexpected error. */
+			urcu_die(errno);
+		}
+	}
 skip_futex_wait:
 
 	/* Tell waker thread than we are running. */
