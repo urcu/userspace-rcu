@@ -235,9 +235,22 @@ static void call_rcu_wait(struct call_rcu_data *crdp)
 {
 	/* Read call_rcu list before read futex */
 	cmm_smp_mb();
-	if (uatomic_read(&crdp->futex) == -1)
-		futex_async(&crdp->futex, FUTEX_WAIT, -1,
-		      NULL, NULL, 0);
+	if (uatomic_read(&crdp->futex) != -1)
+		return;
+	while (futex_async(&crdp->futex, FUTEX_WAIT, -1,
+			NULL, NULL, 0)) {
+		switch (errno) {
+		case EWOULDBLOCK:
+			/* Value already changed. */
+			return;
+		case EINTR:
+			/* Retry if interrupted by signal. */
+			break;	/* Get out of switch. */
+		default:
+			/* Unexpected error. */
+			urcu_die(errno);
+		}
+	}
 }
 
 static void call_rcu_wake_up(struct call_rcu_data *crdp)
@@ -246,8 +259,9 @@ static void call_rcu_wake_up(struct call_rcu_data *crdp)
 	cmm_smp_mb();
 	if (caa_unlikely(uatomic_read(&crdp->futex) == -1)) {
 		uatomic_set(&crdp->futex, 0);
-		futex_async(&crdp->futex, FUTEX_WAKE, 1,
-		      NULL, NULL, 0);
+		if (futex_async(&crdp->futex, FUTEX_WAKE, 1,
+				NULL, NULL, 0) < 0)
+			urcu_die(errno);
 	}
 }
 

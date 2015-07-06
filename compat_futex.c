@@ -54,7 +54,7 @@ pthread_cond_t __urcu_compat_futex_cond = PTHREAD_COND_INITIALIZER;
 int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	int ret, gret = 0;
+	int ret;
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
@@ -70,7 +70,11 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	cmm_smp_mb();
 
 	ret = pthread_mutex_lock(&__urcu_compat_futex_lock);
-	assert(!ret);
+	if (ret) {
+		errno = ret;
+		ret = -1;
+		goto end;
+	}
 	switch (op) {
 	case FUTEX_WAIT:
 		/*
@@ -91,11 +95,16 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 		pthread_cond_broadcast(&__urcu_compat_futex_cond);
 		break;
 	default:
-		gret = -EINVAL;
+		errno = EINVAL;
+		ret = -1;
 	}
 	ret = pthread_mutex_unlock(&__urcu_compat_futex_lock);
-	assert(!ret);
-	return gret;
+	if (ret) {
+		errno = ret;
+		ret = -1;
+	}
+end:
+	return ret;
 }
 
 /*
@@ -107,6 +116,8 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
+	int ret = 0;
+
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
 	 * account. 
@@ -122,13 +133,20 @@ int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 
 	switch (op) {
 	case FUTEX_WAIT:
-		while (CMM_LOAD_SHARED(*uaddr) == val)
-			poll(NULL, 0, 10);
+		while (CMM_LOAD_SHARED(*uaddr) == val) {
+			if (poll(NULL, 0, 10) < 0) {
+				ret = -1;
+				/* Keep poll errno. Caller handles EINTR. */
+				goto end;
+			}
+		}
 		break;
 	case FUTEX_WAKE:
 		break;
 	default:
-		return -EINVAL;
+		errno = EINVAL;
+		ret = -1;
 	}
-	return 0;
+end:
+	return ret;
 }

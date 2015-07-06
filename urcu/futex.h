@@ -42,6 +42,9 @@ extern "C" {
  *
  * futex_async is signal-handler safe for the wakeup. It uses polling
  * on the wait-side in compatibility mode.
+ *
+ * BEWARE: sys_futex() FUTEX_WAIT may return early if interrupted
+ * (returns EINTR).
  */
 
 #ifdef CONFIG_RCU_HAVE_FUTEX

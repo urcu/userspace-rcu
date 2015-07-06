@@ -224,9 +224,22 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	smp_mb_master(RCU_MB_GROUP);
-	if (uatomic_read(&gp_futex) == -1)
-		futex_async(&gp_futex, FUTEX_WAIT, -1,
-		      NULL, NULL, 0);
+	if (uatomic_read(&gp_futex) != -1)
+		return;
+	while (futex_async(&gp_futex, FUTEX_WAIT, -1,
+			NULL, NULL, 0)) {
+		switch (errno) {
+		case EWOULDBLOCK:
+			/* Value already changed. */
+			return;
+		case EINTR:
+			/* Retry if interrupted by signal. */
+			break;	/* Get out of switch. */
+		default:
+			/* Unexpected error. */
+			urcu_die(errno);
+		}
+	}
 }
 
 /*

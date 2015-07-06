@@ -144,8 +144,13 @@ static inline void wake_up_gp(void)
 		if (uatomic_read(&gp_futex) != -1)
 			return;
 		uatomic_set(&gp_futex, 0);
-		futex_noasync(&gp_futex, FUTEX_WAKE, 1,
-		      NULL, NULL, 0);
+		/*
+		 * Ignoring return value until we can make this function
+		 * return something (because urcu_die() is not publicly
+		 * exposed).
+		 */
+		(void) futex_noasync(&gp_futex, FUTEX_WAKE, 1,
+				NULL, NULL, 0);
 	}
 }
 
