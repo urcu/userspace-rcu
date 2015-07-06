@@ -30,6 +30,7 @@
 
 #include <urcu/arch.h>
 #include <urcu/futex.h>
+#include <urcu/system.h>
 
 /*
  * Using attribute "weak" for __urcu_compat_futex_lock and
@@ -77,7 +78,7 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 		 * Comparing *uaddr content against val figures out which
 		 * thread has been awakened.
 		 */
-		while (*uaddr == val)
+		while (CMM_LOAD_SHARED(*uaddr) == val)
 			pthread_cond_wait(&__urcu_compat_futex_cond,
 				&__urcu_compat_futex_lock);
 		break;
@@ -121,7 +122,7 @@ int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 
 	switch (op) {
 	case FUTEX_WAIT:
-		while (*uaddr == val)
+		while (CMM_LOAD_SHARED(*uaddr) == val)
 			poll(NULL, 0, 10);
 		break;
 	case FUTEX_WAKE:
