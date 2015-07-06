@@ -126,9 +126,22 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	cmm_smp_rmb();
-	if (uatomic_read(&rcu_gp.futex) == -1)
-		futex_noasync(&rcu_gp.futex, FUTEX_WAIT, -1,
-		      NULL, NULL, 0);
+	if (uatomic_read(&rcu_gp.futex) != -1)
+		return;
+	while (futex_noasync(&rcu_gp.futex, FUTEX_WAIT, -1,
+			NULL, NULL, 0)) {
+		switch (errno) {
+		case EWOULDBLOCK:
+			/* Value already changed. */
+			return;
+		case EINTR:
+			/* Retry if interrupted by signal. */
+			break;	/* Get out of switch. */
+		default:
+			/* Unexpected error. */
+			urcu_die(errno);
+		}
+	}
 }
 
 /*

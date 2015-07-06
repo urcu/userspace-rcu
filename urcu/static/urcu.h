@@ -167,8 +167,13 @@ static inline void wake_up_gp(void)
 {
 	if (caa_unlikely(uatomic_read(&rcu_gp.futex) == -1)) {
 		uatomic_set(&rcu_gp.futex, 0);
-		futex_async(&rcu_gp.futex, FUTEX_WAKE, 1,
-		      NULL, NULL, 0);
+		/*
+		 * Ignoring return value until we can make this function
+		 * return something (because urcu_die() is not publicly
+		 * exposed).
+		 */
+		(void) futex_async(&rcu_gp.futex, FUTEX_WAKE, 1,
+				NULL, NULL, 0);
 	}
 }
 

@@ -160,8 +160,9 @@ static void wake_up_defer(void)
 {
 	if (caa_unlikely(uatomic_read(&defer_thread_futex) == -1)) {
 		uatomic_set(&defer_thread_futex, 0);
-		futex_noasync(&defer_thread_futex, FUTEX_WAKE, 1,
-		      NULL, NULL, 0);
+		if (futex_noasync(&defer_thread_futex, FUTEX_WAKE, 1,
+				NULL, NULL, 0) < 0)
+			urcu_die(errno);
 	}
 }
 
@@ -198,9 +199,22 @@ static void wait_defer(void)
 		uatomic_set(&defer_thread_futex, 0);
 	} else {
 		cmm_smp_rmb();	/* Read queue before read futex */
-		if (uatomic_read(&defer_thread_futex) == -1)
-			futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1,
-			      NULL, NULL, 0);
+		if (uatomic_read(&defer_thread_futex) != -1)
+			return;
+		while (futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1,
+				NULL, NULL, 0)) {
+			switch (errno) {
+			case EWOULDBLOCK:
+				/* Value already changed. */
+				return;
+			case EINTR:
+				/* Retry if interrupted by signal. */
+				break;	/* Get out of switch. */
+			default:
+				/* Unexpected error. */
+				urcu_die(errno);
+			}
+		}
 	}
 }
 
