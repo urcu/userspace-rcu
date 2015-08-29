@@ -77,9 +77,10 @@
 # define membarrier(...)		-ENOSYS
 #endif
 
-#define MEMBARRIER_EXPEDITED		(1 << 0)
-#define MEMBARRIER_DELAYED		(1 << 1)
-#define MEMBARRIER_QUERY		(1 << 16)
+enum membarrier_cmd {
+	MEMBARRIER_CMD_QUERY = 0,
+	MEMBARRIER_CMD_SHARED = (1 << 0),
+};
 
 #ifdef RCU_MEMBARRIER
 static int init_done;
@@ -167,7 +168,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 static void smp_mb_master(int group)
 {
 	if (caa_likely(rcu_has_sys_membarrier))
-		(void) membarrier(MEMBARRIER_EXPEDITED);
+		(void) membarrier(MEMBARRIER_CMD_SHARED, 0);
 	else
 		cmm_smp_mb();
 }
@@ -514,11 +515,15 @@ void rcu_unregister_thread(void)
 #ifdef RCU_MEMBARRIER
 void rcu_init(void)
 {
+	int ret;
+
 	if (init_done)
 		return;
 	init_done = 1;
-	if (!membarrier(MEMBARRIER_EXPEDITED | MEMBARRIER_QUERY))
+	ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
+	if (ret >= 0 && (ret & MEMBARRIER_CMD_SHARED)) {
 		rcu_has_sys_membarrier = 1;
+	}
 }
 #endif
 
