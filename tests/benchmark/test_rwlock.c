@@ -175,8 +175,11 @@ void *thr_reader(void *_count)
 	}
 
 	for (;;) {
+		int a;
+
 		pthread_rwlock_rdlock(&lock);
-		assert(test_array.a == 8);
+		a = test_array.a;
+		assert(a == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		pthread_rwlock_unlock(&lock);
