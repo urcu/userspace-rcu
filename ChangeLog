@@ -1,3 +1,13 @@
+2015-09-09 Userspace RCU 0.8.8
+	* Disable sys_membarrier
+	* Fix: volatile in assert()
+	* uatomic: Specify complete types for atomic function calls
+	* Fix: handle sys_futex() FUTEX_WAIT interrupted by signal
+	* Fix: compat_futex.c: *uaddr should be read as volatile
+	* Fix: make benchmark test run in oot build
+	* Fix: call_rcu_thread() affinity failure
+	* urcu: fix deprecation warning with new glibc
+
 2015-04-28 Userspace RCU 0.8.7
 	* Fix: deadlock when thread join is issued in read-side C.S.
 	* Fix: rename RCU_DEBUG to DEBUG_RCU in urcu-qsbr.h
