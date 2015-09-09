@@ -1,3 +1,11 @@
+2015-09-09 Userspace RCU 0.7.15
+	* Disable sys_membarrier
+	* uatomic: Specify complete types for atomic function calls
+	* Fix: handle sys_futex() FUTEX_WAIT interrupted by signal
+	* Fix: compat_futex.c: *uaddr should be read as volatile
+	* Fix: call_rcu_thread() affinity failure
+	* urcu: fix deprecation warning with new glibc
+
 2015-04-28 Userspace RCU 0.7.14
 	* Fix: call rcu should call internal RCU API
 	* Fix: deadlock when thread join is issued in read-side C.S.
