@@ -48,19 +48,13 @@
 #define RCU_MB
 #endif
 
+/*
+ * The ABI of sys_membarrier changed after its original implementation.
+ * Disable it for now. Use RCU_MB flavor instead.
+ */
 #ifdef RCU_MEMBARRIER
-#include <syscall.h>
-
-/* If the headers do not support SYS_membarrier, statically use RCU_MB */
-#ifdef SYS_membarrier
-# define MEMBARRIER_EXPEDITED		(1 << 0)
-# define MEMBARRIER_DELAYED		(1 << 1)
-# define MEMBARRIER_QUERY		(1 << 16)
-# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
-#else
-# undef RCU_MEMBARRIER
-# define RCU_MB
-#endif
+#undef RCU_MEMBARRIER
+#define RCU_MB
 #endif
 
 #ifdef RCU_MEMBARRIER
