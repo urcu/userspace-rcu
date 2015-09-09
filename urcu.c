@@ -64,18 +64,10 @@
 #define RCU_QS_ACTIVE_ATTEMPTS 100
 
 /*
- * RCU_MEMBARRIER is only possibly available on Linux.
+ * The ABI of sys_membarrier changed after its original implementation.
+ * Disable it for now. Use RCU_MB flavor instead.
  */
-#if defined(RCU_MEMBARRIER) && defined(__linux__)
-#include <syscall.h>
-#endif
-
-/* If the headers do not support SYS_membarrier, fall back on RCU_MB */
-#ifdef SYS_membarrier
-# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)		-ENOSYS
-#endif
+#define membarrier(...)		-ENOSYS
 
 #define MEMBARRIER_EXPEDITED		(1 << 0)
 #define MEMBARRIER_DELAYED		(1 << 1)
