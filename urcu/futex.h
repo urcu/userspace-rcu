@@ -47,22 +47,66 @@ extern "C" {
  * (returns EINTR).
  */
 
-#ifdef CONFIG_RCU_HAVE_FUTEX
-#include <urcu/syscall-compat.h>
-#define futex(...)	syscall(__NR_futex, __VA_ARGS__)
-#define futex_noasync(uaddr, op, val, timeout, uaddr2, val3)	\
-		futex(uaddr, op, val, timeout, uaddr2, val3)
-#define futex_async(uaddr, op, val, timeout, uaddr2, val3)	\
-		futex(uaddr, op, val, timeout, uaddr2, val3)
-#else
 extern int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
-	const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
-#define futex_noasync(uaddr, op, val, timeout, uaddr2, val3)	\
-		compat_futex_noasync(uaddr, op, val, timeout, uaddr2, val3)
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
 extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
-	const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
-#define futex_async(uaddr, op, val, timeout, uaddr2, val3)	\
-		compat_futex_async(uaddr, op, val, timeout, uaddr2, val3)
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
+
+#ifdef CONFIG_RCU_HAVE_FUTEX
+
+#include <unistd.h>
+#include <errno.h>
+#include <urcu/compiler.h>
+#include <urcu/syscall-compat.h>
+
+static inline int futex(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return syscall(__NR_futex, uaddr, op, val, timeout,
+			uaddr2, val3);
+}
+
+static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	int ret;
+
+	ret = futex(uaddr, op, val, timeout, uaddr2, val3);
+	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
+		return compat_futex_noasync(uaddr, op, val, timeout,
+				uaddr2, val3);
+	}
+	return ret;
+
+}
+
+static inline int futex_async(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	int ret;
+
+	ret = futex(uaddr, op, val, timeout, uaddr2, val3);
+	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
+		return compat_futex_async(uaddr, op, val, timeout,
+				uaddr2, val3);
+	}
+	return ret;
+}
+
+#else
+
+static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return compat_futex_noasync(uaddr, op, val, timeout, uaddr2, val3);
+}
+
+static inline int futex_async(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return compat_futex_async(uaddr, op, val, timeout, uaddr2, val3);
+}
+
 #endif
 
 #ifdef __cplusplus 
