@@ -25,9 +25,7 @@ else
 COMPAT=
 endif
 
-if COMPAT_FUTEX
 COMPAT+=$(top_srcdir)/compat_futex.c
-endif
 
 URCU=$(top_srcdir)/urcu.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfqueue.c $(COMPAT)
 URCU_QSBR=$(top_srcdir)/urcu-qsbr.c $(top_srcdir)/urcu-pointer.c $(top_srcdir)/wfqueue.c $(COMPAT)
