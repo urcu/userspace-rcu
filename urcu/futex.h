@@ -57,7 +57,7 @@ extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 #include <unistd.h>
 #include <errno.h>
 #include <urcu/compiler.h>
-#include <urcu/syscall-compat.h>
+#include <syscall.h>
 
 static inline int futex(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
