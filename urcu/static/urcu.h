@@ -224,6 +224,7 @@ static inline void _rcu_read_lock(void)
 	urcu_assert(URCU_TLS(rcu_reader).registered);
 	cmm_barrier();
 	tmp = URCU_TLS(rcu_reader).ctr;
+	urcu_assert((tmp & RCU_GP_CTR_NEST_MASK) != RCU_GP_CTR_NEST_MASK);
 	_rcu_read_lock_update(tmp);
 }
 

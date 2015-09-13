@@ -154,6 +154,7 @@ static inline void _rcu_read_lock(void)
 		rcu_bp_register(); /* If not yet registered. */
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	tmp = URCU_TLS(rcu_reader)->ctr;
+	urcu_assert((tmp & RCU_GP_CTR_NEST_MASK) != RCU_GP_CTR_NEST_MASK);
 	_rcu_read_lock_update(tmp);
 }
 
