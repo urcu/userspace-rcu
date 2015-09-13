@@ -31,7 +31,6 @@
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <assert.h>
 #include <limits.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -43,6 +42,7 @@
 #include <urcu/list.h>
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
+#include <urcu/debug.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,12 +55,6 @@ extern "C" {
  * performance degradation on the read-side due to the added function calls.
  * This is required to permit relinking with newer versions of the library.
  */
-
-#ifdef DEBUG_RCU
-#define rcu_assert(args...)	assert(args)
-#else
-#define rcu_assert(args...)
-#endif
 
 enum rcu_state {
 	RCU_READER_ACTIVE_CURRENT,
@@ -91,6 +85,8 @@ struct rcu_reader {
 	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 	int waiting;
 	pthread_t tid;
+	/* Reader registered flag, for internal checks. */
+	unsigned int registered:1;
 };
 
 extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
@@ -137,7 +133,7 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
  */
 static inline void _rcu_read_lock(void)
 {
-	rcu_assert(URCU_TLS(rcu_reader).ctr);
+	urcu_assert(URCU_TLS(rcu_reader).ctr);
 }
 
 /*
@@ -149,6 +145,7 @@ static inline void _rcu_read_lock(void)
  */
 static inline void _rcu_read_unlock(void)
 {
+	urcu_assert(URCU_TLS(rcu_reader).ctr);
 }
 
 /*
@@ -197,6 +194,7 @@ static inline void _rcu_quiescent_state(void)
 {
 	unsigned long gp_ctr;
 
+	urcu_assert(URCU_TLS(rcu_reader).registered);
 	if ((gp_ctr = CMM_LOAD_SHARED(rcu_gp.ctr)) == URCU_TLS(rcu_reader).ctr)
 		return;
 	_rcu_quiescent_state_update_and_wakeup(gp_ctr);
@@ -212,6 +210,7 @@ static inline void _rcu_quiescent_state(void)
  */
 static inline void _rcu_thread_offline(void)
 {
+	urcu_assert(URCU_TLS(rcu_reader).registered);
 	cmm_smp_mb();
 	CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, 0);
 	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
@@ -229,6 +228,7 @@ static inline void _rcu_thread_offline(void)
  */
 static inline void _rcu_thread_online(void)
 {
+	urcu_assert(URCU_TLS(rcu_reader).registered);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, CMM_LOAD_SHARED(rcu_gp.ctr));
 	cmm_smp_mb();

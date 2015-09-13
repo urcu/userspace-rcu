@@ -84,12 +84,6 @@
  * This is required to permit relinking with newer versions of the library.
  */
 
-#ifdef DEBUG_RCU
-#define rcu_assert(args...)	assert(args)
-#else
-#define rcu_assert(args...)
-#endif
-
 /*
  * defer queue.
  * Contains pointers. Encoded to save space when same callback is often used.

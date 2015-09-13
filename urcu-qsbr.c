@@ -468,6 +468,8 @@ void rcu_register_thread(void)
 	assert(URCU_TLS(rcu_reader).ctr == 0);
 
 	mutex_lock(&rcu_registry_lock);
+	assert(!URCU_TLS(rcu_reader).registered);
+	URCU_TLS(rcu_reader).registered = 1;
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_registry_lock);
 	_rcu_thread_online();
@@ -480,6 +482,8 @@ void rcu_unregister_thread(void)
 	 * with a waiting writer.
 	 */
 	_rcu_thread_offline();
+	assert(URCU_TLS(rcu_reader).registered);
+	URCU_TLS(rcu_reader).registered = 0;
 	mutex_lock(&rcu_registry_lock);
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);

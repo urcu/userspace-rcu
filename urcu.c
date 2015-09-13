@@ -500,6 +500,8 @@ void rcu_register_thread(void)
 	assert(!(URCU_TLS(rcu_reader).ctr & RCU_GP_CTR_NEST_MASK));
 
 	mutex_lock(&rcu_registry_lock);
+	assert(!URCU_TLS(rcu_reader).registered);
+	URCU_TLS(rcu_reader).registered = 1;
 	rcu_init();	/* In case gcc does not support constructor attribute */
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_registry_lock);
@@ -508,6 +510,8 @@ void rcu_register_thread(void)
 void rcu_unregister_thread(void)
 {
 	mutex_lock(&rcu_registry_lock);
+	assert(URCU_TLS(rcu_reader).registered);
+	URCU_TLS(rcu_reader).registered = 0;
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
 }

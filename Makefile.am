@@ -24,7 +24,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		$(top_srcdir)/urcu/map/*.h \
 		$(top_srcdir)/urcu/static/*.h \
 		urcu/rand-compat.h \
-		urcu/tls-compat.h
+		urcu/tls-compat.h urcu/debug.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h

@@ -42,6 +42,7 @@
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
 #include <urcu/rand-compat.h>
+#include <urcu/debug.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,12 +79,6 @@ enum rcu_state {
 	RCU_READER_ACTIVE_OLD,
 	RCU_READER_INACTIVE,
 };
-
-#ifdef DEBUG_RCU
-#define rcu_assert(args...)	assert(args)
-#else
-#define rcu_assert(args...)
-#endif
 
 /*
  * RCU memory barrier broadcast group. Currently, only broadcast to all process
@@ -157,6 +152,8 @@ struct rcu_reader {
 	/* Data used for registry */
 	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
+	/* Reader registered flag, for internal checks. */
+	unsigned int registered:1;
 };
 
 extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
@@ -224,6 +221,7 @@ static inline void _rcu_read_lock(void)
 {
 	unsigned long tmp;
 
+	urcu_assert(URCU_TLS(rcu_reader).registered);
 	cmm_barrier();
 	tmp = URCU_TLS(rcu_reader).ctr;
 	_rcu_read_lock_update(tmp);
@@ -257,6 +255,7 @@ static inline void _rcu_read_unlock(void)
 {
 	unsigned long tmp;
 
+	urcu_assert(URCU_TLS(rcu_reader).registered);
 	tmp = URCU_TLS(rcu_reader).ctr;
 	_rcu_read_unlock_update_and_wakeup(tmp);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */

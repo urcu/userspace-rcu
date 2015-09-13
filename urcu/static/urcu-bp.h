@@ -39,6 +39,7 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/tls-compat.h>
+#include <urcu/debug.h>
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
@@ -50,12 +51,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifdef DEBUG_RCU
-#define rcu_assert(args...)	assert(args)
-#else
-#define rcu_assert(args...)
 #endif
 
 enum rcu_state {
