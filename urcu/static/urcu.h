@@ -239,11 +239,11 @@ static inline void _rcu_read_unlock_update_and_wakeup(unsigned long tmp)
 {
 	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
 		smp_mb_slave(RCU_MB_GROUP);
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp - RCU_GP_COUNT);
 		smp_mb_slave(RCU_MB_GROUP);
 		wake_up_gp();
 	} else
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, URCU_TLS(rcu_reader).ctr - RCU_GP_COUNT);
+		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp - RCU_GP_COUNT);
 }
 
 /*
@@ -257,6 +257,7 @@ static inline void _rcu_read_unlock(void)
 
 	urcu_assert(URCU_TLS(rcu_reader).registered);
 	tmp = URCU_TLS(rcu_reader).ctr;
+	urcu_assert(tmp & RCU_GP_CTR_NEST_MASK);
 	_rcu_read_unlock_update_and_wakeup(tmp);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }

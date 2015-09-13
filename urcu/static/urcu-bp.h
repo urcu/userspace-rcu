@@ -164,11 +164,13 @@ static inline void _rcu_read_lock(void)
  */
 static inline void _rcu_read_unlock(void)
 {
-	/*
-	 * Finish using rcu before decrementing the pointer.
-	 */
+	unsigned long tmp;
+
+	tmp = URCU_TLS(rcu_reader)->ctr;
+	urcu_assert(tmp & RCU_GP_CTR_NEST_MASK);
+	/* Finish using rcu before decrementing the pointer. */
 	cmm_smp_mb();
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, URCU_TLS(rcu_reader)->ctr - RCU_GP_COUNT);
+	_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, tmp - RCU_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
