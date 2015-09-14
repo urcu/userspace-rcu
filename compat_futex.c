@@ -54,7 +54,7 @@ pthread_cond_t __urcu_compat_futex_cond = PTHREAD_COND_INITIALIZER;
 int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	int ret;
+	int ret, lockret;
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
@@ -69,9 +69,9 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	 */
 	cmm_smp_mb();
 
-	ret = pthread_mutex_lock(&__urcu_compat_futex_lock);
-	if (ret) {
-		errno = ret;
+	lockret = pthread_mutex_lock(&__urcu_compat_futex_lock);
+	if (lockret) {
+		errno = lockret;
 		ret = -1;
 		goto end;
 	}
@@ -98,9 +98,9 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 		errno = EINVAL;
 		ret = -1;
 	}
-	ret = pthread_mutex_unlock(&__urcu_compat_futex_lock);
-	if (ret) {
-		errno = ret;
+	lockret = pthread_mutex_unlock(&__urcu_compat_futex_lock);
+	if (lockret) {
+		errno = lockret;
 		ret = -1;
 	}
 end:
