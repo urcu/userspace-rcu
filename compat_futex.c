@@ -54,7 +54,7 @@ pthread_cond_t __urcu_compat_futex_cond = PTHREAD_COND_INITIALIZER;
 int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	int ret, lockret;
+	int ret = 0, lockret;
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
