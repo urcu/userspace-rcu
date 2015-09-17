@@ -15,6 +15,7 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
 #include <urcu/uatomic.h>
 
 struct urcu_ref {
@@ -43,6 +44,32 @@ static inline void urcu_ref_put(struct urcu_ref *ref,
 	assert (res >= 0);
 	if (res == 0)
 		release(ref);
+}
+
+/*
+ * urcu_ref_get_unless_zero
+ *
+ * Allows getting a reference atomically if the reference count is not
+ * zero. Returns true if the reference is taken, false otherwise. This
+ * needs to be used in conjunction with another synchronization
+ * technique (e.g.  RCU or mutex) to ensure existence of the reference
+ * count.
+ */
+static inline bool urcu_ref_get_unless_zero(struct urcu_ref *ref)
+{
+	long old, _new, res;
+
+	old = uatomic_read(&ref->refcount);
+	for (;;) {
+		if (old == 0)
+			return false;	/* Failure. */
+		_new = old + 1;
+		res = uatomic_cmpxchg(&ref->refcount, old, _new);
+		if (res == old) {
+			return true;	/* Success. */
+		}
+		old = res;
+	}
 }
 
 #endif /* _URCU_REF_H */
