@@ -24,6 +24,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/config.h>
+#include <urcu/syscall-compat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +86,20 @@ static inline cycles_t caa_get_cycles(void)
         rdtscll(ret);
         return ret;
 }
+
+/*
+ * Define the membarrier system call number if not yet available in the
+ * system headers.
+ */
+#if (CAA_BITS_PER_LONG == 32)
+#ifndef __NR_membarrier
+#define __NR_membarrier		375
+#endif
+#else
+#ifndef __NR_membarrier
+#define __NR_membarrier		324
+#endif
+#endif
 
 #ifdef __cplusplus 
 }

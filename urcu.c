@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <poll.h>
 
+#include "urcu/arch.h"
 #include "urcu/wfcqueue.h"
 #include "urcu/map/urcu.h"
 #include "urcu/static/urcu.h"
@@ -63,16 +64,9 @@
  */
 #define RCU_QS_ACTIVE_ATTEMPTS 100
 
-/*
- * RCU_MEMBARRIER is only possibly available on Linux.
- */
-#if defined(RCU_MEMBARRIER) && defined(__linux__)
-#include <urcu/syscall-compat.h>
-#endif
-
-/* If the headers do not support SYS_membarrier, fall back on RCU_MB */
-#ifdef SYS_membarrier
-# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
+/* If the headers do not support membarrier system call, fall back on RCU_MB */
+#ifdef __NR_membarrier
+# define membarrier(...)		syscall(__NR_membarrier, __VA_ARGS__)
 #else
 # define membarrier(...)		-ENOSYS
 #endif

@@ -30,6 +30,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/config.h>
+#include <urcu/syscall-compat.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "urcu/arch.h"
 #include "urcu/wfcqueue.h"
 #include "urcu/map/urcu-bp.h"
 #include "urcu/static/urcu-bp.h"
@@ -94,16 +95,9 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 static
 int rcu_bp_refcount;
 
-/*
- * RCU_MEMBARRIER is only possibly available on Linux.
- */
-#ifdef __linux__
-#include <urcu/syscall-compat.h>
-#endif
-
-/* If the headers do not support SYS_membarrier, fall back on RCU_MB */
-#ifdef SYS_membarrier
-# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
+/* If the headers do not support membarrier system call, fall back smp_mb. */
+#ifdef __NR_membarrier
+# define membarrier(...)		syscall(__NR_membarrier, __VA_ARGS__)
 #else
 # define membarrier(...)		-ENOSYS
 #endif
