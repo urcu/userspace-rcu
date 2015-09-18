@@ -81,9 +81,6 @@ enum rcu_state {
 };
 
 /*
- * RCU memory barrier broadcast group. Currently, only broadcast to all process
- * threads is supported (group 0).
- *
  * Slave barriers are only guaranteed to be ordered wrt master barriers.
  *
  * The pair ordering is detailed as (O: ordered, X: not ordered) :
@@ -92,13 +89,10 @@ enum rcu_state {
  *        master   O      O
  */
 
-#define MB_GROUP_ALL		0
-#define RCU_MB_GROUP		MB_GROUP_ALL
-
 #ifdef RCU_MEMBARRIER
 extern int rcu_has_sys_membarrier;
 
-static inline void smp_mb_slave(int group)
+static inline void smp_mb_slave(void)
 {
 	if (caa_likely(rcu_has_sys_membarrier))
 		cmm_barrier();
@@ -108,14 +102,14 @@ static inline void smp_mb_slave(int group)
 #endif
 
 #ifdef RCU_MB
-static inline void smp_mb_slave(int group)
+static inline void smp_mb_slave(void)
 {
 	cmm_smp_mb();
 }
 #endif
 
 #ifdef RCU_SIGNAL
-static inline void smp_mb_slave(int group)
+static inline void smp_mb_slave(void)
 {
 	cmm_barrier();
 }
@@ -202,7 +196,7 @@ static inline void _rcu_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, _CMM_LOAD_SHARED(rcu_gp.ctr));
-		smp_mb_slave(RCU_MB_GROUP);
+		smp_mb_slave();
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp + RCU_GP_COUNT);
 }
@@ -239,9 +233,9 @@ static inline void _rcu_read_lock(void)
 static inline void _rcu_read_unlock_update_and_wakeup(unsigned long tmp)
 {
 	if (caa_likely((tmp & RCU_GP_CTR_NEST_MASK) == RCU_GP_COUNT)) {
-		smp_mb_slave(RCU_MB_GROUP);
+		smp_mb_slave();
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp - RCU_GP_COUNT);
-		smp_mb_slave(RCU_MB_GROUP);
+		smp_mb_slave();
 		wake_up_gp();
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, tmp - RCU_GP_COUNT);
