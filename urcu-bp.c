@@ -94,10 +94,31 @@ void *mremap_wrapper(void *old_address, size_t old_size,
 static
 int rcu_bp_refcount;
 
+/*
+ * RCU_MEMBARRIER is only possibly available on Linux.
+ */
+#ifdef __linux__
+#include <urcu/syscall-compat.h>
+#endif
+
+/* If the headers do not support SYS_membarrier, fall back on RCU_MB */
+#ifdef SYS_membarrier
+# define membarrier(...)		syscall(SYS_membarrier, __VA_ARGS__)
+#else
+# define membarrier(...)		-ENOSYS
+#endif
+
+enum membarrier_cmd {
+	MEMBARRIER_CMD_QUERY = 0,
+	MEMBARRIER_CMD_SHARED = (1 << 0),
+};
+
 static
 void __attribute__((constructor)) rcu_bp_init(void);
 static
 void __attribute__((destructor)) rcu_bp_exit(void);
+
+int urcu_bp_has_sys_membarrier;
 
 /*
  * rcu_gp_lock ensures mutual exclusion between threads calling
@@ -172,6 +193,14 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 	ret = pthread_mutex_unlock(mutex);
 	if (ret)
 		urcu_die(ret);
+}
+
+static void smp_mb_master(void)
+{
+	if (caa_likely(urcu_bp_has_sys_membarrier))
+		(void) membarrier(MEMBARRIER_CMD_SHARED, 0);
+	else
+		cmm_smp_mb();
 }
 
 /*
@@ -254,7 +283,7 @@ void synchronize_rcu(void)
 	/* All threads should read qparity before accessing data structure
 	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
-	cmm_smp_mb();
+	smp_mb_master();
 
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
@@ -303,7 +332,7 @@ void synchronize_rcu(void)
 	 * Finish waiting for reader threads before letting the old ptr being
 	 * freed.
 	 */
-	cmm_smp_mb();
+	smp_mb_master();
 out:
 	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);
@@ -567,6 +596,10 @@ void rcu_bp_init(void)
 				urcu_bp_thread_exit_notifier);
 		if (ret)
 			abort();
+		ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
+		if (ret >= 0 && (ret & MEMBARRIER_CMD_SHARED)) {
+			urcu_bp_has_sys_membarrier = 1;
+		}
 		initialized = 1;
 	}
 	mutex_unlock(&init_lock);

@@ -102,6 +102,16 @@ struct rcu_reader {
  */
 extern DECLARE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
+extern int urcu_bp_has_sys_membarrier;
+
+static inline void urcu_bp_smp_mb_slave(void)
+{
+	if (caa_likely(urcu_bp_has_sys_membarrier))
+		cmm_barrier();
+	else
+		cmm_smp_mb();
+}
+
 static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
 {
 	unsigned long v;
@@ -131,7 +141,7 @@ static inline void _rcu_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & RCU_GP_CTR_NEST_MASK))) {
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, _CMM_LOAD_SHARED(rcu_gp.ctr));
-		cmm_smp_mb();
+		urcu_bp_smp_mb_slave();
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, tmp + RCU_GP_COUNT);
 }
@@ -170,7 +180,7 @@ static inline void _rcu_read_unlock(void)
 	tmp = URCU_TLS(rcu_reader)->ctr;
 	urcu_assert(tmp & RCU_GP_CTR_NEST_MASK);
 	/* Finish using rcu before decrementing the pointer. */
-	cmm_smp_mb();
+	urcu_bp_smp_mb_slave();
 	_CMM_STORE_SHARED(URCU_TLS(rcu_reader)->ctr, tmp - RCU_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
