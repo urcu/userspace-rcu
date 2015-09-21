@@ -179,8 +179,11 @@ void *thr_reader(void *data)
 	}
 
 	for (;;) {
+		int v;
+
 		pthread_mutex_lock(&lock);
-		assert(test_array.a == 8);
+		v = test_array.a;
+		assert(v == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		pthread_mutex_unlock(&lock);
