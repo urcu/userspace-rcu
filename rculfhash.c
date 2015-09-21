@@ -1385,7 +1385,7 @@ void fini_table(struct cds_lfht *ht,
 		unsigned long len;
 
 		len = 1UL << (i - 1);
-		dbg_printf("fini order %lu len: %lu\n", i, len);
+		dbg_printf("fini order %ld len: %lu\n", i, len);
 
 		/* Stop shrink if the resize target changes under us */
 		if (CMM_LOAD_SHARED(ht->resize_target) > (1UL << (i - 1)))
