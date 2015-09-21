@@ -121,7 +121,6 @@ void *test_hash_rw_thr_reader(void *_count)
 void *test_hash_rw_thr_writer(void *_count)
 {
 	struct lfht_test_node *node;
-	struct cds_lfht_node *ret_node;
 	struct cds_lfht_iter iter;
 	struct wr_count *count = _count;
 	int ret;
@@ -141,6 +140,8 @@ void *test_hash_rw_thr_writer(void *_count)
 	cmm_smp_mb();
 
 	for (;;) {
+		struct cds_lfht_node *ret_node = NULL;
+
 		if ((addremove == AR_ADD || add_only)
 				|| (addremove == AR_RANDOM && rand_r(&URCU_TLS(rand_lookup)) & 1)) {
 			node = malloc(sizeof(struct lfht_test_node));
@@ -231,7 +232,6 @@ void *test_hash_rw_thr_writer(void *_count)
 int test_hash_rw_populate_hash(void)
 {
 	struct lfht_test_node *node;
-	struct cds_lfht_node *ret_node;
 
 	if (!init_populate)
 		return 0;
@@ -247,6 +247,8 @@ int test_hash_rw_populate_hash(void)
 	}
 
 	while (URCU_TLS(nr_add) < init_populate) {
+		struct cds_lfht_node *ret_node = NULL;
+
 		node = malloc(sizeof(struct lfht_test_node));
 		lfht_test_node_init(node,
 			(void *)(((unsigned long) rand_r(&URCU_TLS(rand_lookup)) % init_pool_size) + init_pool_offset),
