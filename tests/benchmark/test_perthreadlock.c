@@ -103,14 +103,16 @@ static void set_affinity(void)
 #if HAVE_SCHED_SETAFFINITY
 	ret = pthread_mutex_lock(&affinity_mutex);
 	if (ret) {
+		errno = ret;
 		perror("Error in pthread mutex lock");
-		exit(-1);
+		abort();
 	}
 	cpu = cpu_affinities[next_aff++];
 	ret = pthread_mutex_unlock(&affinity_mutex);
 	if (ret) {
+		errno = ret;
 		perror("Error in pthread mutex unlock");
-		exit(-1);
+		abort();
 	}
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
@@ -146,26 +148,27 @@ unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_reads;
 static unsigned int nr_readers;
 static unsigned int nr_writers;
 
-pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void rcu_copy_mutex_lock(void)
+static void urcu_mutex_lock(pthread_mutex_t *lock)
 {
 	int ret;
-	ret = pthread_mutex_lock(&rcu_copy_mutex);
+
+	ret = pthread_mutex_lock(lock);
 	if (ret) {
+		errno = ret;
 		perror("Error in pthread mutex lock");
-		exit(-1);
+		abort();
 	}
 }
 
-void rcu_copy_mutex_unlock(void)
+static void urcu_mutex_unlock(pthread_mutex_t *lock)
 {
 	int ret;
 
-	ret = pthread_mutex_unlock(&rcu_copy_mutex);
+	ret = pthread_mutex_unlock(lock);
 	if (ret) {
+		errno = ret;
 		perror("Error in pthread mutex unlock");
-		exit(-1);
+		abort();
 	}
 }
 
@@ -185,12 +188,12 @@ void *thr_reader(void *data)
 	for (;;) {
 		int v;
 
-		pthread_mutex_lock(&per_thread_lock[tidx].lock);
+		urcu_mutex_lock(&per_thread_lock[tidx].lock);
 		v = test_array.a;
 		assert(v == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+		urcu_mutex_unlock(&per_thread_lock[tidx].lock);
 		URCU_TLS(nr_reads)++;
 		if (caa_unlikely(!test_duration_read()))
 			break;
@@ -220,14 +223,14 @@ void *thr_writer(void *data)
 
 	for (;;) {
 		for (tidx = 0; tidx < nr_readers; tidx++) {
-			pthread_mutex_lock(&per_thread_lock[tidx].lock);
+			urcu_mutex_lock(&per_thread_lock[tidx].lock);
 		}
 		test_array.a = 0;
 		test_array.a = 8;
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
 		for (tidx = (long)nr_readers - 1; tidx >= 0; tidx--) {
-			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+			urcu_mutex_unlock(&per_thread_lock[tidx].lock);
 		}
 		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
@@ -341,9 +344,7 @@ int main(int argc, char **argv)
 	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
 	per_thread_lock = calloc(nr_readers, sizeof(*per_thread_lock));
 	for (i = 0; i < nr_readers; i++) {
-		err = pthread_mutex_init(&per_thread_lock[i].lock, NULL);
-		if (err != 0)
-			exit(1);
+		pthread_mutex_init(&per_thread_lock[i].lock, NULL);
 	}
 
 	next_aff = 0;
