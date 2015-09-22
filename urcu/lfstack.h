@@ -178,9 +178,12 @@ extern void cds_lfs_pop_unlock(struct cds_lfs_stack *s);
  * __cds_lfs_pop needs to be synchronized using one of the following
  * techniques:
  *
- * 1) Calling __cds_lfs_pop under rcu read lock critical section. The
- *    caller must wait for a grace period to pass before freeing the
- *    returned node or modifying the cds_lfs_node structure.
+ * 1) Calling __cds_lfs_pop under rcu read lock critical section.
+ *    Both __cds_lfs_pop and __cds_lfs_pop_all callers must wait for a
+ *    grace period to pass before freeing the returned node or pushing
+ *    the node back into the stack. It is valid to overwrite the content
+ *    of cds_lfs_node immediately after __cds_lfs_pop and
+ *    __cds_lfs_pop_all.
  * 2) Using mutual exclusion (e.g. mutexes) to protect __cds_lfs_pop
  *    and __cds_lfs_pop_all callers.
  * 3) Ensuring that only ONE thread can call __cds_lfs_pop() and
@@ -196,10 +199,12 @@ extern struct cds_lfs_node *__cds_lfs_pop(cds_lfs_stack_ptr_t s);
  * matching the technique used to synchronize __cds_lfs_pop:
  *
  * 1) If __cds_lfs_pop is called under rcu read lock critical section,
- *    both __cds_lfs_pop and cds_lfs_pop_all callers must wait for a
- *    grace period to pass before freeing the returned node or modifying
- *    the cds_lfs_node structure. However, no RCU read-side critical
- *    section is needed around __cds_lfs_pop_all.
+ *    both __cds_lfs_pop and __cds_lfs_pop_all callers must wait for a
+ *    grace period to pass before freeing the returned node or pushing
+ *    the node back into the stack. It is valid to overwrite the content
+ *    of cds_lfs_node immediately after __cds_lfs_pop and
+ *    __cds_lfs_pop_all. No RCU read-side critical section is needed
+ *    around __cds_lfs_pop_all.
  * 2) Using mutual exclusion (e.g. mutexes) to protect __cds_lfs_pop and
  *    __cds_lfs_pop_all callers.
  * 3) Ensuring that only ONE thread can call __cds_lfs_pop() and
