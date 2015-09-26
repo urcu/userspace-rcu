@@ -51,6 +51,14 @@ static inline cycles_t caa_get_cycles (void)
 	return cycles;
 }
 
+/*
+ * Define the membarrier system call number if not yet available in the
+ * system headers.
+ */
+#ifndef __NR_membarrier
+#define __NR_membarrier		356
+#endif
+
 #ifdef __cplusplus 
 }
 #endif
