@@ -42,6 +42,7 @@ static char *todo_msg = NULL;
 static char *todo_msg_fixed = "libtap malloc issue";
 static int todo = 0;
 static int test_died = 0;
+static int tap_is_disabled = 0;
 
 /* Encapsulate the pthread code in a conditional.  In the absence of
    libpthread the code does nothing */
@@ -284,6 +285,32 @@ diag(char *fmt, ...)
 	return 0;
 }
 
+unsigned int
+rdiag_start(void)
+{
+	fputs("# ", stderr);
+	return 0;
+}
+
+unsigned int
+rdiag(char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	return 0;
+}
+
+unsigned int
+rdiag_end(void)
+{
+	fputs("\n", stderr);
+	return 0;
+}
+
 void
 _expected_tests(unsigned int tests)
 {
@@ -389,6 +416,11 @@ _cleanup(void)
 
 	LOCK;
 
+	if (tap_is_disabled) {
+		UNLOCK;
+		return;
+	}
+
 	/* If plan_no_plan() wasn't called, and we don't have a plan,
 	   and we're not skipping everything, then something happened
 	   before we could produce any output */
@@ -429,5 +461,14 @@ _cleanup(void)
 		diag("Looks like you failed %d %s of %d.",
 		     failures, failures == 1 ? "test" : "tests", test_count);
 
+	UNLOCK;
+}
+
+/* Disable tap for this process. */
+void
+tap_disable(void)
+{
+	LOCK;
+	tap_is_disabled = 1;
 	UNLOCK;
 }

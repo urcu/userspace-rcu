@@ -66,6 +66,9 @@
  */
 
 #include <stdlib.h>
+#include "tap.h"
+
+#define NR_TESTS	1
 
 DEFINE_PER_THREAD(long long, n_reads_pt);
 DEFINE_PER_THREAD(long long, n_updates_pt);
@@ -160,8 +163,7 @@ void *rcu_update_perf_test(void *arg)
 
 		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
-			fprintf(stderr,
-				"Using per-thread call_rcu() worker.\n");
+			diag("Using per-thread call_rcu() worker.");
 			set_thread_call_rcu_data(crdp);
 		}
 	}
@@ -183,7 +185,7 @@ void perftestinit(void)
 	uatomic_set(&nthreadsrunning, 0);
 }
 
-void perftestrun(int nthreads, int nreaders, int nupdaters)
+int perftestrun(int nthreads, int nreaders, int nupdaters)
 {
 	int t;
 	int duration = 1;
@@ -202,21 +204,21 @@ void perftestrun(int nthreads, int nreaders, int nupdaters)
 		n_reads += per_thread(n_reads_pt, t);
 		n_updates += per_thread(n_updates_pt, t);
 	}
-	printf("n_reads: %lld  n_updates: %ld  nreaders: %d  nupdaters: %d duration: %d\n",
+	diag("n_reads: %lld  n_updates: %ld  nreaders: %d  nupdaters: %d duration: %d",
 	       n_reads, n_updates, nreaders, nupdaters, duration);
-	printf("ns/read: %g  ns/update: %g\n",
+	diag("ns/read: %g  ns/update: %g",
 	       ((duration * 1000*1000*1000.*(double)nreaders) /
 	        (double)n_reads),
 	       ((duration * 1000*1000*1000.*(double)nupdaters) /
 	        (double)n_updates));
 	if (get_cpu_call_rcu_data(0)) {
-		fprintf(stderr, "Deallocating per-CPU call_rcu threads.\n");
+		diag("Deallocating per-CPU call_rcu threads.\n");
 		free_all_cpu_call_rcu_data();
 	}
-	exit(0);
+	return 0;
 }
 
-void perftest(int nreaders, int cpustride)
+int perftest(int nreaders, int cpustride)
 {
 	int i;
 	long arg;
@@ -228,10 +230,10 @@ void perftest(int nreaders, int cpustride)
 	}
 	arg = (long)(i * cpustride);
 	create_thread(rcu_update_perf_test, (void *)arg);
-	perftestrun(i + 1, nreaders, 1);
+	return perftestrun(i + 1, nreaders, 1);
 }
 
-void rperftest(int nreaders, int cpustride)
+int rperftest(int nreaders, int cpustride)
 {
 	int i;
 	long arg;
@@ -242,10 +244,10 @@ void rperftest(int nreaders, int cpustride)
 		arg = (long)(i * cpustride);
 		create_thread(rcu_read_perf_test, (void *)arg);
 	}
-	perftestrun(i, nreaders, 0);
+	return perftestrun(i, nreaders, 0);
 }
 
-void uperftest(int nupdaters, int cpustride)
+int uperftest(int nupdaters, int cpustride)
 {
 	int i;
 	long arg;
@@ -256,7 +258,7 @@ void uperftest(int nupdaters, int cpustride)
 		arg = (long)(i * cpustride);
 		create_thread(rcu_update_perf_test, (void *)arg);
 	}
-	perftestrun(i, 0, nupdaters);
+	return perftestrun(i, 0, nupdaters);
 }
 
 /*
@@ -324,17 +326,28 @@ static pthread_cond_t call_rcu_test_cond = PTHREAD_COND_INITIALIZER;
 
 void rcu_update_stress_test_rcu(struct rcu_head *head)
 {
-	if (pthread_mutex_lock(&call_rcu_test_mutex) != 0) {
-		perror("pthread_mutex_lock");
-		exit(-1);
+	int ret;
+
+	ret = pthread_mutex_lock(&call_rcu_test_mutex);
+	if (ret) {
+		errno = ret;
+		diag("pthread_mutex_lock: %s",
+			strerror(errno));
+		abort();
 	}
-	if (pthread_cond_signal(&call_rcu_test_cond) != 0) {
-		perror("pthread_cond_signal");
-		exit(-1);
+	ret = pthread_cond_signal(&call_rcu_test_cond);
+	if (ret) {
+		errno = ret;
+		diag("pthread_cond_signal: %s",
+			strerror(errno));
+		abort();
 	}
-	if (pthread_mutex_unlock(&call_rcu_test_mutex) != 0) {
-		perror("pthread_mutex_unlock");
-		exit(-1);
+	ret = pthread_mutex_unlock(&call_rcu_test_mutex);
+	if (ret) {
+		errno = ret;
+		diag("pthread_mutex_unlock: %s",
+			strerror(errno));
+		abort();
 	}
 }
 
@@ -363,19 +376,30 @@ void *rcu_update_stress_test(void *arg)
 		if (n_updates & 0x1)
 			synchronize_rcu();
 		else {
-			if (pthread_mutex_lock(&call_rcu_test_mutex) != 0) {
-				perror("pthread_mutex_lock");
-				exit(-1);
+			int ret;
+
+			ret = pthread_mutex_lock(&call_rcu_test_mutex);
+			if (ret) {
+				errno = ret;
+				diag("pthread_mutex_lock: %s",
+					strerror(errno));
+				abort();
 			}
 			call_rcu(&rh, rcu_update_stress_test_rcu);
-			if (pthread_cond_wait(&call_rcu_test_cond,
-					      &call_rcu_test_mutex) != 0) {
-				perror("pthread_cond_wait");
-				exit(-1);
+			ret = pthread_cond_wait(&call_rcu_test_cond,
+					&call_rcu_test_mutex);
+			if (ret) {
+				errno = ret;
+				diag("pthread_cond_signal: %s",
+					strerror(errno));
+				abort();
 			}
-			if (pthread_mutex_unlock(&call_rcu_test_mutex) != 0) {
-				perror("pthread_mutex_unlock");
-				exit(-1);
+			ret = pthread_mutex_unlock(&call_rcu_test_mutex);
+			if (ret) {
+				errno = ret;
+				diag("pthread_mutex_unlock: %s",
+					strerror(errno));
+				abort();
 			}
 		}
 		n_updates++;
@@ -390,8 +414,7 @@ void *rcu_fake_update_stress_test(void *arg)
 
 		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
-			fprintf(stderr,
-				"Using per-thread call_rcu() worker.\n");
+			diag("Using per-thread call_rcu() worker.");
 			set_thread_call_rcu_data(crdp);
 		}
 	}
@@ -404,7 +427,7 @@ void *rcu_fake_update_stress_test(void *arg)
 	return NULL;
 }
 
-void stresstest(int nreaders)
+int stresstest(int nreaders)
 {
 	int i;
 	int t;
@@ -435,22 +458,26 @@ void stresstest(int nreaders)
 	wait_all_threads();
 	for_each_thread(t)
 		n_reads += per_thread(n_reads_pt, t);
-	printf("n_reads: %lld  n_updates: %ld  n_mberror: %d\n",
+	diag("n_reads: %lld  n_updates: %ld  n_mberror: %d",
 	       n_reads, n_updates, n_mberror);
-	printf("rcu_stress_count:");
+	rdiag_start();
+	rdiag("rcu_stress_count:");
 	for (i = 0; i <= RCU_STRESS_PIPE_LEN; i++) {
 		sum = 0LL;
 		for_each_thread(t) {
 			sum += per_thread(rcu_stress_count, t)[i];
 		}
-		printf(" %lld", sum);
+		rdiag(" %lld", sum);
 	}
-	printf("\n");
+	rdiag_end();
 	if (get_cpu_call_rcu_data(0)) {
-		fprintf(stderr, "Deallocating per-CPU call_rcu threads.\n");
+		diag("Deallocating per-CPU call_rcu threads.");
 		free_all_cpu_call_rcu_data();
 	}
-	exit(0);
+	if (!n_mberror)
+		return 0;
+	else
+		return -1;
 }
 
 /*
@@ -459,7 +486,7 @@ void stresstest(int nreaders)
 
 void usage(int argc, char *argv[])
 {
-	fprintf(stderr, "Usage: %s [nreaders [ perf | stress ] ]\n", argv[0]);
+	diag("Usage: %s [nreaders [ perf | rperf | uperf | stress ] ]\n", argv[0]);
 	exit(-1);
 }
 
@@ -468,13 +495,16 @@ int main(int argc, char *argv[])
 	int nreaders = 1;
 	int cpustride = 1;
 
+	plan_tests(NR_TESTS);
+
 	smp_init();
 	//rcu_init();
 	srandom(time(NULL));
 	if (random() & 0x100) {
-		fprintf(stderr, "Allocating per-CPU call_rcu threads.\n");
+		diag("Allocating per-CPU call_rcu threads.");
 		if (create_all_cpu_call_rcu_data(0))
-			perror("create_all_cpu_call_rcu_data");
+			diag("create_all_cpu_call_rcu_data: %s",
+				strerror(errno));
 	}
 
 #ifdef DEBUG_YIELD
@@ -484,20 +514,37 @@ int main(int argc, char *argv[])
 
 	if (argc > 1) {
 		nreaders = strtoul(argv[1], NULL, 0);
-		if (argc == 2)
-			perftest(nreaders, cpustride);
+		if (argc == 2) {
+			ok(!perftest(nreaders, cpustride),
+				"perftest readers: %d, stride: %d",
+				nreaders, cpustride);
+			goto end;
+		}
 		if (argc > 3)
 			cpustride = strtoul(argv[3], NULL, 0);
 		if (strcmp(argv[2], "perf") == 0)
-			perftest(nreaders, cpustride);
+			ok(!perftest(nreaders, cpustride),
+				"perftest readers: %d, stride: %d",
+				nreaders, cpustride);
 		else if (strcmp(argv[2], "rperf") == 0)
-			rperftest(nreaders, cpustride);
+			ok(!rperftest(nreaders, cpustride),
+				"rperftest readers: %d, stride: %d",
+				nreaders, cpustride);
 		else if (strcmp(argv[2], "uperf") == 0)
-			uperftest(nreaders, cpustride);
+			ok(!uperftest(nreaders, cpustride),
+				"uperftest readers: %d, stride: %d",
+				nreaders, cpustride);
 		else if (strcmp(argv[2], "stress") == 0)
-			stresstest(nreaders);
-		usage(argc, argv);
+			ok(!stresstest(nreaders),
+				"stresstest readers: %d, stride: %d",
+				nreaders, cpustride);
+		else
+			usage(argc, argv);
+	} else {
+		ok(!perftest(nreaders, cpustride),
+			"perftest readers: %d, stride: %d",
+			nreaders, cpustride);
 	}
-	perftest(nreaders, cpustride);
-	return 0;
+end:
+	return exit_status();
 }

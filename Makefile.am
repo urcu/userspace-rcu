@@ -86,8 +86,10 @@ dist_doc_DATA = README.md ChangeLog
 
 dist_noinst_DATA = CodingStyle
 
-.PHONY: bench regtest
-bench:
-	cd tests && $(MAKE) $(AM_MAKEFLAGS) bench
+.PHONY: short_bench long_bench regtest
+short_bench:
+	cd tests && $(MAKE) $(AM_MAKEFLAGS) short_bench
+long_bench:
+	cd tests && $(MAKE) $(AM_MAKEFLAGS) long_bench
 regtest:
 	cd tests && $(MAKE) $(AM_MAKEFLAGS) regtest

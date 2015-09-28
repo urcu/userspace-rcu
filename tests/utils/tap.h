@@ -87,3 +87,9 @@ void todo_start(char *, ...);
 void todo_end(void);
 
 int exit_status(void);
+
+void tap_disable(void);
+
+unsigned int rdiag_start(void);
+unsigned int rdiag(char *fmt, ...);
+unsigned int rdiag_end(void);

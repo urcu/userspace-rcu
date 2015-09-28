@@ -4,7 +4,7 @@ endif
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
 
 SCRIPT_LIST = common.sh \
-	runall.sh \
+	run-urcu-tests.sh \
 	runhash.sh \
 	runtests.sh \
 	runpaul-phase1.sh \
@@ -222,7 +222,13 @@ clean-local:
 		done; \
 	fi
 
-.PHONY: bench
+.PHONY: short_bench long_bench regtest
 
-bench:
-	./runall.sh
+short_bench:
+	./run.sh short_bench_tests
+
+long_bench:
+	./run.sh long_bench_tests
+
+regtest:
+	./run.sh regression_tests

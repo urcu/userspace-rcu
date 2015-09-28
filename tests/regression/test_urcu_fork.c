@@ -44,12 +44,26 @@
 #endif
 #include <urcu.h>
 
+#include "tap.h"
+
 /* We generate children 3 levels deep */
 #define FORK_DEPTH	3
 /* Each generation spawns 10 children */
 #define NR_FORK		10
 
+#define NR_TESTS	NR_FORK
+
 static int fork_generation;
+
+/*
+ * Only print diagnostic for top level parent process, else the console
+ * has trouble formatting the tap output.
+ */
+#define diag_gen0(...) \
+	do { \
+		if (!fork_generation) \
+			diag(__VA_ARGS__); \
+	} while (0)
 
 struct test_node {
 	int somedata;
@@ -60,8 +74,7 @@ static void cb(struct rcu_head *head)
 {
 	struct test_node *node;
 
-	fprintf(stderr, "rcu callback invoked in pid: %d\n",
-		(int) getpid());
+	diag_gen0("rcu callback invoked in pid: %d", (int) getpid());
 	node = caa_container_of(head, struct test_node, head);
 	free(node);
 }
@@ -94,7 +107,7 @@ static int do_fork(const char *execname)
 {
 	pid_t pid;
 
-	fprintf(stderr, "%s parent pid: %d, before fork\n",
+	diag_gen0("%s parent pid: %d, before fork",
 		execname, (int) getpid());
 
 	call_rcu_before_fork();
@@ -102,12 +115,13 @@ static int do_fork(const char *execname)
 	if (pid == 0) {
 		/* child */
 		fork_generation++;
+		tap_disable();
 
 		call_rcu_after_fork_child();
-		fprintf(stderr, "%s child pid: %d, after fork\n",
+		diag_gen0("%s child pid: %d, after fork",
 			execname, (int) getpid());
 		test_rcu();
-		fprintf(stderr, "%s child pid: %d, after rcu test\n",
+		diag_gen0("%s child pid: %d, after rcu test",
 			execname, (int) getpid());
 		if (fork_generation >= FORK_DEPTH)
 			exit(EXIT_SUCCESS);
@@ -117,25 +131,26 @@ static int do_fork(const char *execname)
 
 		/* parent */
 		call_rcu_after_fork_parent();
-		fprintf(stderr, "%s parent pid: %d, after fork\n",
+		diag_gen0("%s parent pid: %d, after fork",
 			execname, (int) getpid());
 		test_rcu();
-		fprintf(stderr, "%s parent pid: %d, after rcu test\n",
+		diag_gen0("%s parent pid: %d, after rcu test",
 			execname, (int) getpid());
 		for (;;) {
 			pid = wait(&status);
 			if (pid < 0) {
-				perror("wait");
+				if (!fork_generation)
+					perror("wait");
 				return -1;
 			}
 			if (WIFEXITED(status)) {
-				fprintf(stderr, "child %u exited normally with status %u\n",
+				diag_gen0("child %u exited normally with status %u",
 					pid, WEXITSTATUS(status));
 				if (WEXITSTATUS(status))
 					return -1;
 				break;
 			} else if (WIFSIGNALED(status)) {
-				fprintf(stderr, "child %u was terminated by signal %u\n",
+				diag_gen0("child %u was terminated by signal %u",
 					pid, WTERMSIG(status));
 				return -1;
 			} else {
@@ -144,7 +159,8 @@ static int do_fork(const char *execname)
 		}
 		return 1;
 	} else {
-		perror("fork");
+		if (!fork_generation)
+			perror("fork");
 		return -1;
 	}
 }
@@ -152,6 +168,8 @@ static int do_fork(const char *execname)
 int main(int argc, char **argv)
 {
 	unsigned int i;
+
+	plan_tests(NR_TESTS);
 
 #if 0
 	/* pthread_atfork does not work with malloc/free in callbacks */
@@ -172,14 +190,27 @@ restart:
 		test_rcu();
 		synchronize_rcu();
 		ret = do_fork(argv[0]);
-		if (ret == 0)		/* child */
+		if (!fork_generation) {
+			ok(ret >= 0, "child status %d", ret);
+		}
+		if (ret == 0) {		/* child */
 			goto restart;
-		else if (ret < 0)
+		} else if (ret < 0) {
 			goto error;
-		/* else parent, continue. */
+		} else {
+			/* else parent, continue. */
+		}
 	}
-	exit(EXIT_SUCCESS);
+	if (!fork_generation) {
+		return exit_status();
+	} else {
+		exit(EXIT_SUCCESS);
+	}
 
 error:
-	exit(EXIT_FAILURE);
+	if (!fork_generation) {
+		return exit_status();
+	} else {
+		exit(EXIT_FAILURE);
+	}
 }

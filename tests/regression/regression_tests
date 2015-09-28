@@ -1,0 +1,21 @@
+./test_urcu_fork
+./rcutorture_urcu $(nproc) perf
+./rcutorture_urcu_signal $(nproc) perf
+./rcutorture_urcu_mb $(nproc) perf
+./rcutorture_urcu_bp $(nproc) perf
+./rcutorture_urcu_qsbr $(nproc) perf
+./rcutorture_urcu $(nproc) rperf
+./rcutorture_urcu_signal $(nproc) rperf
+./rcutorture_urcu_mb $(nproc) rperf
+./rcutorture_urcu_bp $(nproc) rperf
+./rcutorture_urcu_qsbr $(nproc) rperf
+./rcutorture_urcu $(nproc) uperf
+./rcutorture_urcu_signal $(nproc) uperf
+./rcutorture_urcu_mb $(nproc) uperf
+./rcutorture_urcu_bp $(nproc) uperf
+./rcutorture_urcu_qsbr $(nproc) uperf
+./rcutorture_urcu $(nproc) stress
+./rcutorture_urcu_signal $(nproc) stress
+./rcutorture_urcu_mb $(nproc) stress
+./rcutorture_urcu_bp $(nproc) stress
+./rcutorture_urcu_qsbr $(nproc) stress
