@@ -90,7 +90,7 @@ AS_CASE([$host_cpu],
 	[arm*], [ARCHTYPE="arm"],
 	[aarch64], [ARCHTYPE="aarch64"],
 	[mips*], [ARCHTYPE="mips"],
-	[tile*], [ARCHTYPE="gcc"],
+	[tile*], [ARCHTYPE="tile"],
 	[hppa*], [ARCHTYPE="hppa"],
 	[ARCHTYPE="unknown"]
 )
