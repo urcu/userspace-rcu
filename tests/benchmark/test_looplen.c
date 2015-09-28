@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
 	printf("CALIBRATION : %g cycles per loop\n", cpl);
 	printf("time_tot = %llu, LOOPS = %d, TESTS = %d\n",
-	       time_tot, LOOPS, TESTS);
+	       (unsigned long long) time_tot, LOOPS, TESTS);
 
 	return 0;
 }
