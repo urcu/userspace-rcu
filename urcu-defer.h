@@ -39,7 +39,7 @@ extern "C" {
 /*
  * Note: the defer_rcu() API is currently EXPERIMENTAL. It may change in the
  * future.
- * 
+ *
  * Important !
  *
  * Each thread queuing memory reclamation must be registered with
@@ -60,7 +60,7 @@ extern void rcu_defer_unregister_thread(void);
 extern void rcu_defer_barrier(void);
 extern void rcu_defer_barrier_thread(void);
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

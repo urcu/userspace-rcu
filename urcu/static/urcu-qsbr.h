@@ -46,7 +46,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.
@@ -234,7 +234,7 @@ static inline void _rcu_thread_online(void)
 	cmm_smp_mb();
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

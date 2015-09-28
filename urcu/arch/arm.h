@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #ifdef CONFIG_RCU_ARM_HAVE_DMB
 #define cmm_mb()	__asm__ __volatile__ ("dmb":::"memory")
@@ -47,7 +47,7 @@ extern "C" {
 #define __NR_membarrier		389
 #endif
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

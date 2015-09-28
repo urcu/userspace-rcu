@@ -39,7 +39,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #include <urcu/map/urcu-qsbr.h>
 
@@ -127,7 +127,7 @@ extern void synchronize_rcu(void);
 extern void rcu_register_thread(void);
 extern void rcu_unregister_thread(void);
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

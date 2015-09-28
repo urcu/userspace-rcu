@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
 #define CAA_CACHE_LINE_SIZE	256
@@ -115,7 +115,7 @@ static inline cycles_t caa_get_cycles(void)
 #define __NR_membarrier		365
 #endif
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

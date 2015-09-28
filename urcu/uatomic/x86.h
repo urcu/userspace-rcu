@@ -1,7 +1,7 @@
 #ifndef _URCU_ARCH_UATOMIC_X86_H
 #define _URCU_ARCH_UATOMIC_X86_H
 
-/* 
+/*
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
  * Copyright (c) 1996-1999 by Silicon Graphics.  All rights reserved.
  * Copyright (c) 1999-2004 Hewlett-Packard Development Company, L.P.
@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /*
  * Derived from AO_compare_and_swap() and AO_test_and_set_full().
@@ -620,7 +620,7 @@ extern unsigned long _compat_uatomic_add_return(void *addr,
 #define cmm_smp_mb__before_uatomic_dec()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_dec()		cmm_barrier()
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

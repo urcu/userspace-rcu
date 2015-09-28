@@ -180,7 +180,7 @@ static inline void rcu_thread_online(void)
 {
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

@@ -36,7 +36,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /**
  * _rcu_dereference - reads (copy) a RCU-protected pointer to a local variable
@@ -141,7 +141,7 @@ extern "C" {
  */
 #define _rcu_assign_pointer(p, v)	_rcu_set_pointer(&(p), v)
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

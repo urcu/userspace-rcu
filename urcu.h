@@ -42,7 +42,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #include <urcu/map/urcu.h>
 
@@ -126,7 +126,7 @@ static inline void rcu_thread_online(void)
 {
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

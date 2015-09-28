@@ -28,12 +28,12 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #include <stdlib.h>
 #include <sys/time.h>
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

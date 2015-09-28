@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #define CAA_CACHE_LINE_SIZE	128
 
@@ -103,7 +103,7 @@ static inline cycles_t caa_get_cycles(void)
 #endif
 #endif
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

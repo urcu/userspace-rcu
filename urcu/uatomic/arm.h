@@ -1,7 +1,7 @@
 #ifndef _URCU_ARCH_UATOMIC_ARM_H
 #define _URCU_ARCH_UATOMIC_ARM_H
 
-/* 
+/*
  * Atomics for ARM.  This approach is usable on kernels back to 2.6.15.
  *
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
@@ -29,12 +29,12 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /* xchg */
 #define uatomic_xchg(addr, v) __sync_lock_test_and_set(addr, v)
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

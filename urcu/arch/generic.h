@@ -62,7 +62,7 @@ extern "C" {
 /*
  * Architectures without cache coherency need something like the following:
  *
- * #define cmm_mc()	arch_cache_flush() 
+ * #define cmm_mc()	arch_cache_flush()
  * #define cmm_rmc()	arch_cache_flush_read()
  * #define cmm_wmc()	arch_cache_flush_write()
  *

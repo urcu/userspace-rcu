@@ -1,7 +1,7 @@
 #ifndef _URCU_ARCH_UATOMIC_GCC_H
 #define _URCU_ARCH_UATOMIC_GCC_H
 
-/* 
+/*
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
  * Copyright (c) 1996-1999 by Silicon Graphics.  All rights reserved.
  * Copyright (c) 1999-2004 Hewlett-Packard Development Company, L.P.
@@ -27,7 +27,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /*
  * If your platform doesn't have a full set of atomics, you will need
@@ -37,7 +37,7 @@ extern "C" {
 #define UATOMIC_HAS_ATOMIC_BYTE
 #define UATOMIC_HAS_ATOMIC_SHORT
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

@@ -199,7 +199,7 @@ static inline int _rcu_read_ongoing(void)
 	return URCU_TLS(rcu_reader)->ctr & RCU_GP_CTR_NEST_MASK;
 }
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

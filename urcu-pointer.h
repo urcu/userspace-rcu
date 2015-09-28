@@ -32,7 +32,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #if defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)
 
@@ -122,7 +122,7 @@ extern void *rcu_set_pointer_sym(void **p, void *v);
  */
 #define rcu_assign_pointer(p, v)	rcu_set_pointer((&p), (v))
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

@@ -1,7 +1,7 @@
 #ifndef _URCU_ARCH_UATOMIC_SPARC64_H
 #define _URCU_ARCH_UATOMIC_SPARC64_H
 
-/* 
+/*
  * Copyright (c) 1991-1994 by Xerox Corporation.  All rights reserved.
  * Copyright (c) 1996-1999 by Silicon Graphics.  All rights reserved.
  * Copyright (c) 1999-2003 by Hewlett-Packard Company. All rights reserved.
@@ -25,7 +25,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 /* cmpxchg */
 
@@ -72,7 +72,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 						caa_cast_long_keep_sign(_new), \
 						sizeof(*(addr))))
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

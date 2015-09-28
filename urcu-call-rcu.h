@@ -94,7 +94,7 @@ void call_rcu_after_fork_child(void);
 
 void rcu_barrier(void);
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

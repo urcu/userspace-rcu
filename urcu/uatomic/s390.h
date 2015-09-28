@@ -34,7 +34,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 2)
 #define COMPILER_HAVE_SHORT_MEM_OPERAND
@@ -152,7 +152,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 					       caa_cast_long_keep_sign(_new),\
 					       sizeof(*(addr)))
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 

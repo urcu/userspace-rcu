@@ -58,7 +58,7 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
-	 * account. 
+	 * account.
 	 */
 	assert(!timeout);
 	assert(!uaddr2);
@@ -120,7 +120,7 @@ int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 
 	/*
 	 * Check if NULL. Don't let users expect that they are taken into
-	 * account. 
+	 * account.
 	 */
 	assert(!timeout);
 	assert(!uaddr2);

@@ -117,7 +117,7 @@
  * To discuss these guarantees, we first define "read" operation as any
  * of the the basic cds_lfht_lookup, cds_lfht_next_duplicate,
  * cds_lfht_first, cds_lfht_next operation, as well as
- * cds_lfht_add_unique (failure). 
+ * cds_lfht_add_unique (failure).
  *
  * We define "read traversal" operation as any of the following
  * group of operations
@@ -225,12 +225,12 @@
  * shrink hash table from order 6 to 5: fini the index=6 bucket node table
  *
  * A bit of ascii art explanation:
- * 
+ *
  * The order index is the off-by-one compared to the actual power of 2
  * because we use index 0 to deal with the 0 special-case.
- * 
+ *
  * This shows the nodes for a small table ordered by reversed bits:
- * 
+ *
  *    bits   reverse
  * 0  000        000
  * 4  100        001
@@ -240,10 +240,10 @@
  * 5  101        101
  * 3  011        110
  * 7  111        111
- * 
- * This shows the nodes in order of non-reversed bits, linked by 
+ *
+ * This shows the nodes in order of non-reversed bits, linked by
  * reversed-bit order.
- * 
+ *
  * order              bits       reverse
  * 0               0  000        000
  * 1               |  1  001        100             <-
@@ -364,7 +364,7 @@ struct partition_resize_work {
  * Originally from Public Domain.
  */
 
-static const uint8_t BitReverseTable256[256] = 
+static const uint8_t BitReverseTable256[256] =
 {
 #define R2(n) (n),   (n) + 2*64,     (n) + 1*64,     (n) + 3*64
 #define R4(n) R2(n), R2((n) + 2*16), R2((n) + 1*16), R2((n) + 3*16)
@@ -385,21 +385,21 @@ uint8_t bit_reverse_u8(uint8_t v)
 static
 uint32_t bit_reverse_u32(uint32_t v)
 {
-	return ((uint32_t) bit_reverse_u8(v) << 24) | 
-		((uint32_t) bit_reverse_u8(v >> 8) << 16) | 
-		((uint32_t) bit_reverse_u8(v >> 16) << 8) | 
+	return ((uint32_t) bit_reverse_u8(v) << 24) |
+		((uint32_t) bit_reverse_u8(v >> 8) << 16) |
+		((uint32_t) bit_reverse_u8(v >> 16) << 8) |
 		((uint32_t) bit_reverse_u8(v >> 24));
 }
 #else
 static
 uint64_t bit_reverse_u64(uint64_t v)
 {
-	return ((uint64_t) bit_reverse_u8(v) << 56) | 
-		((uint64_t) bit_reverse_u8(v >> 8)  << 48) | 
+	return ((uint64_t) bit_reverse_u8(v) << 56) |
+		((uint64_t) bit_reverse_u8(v >> 8)  << 48) |
 		((uint64_t) bit_reverse_u8(v >> 16) << 40) |
 		((uint64_t) bit_reverse_u8(v >> 24) << 32) |
-		((uint64_t) bit_reverse_u8(v >> 32) << 24) | 
-		((uint64_t) bit_reverse_u8(v >> 40) << 16) | 
+		((uint64_t) bit_reverse_u8(v >> 32) << 24) |
+		((uint64_t) bit_reverse_u8(v >> 40) << 16) |
 		((uint64_t) bit_reverse_u8(v >> 48) << 8) |
 		((uint64_t) bit_reverse_u8(v >> 56));
 }

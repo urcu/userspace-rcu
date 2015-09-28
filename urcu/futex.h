@@ -28,7 +28,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 #define FUTEX_WAIT		0
 #define FUTEX_WAKE		1
@@ -109,7 +109,7 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 
 #endif
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif
 
