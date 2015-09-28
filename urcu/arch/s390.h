@@ -31,6 +31,7 @@
 #include <urcu/compiler.h>
 #include <urcu/config.h>
 #include <urcu/syscall-compat.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,11 +43,11 @@ extern "C" {
 
 #define HAS_CAA_GET_CYCLES
 
-typedef unsigned long long cycles_t;
+typedef uint64_t caa_cycles_t;
 
-static inline cycles_t caa_get_cycles (void)
+static inline caa_cycles_t caa_get_cycles (void)
 {
-	cycles_t cycles;
+	caa_cycles_t cycles;
 
 	__asm__ __volatile__("stck %0" : "=m" (cycles) : : "cc", "memory" );
 

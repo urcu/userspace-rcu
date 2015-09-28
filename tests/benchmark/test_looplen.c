@@ -54,8 +54,8 @@ static inline void loop_sleep(unsigned long loops)
 int main(int argc, char **argv)
 {
 	unsigned long i;
-	cycles_t time1, time2;
-	cycles_t time_tot = 0;
+	caa_cycles_t time1, time2;
+	caa_cycles_t time_tot = 0;
 	double cpl;
 
 	for (i = 0; i < TESTS; i++) {

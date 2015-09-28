@@ -152,17 +152,19 @@ extern "C" {
 
 #ifndef HAS_CAA_GET_CYCLES
 #define HAS_CAA_GET_CYCLES
-typedef unsigned long long cycles_t;
 
-static inline cycles_t caa_get_cycles (void)
+#include <time.h>
+#include <stdint.h>
+
+typedef uint64_t caa_cycles_t;
+
+static inline caa_cycles_t caa_get_cycles (void)
 {
-	cycles_t thetime;
-	struct timeval tv;
+	struct timespec ts;
 
-	if (gettimeofday(&tv, NULL) != 0)
-		return 0;
-	thetime = ((cycles_t)tv.tv_sec) * 1000000ULL + ((cycles_t)tv.tv_usec);
-	return (cycles_t)thetime;
+	if (caa_unlikely(clock_gettime(CLOCK_MONOTONIC, &ts)))
+		return -1ULL;
+	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
 }
 #endif /* HAS_CAA_GET_CYCLES */
 

@@ -33,11 +33,11 @@ extern "C" {
 #include <sys/time.h>
 
 #define HAS_CAA_GET_CYCLES
-typedef unsigned long cycles_t;
+typedef unsigned long caa_cycles_t;
 
-static inline cycles_t caa_get_cycles(void)
+static inline caa_cycles_t caa_get_cycles(void)
 {
-	cycles_t cycles;
+	caa_cycles_t cycles;
 
 	asm volatile("mfctl 16, %0" : "=r" (cycles));
 	return cycles;

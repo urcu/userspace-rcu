@@ -25,6 +25,7 @@
 #include <urcu/compiler.h>
 #include <urcu/config.h>
 #include <urcu/syscall-compat.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,15 +85,15 @@ extern "C" {
 
 #define HAS_CAA_GET_CYCLES
 
-typedef unsigned long long cycles_t;
+typedef uint64_t caa_cycles_t;
 
 #ifdef __powerpc64__
-static inline cycles_t caa_get_cycles(void)
+static inline caa_cycles_t caa_get_cycles(void)
 {
-	return (cycles_t) mftb();
+	return (caa_cycles_t) mftb();
 }
 #else
-static inline cycles_t caa_get_cycles(void)
+static inline caa_cycles_t caa_get_cycles(void)
 {
 	unsigned long h, l;
 
@@ -102,7 +103,7 @@ static inline cycles_t caa_get_cycles(void)
 		l = mftbl();
 		cmm_barrier();
 		if (mftbu() == h)
-			return (((cycles_t) h) << 32) + l;
+			return (((caa_cycles_t) h) << 32) + l;
 	}
 }
 #endif

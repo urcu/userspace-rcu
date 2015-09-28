@@ -25,6 +25,7 @@
 #include <urcu/compiler.h>
 #include <urcu/config.h>
 #include <urcu/syscall-compat.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,11 +80,11 @@ extern "C" {
 			| (((unsigned long long)__d) << 32);		  \
 	} while(0)
 
-typedef unsigned long long cycles_t;
+typedef uint64_t caa_cycles_t;
 
-static inline cycles_t caa_get_cycles(void)
+static inline caa_cycles_t caa_get_cycles(void)
 {
-        cycles_t ret = 0;
+        caa_cycles_t ret = 0;
 
         rdtscll(ret);
         return ret;

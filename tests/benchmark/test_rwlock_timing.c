@@ -61,13 +61,13 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
-static cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
+static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
+static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
 	int i, j;
-	cycles_t time1, time2;
+	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",
 		"reader", urcu_get_thread_id());
@@ -95,7 +95,7 @@ void *thr_reader(void *arg)
 void *thr_writer(void *arg)
 {
 	int i, j;
-	cycles_t time1, time2;
+	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",
 		"writer", urcu_get_thread_id());
@@ -124,8 +124,8 @@ int main(int argc, char **argv)
 	pthread_t *tid_reader, *tid_writer;
 	void *tret;
 	int i;
-	cycles_t tot_rtime = 0;
-	cycles_t tot_wtime = 0;
+	caa_cycles_t tot_rtime = 0;
+	caa_cycles_t tot_wtime = 0;
 
 	if (argc < 2) {
 		printf("Usage : %s nr_readers nr_writers\n", argv[0]);

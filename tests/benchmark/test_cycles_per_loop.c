@@ -33,7 +33,7 @@ static inline void loop_sleep(unsigned long loops)
 
 int main()
 {
-	cycles_t time1, time2;
+	caa_cycles_t time1, time2;
 
 	time1 = caa_get_cycles();
 	loop_sleep(NR_LOOPS);
