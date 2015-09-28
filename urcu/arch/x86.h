@@ -69,6 +69,8 @@ extern "C" {
 
 #define caa_cpu_relax()	__asm__ __volatile__ ("rep; nop" : : : "memory")
 
+#define HAS_CAA_GET_CYCLES
+
 #define rdtscll(val)							  \
 	do {						  		  \
 	     unsigned int __a, __d;					  \

@@ -33,13 +33,6 @@ extern "C" {
 #define cmm_wmb()			__asm__ __volatile__ ("wmb":::"memory")
 #define cmm_read_barrier_depends()	__asm__ __volatile__ ("mb":::"memory")
 
-typedef unsigned long long cycles_t;
-
-static inline cycles_t caa_get_cycles (void)
-{
-	return 0;	/* not supported */
-}
-
 #ifdef __cplusplus
 }
 #endif

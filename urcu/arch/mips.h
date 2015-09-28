@@ -36,13 +36,6 @@ extern "C" {
 					"	.set	mips0		\n" \
 					:::"memory")
 
-typedef unsigned long long cycles_t;
-
-static inline cycles_t caa_get_cycles(void)
-{
-	return 0;	/* not supported */
-}
-
 #ifdef __cplusplus
 }
 #endif

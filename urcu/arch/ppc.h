@@ -82,6 +82,8 @@ extern "C" {
 		rval;					\
 	})
 
+#define HAS_CAA_GET_CYCLES
+
 typedef unsigned long long cycles_t;
 
 #ifdef __powerpc64__

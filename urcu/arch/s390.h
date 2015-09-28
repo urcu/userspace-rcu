@@ -40,6 +40,8 @@ extern "C" {
 
 #define cmm_mb()    __asm__ __volatile__("bcr 15,0" : : : "memory")
 
+#define HAS_CAA_GET_CYCLES
+
 typedef unsigned long long cycles_t;
 
 static inline cycles_t caa_get_cycles (void)
