@@ -34,10 +34,10 @@ extern "C" {
 #include <sys/time.h>
 
 /*
- * Define the membarrier system call number if not yet available in the
- * system headers.
+ * On Linux, define the membarrier system call number if not yet available in
+ * the system headers.
  */
-#ifndef __NR_membarrier
+#if (defined(__linux__) && !defined(__NR_membarrier))
 #define __NR_membarrier		1344
 #endif
 
