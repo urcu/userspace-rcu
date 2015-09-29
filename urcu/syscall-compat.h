@@ -27,10 +27,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__sun__)
 #include <sys/syscall.h>
 #elif defined(__linux__)
 #include <syscall.h>
+#else
+# error "Add platform support to urcu/syscall-compat.h"
 #endif
 
 #endif /* _URCU_SYSCALL_COMPAT_H */
