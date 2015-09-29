@@ -62,7 +62,7 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS(
-	[bzero gettimeofday munmap sched_getcpu strtoul sysconf gettid memeset strerror]
+	[memset gettimeofday munmap sched_getcpu strtoul sysconf gettid memeset strerror]
 )
 
 # Check for headers

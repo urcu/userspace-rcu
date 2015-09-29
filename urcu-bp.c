@@ -379,7 +379,7 @@ void expand_arena(struct registry_arena *arena)
 			-1, 0);
 		if (new_chunk == MAP_FAILED)
 			abort();
-		bzero(new_chunk, new_chunk_len);
+		memset(new_chunk, 0, new_chunk_len);
 		new_chunk->data_len =
 			new_chunk_len - sizeof(struct registry_chunk);
 		cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
@@ -399,7 +399,7 @@ void expand_arena(struct registry_arena *arena)
 	if (new_chunk != MAP_FAILED) {
 		/* Should not have moved. */
 		assert(new_chunk == last_chunk);
-		bzero((char *) last_chunk + old_chunk_len,
+		memset((char *) last_chunk + old_chunk_len, 0,
 			new_chunk_len - old_chunk_len);
 		last_chunk->data_len =
 			new_chunk_len - sizeof(struct registry_chunk);
@@ -413,7 +413,7 @@ void expand_arena(struct registry_arena *arena)
 		-1, 0);
 	if (new_chunk == MAP_FAILED)
 		abort();
-	bzero(new_chunk, new_chunk_len);
+	memset(new_chunk, 0, new_chunk_len);
 	new_chunk->data_len =
 		new_chunk_len - sizeof(struct registry_chunk);
 	cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
