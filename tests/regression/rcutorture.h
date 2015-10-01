@@ -73,6 +73,14 @@
 DEFINE_PER_THREAD(long long, n_reads_pt);
 DEFINE_PER_THREAD(long long, n_updates_pt);
 
+enum callrcu_type {
+	CALLRCU_GLOBAL,
+	CALLRCU_PERCPU,
+	CALLRCU_PERTHREAD,
+};
+
+static enum callrcu_type callrcu_type = CALLRCU_GLOBAL;
+
 long long n_reads = 0LL;
 long n_updates = 0L;
 int nthreadsrunning;
@@ -122,7 +130,6 @@ volatile int goflag __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)))
 
 void *rcu_read_perf_test(void *arg)
 {
-	struct call_rcu_data *crdp;
 	int i;
 	int me = (long)arg;
 	long long n_reads_local = 0;
@@ -146,9 +153,6 @@ void *rcu_read_perf_test(void *arg)
 	}
 	__get_thread_var(n_reads_pt) += n_reads_local;
 	put_thread_offline();
-	crdp = get_thread_call_rcu_data();
-	set_thread_call_rcu_data(NULL);
-	call_rcu_data_free(crdp);
 	rcu_unregister_thread();
 
 	return (NULL);
@@ -158,12 +162,12 @@ void *rcu_update_perf_test(void *arg)
 {
 	long long n_updates_local = 0;
 
-	if ((random() & 0xf00) == 0) {
+	if (callrcu_type == CALLRCU_PERTHREAD) {
 		struct call_rcu_data *crdp;
 
 		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
-			diag("Using per-thread call_rcu() worker.");
+			diag("Successfully using per-thread call_rcu() worker.");
 			set_thread_call_rcu_data(crdp);
 		}
 	}
@@ -175,6 +179,13 @@ void *rcu_update_perf_test(void *arg)
 		n_updates_local++;
 	}
 	__get_thread_var(n_updates_pt) += n_updates_local;
+	if (callrcu_type == CALLRCU_PERTHREAD) {
+		struct call_rcu_data *crdp;
+
+		crdp = get_thread_call_rcu_data();
+		set_thread_call_rcu_data(NULL);
+		call_rcu_data_free(crdp);
+	}
 	return NULL;
 }
 
@@ -409,12 +420,12 @@ void *rcu_update_stress_test(void *arg)
 
 void *rcu_fake_update_stress_test(void *arg)
 {
-	if ((random() & 0xf00) == 0) {
+	if (callrcu_type == CALLRCU_PERTHREAD) {
 		struct call_rcu_data *crdp;
 
 		crdp = create_call_rcu_data(0, -1);
 		if (crdp != NULL) {
-			diag("Using per-thread call_rcu() worker.");
+			diag("Successfully using per-thread call_rcu() worker.");
 			set_thread_call_rcu_data(crdp);
 		}
 	}
@@ -423,6 +434,13 @@ void *rcu_fake_update_stress_test(void *arg)
 	while (goflag == GOFLAG_RUN) {
 		synchronize_rcu();
 		(void) poll(NULL, 0, 1);
+	}
+	if (callrcu_type == CALLRCU_PERTHREAD) {
+		struct call_rcu_data *crdp;
+
+		crdp = get_thread_call_rcu_data();
+		set_thread_call_rcu_data(NULL);
+		call_rcu_data_free(crdp);
 	}
 	return NULL;
 }
@@ -486,7 +504,7 @@ int stresstest(int nreaders)
 
 void usage(int argc, char *argv[])
 {
-	diag("Usage: %s [nreaders [ perf | rperf | uperf | stress ] ]\n", argv[0]);
+	diag("Usage: %s nreaders [ perf | rperf | uperf | stress ] [ stride ] [ callrcu_global | callrcu_percpu | callrcu_perthread ]\n", argv[0]);
 	exit(-1);
 }
 
@@ -499,12 +517,36 @@ int main(int argc, char *argv[])
 
 	smp_init();
 	//rcu_init();
-	srandom(time(NULL));
-	if (random() & 0x100) {
-		diag("Allocating per-CPU call_rcu threads.");
+	if (argc > 4) {
+		const char *callrcu_str = argv[4];;
+
+		if (strcmp(callrcu_str, "callrcu_global") == 0) {
+			callrcu_type = CALLRCU_GLOBAL;
+		} else if (strcmp(callrcu_str, "callrcu_percpu") == 0) {
+			callrcu_type = CALLRCU_PERCPU;
+		} else if (strcmp(callrcu_str, "callrcu_perthread") == 0) {
+			callrcu_type = CALLRCU_PERTHREAD;
+		} else {
+			usage(argc, argv);
+			goto end;
+		}
+	}
+	
+	switch (callrcu_type) {
+	case CALLRCU_GLOBAL:
+		diag("Using global per-process call_rcu thread.");
+		break;
+	case CALLRCU_PERCPU:
+		diag("Using per-CPU call_rcu threads.");
 		if (create_all_cpu_call_rcu_data(0))
 			diag("create_all_cpu_call_rcu_data: %s",
 				strerror(errno));
+		break;
+	case CALLRCU_PERTHREAD:
+		diag("Using per-thread call_rcu() worker.");
+		break;
+	default:
+		abort();
 	}
 
 #ifdef DEBUG_YIELD
@@ -513,6 +555,11 @@ int main(int argc, char *argv[])
 #endif
 
 	if (argc > 1) {
+		if (strcmp(argv[1], "-h") == 0
+				|| strcmp(argv[1], "--help") == 0) {
+			usage(argc, argv);
+			goto end;
+		}
 		nreaders = strtoul(argv[1], NULL, 0);
 		if (argc == 2) {
 			ok(!perftest(nreaders, cpustride),
@@ -541,9 +588,7 @@ int main(int argc, char *argv[])
 		else
 			usage(argc, argv);
 	} else {
-		ok(!perftest(nreaders, cpustride),
-			"perftest readers: %d, stride: %d",
-			nreaders, cpustride);
+		usage(argc, argv);
 	}
 end:
 	return exit_status();
