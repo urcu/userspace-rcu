@@ -266,6 +266,7 @@
 #include <sched.h>
 
 #include "config.h"
+#include "compat-getcpu.h"
 #include <urcu.h>
 #include <urcu-call-rcu.h>
 #include <urcu-flavor.h>
@@ -619,26 +620,18 @@ void free_split_items_count(struct cds_lfht *ht)
 	poison_free(ht->split_count);
 }
 
-#if defined(HAVE_SCHED_GETCPU)
 static
 int ht_get_split_count_index(unsigned long hash)
 {
 	int cpu;
 
 	assert(split_count_mask >= 0);
-	cpu = sched_getcpu();
+	cpu = urcu_sched_getcpu();
 	if (caa_unlikely(cpu < 0))
 		return hash & split_count_mask;
 	else
 		return cpu & split_count_mask;
 }
-#else /* #if defined(HAVE_SCHED_GETCPU) */
-static
-int ht_get_split_count_index(unsigned long hash)
-{
-	return hash & split_count_mask;
-}
-#endif /* #else #if defined(HAVE_SCHED_GETCPU) */
 
 static
 void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
