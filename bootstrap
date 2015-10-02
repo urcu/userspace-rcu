@@ -1,8 +1,8 @@
-#! /bin/sh
+#!/bin/sh
 
 set -x
-if [ ! -e config ]; then
+if [ ! -d "config" ]; then
 	mkdir config
 fi
 
-autoreconf -i
+autoreconf -vi
