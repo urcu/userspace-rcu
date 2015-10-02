@@ -1,26 +1,23 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
-
-AC_INIT([userspace-rcu],[0.8.0],[mathieu dot desnoyers at efficios dot com])
+AC_PREREQ(2.59)
+AC_INIT([userspace-rcu],[0.8.0],[mathieu dot desnoyers at efficios dot com], [], [http://liburcu.org/])
 
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 AC_SUBST([URCU_LIBRARY_VERSION], [3:0:0])
 
+AC_CONFIG_SRCDIR([urcu.h])
+AC_CONFIG_HEADERS([config.h urcu/config.h])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_MACRO_DIR([config])
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
+
 AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
 AM_MAINTAINER_MODE([enable])
+
+# Enable silent rules if available (Introduced in AM 1.11)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
-m4_include([config/ax_tls.m4])
-
-AC_CONFIG_SRCDIR([urcu.h])
-
-AC_CONFIG_HEADERS([config.h urcu/config.h])
 
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
@@ -44,9 +41,14 @@ AS_IF([test "x$def_tls_detect" = "x"],
 	[:],
 	[AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $def_tls_detect)])
 
-# Checks for programs.
+# Checks for C compiler
+AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
+AC_PROG_CC_STDC
+
+# Checks for programs.
 AC_PROG_MAKE_SET
+AC_CHECK_PROGS(NPROC, [nproc gnproc])
 LT_INIT
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -57,6 +59,16 @@ AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
+
+AX_C___ATTRIBUTE__
+AS_IF([test "x$ax_cv___attribute__" = "xyes"],
+	[:],
+	[AC_MSG_ERROR([The compiler does not support __attribute__ extensions])])
+
+AX_PTHREAD(,[AC_MSG_ERROR([Could not configure pthreads support])])
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+CC="$PTHREAD_CC"
 
 # Checks for library functions.
 AC_FUNC_MALLOC
@@ -327,6 +339,7 @@ AC_CONFIG_FILES([
 	tests/unit/Makefile
 	tests/benchmark/Makefile
 	tests/regression/Makefile
+	tests/regression/regression_tests
 	tests/utils/Makefile
 	liburcu.pc
 	liburcu-bp.pc

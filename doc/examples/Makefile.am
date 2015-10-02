@@ -128,14 +128,14 @@ all-local:
 			cp -pfR $(srcdir)/$$subdir $(builddir); \
 		done; \
 	fi; \
-	if [ x"$(shell echo "$(top_srcdir)" | grep "^/" | wc -l)" = x"1" ]; then \
+	if [ x"$(shell echo "$(top_srcdir)" | $(GREP) "^/" | wc -l)" = x"1" ]; then \
 		echo "Examples: absolute top_srcdir path $(top_srcdir)"; \
 		rel_src_subdir=""; \
 	else \
 		echo "Examples: relative top_srcdir path $(top_srcdir)"; \
 		rel_src_subdir="../"; \
 	fi; \
-	if [ x"$(shell echo "$(top_builddir)" | grep "^/" | wc -l)" = x"1" ]; then \
+	if [ x"$(shell echo "$(top_builddir)" | $(GREP) "^/" | wc -l)" = x"1" ]; then \
 		echo "Examples: absolute top_builddir path $(top_builddir)"; \
 		rel_build_subdir=""; \
 	else \

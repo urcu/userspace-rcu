@@ -3,6 +3,12 @@ AM_LDFLAGS=-lpthread
 endif
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common -g
 
+SCRIPT_LIST = run.sh
+
+dist_noinst_SCRIPTS = $(SCRIPT_LIST)
+
+noinst_DATA = regression_tests.in
+
 noinst_PROGRAMS = test_urcu_fork \
 	rcutorture_urcu \
 	rcutorture_urcu_signal \
