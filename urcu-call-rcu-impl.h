@@ -36,6 +36,7 @@
 #include <sched.h>
 
 #include "config.h"
+#include "compat-getcpu.h"
 #include "urcu/wfcqueue.h"
 #include "urcu-call-rcu.h"
 #include "urcu-pointer.h"
@@ -106,23 +107,7 @@ static struct call_rcu_data *default_call_rcu_data;
  * CPUs rather than only to specific threads.
  */
 
-#ifdef HAVE_SCHED_GETCPU
-
-static int urcu_sched_getcpu(void)
-{
-	return sched_getcpu();
-}
-
-#else /* #ifdef HAVE_SCHED_GETCPU */
-
-static int urcu_sched_getcpu(void)
-{
-	return -1;
-}
-
-#endif /* #else #ifdef HAVE_SCHED_GETCPU */
-
-#if defined(HAVE_SYSCONF) && defined(HAVE_SCHED_GETCPU)
+#if defined(HAVE_SYSCONF) && (defined(HAVE_SCHED_GETCPU) || defined(HAVE_GETCPUID))
 
 /*
  * Pointer to array of pointers to per-CPU call_rcu_data structures

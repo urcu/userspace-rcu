@@ -74,7 +74,7 @@ CC="$PTHREAD_CC"
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS(
-	[memset gettimeofday munmap sched_getcpu strtoul sysconf gettid memeset strerror]
+	[memset gettimeofday munmap sched_getcpu getcpuid strtoul sysconf gettid memeset strerror]
 )
 
 # Check for headers
