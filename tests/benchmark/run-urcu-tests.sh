@@ -9,8 +9,17 @@ plan_tests	${NUM_TESTS}
 #run all tests
 diag "Executing URCU tests"
 
+NUM_CPUS="1"
+for i in nproc gnproc; do
+	NUM_CPUS=$($i 2>/dev/null)
+	if [ "$?" -eq "0" ]; then
+		break
+	else
+		NUM_CPUS="1"
+	fi
+done
+
 #set to number of active CPUS
-NUM_CPUS=$(nproc)
 if [[ ${NUM_CPUS} -lt 4 ]]; then
 	NUM_CPUS=4	# Floor at 4 due to following assumptions.
 fi

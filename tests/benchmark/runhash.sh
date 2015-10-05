@@ -18,8 +18,17 @@ TIME_UNITS=$1
 
 TESTPROG=./test_urcu_hash
 
+NUM_CPUS="1"
+for i in nproc gnproc; do
+	NUM_CPUS=$($i 2>/dev/null)
+	if [ "$?" -eq "0" ]; then
+		break
+	else
+		NUM_CPUS="1"
+	fi
+done
+
 #thread multiplier: number of processors divided by 4.
-NUM_CPUS=$(nproc)
 if [[ ${NUM_CPUS} -lt 4 ]]; then
 	NUM_CPUS=4	# Floor at 4 due to following assumptions.
 fi
