@@ -10,3 +10,17 @@ else
 	test_time_bin=""
 fi
 
+function cleanup()
+{
+        if [ x"$tmpfile" != x"" ]; then
+                rm -f $tmpfile
+        fi
+}
+
+function xseq () {
+	i=$1
+	while [[ "$i" -le "$2" ]]; do
+		echo "$i"
+		i=$(expr $i + 1)
+	done
+}
