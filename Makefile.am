@@ -1,4 +1,4 @@
-ACLOCAL_AMFLAGS=-I config
+ACLOCAL_AMFLAGS=-I m4
 
 AM_CPPFLAGS = -I$(top_builddir)/urcu
 
@@ -27,7 +27,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/tls-compat.h urcu/debug.h
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h
 
-dist_noinst_HEADERS = urcu-die.h urcu-wait.h
+dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h
 
 EXTRA_DIST = $(top_srcdir)/urcu/arch/*.h $(top_srcdir)/urcu/uatomic/*.h \
 		gpl-2.0.txt lgpl-2.1.txt lgpl-relicensing.txt \

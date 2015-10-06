@@ -1,16 +1,10 @@
-#ifndef _URCU_SYSCALL_COMPAT_H
-#define _URCU_SYSCALL_COMPAT_H
+#ifndef _COMPAT_GETCPU_H
+#define _COMPAT_GETCPU_H
 
 /*
- * urcu/syscall-compat.h
+ * compat-getcpu.h
  *
- * Userspace RCU library - Syscall Compatibility Header
- *
- * Copyright 2013 - Pierre-Luc St-Charles <pierre-luc.st-charles@polymtl.ca>
- *
- * Note: this file is only used to simplify the code required to
- * include the 'syscall.h' system header across multiple platforms,
- * which might not always be located at the same place (or needed at all).
+ * Copyright (c) 2015 Michael Jeanson <mjeanson@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,12 +21,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if defined(__ANDROID__) || defined(__sun__)
-#include <sys/syscall.h>
-#elif defined(__linux__)
-#include <syscall.h>
+#include <config.h>
+
+#if defined(HAVE_SCHED_GETCPU)
+#include <sched.h>
+
+static inline
+int urcu_sched_getcpu(void)
+{
+	return sched_getcpu();
+}
+#elif defined(HAVE_GETCPUID)
+#include <sys/processor.h>
+
+static inline
+int urcu_sched_getcpu(void)
+{
+	return (int) getcpuid();
+}
 #else
-# error "Add platform support to urcu/syscall-compat.h"
+
+static inline
+int urcu_sched_getcpu(void)
+{
+        return -1;
+}
 #endif
 
-#endif /* _URCU_SYSCALL_COMPAT_H */
+#endif /* _COMPAT_GETCPU_H */
