@@ -47,6 +47,7 @@ AC_PROG_CC
 AC_PROG_CC_STDC
 
 # Checks for programs.
+AC_PROG_AWK
 AC_PROG_MAKE_SET
 AC_CHECK_PROGS(NPROC, [nproc gnproc])
 LT_INIT
@@ -55,6 +56,8 @@ LT_INIT
 AC_C_INLINE
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT16_T
 AC_TYPE_INT32_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
@@ -73,12 +76,30 @@ CC="$PTHREAD_CC"
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
-AC_CHECK_FUNCS(
-	[memset gettimeofday munmap sched_getcpu getcpuid strtoul sysconf gettid memeset strerror]
-)
+AC_FUNC_FORK
+AC_CHECK_FUNCS([ \
+	atexit \
+	clock_gettime \
+	getcpuid \
+	gettid \
+	gettimeofday \
+	memeset \
+	memset \
+	munmap \
+	sched_getcpu \
+	strerror \
+	strtoul \
+	sysconf \
+])
 
 # Check for headers
-AC_CHECK_HEADERS([limits.h stddef.h sys/time.h])
+AC_CHECK_HEADER_STDBOOL
+AC_CHECK_HEADERS([ \
+	limits.h \
+	stddef.h \
+	sys/param.h \
+	sys/time.h \
+])
 
 # Find arch type
 AS_CASE([$host_cpu],
