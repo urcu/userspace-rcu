@@ -93,7 +93,7 @@ AC_CHECK_FUNCS([ \
 ])
 
 # Check for headers
-AC_CHECK_HEADER_STDBOOL
+AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([ \
 	limits.h \
 	stddef.h \
