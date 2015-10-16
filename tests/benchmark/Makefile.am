@@ -20,6 +20,8 @@ SCRIPT_LIST = common.sh \
 
 dist_noinst_SCRIPTS = $(SCRIPT_LIST)
 
+dist_noinst_DATA = regression_tests short_bench_tests long_bench_tests
+
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \
         test_rwlock_timing test_rwlock test_perthreadlock_timing \
