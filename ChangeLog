@@ -1,3 +1,11 @@
+2015-10-16 Userspace RCU 0.7.16
+	* Fix: format string signedness
+	* Use gcc atomics on aarch64/powerpc64le
+	* Fix: compat_futex: uninitialized ret variable
+	* Fix: compat_futex_noasync: don't override return value
+	* Fix: stable-0.7 branch does not have syscall-compat.h
+	* Fix: dynamic fallback to compat futex on sys_futex ENOSYS
+
 2015-09-09 Userspace RCU 0.7.15
 	* Disable sys_membarrier
 	* uatomic: Specify complete types for atomic function calls
