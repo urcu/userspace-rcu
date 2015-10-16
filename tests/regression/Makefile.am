@@ -7,7 +7,7 @@ SCRIPT_LIST = run.sh
 
 dist_noinst_SCRIPTS = $(SCRIPT_LIST)
 
-noinst_DATA = regression_tests.in
+dist_noinst_DATA = regression_tests.in
 
 noinst_PROGRAMS = test_urcu_fork \
 	rcutorture_urcu \
