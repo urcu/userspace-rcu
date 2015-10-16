@@ -1,3 +1,7 @@
+2015-10-16 Userspace RCU 0.9.1
+	* Fix: add missing regtest and benchmark files to dist tarball
+	* Fix: add missing run.sh to benchmark makefile
+
 2015-10-16 Userspace RCU 0.9.0
 	* Bump soname major to 4
 	* Cleanup: remove trailing tab
