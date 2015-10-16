@@ -4,6 +4,7 @@ endif
 AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
 
 SCRIPT_LIST = common.sh \
+	run.sh \
 	run-urcu-tests.sh \
 	runhash.sh \
 	runtests.sh \
