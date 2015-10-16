@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
 			goto end;
 		}
 	}
-	
+
 	switch (callrcu_type) {
 	case CALLRCU_GLOBAL:
 		diag("Using global per-process call_rcu thread.");
