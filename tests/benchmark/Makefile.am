@@ -20,7 +20,11 @@ SCRIPT_LIST = common.sh \
 
 dist_noinst_SCRIPTS = $(SCRIPT_LIST)
 
-dist_noinst_DATA = regression_tests short_bench_tests long_bench_tests
+TEST_LIST = regression_tests \
+	short_bench_tests \
+	long_bench_tests
+
+dist_noinst_DATA = $(TEST_LIST)
 
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \
@@ -213,14 +217,14 @@ test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_COMMON_LIB) $(URCU_CDS_LIB)
 
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST); do \
+		for script in $(SCRIPT_LIST) $(TEST_LIST); do \
 			cp -f $(srcdir)/$$script $(builddir); \
 		done; \
 	fi
 
 clean-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST); do \
+		for script in $(SCRIPT_LIST) $(TEST_LIST); do \
 			rm -f $(builddir)/$$script; \
 		done; \
 	fi
