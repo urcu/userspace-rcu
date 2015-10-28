@@ -264,10 +264,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <sched.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "compat-getcpu.h"
-#include <urcu.h>
+#include <urcu-pointer.h>
 #include <urcu-call-rcu.h>
 #include <urcu-flavor.h>
 #include <urcu/arch.h>
