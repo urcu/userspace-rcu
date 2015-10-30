@@ -226,19 +226,27 @@ static void smp_mb_master(void)
 
 /*
  * synchronize_rcu() waiting. Single thread.
+ * Always called with rcu_registry lock held. Releases this lock and
+ * grabs it again. Holds the lock when it returns.
  */
 static void wait_gp(void)
 {
-	/* Read reader_gp before read futex */
+	/*
+	 * Read reader_gp before read futex. smp_mb_master() needs to
+	 * be called with the rcu registry lock held in RCU_SIGNAL
+	 * flavor.
+	 */
 	smp_mb_master();
+	/* Temporarily unlock the registry lock. */
+	mutex_unlock(&rcu_registry_lock);
 	if (uatomic_read(&rcu_gp.futex) != -1)
-		return;
+		goto end;
 	while (futex_async(&rcu_gp.futex, FUTEX_WAIT, -1,
 			NULL, NULL, 0)) {
 		switch (errno) {
 		case EWOULDBLOCK:
 			/* Value already changed. */
-			return;
+			goto end;
 		case EINTR:
 			/* Retry if interrupted by signal. */
 			break;	/* Get out of switch. */
@@ -247,6 +255,11 @@ static void wait_gp(void)
 			urcu_die(errno);
 		}
 	}
+end:
+	/*
+	 * Re-lock the registry lock before the next loop.
+	 */
+	mutex_lock(&rcu_registry_lock);
 }
 
 /*
@@ -309,14 +322,19 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			}
 			break;
 		} else {
-			/* Temporarily unlock the registry lock. */
-			mutex_unlock(&rcu_registry_lock);
-			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS)
+			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
+				/* wait_gp unlocks/locks registry lock. */
 				wait_gp();
-			else
+			} else {
+				/* Temporarily unlock the registry lock. */
+				mutex_unlock(&rcu_registry_lock);
 				caa_cpu_relax();
-			/* Re-lock the registry lock before the next loop. */
-			mutex_lock(&rcu_registry_lock);
+				/*
+				 * Re-lock the registry lock before the
+				 * next loop.
+				 */
+				mutex_lock(&rcu_registry_lock);
+			}
 		}
 #else /* #ifndef HAS_INCOHERENT_CACHES */
 		/*
@@ -336,16 +354,20 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 				smp_mb_master();
 				wait_gp_loops = 0;
 			}
-			/* Temporarily unlock the registry lock. */
-			mutex_unlock(&rcu_registry_lock);
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
+				/* wait_gp unlocks/locks registry lock. */
 				wait_gp();
 				wait_gp_loops++;
 			} else {
+				/* Temporarily unlock the registry lock. */
+				mutex_unlock(&rcu_registry_lock);
 				caa_cpu_relax();
+				/*
+				 * Re-lock the registry lock before the
+				 * next loop.
+				 */
+				mutex_lock(&rcu_registry_lock);
 			}
-			/* Re-lock the registry lock before the next loop. */
-			mutex_lock(&rcu_registry_lock);
 		}
 #endif /* #else #ifndef HAS_INCOHERENT_CACHES */
 	}
