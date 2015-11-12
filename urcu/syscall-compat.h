@@ -29,7 +29,7 @@
 
 #if defined(__ANDROID__) || defined(__sun__)
 #include <sys/syscall.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__GLIBC__)
 #include <syscall.h>
 #else
 #error "Add platform support to urcu/syscall-compat.h"
