@@ -32,6 +32,14 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/time.h>
 
+/*
+ * On Linux, define the membarrier system call number if not yet available in
+ * the system headers.
+ */
+#if (defined(__linux__) && !defined(__NR_membarrier))
+#define __NR_membarrier		343
+#endif
+
 #define HAS_CAA_GET_CYCLES
 typedef unsigned long caa_cycles_t;
 
