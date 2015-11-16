@@ -30,6 +30,14 @@
 extern "C" {
 #endif
 
+/*
+ * On Linux, define the membarrier system call number if not yet available in
+ * the system headers.
+ */
+#if (defined(__linux__) && !defined(__NR_membarrier))
+#define __NR_membarrier		351
+#endif
+
 #define CAA_CACHE_LINE_SIZE	256
 
 /*
