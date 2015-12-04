@@ -73,7 +73,16 @@ static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
 
 	ret = futex(uaddr, op, val, timeout, uaddr2, val3);
 	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
-		return compat_futex_noasync(uaddr, op, val, timeout,
+		/*
+		 * The fallback on ENOSYS is the async-safe version of
+		 * the compat futex implementation, because the
+		 * async-safe compat implementation allows being used
+		 * concurrently with calls to futex(). Indeed, sys_futex
+		 * FUTEX_WAIT, on some architectures (mips and parisc),
+		 * within a given process, spuriously return ENOSYS due
+		 * to signal restart bugs on some kernel versions.
+		 */
+		return compat_futex_async(uaddr, op, val, timeout,
 				uaddr2, val3);
 	}
 	return ret;
