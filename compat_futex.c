@@ -111,6 +111,8 @@ end:
  * _ASYNC SIGNAL-SAFE_.
  * For now, timeout, uaddr2 and val3 are unused.
  * Waiter will busy-loop trying to read the condition.
+ * It is OK to use compat_futex_async() on a futex address on which
+ * futex() WAKE operations are also performed.
  */
 
 int compat_futex_async(int32_t *uaddr, int op, int32_t val,
