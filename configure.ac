@@ -103,6 +103,7 @@ AC_CHECK_HEADERS([ \
 
 # Find arch type
 AS_CASE([$host_cpu],
+	[k1om], [ARCHTYPE="x86"],
 	[i386], [ARCHTYPE="x86" && SUBARCHTYPE="x86compat"],
 	[i486], [ARCHTYPE="x86"],
 	[i586], [ARCHTYPE="x86"],
@@ -189,7 +190,7 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 	#
 	#k1om is the name for the Intel MIC family (Xeon Phi). It is an x86_64
 	#variant but lacks fence instructions.
-	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686" -a "x$host_vendor" != "xk1om"],[
+	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686" -a "x$host_vendor" != "xk1om" -a "x$host_cpu" != "xk1om"],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
 	],[
