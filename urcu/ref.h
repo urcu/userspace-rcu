@@ -15,6 +15,8 @@
  */
 
 #include <assert.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <urcu/uatomic.h>
 
 struct urcu_ref {
@@ -33,7 +35,20 @@ static inline void urcu_ref_init(struct urcu_ref *ref)
 
 static inline void urcu_ref_get(struct urcu_ref *ref)
 {
-	uatomic_add(&ref->refcount, 1);
+	long old, _new, res;
+
+	old = uatomic_read(&ref->refcount);
+	for (;;) {
+		if (old == LONG_MAX) {
+			abort();
+		}
+		_new = old + 1;
+		res = uatomic_cmpxchg(&ref->refcount, old, _new);
+		if (res == old) {
+			return;
+		}
+		old = res;
+	}
 }
 
 static inline void urcu_ref_put(struct urcu_ref *ref,
