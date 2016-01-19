@@ -16,6 +16,8 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <stdlib.h>
 #include <urcu/uatomic.h>
 
 struct urcu_ref {
@@ -34,7 +36,20 @@ static inline void urcu_ref_init(struct urcu_ref *ref)
 
 static inline void urcu_ref_get(struct urcu_ref *ref)
 {
-	uatomic_add(&ref->refcount, 1);
+	long old, _new, res;
+
+	old = uatomic_read(&ref->refcount);
+	for (;;) {
+		if (old == LONG_MAX) {
+			abort();
+		}
+		_new = old + 1;
+		res = uatomic_cmpxchg(&ref->refcount, old, _new);
+		if (res == old) {
+			return;
+		}
+		old = res;
+	}
 }
 
 static inline void urcu_ref_put(struct urcu_ref *ref,
@@ -53,7 +68,8 @@ static inline void urcu_ref_put(struct urcu_ref *ref,
  * zero. Returns true if the reference is taken, false otherwise. This
  * needs to be used in conjunction with another synchronization
  * technique (e.g.  RCU or mutex) to ensure existence of the reference
- * count.
+ * count. False is also returned in case incrementing the refcount would
+ * result in an overflow.
  */
 static inline bool urcu_ref_get_unless_zero(struct urcu_ref *ref)
 {
@@ -61,7 +77,7 @@ static inline bool urcu_ref_get_unless_zero(struct urcu_ref *ref)
 
 	old = uatomic_read(&ref->refcount);
 	for (;;) {
-		if (old == 0)
+		if (old == 0 || old == LONG_MAX)
 			return false;	/* Failure. */
 		_new = old + 1;
 		res = uatomic_cmpxchg(&ref->refcount, old, _new);
