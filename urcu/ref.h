@@ -34,22 +34,29 @@ static inline void urcu_ref_init(struct urcu_ref *ref)
 	urcu_ref_set(ref, 1);
 }
 
-static inline void urcu_ref_get(struct urcu_ref *ref)
+static inline bool  __attribute__((warn_unused_result))
+		urcu_ref_get_safe(struct urcu_ref *ref)
 {
 	long old, _new, res;
 
 	old = uatomic_read(&ref->refcount);
 	for (;;) {
 		if (old == LONG_MAX) {
-			abort();
+			return false;	/* Failure. */
 		}
 		_new = old + 1;
 		res = uatomic_cmpxchg(&ref->refcount, old, _new);
 		if (res == old) {
-			return;
+			return true;	/* Success. */
 		}
 		old = res;
 	}
+}
+
+static inline void urcu_ref_get(struct urcu_ref *ref)
+{
+	if (!urcu_ref_get_safe(ref))
+		abort();
 }
 
 static inline void urcu_ref_put(struct urcu_ref *ref,
