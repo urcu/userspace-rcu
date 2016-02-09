@@ -45,6 +45,7 @@ compiler.h
 arch/s390.h
 uatomic/alpha.h
 uatomic/mips.h
+uatomic/nios2.h
 uatomic/s390.h
 system.h
 

@@ -124,6 +124,7 @@ AS_CASE([$host_cpu],
 	[arm*], [ARCHTYPE="arm"],
 	[aarch64], [ARCHTYPE="aarch64"],
 	[mips*], [ARCHTYPE="mips"],
+	[nios2*], [ARCHTYPE="nios2"],
 	[tile*], [ARCHTYPE="tile"],
 	[hppa*], [ARCHTYPE="hppa"],
 	[ARCHTYPE="unknown"]

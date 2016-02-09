@@ -43,6 +43,7 @@ Currently, the following architectures are supported:
   - S390, S390x
   - ARM 32/64
   - MIPS
+  - NIOS2
   - Alpha
   - ia64
   - Sparcv9 32/64
