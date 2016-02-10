@@ -79,7 +79,6 @@ AC_FUNC_MMAP
 AC_FUNC_FORK
 AC_CHECK_FUNCS([ \
 	atexit \
-	clock_gettime \
 	getcpuid \
 	gettid \
 	gettimeofday \
@@ -215,6 +214,11 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 	AC_MSG_RESULT([no])
 	compat_futex_test=1
 ])
+
+# Search for clock_gettime
+AC_SEARCH_LIBS([clock_gettime], [rt], [],
+	[AC_MSG_ERROR([Cannot find clock_gettime function.])]
+)
 
 # Check for pthread
 AC_CHECK_LIB([pthread], [pthread_create],
