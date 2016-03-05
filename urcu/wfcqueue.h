@@ -43,7 +43,7 @@ extern "C" {
  * McKenney.
  */
 
-#define CDS_WFCQ_WOULDBLOCK	((void *) -1UL)
+#define CDS_WFCQ_WOULDBLOCK	((struct cds_wfcq_node *) -1UL)
 
 enum cds_wfcq_ret {
 	CDS_WFCQ_RET_WOULDBLOCK =	-1,
