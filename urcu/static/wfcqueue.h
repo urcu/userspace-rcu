@@ -257,7 +257,7 @@ ___cds_wfcq_first(cds_wfcq_head_ptr_t u_head,
 	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *node;
 
-	if (_cds_wfcq_empty(head, tail))
+	if (_cds_wfcq_empty(__cds_wfcq_head_cast(head), tail))
 		return NULL;
 	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
 	/* Load head->node.next before loading node's content */
@@ -375,7 +375,7 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 	if (state)
 		*state = 0;
 
-	if (_cds_wfcq_empty(head, tail)) {
+	if (_cds_wfcq_empty(__cds_wfcq_head_cast(head), tail)) {
 		return NULL;
 	}
 
@@ -509,7 +509,7 @@ ___cds_wfcq_splice(
 	 * Initial emptiness check to speed up cases where queue is
 	 * empty: only require loads to check if queue is empty.
 	 */
-	if (_cds_wfcq_empty(src_q_head, src_q_tail))
+	if (_cds_wfcq_empty(__cds_wfcq_head_cast(src_q_head), src_q_tail))
 		return CDS_WFCQ_RET_SRC_EMPTY;
 
 	for (;;) {
@@ -539,7 +539,8 @@ ___cds_wfcq_splice(
 	 * Append the spliced content of src_q into dest_q. Does not
 	 * require mutual exclusion on dest_q (wait-free).
 	 */
-	if (___cds_wfcq_append(dest_q_head, dest_q_tail, head, tail))
+	if (___cds_wfcq_append(__cds_wfcq_head_cast(dest_q_head), dest_q_tail,
+			head, tail))
 		return CDS_WFCQ_RET_DEST_NON_EMPTY;
 	else
 		return CDS_WFCQ_RET_DEST_EMPTY;
@@ -599,7 +600,8 @@ _cds_wfcq_dequeue_with_state_blocking(struct cds_wfcq_head *head,
 	struct cds_wfcq_node *retval;
 
 	_cds_wfcq_dequeue_lock(head, tail);
-	retval = ___cds_wfcq_dequeue_with_state_blocking(head, tail, state);
+	retval = ___cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast(head),
+			tail, state);
 	_cds_wfcq_dequeue_unlock(head, tail);
 	return retval;
 }
@@ -638,8 +640,8 @@ _cds_wfcq_splice_blocking(
 	enum cds_wfcq_ret ret;
 
 	_cds_wfcq_dequeue_lock(src_q_head, src_q_tail);
-	ret = ___cds_wfcq_splice_blocking(dest_q_head, dest_q_tail,
-			src_q_head, src_q_tail);
+	ret = ___cds_wfcq_splice_blocking(cds_wfcq_head_cast(dest_q_head), dest_q_tail,
+			cds_wfcq_head_cast(src_q_head), src_q_tail);
 	_cds_wfcq_dequeue_unlock(src_q_head, src_q_tail);
 	return ret;
 }
