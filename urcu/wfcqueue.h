@@ -74,6 +74,7 @@ struct cds_wfcq_head {
 	pthread_mutex_t lock;
 };
 
+#ifndef __cplusplus
 /*
  * The transparent union allows calling functions that work on both
  * struct cds_wfcq_head and struct __cds_wfcq_head on any of those two
@@ -83,6 +84,45 @@ typedef union {
 	struct __cds_wfcq_head *_h;
 	struct cds_wfcq_head *h;
 } __attribute__((__transparent_union__)) cds_wfcq_head_ptr_t;
+
+/*
+ * This static inline is only present for compatibility with C++. It is
+ * effect-less in C.
+ */
+static inline struct __cds_wfcq_head *__cds_wfcq_head_cast(struct __cds_wfcq_head *head)
+{
+	return head;
+}
+
+/*
+ * This static inline is only present for compatibility with C++. It is
+ * effect-less in C.
+ */
+static inline struct cds_wfcq_head *cds_wfcq_head_cast(struct cds_wfcq_head *head)
+{
+	return head;
+}
+#else /* #ifndef __cplusplus */
+
+/* C++ ignores transparent union. */
+typedef union {
+	struct __cds_wfcq_head *_h;
+	struct cds_wfcq_head *h;
+} cds_wfcq_head_ptr_t;
+
+/* C++ ignores transparent union. Requires an explicit conversion. */
+static inline cds_wfcq_head_ptr_t __cds_wfcq_head_cast(struct __cds_wfcq_head *head)
+{
+	cds_wfcq_head_ptr_t ret = { ._h = head };
+	return ret;
+}
+/* C++ ignores transparent union. Requires an explicit conversion. */
+static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast(struct cds_wfcq_head *head)
+{
+	cds_wfcq_head_ptr_t ret = { .h = head };
+	return ret;
+}
+#endif /* #else #ifndef __cplusplus */
 
 struct cds_wfcq_tail {
 	struct cds_wfcq_node *p;
