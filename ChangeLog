@@ -1,3 +1,6 @@
+2016-04-26 Userspace RCU 0.7.17
+	* Fix: urcu-signal: smp_mb_master() needs registry lock
+
 2015-10-16 Userspace RCU 0.7.16
 	* Fix: format string signedness
 	* Use gcc atomics on aarch64/powerpc64le
