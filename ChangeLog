@@ -1,3 +1,17 @@
+2016-04-26 Userspace RCU 0.9.2
+	* wfcqueue: add C++ compatibility API
+	* Fix: CDS_WFCQ_WOULDBLOCK typing for c++
+	* Fix: configure.ac: check for possibly required libs for clock_gettime
+	* Fix: handle reference count overflow
+	* Fix: compat_futex should work-around futex signal-restart kernel bug
+	* Support for Xeon-Phi with newer MPSS
+	* sparc64: allocate membarrier system call number
+	* hppa: allocate membarrier system call number
+	* Fix build on non-Linux Debian ports
+	* Fix: urcu-signal: smp_mb_master() needs registry lock
+	* Fix: rculfhash only needs to include urcu-pointers.h
+	* Fix: out-of-tree benchmark/regtest
+
 2015-10-16 Userspace RCU 0.9.1
 	* Fix: add missing regtest and benchmark files to dist tarball
 	* Fix: add missing run.sh to benchmark makefile
