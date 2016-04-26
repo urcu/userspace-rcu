@@ -1,3 +1,15 @@
+2016-04-26 Userspace RCU 0.8.9
+	* Fix: handle reference count overflow
+	* Fix: compat_futex should work-around futex signal-restart kernel bug
+	* Fix: urcu-signal: smp_mb_master() needs registry lock
+	* Fix: rculfhash only needs to include urcu-pointers.h
+	* Fix: format string signedness
+	* Use gcc atomics on aarch64/powerpc64le
+	* Fix: compat_futex: uninitialized ret variable
+	* Fix: compat_futex_noasync: don't override return value
+	* Fix: stable-0.8 branch does not have syscall-compat.h
+	* Fix: dynamic fallback to compat futex on sys_futex ENOSYS
+
 2015-09-09 Userspace RCU 0.8.8
 	* Disable sys_membarrier
 	* Fix: volatile in assert()
