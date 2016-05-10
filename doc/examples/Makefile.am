@@ -123,9 +123,12 @@ SUBDIRS_PROXY = hlist list urcu-flavors wfcqueue rculfqueue \
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
 		cp -pfR $(srcdir)/dist-files $(builddir); \
+		chmod -R u+w $(builddir)/dist-files; \
 		cp -pf $(srcdir)/Makefile.examples.template $(builddir); \
+		chmod u+w $(builddir)/Makefile.examples.template; \
 		for subdir in $(SUBDIRS_PROXY); do \
 			cp -pfR $(srcdir)/$$subdir $(builddir); \
+			chmod -R u+w $(builddir)/$$subdir; \
 		done; \
 	fi; \
 	if [ x"$(shell echo "$(top_srcdir)" | $(GREP) "^/" | wc -l)" = x"1" ]; then \
