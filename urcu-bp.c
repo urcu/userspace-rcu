@@ -612,6 +612,7 @@ void rcu_bp_exit(void)
 			munmap(chunk, chunk->data_len
 					+ sizeof(struct registry_chunk));
 		}
+		CDS_INIT_LIST_HEAD(&registry_arena.chunk_list);
 		ret = pthread_key_delete(urcu_bp_key);
 		if (ret)
 			abort();
