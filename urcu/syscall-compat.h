@@ -27,7 +27,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if defined(__ANDROID__) || defined(__sun__)
+#if defined(__ANDROID__) || defined(__sun__) || defined(__GNU__)
 #include <sys/syscall.h>
 #elif defined(__linux__) || defined(__GLIBC__)
 #include <syscall.h>
