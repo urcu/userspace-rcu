@@ -8,6 +8,9 @@ AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION)
 if !LIBC_INCLUDES_PTHREAD
 AM_LDFLAGS+=-lpthread
 endif
+if USE_CYGWIN
+AM_LDFLAGS+=-no-undefined
+endif
 AM_CFLAGS=-Wall
 
 SUBDIRS = . doc tests
