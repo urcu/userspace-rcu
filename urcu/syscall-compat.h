@@ -31,6 +31,10 @@
 #include <sys/syscall.h>
 #elif defined(__linux__) || defined(__GLIBC__)
 #include <syscall.h>
+
+#elif defined(__CYGWIN__)
+/* Don't include anything on Cygwin. */
+
 #else
 #error "Add platform support to urcu/syscall-compat.h"
 #endif
