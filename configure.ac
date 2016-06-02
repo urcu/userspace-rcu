@@ -134,6 +134,11 @@ AS_CASE([$host],[*-*-linux-androideabi],
 	[AM_CONDITIONAL(TARGET_IS_ANDROID, false)]
 )
 
+AS_CASE([$host],[*-cygwin*],
+	[AM_CONDITIONAL(USE_CYGWIN, true)],
+	[AM_CONDITIONAL(USE_CYGWIN, false)]
+)
+
 AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
