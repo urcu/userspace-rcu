@@ -298,7 +298,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
  * Return the unique node already present upon failure. If
  * cds_lfht_add_unique fails, the node passed as parameter should be
  * freed by the caller. In this case, the caller does NOT need to wait
- * for a grace period before freeing the node.
+ * for a grace period before freeing or re-using the node.
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  *
@@ -334,7 +334,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  * After successful replacement, a grace period must be waited for before
- * freeing the memory reserved for the returned node.
+ * freeing or re-using the memory reserved for the returned node.
  *
  * The semantic of replacement vs lookups and traversals is the
  * following: if lookups and traversals are performed between a key
@@ -376,8 +376,8 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  * After successful replacement, a grace period must be waited for before
- * freeing the memory reserved for the old node (which can be accessed
- * with cds_lfht_iter_get_node).
+ * freeing or re-using the memory reserved for the old node (which can
+ * be accessed with cds_lfht_iter_get_node).
  *
  * The semantic of replacement vs lookups is the same as
  * cds_lfht_add_replace().
@@ -409,8 +409,8 @@ int cds_lfht_replace(struct cds_lfht *ht,
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
  * After successful removal, a grace period must be waited for before
- * freeing the memory reserved for old node (which can be accessed with
- * cds_lfht_iter_get_node).
+ * freeing or re-using the memory reserved for old node (which can be
+ * accessed with cds_lfht_iter_get_node).
  * Upon success, this function issues a full memory barrier before and
  * after its atomic commit. Upon failure, this function does not issue
  * any memory barrier.
