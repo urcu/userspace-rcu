@@ -6,7 +6,7 @@ AC_INIT([userspace-rcu],[0.8.9],[mathieu dot desnoyers at efficios dot com])
 
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-AC_SUBST([URCU_LIBRARY_VERSION], [2:0:0])
+AC_SUBST([URCU_LIBRARY_VERSION], [2:0:1])
 
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
