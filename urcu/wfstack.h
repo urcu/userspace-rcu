@@ -108,6 +108,7 @@ typedef union {
 
 #define cds_wfs_node_init		_cds_wfs_node_init
 #define cds_wfs_init			_cds_wfs_init
+#define cds_wfs_destroy			_cds_wfs_destroy
 #define __cds_wfs_init			___cds_wfs_init
 #define cds_wfs_empty			_cds_wfs_empty
 #define cds_wfs_push			_cds_wfs_push
@@ -146,12 +147,20 @@ typedef union {
 extern void cds_wfs_node_init(struct cds_wfs_node *node);
 
 /*
- * cds_wfs_init: initialize wait-free stack.
+ * cds_wfs_init: initialize wait-free stack (with lock). Pair with
+ * cds_wfs_destroy().
  */
 extern void cds_wfs_init(struct cds_wfs_stack *s);
 
 /*
- * __cds_wfs_init: initialize wait-free stack.
+ * cds_wfs_destroy: destroy wait-free stack (with lock). Pair with
+ * cds_wfs_init().
+ */
+extern void cds_wfs_destroy(struct cds_wfs_stack *s);
+
+/*
+ * __cds_wfs_init: initialize wait-free stack (no lock). Don't pair with
+ * any destroy function.
  */
 extern void __cds_wfs_init(struct __cds_wfs_stack *s);
 

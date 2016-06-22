@@ -40,6 +40,11 @@ void cds_lfs_init(struct cds_lfs_stack *s)
 	_cds_lfs_init(s);
 }
 
+void cds_lfs_destroy(struct cds_lfs_stack *s)
+{
+	_cds_lfs_destroy(s);
+}
+
 void __cds_lfs_init(struct __cds_lfs_stack *s)
 {
 	___cds_lfs_init(s);

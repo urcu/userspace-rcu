@@ -72,6 +72,12 @@ void cds_wfq_init(struct cds_wfq_queue *q)
 }
 
 static inline CDS_WFQ_DEPRECATED
+void cds_wfq_destroy(struct cds_wfq_queue *q)
+{
+	_cds_wfq_destroy(q);
+}
+
+static inline CDS_WFQ_DEPRECATED
 void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
 {
 	_cds_wfq_enqueue(q, node);
@@ -96,6 +102,9 @@ void cds_wfq_node_init(struct cds_wfq_node *node);
 
 extern CDS_WFQ_DEPRECATED
 void cds_wfq_init(struct cds_wfq_queue *q);
+
+extern CDS_WFQ_DEPRECATED
+void cds_wfq_destroy(struct cds_wfq_queue *q);
 
 extern CDS_WFQ_DEPRECATED
 void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node);

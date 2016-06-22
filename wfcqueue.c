@@ -40,6 +40,12 @@ void cds_wfcq_init(struct cds_wfcq_head *head,
 	_cds_wfcq_init(head, tail);
 }
 
+void cds_wfcq_destroy(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	_cds_wfcq_destroy(head, tail);
+}
+
 void __cds_wfcq_init(struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
