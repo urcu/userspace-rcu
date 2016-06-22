@@ -92,7 +92,8 @@ static inline void _cds_wfcq_node_init(struct cds_wfcq_node *node)
 }
 
 /*
- * cds_wfcq_init: initialize wait-free queue.
+ * cds_wfcq_init: initialize wait-free queue (with lock). Pair with
+ * cds_wfcq_destroy().
  */
 static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
@@ -107,7 +108,19 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
 }
 
 /*
- * __cds_wfcq_init: initialize wait-free queue.
+ * cds_wfcq_destroy: destroy wait-free queue (with lock). Pair with
+ * cds_wfcq_init().
+ */
+static inline void _cds_wfcq_destroy(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail)
+{
+	int ret = pthread_mutex_destroy(&head->lock);
+	assert(!ret);
+}
+
+/*
+ * __cds_wfcq_init: initialize wait-free queue (without lock). Don't
+ * pair with any destroy function.
  */
 static inline void ___cds_wfcq_init(struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)

@@ -65,6 +65,12 @@ static inline void _cds_wfq_init(struct cds_wfq_queue *q)
 	assert(!ret);
 }
 
+static inline void _cds_wfq_destroy(struct cds_wfq_queue *q)
+{
+	int ret = pthread_mutex_destroy(&q->lock);
+	assert(!ret);
+}
+
 static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
 				    struct cds_wfq_node *node)
 {
