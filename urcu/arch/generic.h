@@ -153,6 +153,8 @@ extern "C" {
 #ifndef HAS_CAA_GET_CYCLES
 #define HAS_CAA_GET_CYCLES
 
+#ifdef CONFIG_RCU_HAVE_CLOCK_GETTIME
+
 #include <time.h>
 #include <stdint.h>
 
@@ -166,6 +168,38 @@ static inline caa_cycles_t caa_get_cycles (void)
 		return -1ULL;
 	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
 }
+
+#elif defined(__APPLE__)
+
+#include <mach/mach.h>
+#include <mach/clock.h>
+#include <mach/mach_time.h>
+#include <time.h>
+#include <stdint.h>
+
+typedef uint64_t caa_cycles_t;
+
+static inline caa_cycles_t caa_get_cycles (void)
+{
+	mach_timespec_t ts = { 0, 0 };
+	static clock_serv_t clock_service;
+
+	if (caa_unlikely(!clock_service)) {
+		if (host_get_clock_service(mach_host_self(),
+				SYSTEM_CLOCK, &clock_service))
+			return -1ULL;
+	}
+	if (caa_unlikely(clock_get_time(clock_service, &ts)))
+		return -1ULL;
+	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
+}
+
+#else
+
+#error caa_get_cycles() not implemented for this platform.
+
+#endif
+
 #endif /* HAS_CAA_GET_CYCLES */
 
 #ifdef __cplusplus
