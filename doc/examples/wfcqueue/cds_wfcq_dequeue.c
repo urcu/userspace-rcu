@@ -75,5 +75,6 @@ int main(int argc, char **argv)
 	}
 	printf("\n");
 end:
+	cds_wfcq_destroy(&myqueue_head, &myqueue_tail);
 	return ret;
 }

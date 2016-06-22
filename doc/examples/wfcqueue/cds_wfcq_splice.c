@@ -105,5 +105,6 @@ int main(int argc, char **argv)
 	print_queue(&head_A, &tail_A, "queue A content after splice");
 	print_queue(&head_B, &tail_B, "queue B content after splice");
 end:
+	cds_wfcq_destroy(&head_A, &tail_A);
 	return ret;
 }
