@@ -140,11 +140,6 @@ AS_CASE([$host_cpu],
 	[ARCHTYPE="unknown"]
 )
 
-AS_CASE([$host],[*-*-linux-androideabi],
-	[AM_CONDITIONAL(TARGET_IS_ANDROID, true)],
-	[AM_CONDITIONAL(TARGET_IS_ANDROID, false)]
-)
-
 AS_CASE([$host],[*-cygwin*],
 	[AM_CONDITIONAL(USE_CYGWIN, true)],
 	[AM_CONDITIONAL(USE_CYGWIN, false)]
@@ -235,15 +230,6 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 AC_SEARCH_LIBS([clock_gettime], [rt], [
 	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
 ], [])
-
-# Check for pthread
-AC_CHECK_LIB([pthread], [pthread_create],
-	[AM_CONDITIONAL(LIBC_INCLUDES_PTHREAD, false)],
-	[AC_CHECK_LIB([c], [pthread_create],
-		[AM_CONDITIONAL(LIBC_INCLUDES_PTHREAD, true)],
-		[AC_MSG_ERROR([Cannot find libpthread. Use [LDFLAGS]=-Ldir to specify its location.])]
-	)]
-)
 
 AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
 AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = "xx86compat"])
