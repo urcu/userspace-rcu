@@ -559,6 +559,7 @@ int main(int argc, char **argv)
 			tot_pop_last);
 		retval = 1;
 	}
+	cds_wfs_destroy(&s);
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);

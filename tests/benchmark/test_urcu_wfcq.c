@@ -260,6 +260,7 @@ static void do_test_splice(enum test_sync sync)
 		URCU_TLS(nr_successful_dequeues)++;
 		URCU_TLS(nr_dequeues)++;
 	}
+	cds_wfcq_destroy(&tmp_head, &tmp_tail);
 }
 
 static void *thr_dequeuer(void *_count)
@@ -575,6 +576,7 @@ int main(int argc, char **argv)
 			tot_dequeue_last);
 		retval = 1;
 	}
+	cds_wfcq_destroy(&head, &tail);
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);

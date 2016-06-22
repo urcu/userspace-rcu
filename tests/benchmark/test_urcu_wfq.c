@@ -395,6 +395,7 @@ int main(int argc, char **argv)
 		       tot_successful_enqueues,
 		       tot_successful_dequeues + end_dequeues);
 
+	cds_wfq_destroy(&q);
 	free(count_enqueuer);
 	free(count_dequeuer);
 	free(tid_enqueuer);
