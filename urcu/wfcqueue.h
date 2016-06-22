@@ -80,6 +80,7 @@ struct cds_wfcq_tail {
 
 #define cds_wfcq_node_init		_cds_wfcq_node_init
 #define cds_wfcq_init			_cds_wfcq_init
+#define cds_wfcq_destroy		_cds_wfcq_destroy
 #define cds_wfcq_empty			_cds_wfcq_empty
 #define cds_wfcq_enqueue		_cds_wfcq_enqueue
 
@@ -158,9 +159,17 @@ struct cds_wfcq_tail {
 extern void cds_wfcq_node_init(struct cds_wfcq_node *node);
 
 /*
- * cds_wfcq_init: initialize wait-free queue.
+ * cds_wfcq_init: initialize wait-free queue. Pair with
+ * cds_wfcq_destroy().
  */
 extern void cds_wfcq_init(struct cds_wfcq_head *head,
+		struct cds_wfcq_tail *tail);
+
+/*
+ * cds_wfcq_destroy: destroy wait-free queue. Pair with
+ * cds_wfcq_init().
+ */
+extern void cds_wfcq_destroy(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail);
 
 /*

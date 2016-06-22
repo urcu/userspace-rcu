@@ -38,6 +38,11 @@ void cds_wfs_init(struct cds_wfs_stack *s)
 	_cds_wfs_init(s);
 }
 
+void cds_wfs_destroy(struct cds_wfs_stack *s)
+{
+	_cds_wfs_destroy(s);
+}
+
 bool cds_wfs_empty(struct cds_wfs_stack *s)
 {
 	return _cds_wfs_empty(s);

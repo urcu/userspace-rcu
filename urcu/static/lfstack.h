@@ -66,7 +66,8 @@ void _cds_lfs_node_init(struct cds_lfs_node *node)
 }
 
 /*
- * cds_lfs_init: initialize lock-free stack.
+ * cds_lfs_init: initialize lock-free stack (with lock). Pair with
+ * cds_lfs_destroy().
  */
 static inline
 void _cds_lfs_init(struct cds_lfs_stack *s)
@@ -75,6 +76,17 @@ void _cds_lfs_init(struct cds_lfs_stack *s)
 
 	s->head = NULL;
 	ret = pthread_mutex_init(&s->lock, NULL);
+	assert(!ret);
+}
+
+/*
+ * cds_lfs_destroy: destroy lock-free stack (with lock). Pair with
+ * cds_lfs_init().
+ */
+static inline
+void _cds_lfs_destroy(struct cds_lfs_stack *s)
+{
+        int ret = pthread_mutex_destroy(&s->lock);
 	assert(!ret);
 }
 

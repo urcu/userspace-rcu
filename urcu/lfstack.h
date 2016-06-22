@@ -81,6 +81,7 @@ struct cds_lfs_stack {
 
 #define cds_lfs_node_init		_cds_lfs_node_init
 #define cds_lfs_init			_cds_lfs_init
+#define cds_lfs_destroy			_cds_lfs_destroy
 #define __cds_lfs_init			___cds_lfs_init
 #define cds_lfs_empty			_cds_lfs_empty
 #define cds_lfs_push			_cds_lfs_push
@@ -105,9 +106,16 @@ struct cds_lfs_stack {
 extern void cds_lfs_node_init(struct cds_lfs_node *node);
 
 /*
- * cds_lfs_init: initialize lock-free stack.
+ * cds_lfs_init: initialize lock-free stack (with locking). Pair with
+ * cds_lfs_destroy().
  */
 extern void cds_lfs_init(struct cds_lfs_stack *s);
+
+/*
+ * cds_lfs_destroy: destroy lock-free stack (with lock). Pair with
+ * cds_lfs_init().
+ */
+extern void cds_lfs_destroy(struct cds_lfs_stack *s);
 
 /*
  * cds_lfs_empty: return whether lock-free stack is empty.

@@ -77,7 +77,8 @@ void _cds_wfs_node_init(struct cds_wfs_node *node)
 }
 
 /*
- * cds_wfs_init: initialize wait-free stack.
+ * cds_wfs_init: initialize wait-free stack. Pair with
+ * cds_wfs_destroy().
  */
 static inline
 void _cds_wfs_init(struct cds_wfs_stack *s)
@@ -86,6 +87,17 @@ void _cds_wfs_init(struct cds_wfs_stack *s)
 
 	s->head = CDS_WFS_END;
 	ret = pthread_mutex_init(&s->lock, NULL);
+	assert(!ret);
+}
+
+/*
+ * cds_wfs_destroy: destroy wait-free stack. Pair with
+ * cds_wfs_init().
+ */
+static inline
+void _cds_wfs_destroy(struct cds_wfs_stack *s)
+{
+	int ret = pthread_mutex_destroy(&s->lock);
 	assert(!ret);
 }
 

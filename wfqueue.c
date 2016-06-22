@@ -41,6 +41,11 @@ void cds_wfq_init(struct cds_wfq_queue *q)
 	_cds_wfq_init(q);
 }
 
+void cds_wfq_destroy(struct cds_wfq_queue *q)
+{
+	_cds_wfq_destroy(q);
+}
+
 void cds_wfq_enqueue(struct cds_wfq_queue *q, struct cds_wfq_node *node)
 {
 	_cds_wfq_enqueue(q, node);

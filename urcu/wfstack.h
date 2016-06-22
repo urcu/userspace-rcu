@@ -94,6 +94,7 @@ struct cds_wfs_stack {
 
 #define cds_wfs_node_init		_cds_wfs_node_init
 #define cds_wfs_init			_cds_wfs_init
+#define cds_wfs_destroy			_cds_wfs_destroy
 #define cds_wfs_empty			_cds_wfs_empty
 #define cds_wfs_push			_cds_wfs_push
 
@@ -131,9 +132,16 @@ struct cds_wfs_stack {
 extern void cds_wfs_node_init(struct cds_wfs_node *node);
 
 /*
- * cds_wfs_init: initialize wait-free stack.
+ * cds_wfs_init: initialize wait-free stack (with lock). Pair with
+ * cds_wfs_destroy().
  */
 extern void cds_wfs_init(struct cds_wfs_stack *s);
+
+/*
+ * cds_wfs_destroy: destroy wait-free stack (with lock). Pair with
+ * cds_wfs_init().
+ */
+extern void cds_wfs_destroy(struct cds_wfs_stack *s);
 
 /*
  * cds_wfs_empty: return whether wait-free stack is empty.
