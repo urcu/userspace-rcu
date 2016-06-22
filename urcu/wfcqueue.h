@@ -134,6 +134,7 @@ struct cds_wfcq_tail {
 
 #define cds_wfcq_node_init		_cds_wfcq_node_init
 #define cds_wfcq_init			_cds_wfcq_init
+#define __cds_wfcq_init			___cds_wfcq_init
 #define cds_wfcq_empty			_cds_wfcq_empty
 #define cds_wfcq_enqueue		_cds_wfcq_enqueue
 
