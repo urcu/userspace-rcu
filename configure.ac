@@ -51,6 +51,16 @@ AC_PROG_CC_STDC
 AC_PROG_AWK
 AC_PROG_MAKE_SET
 AC_CHECK_PROGS(NPROC, [nproc gnproc])
+AC_CHECK_PROGS(GETCONF, [getconf])
+AS_IF([test "x$NPROC" != "x"],
+	[NPROC_CMD=$NPROC],
+	[AS_IF([test "x$GETCONF" != "x"],
+		[NPROC_CMD="$GETCONF _NPROCESSORS_ONLN"],
+		[NPROC_CMD="echo 1"]
+	)]
+)
+AC_SUBST([NPROC_CMD], [$NPROC_CMD])
+
 LT_INIT
 
 # Checks for typedefs, structures, and compiler characteristics.
