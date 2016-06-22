@@ -1799,6 +1799,9 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	free_split_items_count(ht);
 	if (attr)
 		*attr = ht->resize_attr;
+	ret = pthread_mutex_destroy(&ht->resize_mutex);
+	if (ret)
+		ret = -EBUSY;
 	poison_free(ht);
 end:
 	return ret;
