@@ -75,5 +75,6 @@ int main(int argc, char **argv)
 	}
 	printf("\n");
 end:
+	cds_wfs_destroy(&mystack);
 	return ret;
 }
