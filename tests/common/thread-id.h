@@ -50,7 +50,7 @@ unsigned long urcu_get_thread_id(void)
 {
 	return (unsigned long) pthread_getthreadid_np();
 }
-#elif defined(__sun__)
+#elif defined(__sun__) || defined(__APPLE__)
 #include <pthread.h>
 
 static inline
