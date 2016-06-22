@@ -43,6 +43,14 @@ unsigned long urcu_get_thread_id(void)
 {
 	return (unsigned long) pthread_getthreadid_np();
 }
+#elif defined(__sun__) || defined(__APPLE__)
+#include <pthread.h>
+
+static inline
+unsigned long urcu_get_thread_id(void)
+{
+	return (unsigned long) pthread_self();
+}
 #else
 # warning "use pid as thread ID"
 static inline
