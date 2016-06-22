@@ -25,6 +25,7 @@ AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex suppor
 AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks cmpxchg instruction.])
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
+AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
 
 # Allow overriding storage used for TLS variables.
 AC_ARG_ENABLE([compiler-tls],
@@ -220,9 +221,9 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 ])
 
 # Search for clock_gettime
-AC_SEARCH_LIBS([clock_gettime], [rt], [],
-	[AC_MSG_ERROR([Cannot find clock_gettime function.])]
-)
+AC_SEARCH_LIBS([clock_gettime], [rt], [
+	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
+], [])
 
 # Check for pthread
 AC_CHECK_LIB([pthread], [pthread_create],

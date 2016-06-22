@@ -19,3 +19,6 @@
 
 /* TLS provided by the compiler. */
 #undef CONFIG_RCU_TLS
+
+/* clock_gettime() is detected. */
+#undef CONFIG_RCU_HAVE_CLOCK_GETTIME
