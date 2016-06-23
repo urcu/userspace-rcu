@@ -11,7 +11,8 @@ AM_CFLAGS=-Wall
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
 		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
 
-dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h
+dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h |
+	compat-rand.h
 
 
 if COMPAT_ARCH

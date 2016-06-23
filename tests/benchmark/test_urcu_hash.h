@@ -36,7 +36,7 @@
 #include <signal.h>
 
 #include <urcu/tls-compat.h>
-#include <urcu/rand-compat.h>
+#include <compat-rand.h>
 #include "cpuset.h"
 #include "thread-id.h"
 #include "../common/debug-yield.h"

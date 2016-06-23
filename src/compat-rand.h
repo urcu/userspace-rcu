@@ -1,8 +1,8 @@
-#ifndef _URCU_RAND_COMPAT_H
-#define _URCU_RAND_COMPAT_H
+#ifndef _COMPAT_RAND_H
+#define _COMPAT_RAND_H
 
 /*
- * urcu/rand-compat.h
+ * compat-rand.h
  *
  * Userspace RCU library - rand/rand_r Compatibility Header
  *
@@ -60,4 +60,4 @@ static inline int rand_r(unsigned int *seed)
 }
 #endif /* __ANDROID__ */
 
-#endif /* _URCU_RAND_COMPAT_H */
+#endif /* _COMPAT_RAND_H */
