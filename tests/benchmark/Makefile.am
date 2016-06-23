@@ -1,4 +1,4 @@
-AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/tests/common -g
 
 SCRIPT_LIST = common.sh \
 	run.sh \
@@ -42,13 +42,13 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
 	test_urcu_lfs_rcu_dynlink
 
-URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
-URCU_LIB=$(top_builddir)/liburcu.la
-URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
-URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
-URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
-URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
-URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
+URCU_COMMON_LIB=$(top_builddir)/src/liburcu-common.la
+URCU_LIB=$(top_builddir)/src/liburcu.la
+URCU_QSBR_LIB=$(top_builddir)/src/liburcu-qsbr.la
+URCU_MB_LIB=$(top_builddir)/src/liburcu-mb.la
+URCU_SIGNAL_LIB=$(top_builddir)/src/liburcu-signal.la
+URCU_BP_LIB=$(top_builddir)/src/liburcu-bp.la
+URCU_CDS_LIB=$(top_builddir)/src/liburcu-cds.la
 
 DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
 

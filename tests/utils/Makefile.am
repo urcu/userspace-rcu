@@ -1,3 +1,5 @@
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src
+
 noinst_LIBRARIES = libtap.a
 libtap_a_SOURCES = tap.c tap.h
 

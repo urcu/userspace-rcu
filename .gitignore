@@ -1,5 +1,5 @@
-urcu/arch.h
-urcu/uatomic.h
+include/urcu/arch.h
+include/urcu/uatomic.h
 tests/api.h
 
 
@@ -120,7 +120,7 @@ doc/examples/rculfhash/cds_lfht_lookup
 doc/examples/rculfhash/cds_lfht_for_each_entry_duplicate
 
 #automake
-/config.h
+/include/config.h
 .deps/
 .libs/
 Makefile.in
@@ -146,8 +146,8 @@ Makefile
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /libtool
-/stamp-h1
-/config.h.in
+/include/stamp-h1
+/include/config.h.in
 /config.status
 /autom4te.cache/
 config.h

@@ -5,15 +5,14 @@ AC_INIT([userspace-rcu],[0.9.0],[mathieu dot desnoyers at efficios dot com], [],
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 AC_SUBST([URCU_LIBRARY_VERSION], [5:0:1])
 
-AC_CONFIG_SRCDIR([urcu.h])
-AC_CONFIG_HEADERS([config.h urcu/config.h])
+AC_CONFIG_HEADERS([include/config.h include/urcu/config.h])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip])
+AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip nostdinc])
 AM_MAINTAINER_MODE([enable])
 
 # Enable silent rules if available (Introduced in AM 1.11)
@@ -148,8 +147,8 @@ AS_CASE([$host],[*-cygwin*],
 AC_SUBST(ARCHTYPE)
 AC_SUBST(SUBARCHTYPE)
 
-UATOMICSRC=urcu/uatomic/$ARCHTYPE.h
-ARCHSRC=urcu/arch/$ARCHTYPE.h
+UATOMICSRC=include/urcu/uatomic/$ARCHTYPE.h
+ARCHSRC=include/urcu/arch/$ARCHTYPE.h
 
 AS_IF([test "x$SUBARCHTYPE" = xx86compat],[
 	AC_DEFINE([CONFIG_RCU_COMPAT_ARCH], [1])
@@ -269,12 +268,6 @@ AS_IF([test "x$def_smp_support" = "xyes"], [AC_DEFINE([CONFIG_RCU_SMP], [1])])
 #  int sched_setaffinity (pid_t __pid, const cpu_set_t *__mask);
 # ~~~~
 
-# Since we define _GNU_SOURCE in the sources, must do so too in the
-# autoconf tests, as defining _GNU_SOURCE or not exposes
-# sched_setaffinity bits differently.
-saved_CFLAGS=$CFLAGS
-CFLAGS="$CFLAGS -D_GNU_SOURCE"
-
 AC_CHECK_TYPES([cpu_set_t],
 	[have_cpu_set_t="yes"],
 	[have_cpu_set_t="no"],
@@ -284,7 +277,6 @@ AC_CHECK_TYPES([cpu_set_t],
 AC_MSG_CHECKING([whether CPU_ZERO works])
 AH_TEMPLATE([HAVE_CPU_ZERO], [Defined to 1 if we have CPU_ZERO and it works])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-		#define _GNU_SOURCE
 		#include <sched.h>
 		int main()
 		{
@@ -303,7 +295,6 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 AC_MSG_CHECKING([whether CPU_SET works])
 AH_TEMPLATE([HAVE_CPU_SET], [Defined to 1 if we have CPU_SET and it works])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-		#define _GNU_SOURCE
 		#include <sched.h>
 		int main()
 		{
@@ -353,16 +344,19 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 	])
 ])
 
-CFLAGS=$saved_CFLAGS
+DEFAULT_INCLUDES="-include config.h"
+AC_SUBST(DEFAULT_INCLUDES)
 
 AC_CONFIG_LINKS([
-	urcu/arch.h:$ARCHSRC
-	urcu/uatomic.h:$UATOMICSRC
+	include/urcu/arch.h:$ARCHSRC
+	include/urcu/uatomic.h:$UATOMICSRC
 ])
 AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
 	doc/examples/Makefile
+	include/Makefile
+	src/Makefile
 	tests/Makefile
 	tests/common/Makefile
 	tests/unit/Makefile
@@ -370,12 +364,12 @@ AC_CONFIG_FILES([
 	tests/regression/Makefile
 	tests/regression/regression_tests
 	tests/utils/Makefile
-	liburcu.pc
-	liburcu-bp.pc
-	liburcu-cds.pc
-	liburcu-qsbr.pc
-	liburcu-mb.pc
-	liburcu-signal.pc
+	src/liburcu.pc
+	src/liburcu-bp.pc
+	src/liburcu-cds.pc
+	src/liburcu-qsbr.pc
+	src/liburcu-mb.pc
+	src/liburcu-signal.pc
 ])
 AC_OUTPUT
 

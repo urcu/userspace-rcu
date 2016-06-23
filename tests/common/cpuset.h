@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
-
 #if defined(HAVE_SCHED_SETAFFINITY) || defined(HAVE_CPU_SET_T)	\
 		|| defined(HAVE_CPU_ZERO) || defined(HAVE_CPU_SET)
 # include <sched.h>
