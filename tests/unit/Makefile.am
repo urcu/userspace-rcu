@@ -1,4 +1,4 @@
-AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common -g
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common -g
 
 SCRIPT_LIST = test_loop run.sh unit_tests
 
@@ -10,13 +10,13 @@ dist_noinst_SCRIPTS = $(SCRIPT_LIST)
 
 noinst_HEADERS = test_urcu_multiflavor.h
 
-URCU_COMMON_LIB=$(top_builddir)/liburcu-common.la
-URCU_LIB=$(top_builddir)/liburcu.la
-URCU_QSBR_LIB=$(top_builddir)/liburcu-qsbr.la
-URCU_MB_LIB=$(top_builddir)/liburcu-mb.la
-URCU_SIGNAL_LIB=$(top_builddir)/liburcu-signal.la
-URCU_BP_LIB=$(top_builddir)/liburcu-bp.la
-URCU_CDS_LIB=$(top_builddir)/liburcu-cds.la
+URCU_COMMON_LIB=$(top_builddir)/src/liburcu-common.la
+URCU_LIB=$(top_builddir)/src/liburcu.la
+URCU_QSBR_LIB=$(top_builddir)/src/liburcu-qsbr.la
+URCU_MB_LIB=$(top_builddir)/src/liburcu-mb.la
+URCU_SIGNAL_LIB=$(top_builddir)/src/liburcu-signal.la
+URCU_BP_LIB=$(top_builddir)/src/liburcu-bp.la
+URCU_CDS_LIB=$(top_builddir)/src/liburcu-cds.la
 TAP_LIB=$(top_builddir)/tests/utils/libtap.a
 
 test_uatomic_SOURCES = test_uatomic.c

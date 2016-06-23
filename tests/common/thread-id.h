@@ -17,7 +17,6 @@
  * provided the above notices are retained, and a notice that the code was
  * modified is included with the above copyright notice.
  */
-#include <config.h>
 
 #ifdef __linux__
 # include <urcu/syscall-compat.h>
