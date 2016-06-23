@@ -28,7 +28,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef __ANDROID__
+#ifndef HAVE_RAND_R
 /*
  * Reentrant random function from POSIX.1c.
  * Copyright (C) 1996, 1999 Free Software Foundation, Inc.
@@ -58,6 +58,6 @@ static inline int rand_r(unsigned int *seed)
 
        return result;
 }
-#endif /* __ANDROID__ */
+#endif /* HAVE_RAND_R */
 
 #endif /* _COMPAT_RAND_H */
