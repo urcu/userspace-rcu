@@ -7,7 +7,6 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/lfstack.h urcu/syscall-compat.h \
 		$(top_srcdir)/include/urcu/map/*.h \
 		$(top_srcdir)/include/urcu/static/*.h \
-		urcu/rand-compat.h \
 		urcu/tls-compat.h urcu/debug.h
 
 # Don't distribute generated headers
