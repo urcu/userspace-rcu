@@ -94,6 +94,7 @@ AC_CHECK_FUNCS([ \
 	memeset \
 	memset \
 	munmap \
+	rand_r \
 	sched_getcpu \
 	strerror \
 	strtoul \
