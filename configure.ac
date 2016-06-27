@@ -85,7 +85,6 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 CC="$PTHREAD_CC"
 
 # Checks for library functions.
-AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_FORK
 AC_CHECK_FUNCS([ \
@@ -101,6 +100,9 @@ AC_CHECK_FUNCS([ \
 	strtoul \
 	sysconf \
 ])
+
+# AC_FUNC_MALLOC causes problems when cross-compiling.
+#AC_FUNC_MALLOC
 
 # Check for headers
 AC_HEADER_STDBOOL
