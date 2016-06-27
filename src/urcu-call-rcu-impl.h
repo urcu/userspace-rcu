@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define _GNU_SOURCE
 #define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>
@@ -35,7 +34,6 @@
 #include <unistd.h>
 #include <sched.h>
 
-#include "config.h"
 #include "compat-getcpu.h"
 #include "urcu/wfcqueue.h"
 #include "urcu-call-rcu.h"

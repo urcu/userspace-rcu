@@ -1,9 +1,6 @@
 #ifndef _INCLUDE_API_H
 #define _INCLUDE_API_H
 
-#define _GNU_SOURCE
-#include "config.h"
-
 /*
  * common.h: Common Linux kernel-isms.
  *

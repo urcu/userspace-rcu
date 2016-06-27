@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -37,7 +36,7 @@
 #include <signal.h>
 
 #include <urcu/tls-compat.h>
-#include <urcu/rand-compat.h>
+#include <compat-rand.h>
 #include "cpuset.h"
 #include "thread-id.h"
 #include "../common/debug-yield.h"

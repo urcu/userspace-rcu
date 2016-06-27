@@ -31,6 +31,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <compat-rand.h>
+
 #define RCU_YIELD_READ 	(1 << 0)
 #define RCU_YIELD_WRITE	(1 << 1)
 

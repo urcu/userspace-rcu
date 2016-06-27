@@ -256,7 +256,6 @@
  */
 
 #define _LGPL_SOURCE
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
@@ -266,7 +265,6 @@
 #include <sched.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "compat-getcpu.h"
 #include <urcu-pointer.h>
 #include <urcu-call-rcu.h>
