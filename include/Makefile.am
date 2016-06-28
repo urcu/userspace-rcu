@@ -44,5 +44,5 @@ EXTRA_DIST = urcu/arch/aarch64.h \
 	urcu/uatomic/s390.h \
 	urcu/uatomic/sparc64.h \
 	urcu/uatomic/tile.h \
-	urcu/uatomic/unknown.h
+	urcu/uatomic/unknown.h \
 	urcu/uatomic/x86.h
