@@ -448,6 +448,11 @@ extern
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 
 /*
+ * cds_lfht_rcu_flavor: get RCU flavor argument from hash table creation.
+ */
+const struct rcu_flavor_struct *cds_lfht_rcu_flavor(struct cds_lfht *ht);
+
+/*
  * Note: it is safe to perform element removal (del), replacement, or
  * any hash table update operation during any of the following hash
  * table traversals.

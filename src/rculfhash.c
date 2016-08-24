@@ -2045,3 +2045,8 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	}
 	__cds_lfht_resize_lazy_launch(ht);
 }
+
+const struct rcu_flavor_struct *cds_lfht_rcu_flavor(struct cds_lfht *ht)
+{
+	return ht->flavor;
+}
