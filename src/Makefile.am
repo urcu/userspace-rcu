@@ -26,6 +26,8 @@ COMPAT+=compat_futex.c
 RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
 		rculfhash-mm-mmap.c
 
+RCUJA = rcuja.c rcuja-shadow-nodes.c rcuja-internal.h
+
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
 		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
@@ -55,7 +57,7 @@ liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-common.la
 
 liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c lfstack.c \
-	$(RCULFHASH) $(COMPAT)
+	$(RCULFHASH) $(RCUJA) $(COMPAT)
 liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig

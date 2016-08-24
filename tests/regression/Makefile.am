@@ -11,7 +11,8 @@ noinst_PROGRAMS = test_urcu_fork \
 	rcutorture_urcu_signal \
 	rcutorture_urcu_mb \
 	rcutorture_urcu_bp \
-	rcutorture_urcu_qsbr
+	rcutorture_urcu_qsbr \
+	test_urcu_ja
 
 noinst_HEADERS = rcutorture.h
 
@@ -46,6 +47,10 @@ rcutorture_urcu_signal_LDADD = $(URCU_SIGNAL_LIB) $(TAP_LIB)
 rcutorture_urcu_bp_SOURCES = urcutorture.c
 rcutorture_urcu_bp_CFLAGS = -DRCU_BP $(AM_CFLAGS)
 rcutorture_urcu_bp_LDADD = $(URCU_BP_LIB) $(TAP_LIB)
+
+test_urcu_ja_SOURCES = test_urcu_ja.c test_urcu_ja.h
+test_urcu_ja_CFLAGS = -DRCU_MEMBARRIER $(AM_CFLAGS)
+test_urcu_ja_LDADD = $(URCU_QSBR_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
 
 urcutorture.c: ../common/api.h
 

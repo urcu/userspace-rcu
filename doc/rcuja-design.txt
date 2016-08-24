@@ -1,0 +1,448 @@
+RCU Judy Array Design
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+March 8, 2012
+
+Initial ideas based on the released Judy Shop Manual
+(http://judy.sourceforge.net/). Judy was invented by Doug Baskins and
+implemented by Hewlett-Packard.
+
+Thresholds and RCU-specific analysis is introduced in this document.
+
+Advantages of using Judy Array (compressed nodes) for RCU tree:
+- no rebalancing
+- no transplant
+- RCU-friendly!
+- favor cache-line alignment of structures
+
+Disadvantage:
+- updates that need to reallocate nodes are slower than, e.g. non-rcu
+  red-black trees.
+
+Choice: Using 256 entries intermediate nodes (index can be represented
+on 8 bits): 4 levels on 32-bit, 8 levels on 64-bit
+
+
+* Node types (from less dense node to most dense)
+
+
+- empty node:
+
+Parent pointer is NULL.
+
+
+- Type A: sequential search in value and pointer arrays
+
++ Add/removal just needs to update value and pointer array, single-entry
+  (non-RCU...). For RCU, we might need to update the entire node anyway.
+- Requires sequential search through all value array for lookup fail
+  test.
+
+Filled at 3 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+64-bit: 1 byte + 3 bytes + 4 bytes pad + 3*8 = 32 bytes
+
+-> up to this point on 64-bit, sequential lookup and pointer read fit in
+a 32-byte cache line.
+  - lookup fail&success: 1 cache-line.
+
+Filled at 6 entries max 32-bit, 7 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+32-bit: 1 byte + 6 bytes + 1 byte pad + 6*4bytes = 32 bytes
+64-bit: 1 byte + 7 bytes + 7*8 = 64 bytes
+
+-> up to this point on 32-bit, sequential lookup and pointer read fit in
+a 32-byte cache line.
+  - lookup fail&success: 1 cache-line.
+
+Filled at 12 entries max 32-bit, 14 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+32-bit: 1 byte + 12 bytes + 3 bytes pad + 12*4bytes = 64 bytes
+64-bit: 1 byte + 14 bytes + 1 byte pad + 14*8 = 128 bytes
+
+Filled at 25 entries max 32-bit, 28 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+32-bit: 1 byte + 25 bytes + 2 bytes pad + 25*4bytes = 128 bytes
+64-bit: 1 byte + 28 bytes + 3 bytes pad + 28*8 = 256 bytes
+
+---> up to this point, on both 32-bit and 64-bit, the sequential lookup
+in values array fits in a 32-byte cache line.
+  - lookup failure: 1 cache line.
+  - lookup success: 2 cache lines.
+
+The two below are listed for completeness sake, but because they require
+2 32-byte cache lines for lookup, these are deemed inappropriate.
+
+Filled at 51 entries max 32-bit, 56 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+32-bit: 1 byte + 51 bytes + 51*4bytes = 256 bytes
+64-bit: 1 byte + 56 bytes + 7 bytes pad + 56*8 = 512 bytes
+
+Filled at 102 entries max 32-bit, 113 entries max 64-bit
+8 bits indicating number of children
+Array of 8-bit values followed by array of associated pointers.
+32-bit: 1 byte + 102 bytes + 1 byte pad + 102*4bytes = 512 bytes
+64-bit: 1 byte + 113 bytes + 6 bytes pad + 113*8 = 1024 bytes
+
+
+- Type B: pools of values and pointers arrays
+
+Pools of values and pointers arrays. Each pool values array is 32-bytes
+in size (so it fits in a L1 cacheline). Each pool begins with an 8-bit
+integer, which is the number of children in this pool, followed by an
+array of 8-bit values, padding, and an array of pointers. Values and
+pointer arrays are associated as in Type A.
+
+The entries of a node are associated to their respective pool based
+on their index position.
+
++ Allows lookup failure to use 1 32-byte cache-line only. (1 cacheline)
+  lookup success: 2 cache lines.
+
++ Allows in-place updates without reallocation, except when a pool is
+  full. (this was not possible with bitmap-based nodes)
+- If one pool exhausts its space, we need to increase the node size.
+  Therefore, for very dense populations, we will end up using the
+  pigeon-hole node type sooner, thus consuming more space.
+
+Pool configuration:
+
+Per pool, filled at 25 entries (32-bit), 28 entries (64-bit)
+32-bit: 1 byte + 25 bytes + 2 bytes pad + 25*4bytes = 128 bytes
+64-bit: 1 byte + 28 bytes + 3 bytes pad + 28*8 = 256 bytes
+
+Total up to 50 entries (32-bit), 56 entries (64-bit)
+2 pools: 32-bit = 256 bytes
+2 pools: 64-bit = 512 bytes
+
+Total up to 100 entries (32-bit), 112 entries (64-bit)
+4 pools: 32-bit = 512 bytes
+4 pools: 32-bit = 1024 bytes
+
+
+* Choice of pool configuration distribution:
+
+We have pools of either 2 or 4 linear arrays. Their total size is
+between 256 bytes (32-bit 2 arrays) and 1024 bytes (64-bit 4 arrays).
+
+Alignment on 256 bytes means that we can spare the 8 least significant
+bits of the pointers. Given that the type selection already uses 3 bits,
+we have 7 bits left.
+
+Alignment on 512 bytes -> 8 bits left.
+
+We can therefore encode which bit, or which two bits, are used as
+distribution selection. We can use this technique to reequilibrate pools
+if they become unbalanced (e.g. all children are within one of the two
+linear arrays).
+
+Assuming that finding the exact sub-pool usage maximum for any given
+distribution is NP complete (not proven).
+
+Taking into account sub-class size unbalance (tested programmatically by
+randomly taking N entries from 256, calculating the distribution for
+each bit (number of nodes for which bit is one/zero), and calculating
+the difference in number of nodes for each bit, choosing the minimum
+difference -- for millions of runs).
+
+We start from the "ideal" population size (with no unbalance), and do a
+fixed point to find the appropriate population size.
+
+tot entries    subclass extra items       largest linear array (stat. approx.)
+---------------------------------------------------------------------
+48 entries:      1 (98%)                  24+1=25 (target ~50/2=25)
+54 entries:      1 (97%)                  27+1=28 (target ~56/2=28)
+
+Note: there exists rare worse cases where the unbalance is larger, but
+it happens _very_ rarely. But need to provide a fallback if the subclass
+does not fit, but it does not need to be efficient.
+
+
+For pool of size 4, we need to approximate what is the maximum unbalance
+we can get for choice of distributions grouped by pairs of bits.
+
+tot entries     subclass extra items   largest linear array (stat. approx.)
+---------------------------------------------------------------------
+92 entries:      2 (99%)                23+2=25  (target: ~100/4=25)
+104 entries:     2 (99%)                26+2=28  (target: ~112/4=28)
+
+
+Note: there exists rare worse cases where the unbalance is larger, but
+it happens _very_ rarely. But need to provide a fallback if the subclass
+does not fit, but it does not need to be efficient.
+
+
+* Population "does not fit" and distribution fallback
+
+When adding a child to a distribution node, if the child does not fit,
+we recalculate the best distribution. If it does not fit in that
+distribution neither, we need to expand the node type.
+
+When removing a child, if the node child count is brought to the number
+of entries expected to statistically fit in the lower order node, we try
+to shrink. However, if we notice that the distribution does not actually
+fit in that shrinked node, we abort the shrink operation. If shrink
+fails, we keep a counter of insertion/removal operations on the node
+before we allow the shrink to be attempted again.
+
+
+- Type C: pigeon-hole array
+
+Filled at 47.2%/48.8% or more (32-bit: 121 entries+, 64-bit: 125 entries+)
+Array of children node pointers. Pointers NULL if no child at index.
+32-bit: 4*256 = 1024 bytes
+64-bit: 8*256 = 2048 bytes
+
+
+* Analysis of the thresholds:
+
+Analysis of number of cache-lines touched for each node, per-node-type,
+depending on the number of children per node, as we increment the number
+of children from 0 to 256. Through this, we choose number of children
+thresholds at which it is worthwhile to use a different node type.
+
+Per node:
+
+- ALWAYS 1 cache line hit for lookup failure (all cases)
+
+32-bit
+
+- Unexisting
+
+0 children
+
+- Type A: sequential search in value and pointer arrays
+- 1 cache line hit for lookup success
+- 32 bytes storage
+
+up to 6 children
+
+- 2 cache line hit for lookup success
+- 64 bytes storage
+
+up to 12 children
+
+- 128 bytes storage
+
+up to 25 children
+
+- Type B: pool
+
+- 256 bytes storage
+
+up to 50 children
+
+- 512 bytes storage
+up to 100 children
+
+- Type C: pigeon-hole array
+- 1 cache line hit for lookup success
+- 1024 bytes storage
+
+up to 256 children
+
+
+64-bit
+
+- Unexisting
+
+0 children
+
+- Type A: sequential search in value and pointer arrays
+- 1 cache line hit for lookup success
+- 32 bytes storage
+
+up to 3 children
+
+- 2 cache line hit for lookup success
+- 64 bytes storage
+
+up to 7 children
+
+- 128 bytes storage
+
+up to 14 children
+
+- 256 bytes storage
+
+up to 28 children
+
+- Type B: pool
+
+- 512 bytes storage
+up to 56 children
+
+- 1024 bytes storage
+up to 112 children
+
+- Type C: pigeon-hole array
+- 1 cache line hit for lookup success
+- 2048 bytes storage
+
+up to 256 children
+
+
+* Analysis of node type encoding and node pointers:
+
+Lookups are _always_ from the top of the tree going down. This
+facilitates RCU replacement as we only keep track of pointers going
+downward.
+
+Type of node encoded in the parent's pointer. Need to reserve 2
+least-significant bits.
+
+Types of children:
+
+enum child_type {
+	RCU_JA_LINEAR = 0,	/* Type A */
+			/* 32-bit: 1 to 25 children, 8 to 128 bytes */
+			/* 64-bit: 1 to 28 children, 16 to 256 bytes */
+	RCU_JA_POOL = 1,	/* Type B */
+			/* 32-bit: 26 to 100 children, 256 to 512 bytes */
+			/* 64-bit: 29 to 112 children, 512 to 1024 bytes */
+	RCU_JA_PIGEON = 2,	/* Type C */
+			/* 32-bit: 101 to 256 children, 1024 bytes */
+			/* 64-bit: 113 to 256 children, 2048 bytes */
+	/* Leaf nodes are implicit from their height in the tree */
+};
+
+If entire pointer is NULL, children is empty.
+
+
+* Lookup and Update Algorithms
+
+Let's propose a quite simple scheme that uses a mutex on nodes to manage
+update concurrency. It's certainly not optimal in terms of concurrency
+management within a node, but it has the advantage of being simple to
+implement and understand.
+
+We need to keep a count of the number of children nodes (for each node),
+to keep track of when the node type thresholds are reached. It would be
+important to put an hysteresis loop so we don't change between node
+types too often for a loop on add/removal of the same node.
+
+We acquire locks from child to parent, nested. We take all locks
+required to perform a given update in the tree (but no more) to keep it
+consistent with respect to number of children per node.
+
+If check for node being gc'd (always under node lock) fails, we simply
+need to release the lock and lookup the node again.
+
+
+- Leaf lookup
+
+rcu_read_lock()
+
+RCU-lookup each level of the tree. If level is not populated, fail.
+Until we reach the leaf node.
+
+rcu_read_unlock()
+
+
+- Leaf insertion
+
+A) Lookup
+
+rcu_read_lock()
+RCU-lookup insert position. Find location in tree where nodes are
+missing for this insertion. If leaf is already present, insert fails,
+releasing the rcu read lock.  The insert location consists of a parent
+node to which we want to attach a new node.
+
+B) Lock
+
+RCU-lookup parent node. Take the parent lock. If the parent needs to be
+reallocated to make room for this insertion, RCU-lookup parent-parent
+node and take the parent-parent lock.  For each lock taken, check if
+node is being gc'd. If gc'd, release lock, re-RCU-lookup this node, and
+retry.
+
+C) Create
+
+Construct the whole branch from the new topmost intermediate node down
+to the new leaf node we are inserting.
+
+D) Populate:
+  - If parent node reallocation is needed:
+     Reallocate the parent node, adding the new branch to it, and
+     increment its node count.
+     set gc flag in old nodes.
+     call_rcu free for all old nodes.
+     Populate new parent node with rcu_assign_pointer.
+  - Else:
+    Increment parent node count.
+    Use rcu_assign_pointer to populate this new branch into the parent
+    node.
+
+E) Locks
+
+Release parent and (if taken) parent-parent locks.
+rcu_read_unlock()
+
+
+- Leaf removal
+
+A) Lookup
+
+rcu_read_lock()
+RCU-lookup leaf to remove. If leaf is missing, fail and release rcu
+read lock.
+
+B) Lock
+
+RCU-lookup parent. Take the parent lock. If the parent needs to be
+reallocated because it would be too large for the decremented number of
+children, RCU-lookup parent-parent and take the parent-parent lock. Do
+so recursively until no node reallocation is needed, or until root is
+reached.
+
+For each lock taken, check if node is being gc'd. If gc'd, release lock,
+re-RCU-lookup this node, and retry.
+
+C) Create
+
+The branch (or portion of branch) consisting of taken locks necessarily
+has a simple node removal or update as operation to do on its top node.
+
+If the operation is a node removal, then, necessarily, the entire branch
+under the node removal operation will simply disappear. No node
+allocation is needed.
+
+Else, if the operation is a child node reallocation, the child node will
+necessarily do a node removal. So _its_ entire child branch will
+disappear. So reallocate this child node without the removed branch
+(remember to decrement its nr children count).
+
+D) Populate
+
+No reallocation case: simply set the appropriate child pointer in the
+topmost locked node to NULL. Decrement its nr children count.
+
+Reallocation case: set the child pointer in the topmost locked node to
+the newly allocated node.
+set old nodes gc flag.
+call_rcu free for all old nodes.
+
+E) Locks
+
+Release all locks.
+rcu_read_unlock()
+
+
+For the various types of nodes:
+
+- sequential search (type A)
+  - RCU replacement: mutex
+  - Entry update: mutex
+
+- bitmap followed by pointer array (type B)
+  - RCU replacement: mutex
+  - Entry update: mutex
+
+- pigeon hole array (type C)
+  - RCU replacement: mutex
+  - Entry update: mutex

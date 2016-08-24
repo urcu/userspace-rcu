@@ -3,6 +3,9 @@ AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/sr
 noinst_LIBRARIES = libtap.a
 libtap_a_SOURCES = tap.c tap.h
 
+noinst_PROGRAMS = rcuja-testpop
+rcuja_testpop_SOURCES = rcuja-testpop.c
+
 SCRIPT_LIST = tap.sh
 
 dist_noinst_SCRIPTS = $(SCRIPT_LIST)
