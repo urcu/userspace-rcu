@@ -368,6 +368,9 @@ void *rcu_update_stress_test(void *arg)
 	struct rcu_stress *p;
 	struct rcu_head rh;
 
+	rcu_register_thread();
+	rcu_thread_offline();
+
 	while (goflag == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
@@ -415,6 +418,9 @@ void *rcu_update_stress_test(void *arg)
 		}
 		n_updates++;
 	}
+
+	rcu_thread_online();
+	rcu_unregister_thread();
 	return NULL;
 }
 
