@@ -344,9 +344,6 @@ void *rcu_update_stress_test(void *arg)
 	struct rcu_stress *p;
 	struct rcu_head rh;
 
-	rcu_register_thread();
-	rcu_thread_offline();
-
 	while (goflag == GOFLAG_INIT)
 		poll(NULL, 0, 1);
 	while (goflag == GOFLAG_RUN) {
@@ -370,7 +367,23 @@ void *rcu_update_stress_test(void *arg)
 				perror("pthread_mutex_lock");
 				exit(-1);
 			}
+			rcu_register_thread();
 			call_rcu(&rh, rcu_update_stress_test_rcu);
+			rcu_unregister_thread();
+			/*
+			 * Our MacOS X test machine with the following
+			 * config:
+			 * 15.6.0 Darwin Kernel Version 15.6.0
+			 * root:xnu-3248.60.10~1/RELEASE_X86_64
+			 * appears to have issues with liburcu-signal
+			 * signal being delivered on top of
+			 * pthread_cond_wait. It seems to make the
+			 * thread continue, and therefore corrupt the
+			 * rcu_head. Work around this issue by
+			 * unregistering the RCU read-side thread
+			 * immediately after call_rcu (call_rcu needs
+			 * us to be registered RCU readers).
+			 */
 			if (pthread_cond_wait(&call_rcu_test_cond,
 					      &call_rcu_test_mutex) != 0) {
 				perror("pthread_cond_wait");
@@ -384,8 +397,6 @@ void *rcu_update_stress_test(void *arg)
 		n_updates++;
 	}
 
-	rcu_thread_online();
-	rcu_unregister_thread();
 	return NULL;
 }
 
