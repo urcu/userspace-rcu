@@ -80,9 +80,6 @@
 
 #define rcu_flavor			rcu_flavor_memb
 
-/* Specific to MEMBARRIER flavor */
-#define rcu_has_sys_membarrier		rcu_has_sys_membarrier_memb
-
 #elif defined(RCU_SIGNAL)
 
 #define rcu_read_lock			rcu_read_lock_sig

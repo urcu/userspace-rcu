@@ -111,7 +111,9 @@ void __attribute__((constructor)) rcu_bp_init(void);
 static
 void __attribute__((destructor)) rcu_bp_exit(void);
 
+#ifndef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 int urcu_bp_has_sys_membarrier;
+#endif
 
 /*
  * rcu_gp_lock ensures mutual exclusion between threads calling
@@ -578,6 +580,22 @@ void urcu_bp_thread_exit_notifier(void *rcu_key)
 	rcu_bp_unregister(rcu_key);
 }
 
+#ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+static
+void rcu_sys_membarrier_status(int available)
+{
+	if (!available)
+		abort();
+}
+#else
+static
+void rcu_sys_membarrier_status(int available)
+{
+	if (available)
+		urcu_bp_has_sys_membarrier = 1;
+}
+#endif
+
 static
 void rcu_bp_init(void)
 {
@@ -590,9 +608,8 @@ void rcu_bp_init(void)
 		if (ret)
 			abort();
 		ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
-		if (ret >= 0 && (ret & MEMBARRIER_CMD_SHARED)) {
-			urcu_bp_has_sys_membarrier = 1;
-		}
+		rcu_sys_membarrier_status(ret >= 0
+				&& (ret & MEMBARRIER_CMD_SHARED));
 		initialized = 1;
 	}
 	mutex_unlock(&init_lock);

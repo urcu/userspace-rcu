@@ -77,7 +77,9 @@ enum membarrier_cmd {
 
 #ifdef RCU_MEMBARRIER
 static int init_done;
-int rcu_has_sys_membarrier;
+#ifndef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+int rcu_has_sys_membarrier_memb;
+#endif
 
 void __attribute__((constructor)) rcu_init(void);
 #endif
@@ -160,7 +162,7 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 #ifdef RCU_MEMBARRIER
 static void smp_mb_master(void)
 {
-	if (caa_likely(rcu_has_sys_membarrier))
+	if (caa_likely(rcu_has_sys_membarrier_memb))
 		(void) membarrier(MEMBARRIER_CMD_SHARED, 0);
 	else
 		cmm_smp_mb();
@@ -532,6 +534,23 @@ void rcu_unregister_thread(void)
 }
 
 #ifdef RCU_MEMBARRIER
+
+#ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+static
+void rcu_sys_membarrier_status(int available)
+{
+	if (!available)
+		abort();
+}
+#else
+static
+void rcu_sys_membarrier_status(int available)
+{
+	if (available)
+		rcu_has_sys_membarrier_memb = 1;
+}
+#endif
+
 void rcu_init(void)
 {
 	int ret;
@@ -540,9 +559,7 @@ void rcu_init(void)
 		return;
 	init_done = 1;
 	ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
-	if (ret >= 0 && (ret & MEMBARRIER_CMD_SHARED)) {
-		rcu_has_sys_membarrier = 1;
-	}
+	rcu_sys_membarrier_status(ret >= 0 && (ret & MEMBARRIER_CMD_SHARED));
 }
 #endif
 

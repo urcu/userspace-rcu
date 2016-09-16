@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/system.h>
@@ -89,11 +90,15 @@ enum rcu_state {
  */
 
 #ifdef RCU_MEMBARRIER
-extern int rcu_has_sys_membarrier;
+#ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+#define rcu_has_sys_membarrier_memb	1
+#else
+extern int rcu_has_sys_membarrier_memb;
+#endif
 
 static inline void smp_mb_slave(void)
 {
-	if (caa_likely(rcu_has_sys_membarrier))
+	if (caa_likely(rcu_has_sys_membarrier_memb))
 		cmm_barrier();
 	else
 		cmm_smp_mb();

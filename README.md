@@ -159,7 +159,11 @@ This is the preferred version of the library, in terms of
 grace-period detection speed, read-side speed and flexibility.
 Dynamically detects kernel support for `sys_membarrier()`. Falls back
 on `urcu-mb` scheme if support is not present, which has slower
-read-side.
+read-side. Use the --disable-sys-membarrier-fallback configure option
+to disable the fall back, thus requiring `sys_membarrier()` to be
+available. This gives a small speedup when `sys_membarrier()` is
+supported by the kernel, and aborts in the library constructor if not
+supported.
 
 
 ### Usage of `liburcu-qsbr`

@@ -25,6 +25,15 @@ AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks c
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
+AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
+
+# Allow requiring the operating system to support the membarrier system
+# call. Applies to default and bulletproof flavors.
+AC_ARG_ENABLE([sys-membarrier-fallback],
+	AS_HELP_STRING([--disable-sys-membarrier-fallback], [Abort if sys-membarrier is needed but not available rather than using a fallback.]),
+	[def_sys_membarrier_fallback=$enableval],
+	[def_sys_membarrier_fallback="yes"])
+AS_IF([test "x$def_sys_membarrier_fallback" != "xyes"], [AC_DEFINE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [1])])
 
 # Allow overriding storage used for TLS variables.
 AC_ARG_ENABLE([compiler-tls],

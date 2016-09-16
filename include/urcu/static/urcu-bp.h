@@ -33,6 +33,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/system.h>
@@ -102,7 +103,11 @@ struct rcu_reader {
  */
 extern DECLARE_URCU_TLS(struct rcu_reader *, rcu_reader);
 
+#ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+#define urcu_bp_has_sys_membarrier	1
+#else
 extern int urcu_bp_has_sys_membarrier;
+#endif
 
 static inline void urcu_bp_smp_mb_slave(void)
 {
