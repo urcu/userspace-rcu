@@ -22,3 +22,7 @@
 
 /* clock_gettime() is detected. */
 #undef CONFIG_RCU_HAVE_CLOCK_GETTIME
+
+/* Require the operating system to support the membarrier system call for
+   default and bulletproof flavors. */
+#undef CONFIG_RCU_FORCE_SYS_MEMBARRIER
