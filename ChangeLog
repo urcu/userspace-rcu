@@ -1,3 +1,27 @@
+2016-11-30 Userspace RCU 0.9.3
+	* Fix: rcutorture: work-around signal issue on mac os x
+	* Fix: rcutorture should register thread using call_rcu
+	* Fix: remove AC_FUNC_MALLOC from configure.ac
+	* Fix: update ax_pthread macro to handle newer clang
+	* Update library current version due to adding destroy API
+	* Fix: Use pthread_self to get threadid on OSX
+	* Fix: examples: use destroy API for queues/stacks
+	* Update library age due to new stack/queue destroy API
+	* Fix: tests: invoke destroy APIs for queues/stacks
+	* Fix: add missing destroy functions to queues/stack APIs
+	* Fix: add missing __cds_wfcq_init for LGPL API
+	* Fix: memory leak on hash table destroy
+	* Fix: Add failover for platforms without nproc
+	* Fix: use clock_get_time for caa_get_cycles fallback on MacOSX
+	* Fix: syscall-compat.h MacOSX support
+	* Fix: Add solaris-build.md to dist
+	* Port: build shared libraries in Cygwin
+	* Port: fix compatibility header for Cygwin
+	* Add GNU Hurd support to syscall-compat.h
+	* Add support for aarch64_be
+	* Fix: urcu-bp: re-initialize list head on library exit
+	* Fix: examples make distcheck failure
+
 2016-04-26 Userspace RCU 0.9.2
 	* wfcqueue: add C++ compatibility API
 	* Fix: CDS_WFCQ_WOULDBLOCK typing for c++
