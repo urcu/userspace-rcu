@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2013 - Christian Babeux <christian.babeux@efficios.com>
+#               2016 - Michael Jeanson <mjeanson@efficios.com>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,8 +19,16 @@
 #
 
 INPUT=$1
+ARGS=()
 shift 1
 
-[ -z "${INPUT}" ] && echo "Error: No testlist. Please specify a testlist to run." && exit 1
+if [ -z "${INPUT}" ]; then
+    echo "Error: No testlist. Please specify a testlist to run."
+    exit 1
+fi
 
-prove ${*} --merge --exec '' - < ${INPUT}
+if [ "x$V" == "x1" ]; then
+    ARGS+=('-v')
+fi
+
+prove "${@}" "${ARGS[@]}" --merge --exec '' - < "${INPUT}"
