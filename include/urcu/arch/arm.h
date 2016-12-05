@@ -31,9 +31,19 @@ extern "C" {
 #endif
 
 #ifdef CONFIG_RCU_ARM_HAVE_DMB
-#define cmm_mb()	__asm__ __volatile__ ("dmb":::"memory")
-#define cmm_rmb()	__asm__ __volatile__ ("dmb":::"memory")
-#define cmm_wmb()	__asm__ __volatile__ ("dmb":::"memory")
+/*
+ * Issues full system DMB operation.
+ */
+#define cmm_mb()	__asm__ __volatile__ ("dmb sy":::"memory")
+#define cmm_rmb()	__asm__ __volatile__ ("dmb sy":::"memory")
+#define cmm_wmb()	__asm__ __volatile__ ("dmb sy":::"memory")
+
+/*
+ * Issues DMB operation only to the inner shareable domain.
+ */
+#define cmm_smp_mb()	__asm__ __volatile__ ("dmb ish":::"memory")
+#define cmm_smp_rmb()	__asm__ __volatile__ ("dmb ish":::"memory")
+#define cmm_smp_wmb()	__asm__ __volatile__ ("dmb ish":::"memory")
 #endif /* CONFIG_RCU_ARM_HAVE_DMB */
 
 #include <stdlib.h>
