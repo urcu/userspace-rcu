@@ -79,6 +79,8 @@ extern "C" {
  * using synchronize_rcu(). If fails (unexpected value), returns old (which
  * should not be freed !).
  *
+ * uatomic_cmpxchg() acts as both release and acquire barriers.
+ *
  * This macro is less than 10 lines long.  The intent is that this macro
  * meets the 10-line criterion in LGPL, allowing this function to be
  * expanded directly in non-LGPL code.
@@ -88,9 +90,6 @@ extern "C" {
 	({								\
 		__typeof__(*p) _________pold = (old);			\
 		__typeof__(*p) _________pnew = (_new);			\
-		if (!__builtin_constant_p(_new) ||			\
-		    ((_new) != NULL))					\
-			cmm_wmb();						\
 		uatomic_cmpxchg(p, _________pold, _________pnew);	\
 	})
 
@@ -98,6 +97,8 @@ extern "C" {
  * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
  * pointer to the data structure, which can be safely freed after waiting for a
  * quiescent state using synchronize_rcu().
+ *
+ * uatomic_xchg() acts as both release and acquire barriers.
  *
  * This macro is less than 10 lines long.  The intent is that this macro
  * meets the 10-line criterion in LGPL, allowing this function to be
@@ -107,9 +108,6 @@ extern "C" {
 	__extension__					\
 	({						\
 		__typeof__(*p) _________pv = (v);	\
-		if (!__builtin_constant_p(v) ||		\
-		    ((v) != NULL))			\
-			cmm_wmb();				\
 		uatomic_xchg(p, _________pv);		\
 	})
 
