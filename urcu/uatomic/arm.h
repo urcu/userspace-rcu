@@ -26,13 +26,27 @@
 
 #include <urcu/compiler.h>
 #include <urcu/system.h>
+#include <urcu/arch.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* xchg */
-#define uatomic_xchg(addr, v) __sync_lock_test_and_set(addr, v)
+
+/*
+ * Based on [1], __sync_lock_test_and_set() is not a full barrier, but
+ * instead only an acquire barrier. Given that uatomic_xchg() acts as
+ * both release and acquire barriers, we therefore need to have our own
+ * release barrier before this operation.
+ *
+ * [1] https://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html
+ */
+#define uatomic_xchg(addr, v)				\
+	({						\
+		cmm_smp_mb();				\
+		__sync_lock_test_and_set(addr, v);	\
+	})
 
 #ifdef __cplusplus
 }
