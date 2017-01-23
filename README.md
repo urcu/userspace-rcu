@@ -358,12 +358,19 @@ can be forced by specifying `--disable-compiler-tls` as configure
 argument.
 
 
-### Usage of `DEBUG_RCU`
+### Usage of `DEBUG_RCU` & `--enable-rcu-debug`
 
-`DEBUG_RCU` is used to add internal debugging self-checks to the
-RCU library. This define adds a performance penalty when enabled.
-Can be enabled by uncommenting the corresponding line in
-`Makefile.build.inc`.
+By default the library is configured with internal debugging
+self-checks disabled.
+
+For always-on debugging self-checks:
+	./configure --enable-rcu-debug
+
+For fine grained enabling of debugging self-checks, build
+urserspace-rcu with DEBUG_RCU defined and compile dependent
+applications with DEBUG_RCU defined when necessary.
+
+Warning: Enabling this feature result in a performance penalty.
 
 
 ### Usage of `DEBUG_YIELD`

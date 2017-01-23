@@ -21,7 +21,7 @@
 
 #include <assert.h>
 
-#ifdef DEBUG_RCU
+#if defined(DEBUG_RCU) || defined(CONFIG_RCU_DEBUG)
 #define urcu_assert(...)	assert(__VA_ARGS__)
 #else
 #define urcu_assert(...)

@@ -26,6 +26,7 @@ AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
 AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
+AH_TEMPLATE([CONFIG_RCU_DEBUG], [Enable internal debugging self-checks. Introduce performance penalty.])
 
 # Allow requiring the operating system to support the membarrier system
 # call. Applies to default and bulletproof flavors.
@@ -253,6 +254,13 @@ AC_ARG_ENABLE([smp-support],
 	[def_smp_support="yes"])
 AS_IF([test "x$def_smp_support" = "xyes"], [AC_DEFINE([CONFIG_RCU_SMP], [1])])
 
+# RCU debugging option
+AC_ARG_ENABLE([rcu-debug],
+      AS_HELP_STRING([--enable-rcu-debug], [Enable internal debugging
+		      self-checks. Introduce performance penalty.]))
+AS_IF([test "x$enable_rcu_debug" = "xyes"], [
+       AC_DEFINE([CONFIG_RCU_DEBUG], [1])
+])
 
 # From the sched_setaffinity(2)'s man page:
 # ~~~~

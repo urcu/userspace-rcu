@@ -90,12 +90,14 @@ extern "C" {
  * QSBR read lock/unlock are guaranteed to be no-ops. Therefore, we expose them
  * in the LGPL header for any code to use. However, the debug version is not
  * nops and may contain sanity checks. To activate it, applications must be
- * recompiled with -DDEBUG_RCU (even non-LGPL/GPL applications). This is the
- * best trade-off between license/performance/code triviality and
- * library debugging & tracing features we could come up with.
+ * recompiled with -DDEBUG_RCU (even non-LGPL/GPL applications), or
+ * compiled against a urcu/config.h that has CONFIG_RCU_DEBUG defined.
+ * This is the best trade-off between license/performance/code
+ * triviality and library debugging & tracing features we could come up
+ * with.
  */
 
-#if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU))
+#if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG))
 
 static inline void rcu_read_lock(void)
 {
@@ -105,12 +107,12 @@ static inline void rcu_read_unlock(void)
 {
 }
 
-#else /* !DEBUG_RCU */
+#else /* #if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG)) */
 
 extern void rcu_read_lock(void);
 extern void rcu_read_unlock(void);
 
-#endif /* !DEBUG_RCU */
+#endif /* #else #if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG)) */
 
 extern int rcu_read_ongoing(void);
 extern void rcu_quiescent_state(void);

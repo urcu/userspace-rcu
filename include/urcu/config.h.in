@@ -26,3 +26,7 @@
 /* Require the operating system to support the membarrier system call for
    default and bulletproof flavors. */
 #undef CONFIG_RCU_FORCE_SYS_MEMBARRIER
+
+/* Enable internal debugging self-checks.
+   Introduce performance penalty. */
+#undef CONFIG_RCU_DEBUG
