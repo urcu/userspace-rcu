@@ -51,7 +51,7 @@ type uatomic_cmpxchg(type *addr, type old, type new)
 An atomic read-modify-write operation that performs this
 sequence of operations atomically: check if `addr` contains `old`.
 If true, then replace the content of `addr` by `new`. Return the
-value previously contained by `addr`. This function imply a full
+value previously contained by `addr`. This function implies a full
 memory barrier before and after the atomic operation.
 
 
@@ -62,7 +62,7 @@ type uatomic_xchg(type *addr, type new)
 An atomic read-modify-write operation that performs this sequence
 of operations atomically: replace the content of `addr` by `new`,
 and return the value previously contained by `addr`. This
-function imply a full memory barrier before and after the atomic
+function implies a full memory barrier before and after the atomic
 operation.
 
 
@@ -74,7 +74,7 @@ type uatomic_sub_return(type *addr, type v)
 An atomic read-modify-write operation that performs this
 sequence of operations atomically: increment/decrement the
 content of `addr` by `v`, and return the resulting value. This
-function imply a full memory barrier before and after the atomic
+function implies a full memory barrier before and after the atomic
 operation.
 
 
