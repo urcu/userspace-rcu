@@ -216,8 +216,10 @@ AS_IF([test "x$ARCHTYPE" = "xx86"],[
 	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686" -a "x$host_vendor" != "xk1om" -a "x$host_cpu" != "xk1om"],[
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
+		config_rcu_have_fence=yes
 	],[
 		AC_MSG_RESULT([no])
+		config_rcu_have_fence=no
 	])
 ])
 
@@ -241,6 +243,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 # Search for clock_gettime
 AC_SEARCH_LIBS([clock_gettime], [rt], [
 	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
+	config_rcu_have_clock_gettime=yes
 ], [])
 
 AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
@@ -393,15 +396,56 @@ AC_CONFIG_FILES([
 ])
 AC_OUTPUT
 
-# Report on selected configure options
-AS_IF([test "x$def_smp_support" = "xyes"],[
-	AS_ECHO("SMP support enabled.")
-],[
-	AS_ECHO("SMP support disabled.")
-])
+#
+# Mini-report on what will be built.
+#
 
-AS_IF([test "x$def_tls_detect" = "x"],[
-	AS_ECHO("Thread Local Storage (TLS): pthread_getspecific().")
-],[
-	AS_ECHO("Thread Local Storage (TLS): $def_tls_detect.")
-])
+PPRINT_INIT
+PPRINT_SET_INDENT(1)
+PPRINT_SET_TS(38)
+
+AS_ECHO
+AS_ECHO("${PPRINT_COLOR_BLDBLU}Userspace-RCU $PACKAGE_VERSION${PPRINT_COLOR_RST}")
+AS_ECHO
+
+PPRINT_SUBTITLE([Features])
+
+PPRINT_PROP_STRING([Target architecture], $host_cpu)
+
+# SMP support enabled/disabled
+test "x$def_smp_support" = "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([SMP support], $value)
+
+# Memory fence support available
+test "x$config_rcu_have_fence" = "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([Memory fence instructions], $value)
+
+# Futex support available
+test "x$compat_futex_test" = "x0" && value=1 || value=0
+PPRINT_PROP_BOOL([Futex support], $value)
+
+# TLS
+test "x$def_tls_detect" = "x" && value="pthread_getspecific()" || value="$def_tls_detect"
+PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
+
+# clock_gettime() available
+test "x$config_rcu_have_clock_gettime" = "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([clock_gettime()], $value)
+
+# Require membarrier
+test "x$def_sys_membarrier_fallback" != "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([Require membarrier], $value)
+
+# RCU debug enabled/disabled
+test "x$enable_rcu_debug" = "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([Internal debugging], $value)
+
+report_bindir="`eval eval echo $bindir`"
+report_libdir="`eval eval echo $libdir`"
+
+# Print the bindir and libdir this `make install' will install into.
+AS_ECHO
+PPRINT_SUBTITLE([Install directories])
+PPRINT_PROP_STRING([Binaries], [$report_bindir])
+PPRINT_PROP_STRING([Libraries], [$report_libdir])
+
