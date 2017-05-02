@@ -89,9 +89,6 @@ AS_IF([test "x$ax_cv___attribute__" = "xyes"],
 	[AC_MSG_ERROR([The compiler does not support __attribute__ extensions])])
 
 AX_PTHREAD(,[AC_MSG_ERROR([Could not configure pthreads support])])
-LIBS="$PTHREAD_LIBS $LIBS"
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-CC="$PTHREAD_CC"
 
 # Checks for library functions.
 AC_FUNC_MMAP
@@ -168,7 +165,7 @@ AS_IF([test "x$SUBARCHTYPE" = xx86compat],[
 ])
 
 AS_IF([test "$host_cpu" = "armv7l"],[
-	CFLAGS="$CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
+	AM_CFLAGS="$AM_CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
 ])
 
 # ARM-specific checks
@@ -367,8 +364,10 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 	])
 ])
 
-DEFAULT_INCLUDES="-include config.h"
-AC_SUBST(DEFAULT_INCLUDES)
+AM_CPPFLAGS="-include config.h"
+AC_SUBST(AM_CPPFLAGS)
+
+AC_SUBST(AM_CFLAGS)
 
 AC_CONFIG_LINKS([
 	include/urcu/arch.h:$ARCHSRC

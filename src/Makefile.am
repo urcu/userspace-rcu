@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src
+AM_CPPFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src
 
 #Add the -version-info directly here since we are only building
 # library that use the version-info
@@ -6,7 +6,7 @@ AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION)
 if USE_CYGWIN
 AM_LDFLAGS+=-no-undefined
 endif
-AM_CFLAGS=-Wall
+AM_CFLAGS+=-Wall
 
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
 		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
@@ -44,11 +44,11 @@ liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 liburcu_qsbr_la_LIBADD = liburcu-common.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_mb_la_CFLAGS = -DRCU_MB
+liburcu_mb_la_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 liburcu_mb_la_LIBADD = liburcu-common.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
+liburcu_signal_la_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 liburcu_signal_la_LIBADD = liburcu-common.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)

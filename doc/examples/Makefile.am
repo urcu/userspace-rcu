@@ -145,7 +145,7 @@ all-local:
 		echo "Examples: relative top_builddir path $(top_builddir)"; \
 		rel_build_subdir="../"; \
 	fi; \
-	$(MAKE) -f dist-files/Makefile AM_CC="$(CC)" AM_CPPFLAGS="$(CPPFLAGS) -I$$rel_src_subdir/$(top_srcdir)/include/ -I$$rel_src_subdir/$(top_srcdir)/src/ -I$$rel_build_subdir$(top_builddir)/include/ -I$$rel_build_subdir$(top_builddir)/include/src/" AM_CFLAGS='$(CFLAGS)' AM_LDFLAGS='$(LDFLAGS) -L../../../src/.libs/ -Wl,-rpath "$(PWD)/../../src/.libs/"' $(AM_MAKEFLAGS) all;
+	$(MAKE) -f dist-files/Makefile CC="$(CC)" CPPFLAGS="$(CPPLAGS)" AM_CPPFLAGS="$(AM_CPPFLAGS) -I"$${rel_src_subdir}/$(top_srcdir)/include/" -I"$${rel_src_subdir}/$(top_srcdir)/src/" -I"$${rel_build_subdir}$(top_builddir)/include/" -I"$${rel_build_subdir}$(top_builddir)/include/src/"" CFLAGS="$(CFLAGS)" AM_CFLAGS="$(AM_CFLAGS) $(PTHREAD_CFLAGS)" LDFLAGS="$(LDFLAGS)" AM_LDFLAGS="$(AM_LDFLAGS) -L../../../src/.libs/ -Wl,-rpath "$(PWD)/../../src/.libs/"" $(AM_MAKEFLAGS) all;
 
 clean-local:
 	@$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean; \
