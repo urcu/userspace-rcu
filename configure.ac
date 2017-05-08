@@ -97,7 +97,7 @@ AS_IF([test "x$SUBARCHTYPE" = xx86compat],[
 ])
 
 AS_IF([test "$host_cpu" = "armv7l"],[
-	CFLAGS="$CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
+	AM_CFLAGS="$AM_CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
 ])
 
 # ARM-specific checks
@@ -205,8 +205,8 @@ AS_IF([test "x$def_smp_support" = "xyes"], [AC_DEFINE([CONFIG_RCU_SMP], [1])])
 # Since we define _GNU_SOURCE in the sources, must do so too in the
 # autoconf tests, as defining _GNU_SOURCE or not exposes
 # sched_setaffinity bits differently.
-saved_CFLAGS=$CFLAGS
-CFLAGS="$CFLAGS -D_GNU_SOURCE"
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $AM_CFLAGS -D_GNU_SOURCE"
 
 AC_CHECK_TYPES([cpu_set_t],
 	[have_cpu_set_t="yes"],
@@ -287,6 +287,7 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 ])
 
 CFLAGS=$saved_CFLAGS
+AC_SUBST(AM_CFLAGS)
 
 AC_CONFIG_LINKS([
 	urcu/arch.h:$ARCHSRC

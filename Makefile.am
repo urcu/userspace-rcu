@@ -5,7 +5,7 @@ AM_CPPFLAGS = -I$(top_builddir)/urcu
 #Add the -version-info directly here since we are only building
 # library that use the version-info
 AM_LDFLAGS=-lpthread -version-info $(URCU_LIBRARY_VERSION)
-AM_CFLAGS=-Wall
+AM_CFLAGS+=-Wall
 
 SUBDIRS = . doc tests
 
@@ -60,11 +60,11 @@ liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 liburcu_qsbr_la_LIBADD = liburcu-common.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_mb_la_CFLAGS = -DRCU_MB
+liburcu_mb_la_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 liburcu_mb_la_LIBADD = liburcu-common.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
+liburcu_signal_la_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 liburcu_signal_la_LIBADD = liburcu-common.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)

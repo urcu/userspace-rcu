@@ -1,5 +1,5 @@
 AM_LDFLAGS=-lpthread
-AM_CFLAGS=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
+AM_CFLAGS+=-I$(top_srcdir) -I$(top_builddir) -I$(top_srcdir)/tests/common -g
 
 SCRIPT_LIST = common.sh \
 	runall.sh \

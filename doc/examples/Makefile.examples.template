@@ -11,19 +11,16 @@
 #
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
-ifdef AM_CC
-CC = $(AM_CC)
-endif
-CFLAGS = -g -O2 -Wall
+LOCAL_CFLAGS := -g -O2 -Wall
 
 all: $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(AM_CFLAGS) $(AM_LDFLAGS) \
+	$(CC) $(LOCAL_CFLAGS) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 		-o $@ $(OBJECTS) $(LIBS)
 
 $(OBJECTS): $(SOURCES) $(DEPS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(AM_CFLAGS) \
+	$(CC) $(LOCAL_CFLAGS) $(AM_CFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) \
 		-c -o $@ $(SOURCES)
 
 .PHONY: clean
