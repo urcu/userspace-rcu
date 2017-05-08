@@ -90,6 +90,8 @@ AS_IF([test "x$ax_cv___attribute__" = "xyes"],
 
 AX_PTHREAD(,[AC_MSG_ERROR([Could not configure pthreads support])])
 
+AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
+
 # Checks for library functions.
 AC_FUNC_MMAP
 AC_FUNC_FORK
