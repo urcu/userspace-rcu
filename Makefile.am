@@ -11,7 +11,7 @@ endif
 if USE_CYGWIN
 AM_LDFLAGS+=-no-undefined
 endif
-AM_CFLAGS=-Wall
+AM_CFLAGS+=-Wall
 
 SUBDIRS = . doc tests
 
@@ -67,11 +67,11 @@ liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
 liburcu_qsbr_la_LIBADD = liburcu-common.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_mb_la_CFLAGS = -DRCU_MB
+liburcu_mb_la_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 liburcu_mb_la_LIBADD = liburcu-common.la
 
 liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_signal_la_CFLAGS = -DRCU_SIGNAL
+liburcu_signal_la_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
 liburcu_signal_la_LIBADD = liburcu-common.la
 
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
