@@ -369,6 +369,7 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 AM_CPPFLAGS="-include config.h"
 AC_SUBST(AM_CPPFLAGS)
 
+AM_CFLAGS="-Wall $AM_CFLAGS"
 AC_SUBST(AM_CFLAGS)
 
 AC_CONFIG_LINKS([

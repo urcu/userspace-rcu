@@ -6,7 +6,6 @@ AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION)
 if USE_CYGWIN
 AM_LDFLAGS+=-no-undefined
 endif
-AM_CFLAGS+=-Wall
 
 include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
 		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
