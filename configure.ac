@@ -148,6 +148,7 @@ AS_CASE([$host_cpu],
 	[nios2*], [ARCHTYPE="nios2"],
 	[tile*], [ARCHTYPE="tile"],
 	[hppa*], [ARCHTYPE="hppa"],
+	[m68k], [ARCHTYPE="m68k"],
 	[ARCHTYPE="unknown"]
 )
 
