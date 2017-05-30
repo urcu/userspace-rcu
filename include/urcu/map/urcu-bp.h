@@ -77,4 +77,9 @@
 #define rcu_yield_active		rcu_yield_active_bp
 #define rcu_rand_yield			rcu_rand_yield_bp
 
+#define urcu_register_rculfhash_atfork		\
+		urcu_register_rculfhash_atfork_bp
+#define urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_bp
+
 #endif /* _URCU_BP_MAP_H */

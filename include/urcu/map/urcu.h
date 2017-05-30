@@ -80,6 +80,11 @@
 
 #define rcu_flavor			rcu_flavor_memb
 
+#define urcu_register_rculfhash_atfork		\
+		urcu_register_rculfhash_atfork_memb
+#define urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_memb
+
 #elif defined(RCU_SIGNAL)
 
 #define rcu_read_lock			rcu_read_lock_sig
@@ -122,6 +127,11 @@
 
 #define rcu_flavor			rcu_flavor_sig
 
+#define urcu_register_rculfhash_atfork		\
+		urcu_register_rculfhash_atfork_sig
+#define urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_sig
+
 #elif defined(RCU_MB)
 
 #define rcu_read_lock			rcu_read_lock_mb
@@ -163,6 +173,11 @@
 #define rcu_defer_exit			rcu_defer_exit_mb
 
 #define rcu_flavor			rcu_flavor_mb
+
+#define urcu_register_rculfhash_atfork		\
+		urcu_register_rculfhash_atfork_mb
+#define urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_mb
 
 #else
 

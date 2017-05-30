@@ -99,6 +99,9 @@ static pthread_mutex_t call_rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct call_rcu_data *default_call_rcu_data;
 
+static struct urcu_atfork *registered_rculfhash_atfork;
+static unsigned long registered_rculfhash_atfork_refcount;
+
 /*
  * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
  * available, then we can have call_rcu threads assigned to individual
@@ -907,8 +910,13 @@ online:
 void call_rcu_before_fork(void)
 {
 	struct call_rcu_data *crdp;
+	struct urcu_atfork *atfork;
 
 	call_rcu_lock(&call_rcu_mutex);
+
+	atfork = registered_rculfhash_atfork;
+	if (atfork)
+		atfork->before_fork(atfork->priv);
 
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
 		uatomic_or(&crdp->flags, URCU_CALL_RCU_PAUSE);
@@ -929,6 +937,7 @@ void call_rcu_before_fork(void)
 void call_rcu_after_fork_parent(void)
 {
 	struct call_rcu_data *crdp;
+	struct urcu_atfork *atfork;
 
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list)
 		uatomic_and(&crdp->flags, ~URCU_CALL_RCU_PAUSE);
@@ -936,6 +945,9 @@ void call_rcu_after_fork_parent(void)
 		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSED) != 0)
 			(void) poll(NULL, 0, 1);
 	}
+	atfork = registered_rculfhash_atfork;
+	if (atfork)
+		atfork->after_fork_parent(atfork->priv);
 	call_rcu_unlock(&call_rcu_mutex);
 }
 
@@ -947,9 +959,14 @@ void call_rcu_after_fork_parent(void)
 void call_rcu_after_fork_child(void)
 {
 	struct call_rcu_data *crdp, *next;
+	struct urcu_atfork *atfork;
 
 	/* Release the mutex. */
 	call_rcu_unlock(&call_rcu_mutex);
+
+	atfork = registered_rculfhash_atfork;
+	if (atfork)
+		atfork->after_fork_child(atfork->priv);
 
 	/* Do nothing when call_rcu() has not been used */
 	if (cds_list_empty(&call_rcu_data_list))
@@ -979,4 +996,24 @@ void call_rcu_after_fork_child(void)
 		uatomic_set(&crdp->flags, URCU_CALL_RCU_STOPPED);
 		call_rcu_data_free(crdp);
 	}
+}
+
+void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
+{
+	call_rcu_lock(&call_rcu_mutex);
+	if (registered_rculfhash_atfork_refcount++)
+		goto end;
+	registered_rculfhash_atfork = atfork;
+end:
+	call_rcu_unlock(&call_rcu_mutex);
+}
+
+void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork)
+{
+	call_rcu_lock(&call_rcu_mutex);
+	if (--registered_rculfhash_atfork_refcount)
+		goto end;
+	registered_rculfhash_atfork = NULL;
+end:
+	call_rcu_unlock(&call_rcu_mutex);
 }

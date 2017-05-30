@@ -27,6 +27,16 @@
 extern "C" {
 #endif
 
+struct urcu_atfork {
+	void (*before_fork)(void *priv);
+	void (*after_fork_parent)(void *priv);
+	void (*after_fork_child)(void *priv);
+	void *priv;
+};
+
+void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork);
+void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork);
+
 struct rcu_flavor_struct {
 	void (*read_lock)(void);
 	void (*read_unlock)(void);
@@ -43,6 +53,9 @@ struct rcu_flavor_struct {
 	void (*unregister_thread)(void);
 
 	void (*barrier)(void);
+
+	void (*register_rculfhash_atfork)(struct urcu_atfork *atfork);
+	void (*unregister_rculfhash_atfork)(struct urcu_atfork *atfork);
 };
 
 #define DEFINE_RCU_FLAVOR(x)				\
@@ -59,6 +72,8 @@ const struct rcu_flavor_struct x = {			\
 	.register_thread	= rcu_register_thread,	\
 	.unregister_thread	= rcu_unregister_thread,\
 	.barrier		= rcu_barrier,		\
+	.register_rculfhash_atfork = urcu_register_rculfhash_atfork,	\
+	.unregister_rculfhash_atfork = urcu_unregister_rculfhash_atfork,\
 }
 
 extern const struct rcu_flavor_struct rcu_flavor;

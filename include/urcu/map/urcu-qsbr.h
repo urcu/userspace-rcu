@@ -76,4 +76,9 @@
 
 #define rcu_flavor			rcu_flavor_qsbr
 
+#define urcu_register_rculfhash_atfork		\
+		urcu_register_rculfhash_atfork_qsbr
+#define urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_qsbr
+
 #endif /* _URCU_QSBR_MAP_H */

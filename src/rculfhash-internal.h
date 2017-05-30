@@ -82,7 +82,7 @@ struct cds_lfht {
 	 */
 	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
 	pthread_attr_t *resize_attr;	/* Resize threads attributes */
-	unsigned int in_progress_resize, in_progress_destroy;
+	unsigned int in_progress_destroy;
 	unsigned long resize_target;
 	int resize_initiated;
 
