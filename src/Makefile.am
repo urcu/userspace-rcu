@@ -54,7 +54,7 @@ liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-common.la
 
 liburcu_cds_la_SOURCES = rculfqueue.c rculfstack.c lfstack.c \
-	$(RCULFHASH) $(COMPAT)
+	workqueue.c workqueue.h $(RCULFHASH) $(COMPAT)
 liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig
