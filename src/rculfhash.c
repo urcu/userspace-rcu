@@ -585,6 +585,37 @@ static
 void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 				unsigned long count);
 
+static void mutex_lock(pthread_mutex_t *mutex)
+{
+	int ret;
+
+#ifndef DISTRUST_SIGNALS_EXTREME
+	ret = pthread_mutex_lock(mutex);
+	if (ret)
+		urcu_die(ret);
+#else /* #ifndef DISTRUST_SIGNALS_EXTREME */
+	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
+		if (ret != EBUSY && ret != EINTR)
+			urcu_die(ret);
+		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
+			cmm_smp_mb();
+			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
+			cmm_smp_mb();
+		}
+		(void) poll(NULL, 0, 10);
+	}
+#endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
+}
+
+static void mutex_unlock(pthread_mutex_t *mutex)
+{
+	int ret;
+
+	ret = pthread_mutex_unlock(mutex);
+	if (ret)
+		urcu_die(ret);
+}
+
 static long nr_cpus_mask = -1;
 static long split_count_mask = -1;
 static int split_count_order = -1;
@@ -1947,9 +1978,9 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
 	resize_target_update_count(ht, new_size);
 	CMM_STORE_SHARED(ht->resize_initiated, 1);
-	pthread_mutex_lock(&ht->resize_mutex);
+	mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
-	pthread_mutex_unlock(&ht->resize_mutex);
+	mutex_unlock(&ht->resize_mutex);
 }
 
 static
@@ -1960,9 +1991,9 @@ void do_resize_cb(struct urcu_work *work)
 	struct cds_lfht *ht = resize_work->ht;
 
 	ht->flavor->register_thread();
-	pthread_mutex_lock(&ht->resize_mutex);
+	mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
-	pthread_mutex_unlock(&ht->resize_mutex);
+	mutex_unlock(&ht->resize_mutex);
 	ht->flavor->unregister_thread();
 	poison_free(work);
 }
@@ -2035,37 +2066,6 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 		}
 	}
 	__cds_lfht_resize_lazy_launch(ht);
-}
-
-static void mutex_lock(pthread_mutex_t *mutex)
-{
-	int ret;
-
-#ifndef DISTRUST_SIGNALS_EXTREME
-	ret = pthread_mutex_lock(mutex);
-	if (ret)
-		urcu_die(ret);
-#else /* #ifndef DISTRUST_SIGNALS_EXTREME */
-	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
-		if (ret != EBUSY && ret != EINTR)
-			urcu_die(ret);
-		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
-			cmm_smp_mb();
-			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
-			cmm_smp_mb();
-		}
-		(void) poll(NULL, 0, 10);
-	}
-#endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
-}
-
-static void mutex_unlock(pthread_mutex_t *mutex)
-{
-	int ret;
-
-	ret = pthread_mutex_unlock(mutex);
-	if (ret)
-		urcu_die(ret);
 }
 
 static void cds_lfht_before_fork(void *priv)
