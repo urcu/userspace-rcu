@@ -1,3 +1,71 @@
+2017-06-12 Userspace RCU 0.10.0
+	* Bump library soname due to urcu flavor structure change
+	* Cleanup: use mutex_lock() wrapper in rculfhash
+	* Use workqueue in rculfhash
+	* Implement urcu workqueues internal API
+	* Add support for m68k architecture
+	* Set -Wall globally in AM_CFLAGS
+	* Fix: remove double use of PTHREAD_CFLAGS
+	* Re-add PTHREAD_CFLAGS to global CFLAGS
+	* Fix: Don't override user variables within the build system
+	* Add report at the end of configure
+	* uatomic-api docs: use the third-person singular
+	* Add --enable-rcu-debug to configure
+	* ARM32: use dmb ish (inner shareable domain) for smp barriers
+	* Cleanup: remove cmm_wmb() from rcu_xchg_pointer and rcu_cmpxchg_pointer
+	* Fix: uatomic arm32: add missing release barrier before uatomic_xchg
+	* Tests: Add verbose support to test script
+	* Fix: add missing CONFIG_RCU_FORCE_SYS_MEMBARRIER to urcu/config.h.in
+	* Allow forcing the use of sys membarrier
+	* Fix: rcutorture: work-around signal issue on mac os x
+	* Fix: rcutorture should register thread using call_rcu
+	* Fix: add missing backslash in Makefile.am
+	* Fix: Do not use wildcards in include/Makefile.am
+	* Bump version to 0.10-pre
+	* Fix: check for rand_r() in compat-rand.h
+	* Fix: Move rand-compat to private src dir
+	* Fix: remove AC_FUNC_MALLOC from configure.ac
+	* Cleanup: Re-organise source dir
+	* Cleanup: remove leftover manual pthread detection
+	* Fix: update ax_pthread macro to handle newer clang
+	* Update library current version due to adding destroy API
+	* Fix: Use pthread_self to get threadid on OSX
+	* Fix: examples: use destroy API for queues/stacks
+	* Update library age due to new stack/queue destroy API
+	* Fix: tests: invoke destroy APIs for queues/stacks
+	* Fix: add missing destroy functions to queues/stack APIs
+	* Fix: add missing __cds_wfcq_init for LGPL API
+	* Fix: memory leak on hash table destroy
+	* Fix: Add failover for platforms without nproc
+	* Fix: use clock_get_time for caa_get_cycles fallback on MacOSX
+	* Fix: syscall-compat.h MacOSX support
+	* Fix: Add solaris-build.md to dist
+	* rculfhash: Documentation: clarify need for grace period before "re-using"
+	* Port: build shared libraries in Cygwin
+	* Port: fix compatibility header for Cygwin
+	* Add GNU Hurd support to syscall-compat.h
+	* Add support for aarch64_be
+	* Fix: urcu-bp: re-initialize list head on library exit
+	* bootstrap: Standardize on autoreconf -vi
+	* Harmonize bootstrap script across projects
+	* Fix: examples make distcheck failure
+	* wfcqueue: add C++ compatibility API
+	* Fix: CDS_WFCQ_WOULDBLOCK typing for c++
+	* Fix: configure.ac: check for possibly required libs for clock_gettime
+	* Support for NIOS2 architecture
+	* urcu_ref_get_safe: introduce new API
+	* Fix: handle reference count overflow
+	* Fix: compat_futex should work-around futex signal-restart kernel bug
+	* Support for Xeon-Phi with newer MPSS
+	* sparc64: allocate membarrier system call number
+	* hppa: allocate membarrier system call number
+	* Fix build on non-Linux Debian ports
+	* Fix: urcu-signal: smp_mb_master() needs registry lock
+	* Fix: rculfhash only needs to include urcu-pointers.h
+	* Fix: out-of-tree benchmark/regtest
+	* Fix: add missing regtest and benchmark files to dist tarball
+	* Fix: add missing run.sh to benchmark makefile
+
 2015-10-16 Userspace RCU 0.9.0
 	* Bump soname major to 4
 	* Cleanup: remove trailing tab
