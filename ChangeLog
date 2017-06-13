@@ -1,3 +1,20 @@
+2017-12-06 Userspace RCU 0.8.10
+	* Fix: Don't override user variables within the build system
+	* Fix: uatomic arm32: add missing release barrier before uatomic_xchg
+	* Fix: rcutorture: work-around signal issue on mac os x
+	* Fix: rcutorture should register thread using call_rcu
+	* Fix: remove AC_FUNC_MALLOC from configure.ac
+	* Update library current version due to adding destroy API
+	* Fix: Use pthread_self to get threadid on OSX
+	* Fix: examples: use destroy API for queues/stacks
+	* Update library age due to new stack/queue destroy API
+	* Fix: tests: invoke destroy APIs for queues/stacks
+	* Fix: add missing destroy functions to queues/stack APIs
+	* Fix: memory leak on hash table destroy
+	* Fix: urcu-bp: re-initialize list head on library exit
+	* Fix: examples make distcheck failure
+	* Cleanup: remove unused return value warning from tests
+
 2016-04-26 Userspace RCU 0.8.9
 	* Fix: handle reference count overflow
 	* Fix: compat_futex should work-around futex signal-restart kernel bug
