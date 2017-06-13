@@ -1,3 +1,8 @@
+2017-06-12 Userspace RCU 0.9.4
+	* Fix: Don't override user variables within the build system
+	* Fix: uatomic arm32: add missing release barrier before uatomic_xchg
+	* Tests: Add verbose support to test script
+
 2016-11-30 Userspace RCU 0.9.3
 	* Fix: rcutorture: work-around signal issue on mac os x
 	* Fix: rcutorture should register thread using call_rcu
