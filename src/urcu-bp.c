@@ -374,7 +374,8 @@ void expand_arena(struct registry_arena *arena)
 			sizeof(struct registry_chunk)
 			+ sizeof(struct rcu_reader));
 		new_chunk_len = ARENA_INIT_ALLOC;
-		new_chunk = mmap(NULL, new_chunk_len,
+		new_chunk = (struct registry_chunk *) mmap(NULL,
+			new_chunk_len,
 			PROT_READ | PROT_WRITE,
 			MAP_ANONYMOUS | MAP_PRIVATE,
 			-1, 0);
@@ -408,7 +409,8 @@ void expand_arena(struct registry_arena *arena)
 	}
 
 	/* Remap did not succeed, we need to add a new chunk. */
-	new_chunk = mmap(NULL, new_chunk_len,
+	new_chunk = (struct registry_chunk *) mmap(NULL,
+		new_chunk_len,
 		PROT_READ | PROT_WRITE,
 		MAP_ANONYMOUS | MAP_PRIVATE,
 		-1, 0);
@@ -625,7 +627,7 @@ void rcu_bp_exit(void)
 
 		cds_list_for_each_entry_safe(chunk, tmp,
 				&registry_arena.chunk_list, node) {
-			munmap(chunk, chunk->data_len
+			munmap((void *) chunk, chunk->data_len
 					+ sizeof(struct registry_chunk));
 		}
 		CDS_INIT_LIST_HEAD(&registry_arena.chunk_list);
