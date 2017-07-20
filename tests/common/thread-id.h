@@ -57,6 +57,18 @@ unsigned long urcu_get_thread_id(void)
 {
 	return (unsigned long) pthread_self();
 }
+#elif defined(__CYGWIN__)
+#include <pthread.h>
+
+extern unsigned long pthread_getsequence_np(pthread_t *);
+
+static inline
+unsigned long urcu_get_thread_id(void)
+{
+	pthread_t thr = pthread_self();
+	return pthread_getsequence_np(&thr);
+}
+
 #else
 # warning "use pid as thread ID"
 static inline
