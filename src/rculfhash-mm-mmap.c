@@ -28,8 +28,30 @@
 #define MAP_ANONYMOUS		MAP_ANON
 #endif
 
-/* reserve inaccessible memory space without allocation any memory */
-static void *memory_map(size_t length)
+/*
+ * The allocation scheme used by the mmap based RCU hash table is to make a
+ * large unaccessible mapping to reserve memory without allocating it.
+ * Then smaller chunks are allocated by overlapping read/write mappings which
+ * do allocate memory. Deallocation is done by an overlapping unaccessible
+ * mapping.
+ *
+ * This scheme was tested on Linux, macOS and Solaris. However, on Cygwin the
+ * mmap wrapper is based on the Windows NtMapViewOfSection API which doesn't
+ * support overlapping mappings.
+ *
+ * An alternative to the overlapping mappings is to use mprotect to change the
+ * protection on chunks of the large mapping, read/write to allocate and none
+ * to deallocate. This works perfecty on Cygwin and Solaris but on Linux a
+ * call to madvise is also required to deallocate and it just doesn't work on
+ * macOS.
+ *
+ * For this reason, we keep to original scheme on all platforms except Cygwin.
+ */
+
+
+/* Reserve inaccessible memory space without allocating it */
+static
+void *memory_map(size_t length)
 {
 	void *ret = mmap(NULL, length, PROT_NONE,
 			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -38,7 +60,8 @@ static void *memory_map(size_t length)
 	return ret;
 }
 
-static void memory_unmap(void *ptr, size_t length)
+static
+void memory_unmap(void *ptr, size_t length)
 {
 	int ret __attribute__((unused));
 
@@ -47,7 +70,33 @@ static void memory_unmap(void *ptr, size_t length)
 	assert(ret == 0);
 }
 
-static void memory_populate(void *ptr, size_t length)
+#ifdef __CYGWIN__
+/* Set protection to read/write to allocate a memory chunk */
+static
+void memory_populate(void *ptr, size_t length)
+{
+	int ret __attribute__((unused));
+
+	ret = mprotect(ptr, length, PROT_READ | PROT_WRITE);
+
+	assert(!ret);
+}
+
+/* Set protection to none to deallocate a memory chunk */
+static
+void memory_discard(void *ptr, size_t length)
+{
+	int ret __attribute__((unused));
+
+	ret = mprotect(ptr, length, PROT_NONE);
+
+	assert(!ret);
+}
+
+#else /* __CYGWIN__ */
+
+static
+void memory_populate(void *ptr, size_t length)
 {
 	void *ret __attribute__((unused));
 
@@ -61,7 +110,8 @@ static void memory_populate(void *ptr, size_t length)
  * Discard garbage memory and avoid system save it when try to swap it out.
  * Make it still reserved, inaccessible.
  */
-static void memory_discard(void *ptr, size_t length)
+static
+void memory_discard(void *ptr, size_t length)
 {
 	void *ret __attribute__((unused));
 
@@ -70,6 +120,7 @@ static void memory_discard(void *ptr, size_t length)
 
 	assert(ret == ptr);
 }
+#endif /* __CYGWIN__ */
 
 static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
