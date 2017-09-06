@@ -593,8 +593,13 @@ void rcu_sys_membarrier_status(int available)
 static
 void rcu_sys_membarrier_status(int available)
 {
-	if (available)
-		urcu_bp_has_sys_membarrier = 1;
+	/*
+	 * membarrier has blocking behavior, which changes the
+	 * application behavior too much compared to using barriers when
+	 * synchronize_rcu is used repeatedly (without using call_rcu).
+	 * Don't use membarrier for now, unless its use has been
+	 * explicitly forced when building liburcu.
+	 */
 }
 #endif
 
