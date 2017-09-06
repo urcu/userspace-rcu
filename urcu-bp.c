@@ -582,6 +582,17 @@ void urcu_bp_thread_exit_notifier(void *rcu_key)
 }
 
 static
+void rcu_sys_membarrier_status(int available)
+{
+	/*
+	 * membarrier has blocking behavior, which changes the
+	 * application behavior too much compared to using barriers when
+	 * synchronize_rcu is used repeatedly (without using call_rcu).
+	 * Don't use membarrier for now.
+	 */
+}
+
+static
 void rcu_bp_init(void)
 {
 	mutex_lock(&init_lock);
@@ -593,9 +604,8 @@ void rcu_bp_init(void)
 		if (ret)
 			abort();
 		ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
-		if (ret >= 0 && (ret & MEMBARRIER_CMD_SHARED)) {
-			urcu_bp_has_sys_membarrier = 1;
-		}
+		rcu_sys_membarrier_status(ret >= 0
+				&& (ret & MEMBARRIER_CMD_SHARED));
 		initialized = 1;
 	}
 	mutex_unlock(&init_lock);
