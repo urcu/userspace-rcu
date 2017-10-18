@@ -126,7 +126,7 @@ static int32_t defer_thread_stop;
  * Written to only by each individual deferer. Read by both the deferer and
  * the reclamation tread.
  */
-static DEFINE_URCU_TLS(struct defer_queue, defer_queue);
+static DEFINE_URCU_TLS_IE(struct defer_queue, defer_queue);
 static CDS_LIST_HEAD(registry_defer);
 static pthread_t tid_defer;
 
