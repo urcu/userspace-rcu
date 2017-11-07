@@ -21,6 +21,9 @@
  */
 
 #include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include "rculfhash-internal.h"
 
@@ -53,21 +56,23 @@
 static
 void *memory_map(size_t length)
 {
-	void *ret = mmap(NULL, length, PROT_NONE,
-			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	void *ret;
 
-	assert(ret != MAP_FAILED);
+	ret = mmap(NULL, length, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (ret == MAP_FAILED) {
+		perror("mmap");
+		abort();
+	}
 	return ret;
 }
 
 static
 void memory_unmap(void *ptr, size_t length)
 {
-	int ret __attribute__((unused));
-
-	ret = munmap(ptr, length);
-
-	assert(ret == 0);
+	if (munmap(ptr, length)) {
+		perror("munmap");
+		abort();
+	}
 }
 
 #ifdef __CYGWIN__
@@ -75,22 +80,20 @@ void memory_unmap(void *ptr, size_t length)
 static
 void memory_populate(void *ptr, size_t length)
 {
-	int ret __attribute__((unused));
-
-	ret = mprotect(ptr, length, PROT_READ | PROT_WRITE);
-
-	assert(!ret);
+	if (mprotect(ptr, length, PROT_READ | PROT_WRITE)) {
+		perror("mprotect");
+		abort();
+	}
 }
 
 /* Set protection to none to deallocate a memory chunk */
 static
 void memory_discard(void *ptr, size_t length)
 {
-	int ret __attribute__((unused));
-
-	ret = mprotect(ptr, length, PROT_NONE);
-
-	assert(!ret);
+	if (mprotect(ptr, length, PROT_NONE)) {
+		perror("mprotect");
+		abort();
+	}
 }
 
 #else /* __CYGWIN__ */
@@ -98,12 +101,12 @@ void memory_discard(void *ptr, size_t length)
 static
 void memory_populate(void *ptr, size_t length)
 {
-	void *ret __attribute__((unused));
-
-	ret = mmap(ptr, length, PROT_READ | PROT_WRITE,
-			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-	assert(ret == ptr);
+	if (mmap(ptr, length, PROT_READ | PROT_WRITE,
+			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS,
+			-1, 0) != ptr) {
+		perror("mmap");
+		abort();
+	}
 }
 
 /*
@@ -113,12 +116,12 @@ void memory_populate(void *ptr, size_t length)
 static
 void memory_discard(void *ptr, size_t length)
 {
-	void *ret __attribute__((unused));
-
-	ret = mmap(ptr, length, PROT_NONE,
-			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-	assert(ret == ptr);
+	if (mmap(ptr, length, PROT_NONE,
+			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS,
+			-1, 0) != ptr) {
+		perror("mmap");
+		abort();
+	}
 }
 #endif /* __CYGWIN__ */
 
