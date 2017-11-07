@@ -88,7 +88,7 @@ static CDS_LIST_HEAD(call_rcu_data_list);
 
 /* Link a thread using call_rcu() to its call_rcu thread. */
 
-static DEFINE_URCU_TLS_IE(struct call_rcu_data *, thread_call_rcu_data);
+static DEFINE_URCU_TLS(struct call_rcu_data *, thread_call_rcu_data);
 
 /*
  * Guard call_rcu thread creation and atfork handlers.

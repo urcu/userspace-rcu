@@ -118,7 +118,7 @@ struct rcu_gp rcu_gp = { .ctr = RCU_GP_COUNT };
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
-DEFINE_URCU_TLS_IE(struct rcu_reader, rcu_reader);
+DEFINE_URCU_TLS(struct rcu_reader, rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 

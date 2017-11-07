@@ -72,9 +72,6 @@ extern "C" {
 
 # define URCU_TLS(name)		(name)
 
-# define DEFINE_URCU_TLS_IE(type, name)	\
-	CONFIG_RCU_TLS __attribute__((tls_model("initial-exec"))) type name
-
 #else /* #ifndef CONFIG_RCU_TLS */
 
 /*
@@ -128,9 +125,6 @@ struct urcu_tls {
 	}
 
 # define DEFINE_URCU_TLS(type, name)				\
-	DEFINE_URCU_TLS_1(type, name)
-
-# define DEFINE_URCU_TLS_IE(type, name)				\
 	DEFINE_URCU_TLS_1(type, name)
 
 # define URCU_TLS_1(name)	(*__tls_access_ ## name())
