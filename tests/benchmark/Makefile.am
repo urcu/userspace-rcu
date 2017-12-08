@@ -1,7 +1,11 @@
 AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/tests/common -g
 
+TEST_EXTENSIONS = .tap
+TAP_LOG_DRIVER_FLAGS = --merge --comments
+TAP_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+	$(top_srcdir)/config/tap-driver.sh
+
 SCRIPT_LIST = common.sh \
-	run.sh \
 	run-urcu-tests.sh \
 	runhash.sh \
 	runtests.sh \
@@ -17,11 +21,13 @@ SCRIPT_LIST = common.sh \
 
 dist_noinst_SCRIPTS = $(SCRIPT_LIST)
 
-TEST_LIST = regression_tests \
-	short_bench_tests \
-	long_bench_tests
-
-dist_noinst_DATA = $(TEST_LIST)
+dist_noinst_DATA = \
+	hashtable_1_seconds.tap \
+	urcu_1_seconds.tap
+	hashtable_3_seconds.tap \
+	urcu_3_seconds.tap
+	hashtable_30_seconds.tap \
+	urcu_30_seconds.tap
 
 noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_signal test_urcu_signal_dynamic_link test_urcu_signal_timing \
@@ -228,11 +234,19 @@ clean-local:
 
 .PHONY: short_bench long_bench regtest
 
+# This empty variable is required to enable the TAP test suite for custom
+# targets like 'regtest' while keeping the default 'check' a noop.
+TESTS =
+
+SHORT_BENCH_TESTS = urcu_3_seconds.tap hashtable_3_seconds.tap
+LONG_BENCH_TESTS = urcu_30_seconds.tap hashtable_30_seconds.tap
+REGTEST_TESTS = urcu_1_seconds.tap hashtable_1_seconds.tap
+
 short_bench:
-	./run.sh short_bench_tests
+	$(MAKE) $(AM_MAKEFLAGS) check TESTS="$(SHORT_BENCH_TESTS)"
 
 long_bench:
-	./run.sh long_bench_tests
+	$(MAKE) $(AM_MAKEFLAGS) check TESTS="$(LONG_BENCH_TESTS)"
 
 regtest:
-	./run.sh regression_tests
+	$(MAKE) $(AM_MAKEFLAGS) check TESTS="$(REGTEST_TESTS)"

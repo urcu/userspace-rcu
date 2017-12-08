@@ -1,12 +1,14 @@
 AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common -g
 
-SCRIPT_LIST = test_loop run.sh unit_tests
+LOG_DRIVER_FLAGS = --merge --comments
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+	$(top_srcdir)/config/tap-driver.sh
 
 noinst_PROGRAMS = test_uatomic \
 	test_urcu_multiflavor \
 	test_urcu_multiflavor_dynlink
 
-dist_noinst_SCRIPTS = $(SCRIPT_LIST)
+TESTS = $(noinst_PROGRAMS)
 
 noinst_HEADERS = test_urcu_multiflavor.h
 
@@ -55,5 +57,3 @@ clean-local:
 		done; \
 	fi
 
-check-am:
-	./run.sh unit_tests

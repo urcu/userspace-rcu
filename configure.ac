@@ -18,6 +18,8 @@ AM_MAINTAINER_MODE([enable])
 # Enable silent rules if available (Introduced in AM 1.11)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
+
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
@@ -388,7 +390,6 @@ AC_CONFIG_FILES([
 	tests/unit/Makefile
 	tests/benchmark/Makefile
 	tests/regression/Makefile
-	tests/regression/regression_tests
 	tests/utils/Makefile
 	src/liburcu.pc
 	src/liburcu-bp.pc
@@ -397,6 +398,69 @@ AC_CONFIG_FILES([
 	src/liburcu-mb.pc
 	src/liburcu-signal.pc
 ])
+
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_perf_global.tap], [chmod +x tests/regression/rcutorture_urcu_bp_perf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_perf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_bp_perf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_perf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_bp_perf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_rperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_bp_rperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_rperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_bp_rperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_rperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_bp_rperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_stress_global.tap], [chmod +x tests/regression/rcutorture_urcu_bp_stress_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_stress_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_bp_stress_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_stress_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_bp_stress_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_uperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_bp_uperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_uperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_bp_uperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_bp_uperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_bp_uperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_perf_global.tap], [chmod +x tests/regression/rcutorture_urcu_mb_perf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_perf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_mb_perf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_perf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_mb_perf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_rperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_mb_rperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_rperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_mb_rperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_rperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_mb_rperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_stress_global.tap], [chmod +x tests/regression/rcutorture_urcu_mb_stress_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_stress_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_mb_stress_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_stress_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_mb_stress_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_uperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_mb_uperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_uperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_mb_uperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_mb_uperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_mb_uperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_perf_global.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_perf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_perf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_perf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_perf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_perf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_rperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_rperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_rperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_rperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_rperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_rperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_stress_global.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_stress_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_stress_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_stress_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_stress_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_stress_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_uperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_uperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_uperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_uperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_membarrier_uperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_membarrier_uperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_perf_global.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_perf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_perf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_perf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_perf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_perf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_rperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_rperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_rperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_rperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_rperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_rperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_stress_global.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_stress_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_stress_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_stress_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_stress_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_stress_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_uperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_uperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_uperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_uperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_qsbr_uperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_qsbr_uperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_perf_global.tap], [chmod +x tests/regression/rcutorture_urcu_signal_perf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_perf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_signal_perf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_perf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_signal_perf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_rperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_signal_rperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_rperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_signal_rperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_rperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_signal_rperf_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_stress_global.tap], [chmod +x tests/regression/rcutorture_urcu_signal_stress_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_stress_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_signal_stress_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_stress_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_signal_stress_perthread.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_uperf_global.tap], [chmod +x tests/regression/rcutorture_urcu_signal_uperf_global.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_uperf_percpu.tap], [chmod +x tests/regression/rcutorture_urcu_signal_uperf_percpu.tap])
+AC_CONFIG_FILES([tests/regression/rcutorture_urcu_signal_uperf_perthread.tap], [chmod +x tests/regression/rcutorture_urcu_signal_uperf_perthread.tap])
+
+
 AC_OUTPUT
 
 #

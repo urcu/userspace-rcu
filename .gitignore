@@ -10,14 +10,13 @@ tests/unit/test_urcu_multiflavor_dynlink
 
 tests/utils/libtap.a
 
-tests/regression/rcutorture_qsbr
-tests/regression/rcutorture_urcu
+tests/regression/rcutorture_urcu_membarrier
 tests/regression/rcutorture_urcu_bp
 tests/regression/rcutorture_urcu_mb
 tests/regression/rcutorture_urcu_qsbr
 tests/regression/rcutorture_urcu_signal
-tests/regression/test_urcu_fork
-tests/regression/regression_tests
+tests/regression/test_urcu_fork.tap
+tests/regression/rcutorture*.tap
 
 tests/benchmark/test_rwlock_timing
 tests/benchmark/test_urcu
@@ -130,6 +129,8 @@ Makefile
 *.o
 *.lo
 *.loT
+*.log
+*.trs
 /config.log
 /configure
 /config/compile
@@ -139,6 +140,7 @@ Makefile
 /config/install-sh
 /config/ltmain.sh
 /config/missing
+/config/test-driver
 /aclocal.m4
 /m4/libtool.m4
 /m4/lt~obsolete.m4

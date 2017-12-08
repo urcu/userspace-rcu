@@ -1,0 +1,1 @@
+./rcutorture_urcu_membarrier `@NPROC_CMD@` uperf 1 callrcu_percpu

@@ -1,0 +1,1 @@
+./rcutorture_urcu_qsbr `@NPROC_CMD@` rperf 1 callrcu_perthread

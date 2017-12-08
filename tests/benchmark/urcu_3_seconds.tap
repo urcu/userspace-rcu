@@ -1,2 +1,1 @@
 ./run-urcu-tests.sh 3
-./runhash.sh 3
