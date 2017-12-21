@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <poll.h>
 
 #include "urcu/arch.h"
@@ -71,12 +72,18 @@
 #endif
 
 enum membarrier_cmd {
-	MEMBARRIER_CMD_QUERY = 0,
-	MEMBARRIER_CMD_SHARED = (1 << 0),
+	MEMBARRIER_CMD_QUERY				= 0,
+	MEMBARRIER_CMD_SHARED				= (1 << 0),
+	/* reserved for MEMBARRIER_CMD_SHARED_EXPEDITED (1 << 1) */
+	/* reserved for MEMBARRIER_CMD_PRIVATE (1 << 2) */
+	MEMBARRIER_CMD_PRIVATE_EXPEDITED		= (1 << 3),
+	MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED	= (1 << 4),
 };
 
 #ifdef RCU_MEMBARRIER
 static int init_done;
+static int has_sys_membarrier_private_expedited;
+
 #ifndef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 int rcu_has_sys_membarrier_memb;
 #endif
@@ -162,10 +169,14 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 #ifdef RCU_MEMBARRIER
 static void smp_mb_master(void)
 {
-	if (caa_likely(rcu_has_sys_membarrier_memb))
-		(void) membarrier(MEMBARRIER_CMD_SHARED, 0);
-	else
+	if (caa_likely(rcu_has_sys_membarrier_memb)) {
+		if (membarrier(has_sys_membarrier_private_expedited ?
+				MEMBARRIER_CMD_PRIVATE_EXPEDITED :
+				MEMBARRIER_CMD_SHARED, 0))
+			urcu_die(errno);
+	} else {
 		cmm_smp_mb();
+	}
 }
 #endif
 
@@ -537,29 +548,47 @@ void rcu_unregister_thread(void)
 
 #ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 static
-void rcu_sys_membarrier_status(int available)
+void rcu_sys_membarrier_status(bool available)
 {
 	if (!available)
 		abort();
 }
 #else
 static
-void rcu_sys_membarrier_status(int available)
+void rcu_sys_membarrier_status(bool available)
 {
-	if (available)
-		rcu_has_sys_membarrier_memb = 1;
+	if (!available)
+		return;
+	rcu_has_sys_membarrier_memb = 1;
 }
 #endif
 
+static
+void rcu_sys_membarrier_init(void)
+{
+	bool available = false;
+	int mask;
+
+	mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+	if (mask >= 0) {
+		if (mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED) {
+			if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0))
+				urcu_die(errno);
+			has_sys_membarrier_private_expedited = 1;
+			available = true;
+		} else if (mask & MEMBARRIER_CMD_SHARED) {
+			available = true;
+		}
+	}
+	rcu_sys_membarrier_status(available);
+}
+
 void rcu_init(void)
 {
-	int ret;
-
 	if (init_done)
 		return;
 	init_done = 1;
-	ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
-	rcu_sys_membarrier_status(ret >= 0 && (ret & MEMBARRIER_CMD_SHARED));
+	rcu_sys_membarrier_init();
 }
 #endif
 
