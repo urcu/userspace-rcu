@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <sys/mman.h>
 
 #include "urcu/arch.h"
@@ -102,8 +103,12 @@ int rcu_bp_refcount;
 #endif
 
 enum membarrier_cmd {
-	MEMBARRIER_CMD_QUERY = 0,
-	MEMBARRIER_CMD_SHARED = (1 << 0),
+	MEMBARRIER_CMD_QUERY				= 0,
+	MEMBARRIER_CMD_SHARED				= (1 << 0),
+	/* reserved for MEMBARRIER_CMD_SHARED_EXPEDITED (1 << 1) */
+	/* reserved for MEMBARRIER_CMD_PRIVATE (1 << 2) */
+	MEMBARRIER_CMD_PRIVATE_EXPEDITED		= (1 << 3),
+	MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED	= (1 << 4),
 };
 
 static
@@ -192,10 +197,12 @@ static void mutex_unlock(pthread_mutex_t *mutex)
 
 static void smp_mb_master(void)
 {
-	if (caa_likely(urcu_bp_has_sys_membarrier))
-		(void) membarrier(MEMBARRIER_CMD_SHARED, 0);
-	else
+	if (caa_likely(urcu_bp_has_sys_membarrier)) {
+		if (membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0))
+			urcu_die(errno);
+	} else {
 		cmm_smp_mb();
+	}
 }
 
 /*
@@ -584,24 +591,37 @@ void urcu_bp_thread_exit_notifier(void *rcu_key)
 
 #ifdef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 static
-void rcu_sys_membarrier_status(int available)
+void rcu_sys_membarrier_status(bool available)
 {
 	if (!available)
 		abort();
 }
 #else
 static
-void rcu_sys_membarrier_status(int available)
+void rcu_sys_membarrier_status(bool available)
 {
-	/*
-	 * membarrier has blocking behavior, which changes the
-	 * application behavior too much compared to using barriers when
-	 * synchronize_rcu is used repeatedly (without using call_rcu).
-	 * Don't use membarrier for now, unless its use has been
-	 * explicitly forced when building liburcu.
-	 */
+	if (!available)
+		return;
+	urcu_bp_has_sys_membarrier = 1;
 }
 #endif
+
+static
+void rcu_sys_membarrier_init(void)
+{
+	bool available = false;
+	int mask;
+
+	mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+	if (mask >= 0) {
+		if (mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED) {
+			if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0))
+				urcu_die(errno);
+			available = true;
+		}
+	}
+	rcu_sys_membarrier_status(available);
+}
 
 static
 void rcu_bp_init(void)
@@ -614,9 +634,7 @@ void rcu_bp_init(void)
 				urcu_bp_thread_exit_notifier);
 		if (ret)
 			abort();
-		ret = membarrier(MEMBARRIER_CMD_QUERY, 0);
-		rcu_sys_membarrier_status(ret >= 0
-				&& (ret & MEMBARRIER_CMD_SHARED));
+		rcu_sys_membarrier_init();
 		initialized = 1;
 	}
 	mutex_unlock(&init_lock);
