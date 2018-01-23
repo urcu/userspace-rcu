@@ -1,3 +1,11 @@
+2018-01-23 Userspace RCU 0.10.1
+	* Fix: don't use overlapping mmap mappings on Cygwin
+	* Fix: don't use membarrier SHARED syscall command in liburcu-bp
+	* Tests fix: add missing Cygwin thread id
+	* Fix: assignment from incompatible pointer type warnings
+	* Tests fix: unused variable warnings
+	* Fix: add missing m68k headers to dist
+
 2017-06-12 Userspace RCU 0.10.0
 	* Bump library soname due to urcu flavor structure change
 	* Cleanup: use mutex_lock() wrapper in rculfhash
