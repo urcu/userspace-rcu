@@ -1,3 +1,10 @@
+2018-01-23 Userspace RCU 0.9.5
+	* Fix: don't use overlapping mmap mappings on Cygwin
+	* Fix: don't use membarrier SHARED syscall command in liburcu-bp
+	* Tests fix: add missing Cygwin thread id
+	* Fix: assignment from incompatible pointer type warnings
+	* Tests fix: unused variable warnings
+
 2017-06-12 Userspace RCU 0.9.4
 	* Fix: Don't override user variables within the build system
 	* Fix: uatomic arm32: add missing release barrier before uatomic_xchg
