@@ -1,3 +1,9 @@
+2018-01-23 Userspace RCU 0.8.11
+	* Fix: don't use overlapping mmap mappings on Cygwin
+	* Tests fix: add missing Cygwin thread id
+	* Fix: assignment from incompatible pointer type warnings
+	* Tests fix: unused variable warnings
+
 2017-12-06 Userspace RCU 0.8.10
 	* Fix: Don't override user variables within the build system
 	* Fix: uatomic arm32: add missing release barrier before uatomic_xchg
