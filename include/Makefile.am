@@ -27,6 +27,7 @@ EXTRA_DIST = urcu/arch/aarch64.h \
 	urcu/arch/mips.h \
 	urcu/arch/nios2.h \
 	urcu/arch/ppc.h \
+	urcu/arch/riscv.h \
 	urcu/arch/s390.h \
 	urcu/arch/sparc64.h \
 	urcu/arch/tile.h \
@@ -43,6 +44,7 @@ EXTRA_DIST = urcu/arch/aarch64.h \
 	urcu/uatomic/mips.h \
 	urcu/uatomic/nios2.h \
 	urcu/uatomic/ppc.h \
+	urcu/uatomic/riscv.h \
 	urcu/uatomic/s390.h \
 	urcu/uatomic/sparc64.h \
 	urcu/uatomic/tile.h \

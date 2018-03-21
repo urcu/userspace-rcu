@@ -151,6 +151,7 @@ AS_CASE([$host_cpu],
 	[tile*], [ARCHTYPE="tile"],
 	[hppa*], [ARCHTYPE="hppa"],
 	[m68k], [ARCHTYPE="m68k"],
+	[riscv*], [ARCHTYPE="riscv"],
 	[ARCHTYPE="unknown"]
 )
 
