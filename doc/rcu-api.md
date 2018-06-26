@@ -232,6 +232,8 @@ critical section, or in a section where QSBR threads are online.
 
 
 ```c
+void call_rcu_before_fork_parent(void);
+void call_rcu_after_fork_parent(void);
 void call_rcu_after_fork_child(void);
 ```
 
