@@ -224,6 +224,23 @@ static inline bool _cds_wfcq_enqueue(cds_wfcq_head_ptr_t head,
 }
 
 /*
+ * CDS_WFCQ_WAIT_SLEEP:
+ *
+ * By default, this sleeps for the given @msec milliseconds.
+ * This is a macro which LGPL users may #define themselves before
+ * including wfcqueue.h to override the default behavior (e.g.
+ * to log a warning or perform other background work).
+ */
+#ifndef CDS_WFCQ_WAIT_SLEEP
+#define CDS_WFCQ_WAIT_SLEEP(msec) ___cds_wfcq_wait_sleep(msec)
+#endif
+
+static inline void ___cds_wfcq_wait_sleep(int msec)
+{
+	(void) poll(NULL, 0, msec);
+}
+
+/*
  * ___cds_wfcq_busy_wait: adaptative busy-wait.
  *
  * Returns 1 if nonblocking and needs to block, 0 otherwise.
@@ -234,7 +251,7 @@ ___cds_wfcq_busy_wait(int *attempt, int blocking)
 	if (!blocking)
 		return 1;
 	if (++(*attempt) >= WFCQ_ADAPT_ATTEMPTS) {
-		(void) poll(NULL, 0, WFCQ_WAIT);	/* Wait for 10ms */
+		CDS_WFCQ_WAIT_SLEEP(WFCQ_WAIT);		/* Wait for 10ms */
 		*attempt = 0;
 	} else {
 		caa_cpu_relax();
