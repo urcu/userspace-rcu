@@ -42,7 +42,11 @@ struct test_array {
 	int a;
 };
 
-pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
+/*
+ * static rwlock initializer is broken on Cygwin. Use runtime
+ * initialization.
+ */
+pthread_rwlock_t lock;
 
 static struct test_array test_array = { 8 };
 
@@ -65,7 +69,7 @@ static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
-	int i, j;
+	int i, j, ret;
 	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",
@@ -75,9 +79,19 @@ void *thr_reader(void *arg)
 	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			pthread_rwlock_rdlock(&lock);
+			ret = pthread_rwlock_rdlock(&lock);
+			if (ret) {
+				fprintf(stderr, "reader pthread_rwlock_rdlock: %s\n", strerror(ret));
+				abort();
+			}
+
 			assert(test_array.a == 8);
-			pthread_rwlock_unlock(&lock);
+
+			ret = pthread_rwlock_unlock(&lock);
+			if (ret) {
+				fprintf(stderr, "reader pthread_rwlock_unlock: %s\n", strerror(ret));
+				abort();
+			}
 		}
 	}
 	time2 = caa_get_cycles();
@@ -93,7 +107,7 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
-	int i, j;
+	int i, j, ret;
 	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",
@@ -103,9 +117,20 @@ void *thr_writer(void *arg)
 	for (i = 0; i < OUTER_WRITE_LOOP; i++) {
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
 			time1 = caa_get_cycles();
-			pthread_rwlock_wrlock(&lock);
+			ret = pthread_rwlock_wrlock(&lock);
+			if (ret) {
+				fprintf(stderr, "writer pthread_rwlock_wrlock: %s\n", strerror(ret));
+				abort();
+			}
+
 			test_array.a = 8;
-			pthread_rwlock_unlock(&lock);
+
+			ret = pthread_rwlock_unlock(&lock);
+			if (ret) {
+				fprintf(stderr, "writer pthread_rwlock_unlock: %s\n", strerror(ret));
+				abort();
+			}
+
 			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
 			usleep(1);
@@ -132,6 +157,12 @@ int main(int argc, char **argv)
 	}
 	num_read = atoi(argv[1]);
 	num_write = atoi(argv[2]);
+
+	err = pthread_rwlock_init(&lock, NULL);
+	if (err != 0) {
+		fprintf(stderr, "pthread_rwlock_init: (%d) %s\n", err, strerror(err));
+		exit(1);
+	}
 
 	reader_time = calloc(num_read, sizeof(*reader_time));
 	writer_time = calloc(num_write, sizeof(*writer_time));
@@ -173,6 +204,11 @@ int main(int argc, char **argv)
 	printf("Time per write : %g cycles\n",
 	       (double)tot_wtime / ((double)NR_WRITE * (double)WRITE_LOOP));
 
+	err = pthread_rwlock_destroy(&lock);
+	if (err != 0) {
+		fprintf(stderr, "pthread_rwlock_destroy: (%d) %s\n", err, strerror(err));
+		exit(1);
+	}
 	free(reader_time);
 	free(writer_time);
 	free(tid_reader);
