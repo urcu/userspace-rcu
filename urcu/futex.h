@@ -102,6 +102,25 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 	return ret;
 }
 
+#elif defined(__CYGWIN__)
+
+/*
+ * The futex_noasync compat code uses a weak symbol to share state across
+ * different shared object which is not possible on Windows with the
+ * Portable Executable format. Use the async compat code for both cases.
+ */
+static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return compat_futex_async(uaddr, op, val, timeout, uaddr2, val3);
+}
+
+static inline int futex_async(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return compat_futex_async(uaddr, op, val, timeout, uaddr2, val3);
+}
+
 #else
 
 static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
