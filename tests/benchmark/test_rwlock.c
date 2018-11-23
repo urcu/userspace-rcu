@@ -202,8 +202,9 @@ void *thr_reader(void *_count)
 	}
 
 	*count = URCU_TLS(nr_reads);
-	printf_verbose("thread_end %s, tid %lu\n",
-			"reader", urcu_get_thread_id());
+
+	printf_verbose("thread_end %s, tid %lu, count %llu\n",
+			"reader", urcu_get_thread_id(), *count);
 	return ((void*)1);
 
 }
@@ -248,10 +249,10 @@ void *thr_writer(void *_count)
 		if (caa_unlikely(wdelay))
 			loop_sleep(wdelay);
 	}
-
-	printf_verbose("thread_end %s, tid %lu\n",
-			"writer", urcu_get_thread_id());
 	*count = URCU_TLS(nr_writes);
+
+	printf_verbose("thread_end %s, tid %lu, count %llu\n",
+			"writer", urcu_get_thread_id(), *count);
 	return ((void*)2);
 }
 
@@ -345,6 +346,7 @@ int main(int argc, char **argv)
 	printf_verbose("running test for %lu seconds, %u readers, %u writers.\n",
 		duration, nr_readers, nr_writers);
 	printf_verbose("Writer delay : %lu loops.\n", wdelay);
+	printf_verbose("Writer duration : %lu loops.\n", wduration);
 	printf_verbose("Reader duration : %lu loops.\n", rduration);
 	printf_verbose("thread %-6s, tid %lu\n",
 			"main", urcu_get_thread_id());
