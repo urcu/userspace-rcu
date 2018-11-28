@@ -1,8 +1,5 @@
-#ifndef _URCU_BP_MAP_H
-#define _URCU_BP_MAP_H
-
 /*
- * urcu-map.h
+ * urcu/map/urcu-bp.h
  *
  * Userspace RCU header -- name mapping to allow multiple flavors to be
  * used in the same executable.
@@ -34,52 +31,92 @@
 
 /* Mapping macros to allow multiple flavors in a single binary. */
 
-#define rcu_read_lock			rcu_read_lock_bp
-#define _rcu_read_lock			_rcu_read_lock_bp
-#define rcu_read_unlock			rcu_read_unlock_bp
-#define _rcu_read_unlock		_rcu_read_unlock_bp
-#define rcu_read_ongoing		rcu_read_ongoing_bp
-#define _rcu_read_ongoing		_rcu_read_ongoing_bp
-#define rcu_register_thread		rcu_register_thread_bp
-#define rcu_unregister_thread		rcu_unregister_thread_bp
-#define rcu_init			rcu_init_bp
-#define rcu_exit			rcu_exit_bp
-#define synchronize_rcu			synchronize_rcu_bp
-#define rcu_reader			rcu_reader_bp
-#define rcu_gp				rcu_gp_bp
+#define rcu_read_lock			urcu_bp_read_lock
+#define _rcu_read_lock			_urcu_bp_read_lock
+#define rcu_read_unlock			urcu_bp_read_unlock
+#define _rcu_read_unlock		_urcu_bp_read_unlock
+#define rcu_read_ongoing		urcu_bp_read_ongoing
+#define _rcu_read_ongoing		_urcu_bp_read_ongoing
+#define rcu_quiescent_state		urcu_bp_quiescent_state
+#define _rcu_quiescent_state		_urcu_bp_quiescent_state
+#define rcu_thread_offline		urcu_bp_thread_offline
+#define rcu_thread_online		urcu_bp_thread_online
+#define rcu_register_thread		urcu_bp_register_thread
+#define rcu_unregister_thread		urcu_bp_unregister_thread
+#define rcu_init			urcu_bp_init
+#define rcu_exit			urcu_bp_exit
+#define synchronize_rcu			urcu_bp_synchronize_rcu
+#define rcu_reader			urcu_bp_reader
+#define rcu_gp				urcu_bp_gp
 
-#define get_cpu_call_rcu_data		get_cpu_call_rcu_data_bp
-#define get_call_rcu_thread		get_call_rcu_thread_bp
-#define create_call_rcu_data		create_call_rcu_data_bp
-#define set_cpu_call_rcu_data		set_cpu_call_rcu_data_bp
-#define get_default_call_rcu_data	get_default_call_rcu_data_bp
-#define get_call_rcu_data		get_call_rcu_data_bp
-#define get_thread_call_rcu_data	get_thread_call_rcu_data_bp
-#define set_thread_call_rcu_data	set_thread_call_rcu_data_bp
-#define create_all_cpu_call_rcu_data	create_all_cpu_call_rcu_data_bp
-#define free_all_cpu_call_rcu_data	free_all_cpu_call_rcu_data_bp
-#define call_rcu			call_rcu_bp
-#define call_rcu_data_free		call_rcu_data_free_bp
-#define call_rcu_before_fork		call_rcu_before_fork_bp
-#define call_rcu_after_fork_parent	call_rcu_after_fork_parent_bp
-#define call_rcu_after_fork_child	call_rcu_after_fork_child_bp
-#define rcu_barrier			rcu_barrier_bp
+#define get_cpu_call_rcu_data		urcu_bp_get_cpu_call_rcu_data
+#define get_call_rcu_thread		urcu_bp_get_call_rcu_thread
+#define create_call_rcu_data		urcu_bp_create_call_rcu_data
+#define set_cpu_call_rcu_data		urcu_bp_set_cpu_call_rcu_data
+#define get_default_call_rcu_data	urcu_bp_get_default_call_rcu_data
+#define get_call_rcu_data		urcu_bp_get_call_rcu_data
+#define get_thread_call_rcu_data	urcu_bp_get_thread_call_rcu_data
+#define set_thread_call_rcu_data	urcu_bp_set_thread_call_rcu_data
+#define create_all_cpu_call_rcu_data	urcu_bp_create_all_cpu_call_rcu_data
+#define free_all_cpu_call_rcu_data	urcu_bp_free_all_cpu_call_rcu_data
+#define call_rcu			urcu_bp_call_rcu
+#define call_rcu_data_free		urcu_bp_call_rcu_data_free
+#define call_rcu_before_fork		urcu_bp_call_rcu_before_fork
+#define call_rcu_after_fork_parent	urcu_bp_call_rcu_after_fork_parent
+#define call_rcu_after_fork_child	urcu_bp_call_rcu_after_fork_child
+#define rcu_barrier			urcu_bp_barrier
 
-#define defer_rcu			defer_rcu_bp
-#define rcu_defer_register_thread	rcu_defer_register_thread_bp
-#define rcu_defer_unregister_thread	rcu_defer_unregister_thread_bp
-#define rcu_defer_barrier		rcu_defer_barrier_bp
-#define rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
-#define rcu_defer_exit			rcu_defer_exit_bp
+#define defer_rcu			urcu_bp_defer_rcu
+#define rcu_defer_register_thread	urcu_bp_defer_register_thread
+#define rcu_defer_unregister_thread	urcu_bp_defer_unregister_thread
+#define rcu_defer_barrier		urcu_bp_defer_barrier
+#define rcu_defer_barrier_thread	urcu_bp_defer_barrier_thread
+#define rcu_defer_exit			urcu_bp_defer_exit
 
-#define rcu_flavor			rcu_flavor_bp
+#define rcu_flavor			urcu_bp_flavor
 
-#define rcu_yield_active		rcu_yield_active_bp
-#define rcu_rand_yield			rcu_rand_yield_bp
+#define rcu_yield_active		urcu_bp_yield_active
+#define rcu_rand_yield			urcu_bp_rand_yield
 
 #define urcu_register_rculfhash_atfork		\
-		urcu_register_rculfhash_atfork_bp
+		urcu_bp_register_rculfhash_atfork
 #define urcu_unregister_rculfhash_atfork	\
-		urcu_unregister_rculfhash_atfork_bp
+		urcu_bp_unregister_rculfhash_atfork
 
-#endif /* _URCU_BP_MAP_H */
+
+/* Aliases for ABI(6) compat */
+
+#define alias_rcu_flavor		rcu_flavor_bp
+
+#define alias_get_cpu_call_rcu_data	get_cpu_call_rcu_data_bp
+#define alias_get_call_rcu_thread	get_call_rcu_thread_bp
+#define alias_create_call_rcu_data	create_call_rcu_data_bp
+#define alias_set_cpu_call_rcu_data	set_cpu_call_rcu_data_bp
+#define alias_get_default_call_rcu_data	get_default_call_rcu_data_bp
+#define alias_get_call_rcu_data		get_call_rcu_data_bp
+#define alias_get_thread_call_rcu_data	get_thread_call_rcu_data_bp
+#define alias_set_thread_call_rcu_data	set_thread_call_rcu_data_bp
+#define alias_create_all_cpu_call_rcu_data	\
+		create_all_cpu_call_rcu_data_bp
+#define alias_free_all_cpu_call_rcu_data	\
+		free_all_cpu_call_rcu_data_bp
+#define alias_call_rcu			call_rcu_bp
+#define alias_call_rcu_data_free	call_rcu_data_free_bp
+#define alias_call_rcu_before_fork	call_rcu_before_fork_bp
+#define alias_call_rcu_after_fork_parent	\
+		call_rcu_after_fork_parent_bp
+#define alias_call_rcu_after_fork_child	call_rcu_after_fork_child_bp
+#define alias_rcu_barrier		rcu_barrier_bp
+
+#define alias_defer_rcu			defer_rcu_bp
+#define alias_rcu_defer_register_thread	rcu_defer_register_thread_bp
+#define alias_rcu_defer_unregister_thread	\
+		rcu_defer_unregister_thread_bp
+#define alias_rcu_defer_barrier		rcu_defer_barrier_bp
+#define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
+#define alias_rcu_defer_exit		rcu_defer_exit_bp
+
+#define alias_urcu_register_rculfhash_atfork	\
+		urcu_register_rculfhash_atfork_bp
+#define alias_urcu_unregister_rculfhash_atfork	\
+		urcu_unregister_rculfhash_atfork_bp

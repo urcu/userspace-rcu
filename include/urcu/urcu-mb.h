@@ -1,8 +1,8 @@
-#ifndef _URCU_H
-#define _URCU_H
+#ifndef _URCU_MB_H
+#define _URCU_MB_H
 
 /*
- * urcu.h
+ * urcu-mb.h
  *
  * Userspace RCU header
  *
@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#include <urcu/map/urcu.h>
+#include <urcu/map/urcu-mb.h>
 
 /*
  * Important !
@@ -56,7 +56,7 @@ extern "C" {
 
 #ifdef _LGPL_SOURCE
 
-#include <urcu/static/urcu.h>
+#include <urcu/static/urcu-mb.h>
 
 /*
  * Mappings for static use of the userspace RCU library.
@@ -71,19 +71,9 @@ extern "C" {
  * DON'T FORGET TO USE RCU_REGISTER/UNREGISTER_THREAD() FOR EACH THREAD WITH
  * READ-SIDE CRITICAL SECTION.
  */
-#ifdef RCU_MEMBARRIER
-#define rcu_read_lock_memb		_rcu_read_lock
-#define rcu_read_unlock_memb		_rcu_read_unlock
-#define rcu_read_ongoing_memb		_rcu_read_ongoing
-#elif defined(RCU_SIGNAL)
-#define rcu_read_lock_sig		_rcu_read_lock
-#define rcu_read_unlock_sig		_rcu_read_unlock
-#define rcu_read_ongoing_sig		_rcu_read_ongoing
-#elif defined(RCU_MB)
-#define rcu_read_lock_mb		_rcu_read_lock
-#define rcu_read_unlock_mb		_rcu_read_unlock
-#define rcu_read_ongoing_mb		_rcu_read_ongoing
-#endif
+#define urcu_mb_read_lock		_urcu_mb_read_lock
+#define urcu_mb_read_unlock		_urcu_mb_read_unlock
+#define urcu_mb_read_ongoing		_urcu_mb_read_ongoing
 
 #else /* !_LGPL_SOURCE */
 
@@ -92,37 +82,37 @@ extern "C" {
  * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
-extern void rcu_read_lock(void);
-extern void rcu_read_unlock(void);
-extern int rcu_read_ongoing(void);
+extern void urcu_mb_read_lock(void);
+extern void urcu_mb_read_unlock(void);
+extern int urcu_mb_read_ongoing(void);
 
 #endif /* !_LGPL_SOURCE */
 
-extern void synchronize_rcu(void);
+extern void urcu_mb_synchronize_rcu(void);
 
 /*
  * Reader thread registration.
  */
-extern void rcu_register_thread(void);
-extern void rcu_unregister_thread(void);
+extern void urcu_mb_register_thread(void);
+extern void urcu_mb_unregister_thread(void);
 
 /*
  * Explicit rcu initialization, for "early" use within library constructors.
  */
-extern void rcu_init(void);
+extern void urcu_mb_init(void);
 
 /*
  * Q.S. reporting are no-ops for these URCU flavors.
  */
-static inline void rcu_quiescent_state(void)
+static inline void urcu_mb_quiescent_state(void)
 {
 }
 
-static inline void rcu_thread_offline(void)
+static inline void urcu_mb_thread_offline(void)
 {
 }
 
-static inline void rcu_thread_online(void)
+static inline void urcu_mb_thread_online(void)
 {
 }
 
@@ -134,4 +124,8 @@ static inline void rcu_thread_online(void)
 #include <urcu-defer.h>
 #include <urcu-flavor.h>
 
-#endif /* _URCU_H */
+#ifndef URCU_API_MAP
+#include <urcu/map/clear.h>
+#endif
+
+#endif /* _URCU_MB_H */

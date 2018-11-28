@@ -30,3 +30,6 @@
 /* Enable internal debugging self-checks.
    Introduce performance penalty. */
 #undef CONFIG_RCU_DEBUG
+
+/* Expose multi-flavor support */
+#define CONFIG_RCU_MULTIFLAVOR 1

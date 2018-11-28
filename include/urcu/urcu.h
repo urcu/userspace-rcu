@@ -1,8 +1,10 @@
+#ifndef _URCU_H
+#define _URCU_H
+
 /*
- * urcu-map.h
+ * urcu.h
  *
- * Userspace RCU header -- name mapping to allow multiple flavors to be
- * used in the same executable.
+ * Userspace RCU header
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
@@ -29,12 +31,18 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
-#ifdef RCU_MEMBARRIER
-#include <urcu/map/urcu-memb.h>
-#elif defined(RCU_SIGNAL)
-#include <urcu/map/urcu-signal.h>
-#elif defined(RCU_MB)
-#include <urcu/map/urcu-mb.h>
-#else
-#error "Undefined selection"
+#if !defined(RCU_MEMBARRIER) && !defined(RCU_SIGNAL) && !defined(RCU_MB)
+#define RCU_MEMBARRIER
 #endif
+
+#ifdef RCU_MEMBARRIER
+#include <urcu/urcu-memb.h>
+#elif defined(RCU_SIGNAL)
+#include <urcu/urcu-signal.h>
+#elif defined(RCU_MB)
+#include <urcu/urcu-mb.h>
+#else
+#error "Unknown urcu flavor"
+#endif
+
+#endif /* _URCU_H */

@@ -1,16 +1,12 @@
+#ifndef _URCU_UTILS_H
+#define _URCU_UTILS_H
+
 /*
- * urcu-map.h
+ * urcu-utils.h
  *
- * Userspace RCU header -- name mapping to allow multiple flavors to be
- * used in the same executable.
+ * Userspace RCU library internal utils
  *
- * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
- *
- * LGPL-compatible code should include this header with :
- *
- * #define _LGPL_SOURCE
- * #include <urcu.h>
+ * Copyright (c) 2018 Michael Jeanson <mjeanson@efficios.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,16 +21,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
- * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
-#ifdef RCU_MEMBARRIER
-#include <urcu/map/urcu-memb.h>
-#elif defined(RCU_SIGNAL)
-#include <urcu/map/urcu-signal.h>
-#elif defined(RCU_MB)
-#include <urcu/map/urcu-mb.h>
-#else
-#error "Undefined selection"
-#endif
+#define urcu_stringify(a) _urcu_stringify(a)
+#define _urcu_stringify(a) #a
+
+#endif /* _URCU_UTILS_H */

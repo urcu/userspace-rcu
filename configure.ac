@@ -508,6 +508,8 @@ PPRINT_PROP_BOOL([Require membarrier], $value)
 test "x$enable_rcu_debug" = "xyes" && value=1 || value=0
 PPRINT_PROP_BOOL([Internal debugging], $value)
 
+PPRINT_PROP_BOOL([Multi-flavor support], 1)
+
 report_bindir="`eval eval echo $bindir`"
 report_libdir="`eval eval echo $libdir`"
 

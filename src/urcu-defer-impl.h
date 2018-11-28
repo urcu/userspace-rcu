@@ -50,6 +50,7 @@
 #include <urcu/system.h>
 #include <urcu/tls-compat.h>
 #include "urcu-die.h"
+#include "urcu-utils.h"
 
 /*
  * Number of entries in the per-thread defer queue. Must be power of 2.
@@ -107,7 +108,7 @@ struct defer_queue {
 };
 
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
-#include "urcu-defer.h"
+#include <urcu/defer.h>
 
 void __attribute__((destructor)) rcu_defer_exit(void);
 
@@ -264,6 +265,8 @@ void rcu_defer_barrier_thread(void)
 	_rcu_defer_barrier_thread();
 	mutex_unlock(&rcu_defer_mutex);
 }
+__attribute__((alias(urcu_stringify(rcu_defer_barrier_thread))))
+void alias_rcu_defer_barrier_thread();
 
 /*
  * rcu_defer_barrier - Execute all queued rcu callbacks.
@@ -304,6 +307,8 @@ void rcu_defer_barrier(void)
 end:
 	mutex_unlock(&rcu_defer_mutex);
 }
+__attribute__((alias(urcu_stringify(rcu_defer_barrier))))
+void alias_rcu_defer_barrier();
 
 /*
  * _defer_rcu - Queue a RCU callback.
@@ -396,6 +401,7 @@ void defer_rcu(void (*fct)(void *p), void *p)
 {
 	_defer_rcu(fct, p);
 }
+__attribute__((alias(urcu_stringify(defer_rcu)))) void alias_defer_rcu();
 
 static void start_defer_thread(void)
 {
@@ -444,6 +450,8 @@ int rcu_defer_register_thread(void)
 	mutex_unlock(&defer_thread_mutex);
 	return 0;
 }
+__attribute__((alias(urcu_stringify(rcu_defer_register_thread))))
+int alias_rcu_defer_register_thread();
 
 void rcu_defer_unregister_thread(void)
 {
@@ -462,10 +470,14 @@ void rcu_defer_unregister_thread(void)
 		stop_defer_thread();
 	mutex_unlock(&defer_thread_mutex);
 }
+__attribute__((alias(urcu_stringify(rcu_defer_unregister_thread))))
+void alias_rcu_defer_unregister_thread();
 
 void rcu_defer_exit(void)
 {
 	assert(cds_list_empty(&registry_defer));
 }
+__attribute__((alias(urcu_stringify(rcu_defer_exit))))
+void alias_rcu_defer_exit();
 
 #endif /* _URCU_DEFER_IMPL_H */

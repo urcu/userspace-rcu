@@ -72,14 +72,14 @@ extern "C" {
  *
  * Mark the beginning and end of a read-side critical section.
  */
-#define rcu_read_lock_bp		_rcu_read_lock
-#define rcu_read_unlock_bp		_rcu_read_unlock
-#define rcu_read_ongoing_bp		_rcu_read_ongoing
+#define urcu_bp_read_lock		_urcu_bp_read_lock
+#define urcu_bp_read_unlock		_urcu_bp_read_unlock
+#define urcu_bp_read_ongoing		_urcu_bp_read_ongoing
 
-#define rcu_dereference_bp		rcu_dereference
-#define rcu_cmpxchg_pointer_bp		rcu_cmpxchg_pointer
-#define rcu_xchg_pointer_bp		rcu_xchg_pointer
-#define rcu_set_pointer_bp		rcu_set_pointer
+#define urcu_bp_dereference		rcu_dereference
+#define urcu_bp_cmpxchg_pointer		rcu_cmpxchg_pointer
+#define urcu_bp_xchg_pointer		rcu_xchg_pointer
+#define urcu_bp_set_pointer		rcu_set_pointer
 
 #else /* !_LGPL_SOURCE */
 
@@ -88,95 +88,95 @@ extern "C" {
  * See LGPL-only urcu/static/urcu-pointer.h for documentation.
  */
 
-extern void rcu_read_lock(void);
-extern void rcu_read_unlock(void);
-extern int rcu_read_ongoing(void);
+extern void urcu_bp_read_lock(void);
+extern void urcu_bp_read_unlock(void);
+extern int urcu_bp_read_ongoing(void);
 
-extern void *rcu_dereference_sym_bp(void *p);
-#define rcu_dereference_bp(p)						     \
+extern void *urcu_bp_dereference_sym(void *p);
+#define urcu_bp_dereference(p)						     \
 	__extension__							     \
 	({								     \
 		__typeof__(p) _________p1 = URCU_FORCE_CAST(__typeof__(p),   \
-			rcu_dereference_sym_bp(URCU_FORCE_CAST(void *, p))); \
+			urcu_bp_dereference_sym(URCU_FORCE_CAST(void *, p))); \
 		(_________p1);						     \
 	})
 
-extern void *rcu_cmpxchg_pointer_sym_bp(void **p, void *old, void *_new);
-#define rcu_cmpxchg_pointer_bp(p, old, _new)				     \
+extern void *urcu_bp_cmpxchg_pointer_sym(void **p, void *old, void *_new);
+#define urcu_bp_cmpxchg_pointer(p, old, _new)				     \
 	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pold = (old);			     \
 		__typeof__(*(p)) _________pnew = (_new);		     \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
-			rcu_cmpxchg_pointer_sym_bp(URCU_FORCE_CAST(void **, p), \
+			urcu_bp_cmpxchg_pointer_sym(URCU_FORCE_CAST(void **, p), \
 						_________pold,		     \
 						_________pnew));	     \
 		(_________p1);						     \
 	})
 
-extern void *rcu_xchg_pointer_sym_bp(void **p, void *v);
-#define rcu_xchg_pointer_bp(p, v)					     \
+extern void *urcu_bp_xchg_pointer_sym(void **p, void *v);
+#define urcu_bp_xchg_pointer(p, v)					     \
 	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pv = (v);			     \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)),\
-			rcu_xchg_pointer_sym_bp(URCU_FORCE_CAST(void **, p), \
+			urcu_bp_xchg_pointer_sym(URCU_FORCE_CAST(void **, p), \
 					     _________pv));		     \
 		(_________p1);						     \
 	})
 
-extern void *rcu_set_pointer_sym_bp(void **p, void *v);
-#define rcu_set_pointer_bp(p, v)					     \
+extern void *urcu_bp_set_pointer_sym(void **p, void *v);
+#define urcu_bp_set_pointer(p, v)					     \
 	__extension__							     \
 	({								     \
 		__typeof__(*(p)) _________pv = (v);			     \
 		__typeof__(*(p)) _________p1 = URCU_FORCE_CAST(__typeof__(*(p)), \
-			rcu_set_pointer_sym_bp(URCU_FORCE_CAST(void **, p),  \
+			urcu_bp_set_pointer_sym(URCU_FORCE_CAST(void **, p), \
 					    _________pv));		     \
 		(_________p1);						     \
 	})
 
 #endif /* !_LGPL_SOURCE */
 
-extern void synchronize_rcu(void);
+extern void urcu_bp_synchronize_rcu(void);
 
 /*
- * rcu_bp_before_fork, rcu_bp_after_fork_parent and rcu_bp_after_fork_child
+ * urcu_bp_before_fork, urcu_bp_after_fork_parent and urcu_bp_after_fork_child
  * should be called around fork() system calls when the child process is not
  * expected to immediately perform an exec(). For pthread users, see
  * pthread_atfork(3).
  */
-extern void rcu_bp_before_fork(void);
-extern void rcu_bp_after_fork_parent(void);
-extern void rcu_bp_after_fork_child(void);
+extern void urcu_bp_before_fork(void);
+extern void urcu_bp_after_fork_parent(void);
+extern void urcu_bp_after_fork_child(void);
 
 /*
  * In the bulletproof version, the following functions are no-ops.
  */
-static inline void rcu_register_thread(void)
+static inline void urcu_bp_register_thread(void)
 {
 }
 
-static inline void rcu_unregister_thread(void)
+static inline void urcu_bp_unregister_thread(void)
 {
 }
 
-static inline void rcu_init(void)
+static inline void urcu_bp_init(void)
 {
 }
 
 /*
  * Q.S. reporting are no-ops for these URCU flavors.
  */
-static inline void rcu_quiescent_state(void)
+static inline void urcu_bp_quiescent_state(void)
 {
 }
 
-static inline void rcu_thread_offline(void)
+static inline void urcu_bp_thread_offline(void)
 {
 }
 
-static inline void rcu_thread_online(void)
+static inline void urcu_bp_thread_online(void)
 {
 }
 
@@ -187,5 +187,9 @@ static inline void rcu_thread_online(void)
 #include <urcu-call-rcu.h>
 #include <urcu-defer.h>
 #include <urcu-flavor.h>
+
+#ifndef URCU_API_MAP
+#include <urcu/map/clear.h>
+#endif
 
 #endif /* _URCU_BP_H */

@@ -7,12 +7,8 @@ if USE_CYGWIN
 AM_LDFLAGS+=-no-undefined
 endif
 
-include_HEADERS = urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
-		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
-
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h \
-	compat-rand.h
-
+	compat-rand.h urcu-utils.h
 
 if COMPAT_ARCH
 COMPAT=compat_arch_@ARCHTYPE@.c
@@ -28,7 +24,7 @@ RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
 		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
-		liburcu-cds.la
+		liburcu-memb.la liburcu-cds.la
 
 #
 # liburcu-common contains wait-free queues (needed by call_rcu) as well
@@ -37,9 +33,15 @@ lib_LTLIBRARIES = liburcu-common.la \
 liburcu_common_la_SOURCES = wfqueue.c wfcqueue.c wfstack.c $(COMPAT)
 
 liburcu_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
+liburcu_la_CFLAGS = -DRCU_MEMBARRIER $(AM_CFLAGS)
 liburcu_la_LIBADD = liburcu-common.la
 
+liburcu_memb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
+liburcu_memb_la_CFLAGS = -DRCU_MEMBARRIER $(AM_CFLAGS)
+liburcu_memb_la_LIBADD = liburcu-common.la
+
 liburcu_qsbr_la_SOURCES = urcu-qsbr.c urcu-pointer.c $(COMPAT)
+liburcu_qsbr_la_CFLAGS = -DRCU_QSBR $(AM_CFLAGS)
 liburcu_qsbr_la_LIBADD = liburcu-common.la
 
 liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)

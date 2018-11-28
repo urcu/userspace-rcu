@@ -6,12 +6,21 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/uatomic_arch.h urcu/rculfhash.h urcu/wfcqueue.h \
 		urcu/lfstack.h urcu/syscall-compat.h \
 		urcu/map/urcu-bp.h urcu/map/urcu.h urcu/map/urcu-qsbr.h \
+		urcu/map/clear.h urcu/map/urcu-mb.h urcu/map/urcu-memb.h \
+		urcu/map/urcu-signal.h \
 		urcu/static/lfstack.h urcu/static/rculfqueue.h \
 		urcu/static/rculfstack.h urcu/static/urcu-bp.h \
 		urcu/static/urcu.h urcu/static/urcu-pointer.h \
 		urcu/static/urcu-qsbr.h urcu/static/wfcqueue.h \
 		urcu/static/wfqueue.h urcu/static/wfstack.h \
-		urcu/tls-compat.h urcu/debug.h
+		urcu/static/urcu-mb.h urcu/static/urcu-memb.h \
+		urcu/static/urcu-signal.h urcu/static/urcu-common.h \
+		urcu/tls-compat.h urcu/debug.h urcu/urcu.h urcu/urcu-bp.h \
+		urcu/call-rcu.h urcu/defer.h \
+		urcu/pointer.h urcu/urcu-qsbr.h urcu/flavor.h \
+		urcu/urcu-mb.h urcu/urcu-memb.h urcu/urcu-signal.h \
+		urcu.h urcu-bp.h urcu-call-rcu.h urcu-defer.h \
+		urcu-pointer.h urcu-qsbr.h urcu-flavor.h
 
 # Don't distribute generated headers
 nobase_nodist_include_HEADERS = urcu/arch.h urcu/uatomic.h urcu/config.h

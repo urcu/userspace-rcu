@@ -76,6 +76,11 @@ const struct rcu_flavor_struct x = {			\
 	.unregister_rculfhash_atfork = urcu_unregister_rculfhash_atfork,\
 }
 
+#define DEFINE_RCU_FLAVOR_ALIAS(x, y) _DEFINE_RCU_FLAVOR_ALIAS(x, y)
+#define _DEFINE_RCU_FLAVOR_ALIAS(x, y)			\
+__attribute__((alias(#x)))				\
+extern const struct rcu_flavor_struct y;
+
 extern const struct rcu_flavor_struct rcu_flavor;
 
 #ifdef __cplusplus

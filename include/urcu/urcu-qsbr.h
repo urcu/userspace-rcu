@@ -72,13 +72,13 @@ extern "C" {
  * DON'T FORGET TO USE rcu_register_thread/rcu_unregister_thread()
  * FOR EACH THREAD WITH READ-SIDE CRITICAL SECTION.
  */
-#define rcu_read_lock_qsbr		_rcu_read_lock
-#define rcu_read_unlock_qsbr		_rcu_read_unlock
-#define rcu_read_ongoing_qsbr		_rcu_read_ongoing
+#define urcu_qsbr_read_lock		_urcu_qsbr_read_lock
+#define urcu_qsbr_read_unlock		_urcu_qsbr_read_unlock
+#define urcu_qsbr_read_ongoing		_urcu_qsbr_read_ongoing
 
-#define rcu_quiescent_state_qsbr	_rcu_quiescent_state
-#define rcu_thread_offline_qsbr		_rcu_thread_offline
-#define rcu_thread_online_qsbr		_rcu_thread_online
+#define urcu_qsbr_quiescent_state	_urcu_qsbr_quiescent_state
+#define urcu_qsbr_thread_offline	_urcu_qsbr_thread_offline
+#define urcu_qsbr_thread_online		_urcu_qsbr_thread_online
 
 #else /* !_LGPL_SOURCE */
 
@@ -99,35 +99,35 @@ extern "C" {
 
 #if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG))
 
-static inline void rcu_read_lock(void)
+static inline void urcu_qsbr_read_lock(void)
 {
 }
 
-static inline void rcu_read_unlock(void)
+static inline void urcu_qsbr_read_unlock(void)
 {
 }
 
 #else /* #if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG)) */
 
-extern void rcu_read_lock(void);
-extern void rcu_read_unlock(void);
+extern void urcu_qsbr_read_lock(void);
+extern void urcu_qsbr_read_unlock(void);
 
 #endif /* #else #if (!defined(BUILD_QSBR_LIB) && !defined(DEBUG_RCU) && !defined(CONFIG_RCU_DEBUG)) */
 
-extern int rcu_read_ongoing(void);
-extern void rcu_quiescent_state(void);
-extern void rcu_thread_offline(void);
-extern void rcu_thread_online(void);
+extern int urcu_qsbr_read_ongoing(void);
+extern void urcu_qsbr_quiescent_state(void);
+extern void urcu_qsbr_thread_offline(void);
+extern void urcu_qsbr_thread_online(void);
 
 #endif /* !_LGPL_SOURCE */
 
-extern void synchronize_rcu(void);
+extern void urcu_qsbr_synchronize_rcu(void);
 
 /*
  * Reader thread registration.
  */
-extern void rcu_register_thread(void);
-extern void rcu_unregister_thread(void);
+extern void urcu_qsbr_register_thread(void);
+extern void urcu_qsbr_unregister_thread(void);
 
 #ifdef __cplusplus
 }
@@ -136,5 +136,9 @@ extern void rcu_unregister_thread(void);
 #include <urcu-call-rcu.h>
 #include <urcu-defer.h>
 #include <urcu-flavor.h>
+
+#ifndef URCU_API_MAP
+#include <urcu/map/clear.h>
+#endif
 
 #endif /* _URCU_QSBR_H */

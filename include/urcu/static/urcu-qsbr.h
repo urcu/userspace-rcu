@@ -43,6 +43,7 @@
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
 #include <urcu/debug.h>
+#include <urcu/static/urcu-common.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,29 +57,12 @@ extern "C" {
  * This is required to permit relinking with newer versions of the library.
  */
 
-enum rcu_state {
-	RCU_READER_ACTIVE_CURRENT,
-	RCU_READER_ACTIVE_OLD,
-	RCU_READER_INACTIVE,
-};
+#define URCU_QSBR_GP_ONLINE		(1UL << 0)
+#define URCU_QSBR_GP_CTR		(1UL << 1)
 
-#define RCU_GP_ONLINE		(1UL << 0)
-#define RCU_GP_CTR		(1UL << 1)
+extern struct urcu_gp urcu_qsbr_gp;
 
-struct rcu_gp {
-	/*
-	 * Global quiescent period counter with low-order bits unused.
-	 * Using a int rather than a char to eliminate false register
-	 * dependencies causing stalls on some architectures.
-	 */
-	unsigned long ctr;
-
-	int32_t futex;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
-
-extern struct rcu_gp rcu_gp;
-
-struct rcu_reader {
+struct urcu_qsbr_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	unsigned long ctr;
 	/* Data used for registry */
@@ -89,39 +73,39 @@ struct rcu_reader {
 	unsigned int registered:1;
 };
 
-extern DECLARE_URCU_TLS(struct rcu_reader, rcu_reader);
+extern DECLARE_URCU_TLS(struct urcu_qsbr_reader, urcu_qsbr_reader);
 
 /*
  * Wake-up waiting synchronize_rcu(). Called from many concurrent threads.
  */
-static inline void wake_up_gp(void)
+static inline void urcu_qsbr_wake_up_gp(void)
 {
-	if (caa_unlikely(_CMM_LOAD_SHARED(URCU_TLS(rcu_reader).waiting))) {
-		_CMM_STORE_SHARED(URCU_TLS(rcu_reader).waiting, 0);
+	if (caa_unlikely(_CMM_LOAD_SHARED(URCU_TLS(urcu_qsbr_reader).waiting))) {
+		_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).waiting, 0);
 		cmm_smp_mb();
-		if (uatomic_read(&rcu_gp.futex) != -1)
+		if (uatomic_read(&urcu_qsbr_gp.futex) != -1)
 			return;
-		uatomic_set(&rcu_gp.futex, 0);
+		uatomic_set(&urcu_qsbr_gp.futex, 0);
 		/*
 		 * Ignoring return value until we can make this function
 		 * return something (because urcu_die() is not publicly
 		 * exposed).
 		 */
-		(void) futex_noasync(&rcu_gp.futex, FUTEX_WAKE, 1,
+		(void) futex_noasync(&urcu_qsbr_gp.futex, FUTEX_WAKE, 1,
 				NULL, NULL, 0);
 	}
 }
 
-static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
+static inline enum urcu_state urcu_qsbr_reader_state(unsigned long *ctr)
 {
 	unsigned long v;
 
 	v = CMM_LOAD_SHARED(*ctr);
 	if (!v)
-		return RCU_READER_INACTIVE;
-	if (v == rcu_gp.ctr)
-		return RCU_READER_ACTIVE_CURRENT;
-	return RCU_READER_ACTIVE_OLD;
+		return URCU_READER_INACTIVE;
+	if (v == urcu_qsbr_gp.ctr)
+		return URCU_READER_ACTIVE_CURRENT;
+	return URCU_READER_ACTIVE_OLD;
 }
 
 /*
@@ -131,9 +115,9 @@ static inline enum rcu_state rcu_reader_state(unsigned long *ctr)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_lock(void)
+static inline void _urcu_qsbr_read_lock(void)
 {
-	urcu_assert(URCU_TLS(rcu_reader).ctr);
+	urcu_assert(URCU_TLS(urcu_qsbr_reader).ctr);
 }
 
 /*
@@ -143,9 +127,9 @@ static inline void _rcu_read_lock(void)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_read_unlock(void)
+static inline void _urcu_qsbr_read_unlock(void)
 {
-	urcu_assert(URCU_TLS(rcu_reader).ctr);
+	urcu_assert(URCU_TLS(urcu_qsbr_reader).ctr);
 }
 
 /*
@@ -155,26 +139,26 @@ static inline void _rcu_read_unlock(void)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline int _rcu_read_ongoing(void)
+static inline int _urcu_qsbr_read_ongoing(void)
 {
-	return URCU_TLS(rcu_reader).ctr;
+	return URCU_TLS(urcu_qsbr_reader).ctr;
 }
 
 /*
  * This is a helper function for _rcu_quiescent_state().
  * The first cmm_smp_mb() ensures memory accesses in the prior read-side
  * critical sections are not reordered with store to
- * URCU_TLS(rcu_reader).ctr, and ensures that mutexes held within an
+ * URCU_TLS(urcu_qsbr_reader).ctr, and ensures that mutexes held within an
  * offline section that would happen to end with this
- * rcu_quiescent_state() call are not reordered with
- * store to URCU_TLS(rcu_reader).ctr.
+ * urcu_qsbr_quiescent_state() call are not reordered with
+ * store to URCU_TLS(urcu_qsbr_reader).ctr.
  */
-static inline void _rcu_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
+static inline void _urcu_qsbr_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
 {
 	cmm_smp_mb();
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, gp_ctr);
-	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
-	wake_up_gp();
+	_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, gp_ctr);
+	cmm_smp_mb();	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
+	urcu_qsbr_wake_up_gp();
 	cmm_smp_mb();
 }
 
@@ -186,18 +170,18 @@ static inline void _rcu_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
  * to be invoked directly from non-LGPL code.
  *
  * We skip the memory barriers and gp store if our local ctr already
- * matches the global rcu_gp.ctr value: this is OK because a prior
+ * matches the global urcu_qsbr_gp.ctr value: this is OK because a prior
  * _rcu_quiescent_state() or _rcu_thread_online() already updated it
  * within our thread, so we have no quiescent state to report.
  */
-static inline void _rcu_quiescent_state(void)
+static inline void _urcu_qsbr_quiescent_state(void)
 {
 	unsigned long gp_ctr;
 
-	urcu_assert(URCU_TLS(rcu_reader).registered);
-	if ((gp_ctr = CMM_LOAD_SHARED(rcu_gp.ctr)) == URCU_TLS(rcu_reader).ctr)
+	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
+	if ((gp_ctr = CMM_LOAD_SHARED(urcu_qsbr_gp.ctr)) == URCU_TLS(urcu_qsbr_reader).ctr)
 		return;
-	_rcu_quiescent_state_update_and_wakeup(gp_ctr);
+	_urcu_qsbr_quiescent_state_update_and_wakeup(gp_ctr);
 }
 
 /*
@@ -208,13 +192,13 @@ static inline void _rcu_quiescent_state(void)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_thread_offline(void)
+static inline void _urcu_qsbr_thread_offline(void)
 {
-	urcu_assert(URCU_TLS(rcu_reader).registered);
+	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_smp_mb();
-	CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, 0);
-	cmm_smp_mb();	/* write URCU_TLS(rcu_reader).ctr before read futex */
-	wake_up_gp();
+	CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, 0);
+	cmm_smp_mb();	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
+	urcu_qsbr_wake_up_gp();
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 
@@ -226,11 +210,11 @@ static inline void _rcu_thread_offline(void)
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
  */
-static inline void _rcu_thread_online(void)
+static inline void _urcu_qsbr_thread_online(void)
 {
-	urcu_assert(URCU_TLS(rcu_reader).registered);
+	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).ctr, CMM_LOAD_SHARED(rcu_gp.ctr));
+	_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, CMM_LOAD_SHARED(urcu_qsbr_gp.ctr));
 	cmm_smp_mb();
 }
 
