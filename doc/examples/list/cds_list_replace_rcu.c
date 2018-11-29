@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 
-#include <urcu.h>		/* Userspace RCU flavor */
+#include <urcu/urcu-memb.h>	/* Userspace RCU flavor */
 #include <urcu/rculist.h>	/* RCU list */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 		/* Replacement node value is negated original value. */
 		new_node->value = -node->value;
 		cds_list_replace_rcu(&node->node, &new_node->node);
-		call_rcu(&node->rcu_head, free_node_rcu);
+		urcu_memb_call_rcu(&node->rcu_head, free_node_rcu);
 	}
 
 	/*

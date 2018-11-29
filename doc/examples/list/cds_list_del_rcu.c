@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 
-#include <urcu.h>		/* Userspace RCU flavor */
+#include <urcu/urcu-memb.h>	/* Userspace RCU flavor */
 #include <urcu/rculist.h>	/* RCU list */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 			 * We can only reclaim memory after a grace
 			 * period has passed after cds_list_del_rcu().
 			 */
-			call_rcu(&node->rcu_head, free_node_rcu);
+			urcu_memb_call_rcu(&node->rcu_head, free_node_rcu);
 		}
 	}
 

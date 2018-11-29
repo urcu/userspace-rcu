@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#include <urcu-qsbr.h>		/* QSBR RCU flavor */
+#include <urcu/urcu-qsbr.h>	/* QSBR RCU flavor */
 #include <urcu/rculist.h>	/* List example */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_qsbr_register_thread();
 
 	/*
 	 * Adding nodes to the linked-list. Safe against concurrent
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 		 * call_rcu() can be called from RCU read-side critical
 		 * sections.
 		 */
-		call_rcu(&node->rcu_head, rcu_free_node);
+		urcu_qsbr_call_rcu(&node->rcu_head, rcu_free_node);
 	}
 
 	/*
@@ -113,18 +113,18 @@ int main(int argc, char **argv)
 	 * every online registered RCU threads in the program
 	 * periodically.
 	 */
-	rcu_quiescent_state();
+	urcu_qsbr_quiescent_state();
 
 	/*
 	 * For QSBR flavor, when a thread needs to be in a quiescent
 	 * state for a long period of time, we use rcu_thread_offline()
 	 * and rcu_thread_online().
 	 */
-	rcu_thread_offline();
+	urcu_qsbr_thread_offline();
 
 	sleep(1);
 
-	rcu_thread_online();
+	urcu_qsbr_thread_online();
 
 	/*
 	 * We can also wait for a quiescent state by calling
@@ -134,16 +134,16 @@ int main(int argc, char **argv)
 	 * read-side critical section, but synchronize_rcu() ensures the
 	 * caller thread is offline, thus acting as a quiescent state.
 	 */
-	synchronize_rcu();
+	urcu_qsbr_synchronize_rcu();
 
 	/*
 	 * Waiting for previously called call_rcu handlers to complete
 	 * before program exits, or in library destructors, is a good
 	 * practice.
 	 */
-	rcu_barrier();
+	urcu_qsbr_barrier();
 
 end:
-	rcu_unregister_thread();
+	urcu_qsbr_unregister_thread();
 	return ret;
 }

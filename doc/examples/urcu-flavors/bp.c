@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#include <urcu-bp.h>		/* Bulletproof RCU flavor */
+#include <urcu/urcu-bp.h>	/* Bulletproof RCU flavor */
 #include <urcu/rculist.h>	/* List example */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	 * with rcu_read_lock() and rcu_read_unlock(). They can be
 	 * nested. Those are no-ops for the QSBR flavor.
 	 */
-	rcu_read_lock();
+	urcu_bp_read_lock();
 
 	/*
 	 * RCU traversal of the linked list.
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	cds_list_for_each_entry_rcu(node, &mylist, node) {
 		printf("Value: %" PRIu64 "\n", node->value);
 	}
-	rcu_read_unlock();
+	urcu_bp_read_unlock();
 
 	/*
 	 * Removing nodes from linked list. Safe against concurrent RCU
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 		 * spawning any call_rcu() thread. It is slower though,
 		 * since there is no batching.
 		 */
-		synchronize_rcu();
+		urcu_bp_synchronize_rcu();
 		free(node);
 	}
 

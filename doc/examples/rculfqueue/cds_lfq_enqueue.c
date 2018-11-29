@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <urcu.h>		/* RCU flavor */
+#include <urcu/urcu-memb.h>	/* RCU flavor */
 #include <urcu/rculfqueue.h>	/* RCU Lock-free queue */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -40,9 +40,9 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_memb_register_thread();
 
-	cds_lfq_init_rcu(&myqueue, call_rcu);
+	cds_lfq_init_rcu(&myqueue, urcu_memb_call_rcu);
 
 	/*
 	 * Enqueue nodes.
@@ -62,12 +62,12 @@ int main(int argc, char **argv)
 		 * Both enqueue and dequeue need to be called within RCU
 		 * read-side critical section.
 		 */
-		rcu_read_lock();
+		urcu_memb_read_lock();
 		cds_lfq_enqueue_rcu(&myqueue, &node->node);
-		rcu_read_unlock();
+		urcu_memb_read_unlock();
 	}
 
 end:
-	rcu_unregister_thread();
+	urcu_memb_unregister_thread();
 	return ret;
 }

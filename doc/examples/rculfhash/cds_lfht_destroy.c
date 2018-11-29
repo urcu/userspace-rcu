@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <urcu.h>		/* RCU flavor */
+#include <urcu/urcu-memb.h>	/* RCU flavor */
 #include <urcu/rculfhash.h>	/* RCU Lock-free hash table */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 #include "jhash.h"		/* Example hash function */
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_memb_register_thread();
 
 	/* Use time as seed for hash table hashing. */
 	seed = (uint32_t) time(NULL);
@@ -64,9 +64,9 @@ int main(int argc, char **argv)
 	/*
 	 * Allocate hash table.
 	 */
-	ht = cds_lfht_new(1, 1, 0,
+	ht = cds_lfht_new_flavor(1, 1, 0,
 		CDS_LFHT_AUTO_RESIZE | CDS_LFHT_ACCOUNTING,
-		NULL);
+		&urcu_memb_flavor, NULL);
 	if (!ht) {
 		printf("Error allocating hash table\n");
 		ret = -1;
@@ -95,9 +95,9 @@ int main(int argc, char **argv)
 		 * cds_lfht_add() needs to be called from RCU read-side
 		 * critical section.
 		 */
-		rcu_read_lock();
+		urcu_memb_read_lock();
 		cds_lfht_add(ht, hash, &node->node);
-		rcu_read_unlock();
+		urcu_memb_read_unlock();
 	}
 
 	/*
@@ -106,11 +106,11 @@ int main(int argc, char **argv)
 	 * be performed within RCU read-side critical section.
 	 */
 	printf("hash table content (random order):");
-	rcu_read_lock();
+	urcu_memb_read_lock();
 	cds_lfht_for_each_entry(ht, &iter, node, node) {
 		printf(" %d", node->value);
 	}
-	rcu_read_unlock();
+	urcu_memb_read_unlock();
 	printf("\n");
 
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 	 * Make sure all hash table nodes are removed before destroying.
 	 */
 	printf("removing all nodes:");
-	rcu_read_lock();
+	urcu_memb_read_lock();
 	cds_lfht_for_each_entry(ht, &iter, node, node) {
 		ht_node = cds_lfht_iter_get_node(&iter);
 		ret = cds_lfht_del(ht, ht_node);
@@ -126,10 +126,10 @@ int main(int argc, char **argv)
 		if (ret) {
 			printf(" (concurrently deleted)");
 		} else {
-			call_rcu(&node->rcu_head, free_node);
+			urcu_memb_call_rcu(&node->rcu_head, free_node);
 		}
 	}
-	rcu_read_unlock();
+	urcu_memb_read_unlock();
 	printf("\n");
 
 	/*
@@ -144,6 +144,6 @@ int main(int argc, char **argv)
 		printf("Destroying hash table failed\n");
 	}
 end:
-	rcu_unregister_thread();
+	urcu_memb_unregister_thread();
 	return ret;
 }

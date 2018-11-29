@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <urcu.h>		/* RCU flavor */
+#include <urcu/urcu-memb.h>	/* RCU flavor */
 #include <urcu/rculfhash.h>	/* RCU Lock-free hash table */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 #include "jhash.h"		/* Example hash function */
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_memb_register_thread();
 
 	/* Use time as seed for hash table hashing. */
 	seed = (uint32_t) time(NULL);
@@ -65,9 +65,9 @@ int main(int argc, char **argv)
 	/*
 	 * Allocate hash table.
 	 */
-	ht = cds_lfht_new(1, 1, 0,
+	ht = cds_lfht_new_flavor(1, 1, 0,
 		CDS_LFHT_AUTO_RESIZE | CDS_LFHT_ACCOUNTING,
-		NULL);
+		&urcu_memb_flavor, NULL);
 	if (!ht) {
 		printf("Error allocating hash table\n");
 		ret = -1;
@@ -97,11 +97,11 @@ int main(int argc, char **argv)
 		 * cds_lfht_add() needs to be called from RCU read-side
 		 * critical section.
 		 */
-		rcu_read_lock();
+		urcu_memb_read_lock();
 		cds_lfht_add(ht, hash, &node->node);
 		printf("Add (key: %d, seqnum: %d)\n",
 			node->value, node->seqnum);
-		rcu_read_unlock();
+		urcu_memb_read_unlock();
 	}
 
 	/*
@@ -110,12 +110,12 @@ int main(int argc, char **argv)
 	 * be performed within RCU read-side critical section.
 	 */
 	printf("hash table content (random order):");
-	rcu_read_lock();
+	urcu_memb_read_lock();
 	cds_lfht_for_each_entry(ht, &iter, node, node) {
 		printf(" (key: %d, seqnum: %d)",
 			node->value, node->seqnum);
 	}
-	rcu_read_unlock();
+	urcu_memb_read_unlock();
 	printf("\n");
 
 	/*
@@ -128,16 +128,16 @@ int main(int argc, char **argv)
 		unsigned long hash = jhash(&value, sizeof(value), seed);
 
 		printf("lookup key: %d\n", value);
-		rcu_read_lock();
+		urcu_memb_read_lock();
 		cds_lfht_for_each_entry_duplicate(ht, hash, match,
 				&value, &iter, node, node) {
 			printf("	(key %d, seqnum %d) found\n",
 				node->value, node->seqnum);
 		}
-		rcu_read_unlock();
+		urcu_memb_read_unlock();
 	}
 
 end:
-	rcu_unregister_thread();
+	urcu_memb_unregister_thread();
 	return ret;
 }

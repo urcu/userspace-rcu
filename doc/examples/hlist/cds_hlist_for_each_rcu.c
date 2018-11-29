@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 
-#include <urcu.h>		/* Userspace RCU flavor */
+#include <urcu/urcu-memb.h>	/* Userspace RCU flavor */
 #include <urcu/rcuhlist.h>	/* RCU hlist */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_memb_register_thread();
 
 	/*
 	 * Adding nodes to the linked-list. Safe against concurrent
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	 * Surround the RCU read-side critical section with rcu_read_lock()
 	 * and rcu_read_unlock().
 	 */
-	rcu_read_lock();
+	urcu_memb_read_lock();
 
 	/*
 	 * This traversal can be performed concurrently with RCU
@@ -82,10 +82,10 @@ int main(int argc, char **argv)
 		printf(" %d", node->value);
 	}
 
-	rcu_read_unlock();
+	urcu_memb_read_unlock();
 
 	printf("\n");
 end:
-	rcu_unregister_thread();
+	urcu_memb_unregister_thread();
 	return ret;
 }

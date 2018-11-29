@@ -22,8 +22,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-#define RCU_MB			/* Memory barrier RCU flavor */
-#include <urcu.h>
+#include <urcu/urcu-mb.h>	/* Memory barrier RCU flavor */
 #include <urcu/rculist.h>	/* List example */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
@@ -75,7 +74,7 @@ int main(int argc, char **argv)
 	 * Each thread need using RCU read-side need to be explicitly
 	 * registered.
 	 */
-	rcu_register_thread();
+	urcu_mb_register_thread();
 
 	/*
 	 * Adding nodes to the linked-list. Safe against concurrent
@@ -92,7 +91,7 @@ int main(int argc, char **argv)
 	 * with rcu_read_lock() and rcu_read_unlock(). They can be
 	 * nested. Those are no-ops for the QSBR flavor.
 	 */
-	rcu_read_lock();
+	urcu_mb_read_lock();
 
 	/*
 	 * RCU traversal of the linked list.
@@ -100,7 +99,7 @@ int main(int argc, char **argv)
 	cds_list_for_each_entry_rcu(node, &mylist, node) {
 		printf("Value: %" PRIu64 "\n", node->value);
 	}
-	rcu_read_unlock();
+	urcu_mb_read_unlock();
 
 	/*
 	 * Removing nodes from linked list. Safe against concurrent RCU
@@ -114,7 +113,7 @@ int main(int argc, char **argv)
 		 * call_rcu() can be called from RCU read-side critical
 		 * sections.
 		 */
-		call_rcu(&node->rcu_head, rcu_free_node);
+		urcu_mb_call_rcu(&node->rcu_head, rcu_free_node);
 	}
 
 	/*
@@ -124,7 +123,7 @@ int main(int argc, char **argv)
 	 * batch work. Moreover, call_rcu() can be called from a RCU
 	 * read-side critical section, but synchronize_rcu() should not.
 	 */
-	synchronize_rcu();
+	urcu_mb_synchronize_rcu();
 
 	sleep(1);
 
@@ -133,9 +132,9 @@ int main(int argc, char **argv)
 	 * before program exits, or in library destructors, is a good
 	 * practice.
 	 */
-	rcu_barrier();
+	urcu_mb_barrier();
 
 end:
-	rcu_unregister_thread();
+	urcu_mb_unregister_thread();
 	return ret;
 }

@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 
-#include <urcu.h>		/* Userspace RCU flavor */
+#include <urcu/urcu-memb.h>	/* Userspace RCU flavor */
 #include <urcu/rculist.h>	/* RCU list */
 #include <urcu/compiler.h>	/* For CAA_ARRAY_SIZE */
 
