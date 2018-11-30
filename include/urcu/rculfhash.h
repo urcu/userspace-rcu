@@ -27,8 +27,8 @@
  */
 
 #include <stdint.h>
+#include <pthread.h>
 #include <urcu/compiler.h>
-#include <urcu-call-rcu.h>
 #include <urcu-flavor.h>
 
 #ifdef __cplusplus

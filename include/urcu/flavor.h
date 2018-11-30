@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+struct rcu_head;
+
 struct urcu_atfork {
 	void (*before_fork)(void *priv);
 	void (*after_fork_parent)(void *priv);

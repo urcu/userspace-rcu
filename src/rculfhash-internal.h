@@ -26,6 +26,8 @@
 
 #include <urcu/rculfhash.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
 #ifdef DEBUG
 #define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
