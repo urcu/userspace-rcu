@@ -1,4 +1,4 @@
-# Copyright (C) 2013  Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+# Copyright (C) 2013  Mathieu Desnoyers <mathieu.desnoyers$(AM_V_at)efficios.com>
 #
 # THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
 # OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
@@ -12,14 +12,14 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -f Makefile.cds_hlist_add_head_rcu
-	$(MAKE) -f Makefile.cds_hlist_del_rcu
-	$(MAKE) -f Makefile.cds_hlist_for_each_rcu
-	$(MAKE) -f Makefile.cds_hlist_for_each_entry_rcu
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_add_head_rcu
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_del_rcu
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_for_each_rcu
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_for_each_entry_rcu
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.cds_hlist_add_head_rcu clean
-	$(MAKE) -f Makefile.cds_hlist_del_rcu clean
-	$(MAKE) -f Makefile.cds_hlist_for_each_rcu clean
-	$(MAKE) -f Makefile.cds_hlist_for_each_entry_rcu clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_add_head_rcu clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_del_rcu clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_for_each_rcu clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_hlist_for_each_entry_rcu clean

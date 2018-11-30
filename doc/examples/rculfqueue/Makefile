@@ -12,10 +12,10 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -f Makefile.cds_lfq_enqueue
-	$(MAKE) -f Makefile.cds_lfq_dequeue
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfq_enqueue
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfq_dequeue
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.cds_lfq_enqueue clean
-	$(MAKE) -f Makefile.cds_lfq_dequeue clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfq_enqueue clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfq_dequeue clean

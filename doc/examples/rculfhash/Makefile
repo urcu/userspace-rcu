@@ -12,20 +12,20 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -f Makefile.cds_lfht_add
-	$(MAKE) -f Makefile.cds_lfht_add_unique
-	$(MAKE) -f Makefile.cds_lfht_add_replace
-	$(MAKE) -f Makefile.cds_lfht_del
-	$(MAKE) -f Makefile.cds_lfht_destroy
-	$(MAKE) -f Makefile.cds_lfht_lookup
-	$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add_unique
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add_replace
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_del
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_destroy
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_lookup
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.cds_lfht_add clean
-	$(MAKE) -f Makefile.cds_lfht_add_unique clean
-	$(MAKE) -f Makefile.cds_lfht_add_replace clean
-	$(MAKE) -f Makefile.cds_lfht_del clean
-	$(MAKE) -f Makefile.cds_lfht_destroy clean
-	$(MAKE) -f Makefile.cds_lfht_lookup clean
-	$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add_unique clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_add_replace clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_del clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_destroy clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_lookup clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfht_for_each_entry_duplicate clean

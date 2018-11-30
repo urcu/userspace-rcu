@@ -12,12 +12,12 @@
 # This makefile is purposefully kept simple to support GNU and BSD make.
 
 all:
-	$(MAKE) -f Makefile.cds_lfs_push
-	$(MAKE) -f Makefile.cds_lfs_pop_blocking
-	$(MAKE) -f Makefile.cds_lfs_pop_all_blocking
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_push
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_pop_blocking
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_pop_all_blocking
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.cds_lfs_push clean
-	$(MAKE) -f Makefile.cds_lfs_pop_blocking clean
-	$(MAKE) -f Makefile.cds_lfs_pop_all_blocking clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_push clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_pop_blocking clean
+	$(AM_V_at)$(MAKE) -f Makefile.cds_lfs_pop_all_blocking clean

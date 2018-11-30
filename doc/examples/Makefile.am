@@ -121,7 +121,7 @@ SUBDIRS_PROXY = hlist list urcu-flavors wfcqueue rculfqueue \
 
 # Copies are for VPATH build support.
 all-local:
-	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
+	$(AM_V_at)if [ x"$(srcdir)" != x"$(builddir)" ]; then \
 		cp -pfR $(srcdir)/dist-files $(builddir); \
 		chmod -R u+w $(builddir)/dist-files; \
 		cp -pf $(srcdir)/Makefile.examples.template $(builddir); \
@@ -132,23 +132,19 @@ all-local:
 		done; \
 	fi; \
 	if [ x"$(shell echo "$(top_srcdir)" | $(GREP) "^/" | wc -l)" = x"1" ]; then \
-		echo "Examples: absolute top_srcdir path $(top_srcdir)"; \
 		rel_src_subdir=""; \
 	else \
-		echo "Examples: relative top_srcdir path $(top_srcdir)"; \
 		rel_src_subdir="../"; \
 	fi; \
 	if [ x"$(shell echo "$(top_builddir)" | $(GREP) "^/" | wc -l)" = x"1" ]; then \
-		echo "Examples: absolute top_builddir path $(top_builddir)"; \
 		rel_build_subdir=""; \
 	else \
-		echo "Examples: relative top_builddir path $(top_builddir)"; \
 		rel_build_subdir="../"; \
 	fi; \
-	$(MAKE) -f dist-files/Makefile CC="$(CC)" CPPFLAGS="$(CPPLAGS)" AM_CPPFLAGS="$(AM_CPPFLAGS) -I"$${rel_src_subdir}/$(top_srcdir)/include/" -I"$${rel_src_subdir}/$(top_srcdir)/src/" -I"$${rel_build_subdir}$(top_builddir)/include/" -I"$${rel_build_subdir}$(top_builddir)/include/src/"" CFLAGS="$(CFLAGS)" AM_CFLAGS="$(AM_CFLAGS)" LDFLAGS="$(LDFLAGS)" AM_LDFLAGS="$(AM_LDFLAGS) -L../../../src/.libs/ -Wl,-rpath "$(PWD)/../../src/.libs/"" $(AM_MAKEFLAGS) all;
+	$(MAKE) -f dist-files/Makefile CC="$(CC)" CPPFLAGS="$(CPPLAGS)" AM_CPPFLAGS="$(AM_CPPFLAGS) -I"$${rel_src_subdir}/$(top_srcdir)/include/" -I"$${rel_src_subdir}/$(top_srcdir)/src/" -I"$${rel_build_subdir}$(top_builddir)/include/" -I"$${rel_build_subdir}$(top_builddir)/include/src/"" CFLAGS="$(CFLAGS)" AM_CFLAGS="$(AM_CFLAGS)" LDFLAGS="$(LDFLAGS)" AM_LDFLAGS="$(AM_LDFLAGS) -L../../../src/.libs/ -Wl,-rpath "$(PWD)/../../src/.libs/"" AM_V_P="$(AM_V_P)" AM_V_at="$(AM_V_at)" $(AM_MAKEFLAGS) all;
 
 clean-local:
-	@$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean; \
+	$(AM_V_at)$(MAKE) -f dist-files/Makefile $(AM_MAKEFLAGS) clean; \
 	if [ x"$(srcdir)" != x"$(builddir)" ]; then \
 		for subdir in $(SUBDIRS_PROXY); do \
 			rm -rf $(builddir)/$$subdir; \
