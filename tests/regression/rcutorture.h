@@ -113,13 +113,13 @@ volatile int goflag __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)))
 #endif
 
 #ifndef mark_rcu_quiescent_state
-#define mark_rcu_quiescent_state() do ; while (0)
+#define mark_rcu_quiescent_state() do {} while (0)
 #endif /* #ifdef mark_rcu_quiescent_state */
 
 #ifndef put_thread_offline
-#define put_thread_offline()		do ; while (0)
-#define put_thread_online()		do ; while (0)
-#define put_thread_online_delay()	do ; while (0)
+#define put_thread_offline()		do {} while (0)
+#define put_thread_online()		do {} while (0)
+#define put_thread_online_delay()	do {} while (0)
 #else /* #ifndef put_thread_offline */
 #define put_thread_online_delay()	synchronize_rcu()
 #endif /* #else #ifndef put_thread_offline */
