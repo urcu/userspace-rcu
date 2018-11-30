@@ -23,13 +23,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * Include this file _after_ including your URCU flavor.
+ * For use with URCU_API_MAP (API mapping of liburcu), include this file
+ * _after_ including your URCU flavor.
  */
 
 #include <stdint.h>
 #include <pthread.h>
 #include <urcu/compiler.h>
-#include <urcu-flavor.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,6 +74,7 @@ struct cds_lfht_node *cds_lfht_iter_get_node(struct cds_lfht_iter *iter)
 }
 
 struct cds_lfht;
+struct rcu_flavor_struct;
 
 /*
  * Caution !
@@ -128,6 +129,50 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			pthread_attr_t *attr);
 
 /*
+ * cds_lfht_new_flavor - allocate a hash table tied to a RCU flavor.
+ * @init_size: number of buckets to allocate initially. Must be power of two.
+ * @min_nr_alloc_buckets: the minimum number of allocated buckets.
+ *                        (must be power of two)
+ * @max_nr_buckets: the maximum number of hash table buckets allowed.
+ *                  (must be power of two, 0 is accepted, means
+ *                  "infinite")
+ * @flavor: flavor of liburcu to use to synchronize the hash table
+ * @flags: hash table creation flags (can be combined with bitwise or: '|').
+ *           0: no flags.
+ *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
+ *           CDS_LFHT_ACCOUNTING: count the number of node addition
+ *                                and removal in the table
+ * @attr: optional resize worker thread attributes. NULL for default.
+ *
+ * Return NULL on error.
+ * Note: the RCU flavor must be already included before the hash table header.
+ *
+ * The programmer is responsible for ensuring that resize operation has a
+ * priority equal to hash table updater threads. It should be performed by
+ * specifying the appropriate priority in the pthread "attr" argument, and,
+ * for CDS_LFHT_AUTO_RESIZE, by ensuring that call_rcu worker threads also have
+ * this priority level. Having lower priority for call_rcu and resize threads
+ * does not pose any correctness issue, but the resize operations could be
+ * starved by updates, thus leading to long hash table bucket chains.
+ * Threads calling cds_lfht_new are NOT required to be registered RCU
+ * read-side threads. It can be called very early. (e.g. before RCU is
+ * initialized)
+ */
+static inline
+struct cds_lfht *cds_lfht_new_flavor(unsigned long init_size,
+			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
+			int flags,
+			const struct rcu_flavor_struct *flavor,
+			pthread_attr_t *attr)
+{
+	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
+			flags, NULL, flavor, attr);
+}
+
+
+#ifdef URCU_API_MAP
+/*
  * cds_lfht_new - allocate a hash table.
  * @init_size: number of buckets to allocate initially. Must be power of two.
  * @min_nr_alloc_buckets: the minimum number of allocated buckets.
@@ -166,6 +211,7 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
 	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
 			flags, NULL, &rcu_flavor, attr);
 }
+#endif /* URCU_API_MAP */
 
 /*
  * cds_lfht_destroy - destroy a hash table.
