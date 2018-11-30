@@ -24,13 +24,13 @@
  */
 
 #include <assert.h>
-#include <urcu-call-rcu.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct cds_lfq_queue_rcu;
+struct rcu_head;
 
 struct cds_lfq_node_rcu {
 	struct cds_lfq_node_rcu *next;
