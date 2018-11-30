@@ -7,6 +7,8 @@ tests/unit/urcu-asm.S
 tests/unit/test_uatomic
 tests/unit/test_urcu_multiflavor
 tests/unit/test_urcu_multiflavor_dynlink
+tests/unit/test_urcu_multiflavor_single_unit
+tests/unit/test_urcu_multiflavor_single_unit_dynlink
 
 tests/utils/libtap.a
 

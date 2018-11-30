@@ -6,7 +6,9 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 
 noinst_PROGRAMS = test_uatomic \
 	test_urcu_multiflavor \
-	test_urcu_multiflavor_dynlink
+	test_urcu_multiflavor_dynlink \
+	test_urcu_multiflavor_single_unit \
+	test_urcu_multiflavor_single_unit_dynlink
 
 TESTS = $(noinst_PROGRAMS)
 
@@ -41,6 +43,15 @@ test_urcu_multiflavor_dynlink_SOURCES = test_urcu_multiflavor.c \
 	test_urcu_multiflavor-bp.c
 test_urcu_multiflavor_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
 test_urcu_multiflavor_dynlink_LDADD = $(URCU_LIB) $(URCU_MB_LIB) \
+	$(URCU_SIGNAL_LIB) $(URCU_QSBR_LIB) $(URCU_BP_LIB) $(TAP_LIB)
+
+test_urcu_multiflavor_single_unit_SOURCES = test_urcu_multiflavor_single_unit.c
+test_urcu_multiflavor_single_unit_LDADD = $(URCU_LIB) $(URCU_MB_LIB) \
+	$(URCU_SIGNAL_LIB) $(URCU_QSBR_LIB) $(URCU_BP_LIB) $(TAP_LIB)
+
+test_urcu_multiflavor_single_unit_dynlink_SOURCES = test_urcu_multiflavor_single_unit.c
+test_urcu_multiflavor_single_unit_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
+test_urcu_multiflavor_single_unit_dynlink_LDADD = $(URCU_LIB) $(URCU_MB_LIB) \
 	$(URCU_SIGNAL_LIB) $(URCU_QSBR_LIB) $(URCU_BP_LIB) $(TAP_LIB)
 
 all-local:
