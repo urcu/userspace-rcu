@@ -2,17 +2,15 @@
 #define _URCU_CALL_RCU_H
 
 /*
- * urcu-call-rcu.h
+ * urcu/call-rcu.h
  *
- * Userspace RCU header - deferred execution
+ * Userspace RCU header - batch memory reclamation with kernel API
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
- * LGPL-compatible code should include this header with :
- *
- * #define _LGPL_SOURCE
- * #include <urcu-defer.h>
+ * This header is meant to be included indirectly through a liburcu
+ * flavor header.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

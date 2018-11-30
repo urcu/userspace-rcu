@@ -1,18 +1,16 @@
-#ifndef _URCU_BATCH_H
-#define _URCU_BATCH_H
+#ifndef _URCU_DEFER_H
+#define _URCU_DEFER_H
 
 /*
- * urcu-defer.h
+ * urcu/defer.h
  *
  * Userspace RCU header - deferred execution
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (c) 2009 Paul E. McKenney, IBM Corporation.
  *
- * LGPL-compatible code should include this header with :
- *
- * #define _LGPL_SOURCE
- * #include <urcu-defer.h>
+ * This header is meant to be included indirectly through a liburcu
+ * flavor header.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,4 +62,4 @@ extern void rcu_defer_barrier_thread(void);
 }
 #endif
 
-#endif /* _URCU_BATCH_H */
+#endif /* _URCU_DEFER_H */
