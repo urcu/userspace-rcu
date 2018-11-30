@@ -266,9 +266,9 @@
 #include <unistd.h>
 
 #include "compat-getcpu.h"
-#include <urcu-pointer.h>
-#include <urcu-call-rcu.h>
-#include <urcu-flavor.h>
+#include <urcu/pointer.h>
+#include <urcu/call-rcu.h>
+#include <urcu/flavor.h>
 #include <urcu/arch.h>
 #include <urcu/uatomic.h>
 #include <urcu/compiler.h>

@@ -26,9 +26,9 @@
 
 #include <urcu/uatomic.h>
 
-#include "urcu/static/urcu-pointer.h"
+#include <urcu/static/pointer.h>
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
-#include "urcu-pointer.h"
+#include <urcu/pointer.h>
 
 extern void synchronize_rcu(void);
 

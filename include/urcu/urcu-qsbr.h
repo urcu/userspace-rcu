@@ -32,10 +32,10 @@
 #include <pthread.h>
 
 /*
- * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
+ * See urcu/pointer.h and urcu/static/pointer.h for pointer
  * publication headers.
  */
-#include <urcu-pointer.h>
+#include <urcu/pointer.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -133,9 +133,9 @@ extern void urcu_qsbr_unregister_thread(void);
 }
 #endif
 
-#include <urcu-call-rcu.h>
-#include <urcu-defer.h>
-#include <urcu-flavor.h>
+#include <urcu/call-rcu.h>
+#include <urcu/defer.h>
+#include <urcu/flavor.h>
 
 #ifndef URCU_API_MAP
 #include <urcu/map/clear.h>

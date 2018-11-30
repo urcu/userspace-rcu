@@ -2,7 +2,7 @@
 #define _URCU_POINTER_H
 
 /*
- * urcu-pointer.h
+ * urcu/pointer.h
  *
  * Userspace RCU header. Operations on pointers.
  *
@@ -36,7 +36,7 @@ extern "C" {
 
 #if defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)
 
-#include <urcu/static/urcu-pointer.h>
+#include <urcu/static/pointer.h>
 
 /*
  * rcu_dereference(ptr)

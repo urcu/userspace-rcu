@@ -10,7 +10,7 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/map/urcu-signal.h \
 		urcu/static/lfstack.h urcu/static/rculfqueue.h \
 		urcu/static/rculfstack.h urcu/static/urcu-bp.h \
-		urcu/static/urcu.h urcu/static/urcu-pointer.h \
+		urcu/static/urcu.h urcu/static/pointer.h \
 		urcu/static/urcu-qsbr.h urcu/static/wfcqueue.h \
 		urcu/static/wfqueue.h urcu/static/wfstack.h \
 		urcu/static/urcu-mb.h urcu/static/urcu-memb.h \

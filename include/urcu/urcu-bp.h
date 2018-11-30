@@ -52,10 +52,10 @@ extern "C" {
  */
 
 /*
- * See urcu-pointer.h and urcu/static/urcu-pointer.h for pointer
+ * See urcu/pointer.h and urcu/static/pointer.h for pointer
  * publication headers.
  */
-#include <urcu-pointer.h>
+#include <urcu/pointer.h>
 
 #ifdef _LGPL_SOURCE
 
@@ -85,7 +85,7 @@ extern "C" {
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
- * See LGPL-only urcu/static/urcu-pointer.h for documentation.
+ * See LGPL-only urcu/static/pointer.h for documentation.
  */
 
 extern void urcu_bp_read_lock(void);
@@ -184,9 +184,9 @@ static inline void urcu_bp_thread_online(void)
 }
 #endif
 
-#include <urcu-call-rcu.h>
-#include <urcu-defer.h>
-#include <urcu-flavor.h>
+#include <urcu/call-rcu.h>
+#include <urcu/defer.h>
+#include <urcu/flavor.h>
 
 #ifndef URCU_API_MAP
 #include <urcu/map/clear.h>

@@ -2,7 +2,7 @@
 #define _URCU_POINTER_STATIC_H
 
 /*
- * urcu-pointer-static.h
+ * urcu/static/pointer.h
  *
  * Userspace RCU header. Operations on pointers.
  *
