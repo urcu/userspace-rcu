@@ -238,7 +238,6 @@ static void *workqueue_thread(void *arg)
 			if (cds_wfcq_empty(&workqueue->cbs_head,
 					&workqueue->cbs_tail)) {
 				futex_wait(&workqueue->futex);
-				(void) poll(NULL, 0, 10);
 				uatomic_dec(&workqueue->futex);
 				/*
 				 * Decrement futex before reading
