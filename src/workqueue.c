@@ -309,7 +309,7 @@ struct urcu_workqueue *urcu_workqueue_create(unsigned long flags,
 
 static void wake_worker_thread(struct urcu_workqueue *workqueue)
 {
-	if (!(_CMM_LOAD_SHARED(workqueue->flags) & URCU_CALL_RCU_RT))
+	if (!(_CMM_LOAD_SHARED(workqueue->flags) & URCU_WORKQUEUE_RT))
 		futex_wake_up(&workqueue->futex);
 }
 
