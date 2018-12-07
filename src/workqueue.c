@@ -244,8 +244,6 @@ static void *workqueue_thread(void *arg)
 				 * urcu_work list.
 				 */
 				cmm_smp_mb();
-			} else {
-				(void) poll(NULL, 0, 10);
 			}
 		} else {
 			(void) poll(NULL, 0, 10);
