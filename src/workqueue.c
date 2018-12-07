@@ -246,7 +246,10 @@ static void *workqueue_thread(void *arg)
 				cmm_smp_mb();
 			}
 		} else {
-			(void) poll(NULL, 0, 10);
+			if (cds_wfcq_empty(&workqueue->cbs_head,
+					&workqueue->cbs_tail)) {
+				(void) poll(NULL, 0, 10);
+			}
 		}
 		if (workqueue->worker_after_wake_up_fct)
 			workqueue->worker_after_wake_up_fct(workqueue, workqueue->priv);
