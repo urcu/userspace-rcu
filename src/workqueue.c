@@ -221,11 +221,11 @@ static void *workqueue_thread(void *arg)
 			cbcount = 0;
 			__cds_wfcq_for_each_blocking_safe(&cbs_tmp_head,
 					&cbs_tmp_tail, cbs, cbs_tmp_n) {
-				struct rcu_head *rhp;
+				struct urcu_work *uwp;
 
-				rhp = caa_container_of(cbs,
-					struct rcu_head, next);
-				rhp->func(rhp);
+				uwp = caa_container_of(cbs,
+					struct urcu_work, next);
+				uwp->func(uwp);
 				cbcount++;
 			}
 			uatomic_sub(&workqueue->qlen, cbcount);
