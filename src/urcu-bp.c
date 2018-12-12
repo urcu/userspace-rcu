@@ -44,6 +44,7 @@
 #include <urcu/tls-compat.h>
 
 #include "urcu-die.h"
+#include "urcu-utils.h"
 
 #define URCU_API_MAP
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
@@ -143,14 +144,14 @@ static int initialized;
 static pthread_key_t urcu_bp_key;
 
 struct urcu_bp_gp urcu_bp_gp = { .ctr = URCU_BP_GP_COUNT };
-__attribute__((alias("urcu_bp_gp"))) extern struct urcu_bp_gp rcu_gp_bp;
+URCU_ATTR_ALIAS("urcu_bp_gp") extern struct urcu_bp_gp rcu_gp_bp;
 
 /*
  * Pointer to registry elements. Written to only by each individual reader. Read
  * by both the reader and the writers.
  */
 DEFINE_URCU_TLS(struct urcu_bp_reader *, urcu_bp_reader);
-__attribute__((alias("urcu_bp_reader")))
+URCU_ATTR_ALIAS("urcu_bp_reader")
 extern struct urcu_bp_reader *rcu_reader_bp;
 
 static CDS_LIST_HEAD(registry);
@@ -345,7 +346,7 @@ out:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-__attribute__((alias("urcu_bp_synchronize_rcu"))) void synchronize_rcu_bp();
+URCU_ATTR_ALIAS("urcu_bp_synchronize_rcu") void synchronize_rcu_bp();
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
@@ -355,19 +356,19 @@ void urcu_bp_read_lock(void)
 {
 	_urcu_bp_read_lock();
 }
-__attribute__((alias("urcu_bp_read_lock"))) void rcu_read_lock_bp();
+URCU_ATTR_ALIAS("urcu_bp_read_lock") void rcu_read_lock_bp();
 
 void urcu_bp_read_unlock(void)
 {
 	_urcu_bp_read_unlock();
 }
-__attribute__((alias("urcu_bp_read_unlock"))) void rcu_read_unlock_bp();
+URCU_ATTR_ALIAS("urcu_bp_read_unlock") void rcu_read_unlock_bp();
 
 int urcu_bp_read_ongoing(void)
 {
 	return _urcu_bp_read_ongoing();
 }
-__attribute__((alias("urcu_bp_read_ongoing"))) int rcu_read_ongoing_bp();
+URCU_ATTR_ALIAS("urcu_bp_read_ongoing") int rcu_read_ongoing_bp();
 
 /*
  * Only grow for now. If empty, allocate a ARENA_INIT_ALLOC sized chunk.
@@ -563,7 +564,7 @@ end:
 	if (ret)
 		abort();
 }
-__attribute__((alias("urcu_bp_register"))) void rcu_bp_register();
+URCU_ATTR_ALIAS("urcu_bp_register") void rcu_bp_register();
 
 /* Disable signals, take mutex, remove from registry */
 static
@@ -689,7 +690,7 @@ void urcu_bp_before_fork(void)
 	mutex_lock(&rcu_registry_lock);
 	saved_fork_signal_mask = oldmask;
 }
-__attribute__((alias("urcu_bp_before_fork"))) void rcu_bp_before_fork();
+URCU_ATTR_ALIAS("urcu_bp_before_fork") void rcu_bp_before_fork();
 
 void urcu_bp_after_fork_parent(void)
 {
@@ -702,7 +703,7 @@ void urcu_bp_after_fork_parent(void)
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-__attribute__((alias("urcu_bp_after_fork_parent")))
+URCU_ATTR_ALIAS("urcu_bp_after_fork_parent")
 void rcu_bp_after_fork_parent(void);
 
 /*
@@ -740,14 +741,14 @@ void urcu_bp_after_fork_child(void)
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-__attribute__((alias("urcu_bp_after_fork_child")))
+URCU_ATTR_ALIAS("urcu_bp_after_fork_child")
 void rcu_bp_after_fork_child(void);
 
 void *urcu_bp_dereference_sym(void *p)
 {
 	return _rcu_dereference(p);
 }
-__attribute__((alias("urcu_bp_dereference_sym")))
+URCU_ATTR_ALIAS("urcu_bp_dereference_sym")
 void *rcu_dereference_sym_bp();
 
 void *urcu_bp_set_pointer_sym(void **p, void *v)
@@ -756,7 +757,7 @@ void *urcu_bp_set_pointer_sym(void **p, void *v)
 	uatomic_set(p, v);
 	return v;
 }
-__attribute__((alias("urcu_bp_set_pointer_sym")))
+URCU_ATTR_ALIAS("urcu_bp_set_pointer_sym")
 void *rcu_set_pointer_sym_bp();
 
 void *urcu_bp_xchg_pointer_sym(void **p, void *v)
@@ -764,7 +765,7 @@ void *urcu_bp_xchg_pointer_sym(void **p, void *v)
 	cmm_wmb();
 	return uatomic_xchg(p, v);
 }
-__attribute__((alias("urcu_bp_xchg_pointer_sym")))
+URCU_ATTR_ALIAS("urcu_bp_xchg_pointer_sym")
 void *rcu_xchg_pointer_sym_bp();
 
 void *urcu_bp_cmpxchg_pointer_sym(void **p, void *old, void *_new)
@@ -772,7 +773,7 @@ void *urcu_bp_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 	cmm_wmb();
 	return uatomic_cmpxchg(p, old, _new);
 }
-__attribute__((alias("urcu_bp_cmpxchg_pointer_sym")))
+URCU_ATTR_ALIAS("urcu_bp_cmpxchg_pointer_sym")
 void *rcu_cmpxchg_pointer_sym_bp();
 
 DEFINE_RCU_FLAVOR(rcu_flavor);

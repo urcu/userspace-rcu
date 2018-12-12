@@ -79,9 +79,13 @@ const struct rcu_flavor_struct x = {			\
 }
 
 #define DEFINE_RCU_FLAVOR_ALIAS(x, y) _DEFINE_RCU_FLAVOR_ALIAS(x, y)
+#ifdef __APPLE__
+#define _DEFINE_RCU_FLAVOR_ALIAS(x, y)
+#else
 #define _DEFINE_RCU_FLAVOR_ALIAS(x, y)			\
 __attribute__((alias(#x)))				\
 extern const struct rcu_flavor_struct y;
+#endif
 
 extern const struct rcu_flavor_struct rcu_flavor;
 

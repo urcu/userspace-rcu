@@ -265,7 +265,7 @@ void rcu_defer_barrier_thread(void)
 	_rcu_defer_barrier_thread();
 	mutex_unlock(&rcu_defer_mutex);
 }
-__attribute__((alias(urcu_stringify(rcu_defer_barrier_thread))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_barrier_thread))
 void alias_rcu_defer_barrier_thread();
 
 /*
@@ -307,7 +307,7 @@ void rcu_defer_barrier(void)
 end:
 	mutex_unlock(&rcu_defer_mutex);
 }
-__attribute__((alias(urcu_stringify(rcu_defer_barrier))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_barrier))
 void alias_rcu_defer_barrier();
 
 /*
@@ -401,7 +401,7 @@ void defer_rcu(void (*fct)(void *p), void *p)
 {
 	_defer_rcu(fct, p);
 }
-__attribute__((alias(urcu_stringify(defer_rcu)))) void alias_defer_rcu();
+URCU_ATTR_ALIAS(urcu_stringify(defer_rcu)) void alias_defer_rcu();
 
 static void start_defer_thread(void)
 {
@@ -450,7 +450,7 @@ int rcu_defer_register_thread(void)
 	mutex_unlock(&defer_thread_mutex);
 	return 0;
 }
-__attribute__((alias(urcu_stringify(rcu_defer_register_thread))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_register_thread))
 int alias_rcu_defer_register_thread();
 
 void rcu_defer_unregister_thread(void)
@@ -470,14 +470,14 @@ void rcu_defer_unregister_thread(void)
 		stop_defer_thread();
 	mutex_unlock(&defer_thread_mutex);
 }
-__attribute__((alias(urcu_stringify(rcu_defer_unregister_thread))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_unregister_thread))
 void alias_rcu_defer_unregister_thread();
 
 void rcu_defer_exit(void)
 {
 	assert(cds_list_empty(&registry_defer));
 }
-__attribute__((alias(urcu_stringify(rcu_defer_exit))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_exit))
 void alias_rcu_defer_exit();
 
 #endif /* _URCU_DEFER_IMPL_H */

@@ -26,4 +26,11 @@
 #define urcu_stringify(a) _urcu_stringify(a)
 #define _urcu_stringify(a) #a
 
+/* There is no concept of symbol aliases on MacOS */
+#ifdef __APPLE__
+#define URCU_ATTR_ALIAS(x)
+#else
+#define URCU_ATTR_ALIAS(x) __attribute__((alias(x)))
+#endif
+
 #endif /* _URCU_UTILS_H */

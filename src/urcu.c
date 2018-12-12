@@ -92,7 +92,7 @@ static int urcu_memb_has_sys_membarrier_private_expedited;
  * uninitialized variable.
  */
 int urcu_memb_has_sys_membarrier = 0;
-__attribute__((alias("urcu_memb_has_sys_membarrier")))
+URCU_ATTR_ALIAS("urcu_memb_has_sys_membarrier")
 extern int rcu_has_sys_membarrier_memb;
 #endif
 
@@ -103,7 +103,7 @@ void __attribute__((constructor)) rcu_init(void);
 void rcu_init(void)
 {
 }
-__attribute__((alias(urcu_stringify(rcu_init))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
 void alias_rcu_init(void);
 #endif
 
@@ -130,7 +130,7 @@ static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 struct urcu_gp rcu_gp = { .ctr = URCU_GP_COUNT };
-__attribute__((alias(urcu_stringify(rcu_gp))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_gp))
 extern struct urcu_gp alias_rcu_gp;
 
 /*
@@ -138,7 +138,7 @@ extern struct urcu_gp alias_rcu_gp;
  * writers.
  */
 DEFINE_URCU_TLS(struct urcu_reader, rcu_reader);
-__attribute__((alias(urcu_stringify(rcu_reader))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_reader))
 extern struct urcu_reader alias_rcu_reader;
 
 static CDS_LIST_HEAD(registry);
@@ -515,7 +515,7 @@ out:
 	 */
 	urcu_wake_all_waiters(&waiters);
 }
-__attribute__((alias(urcu_stringify(synchronize_rcu))))
+URCU_ATTR_ALIAS(urcu_stringify(synchronize_rcu))
 void alias_synchronize_rcu();
 
 /*
@@ -526,21 +526,21 @@ void rcu_read_lock(void)
 {
 	_rcu_read_lock();
 }
-__attribute__((alias(urcu_stringify(rcu_read_lock))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_read_lock))
 void alias_rcu_read_lock();
 
 void rcu_read_unlock(void)
 {
 	_rcu_read_unlock();
 }
-__attribute__((alias(urcu_stringify(rcu_read_unlock))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_read_unlock))
 void alias_rcu_read_unlock();
 
 int rcu_read_ongoing(void)
 {
 	return _rcu_read_ongoing();
 }
-__attribute__((alias(urcu_stringify(rcu_read_ongoing))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_read_ongoing))
 void alias_rcu_read_ongoing();
 
 void rcu_register_thread(void)
@@ -556,7 +556,7 @@ void rcu_register_thread(void)
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_registry_lock);
 }
-__attribute__((alias(urcu_stringify(rcu_register_thread))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_register_thread))
 void alias_rcu_register_thread();
 
 void rcu_unregister_thread(void)
@@ -567,7 +567,7 @@ void rcu_unregister_thread(void)
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
 }
-__attribute__((alias(urcu_stringify(rcu_unregister_thread))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_unregister_thread))
 void alias_rcu_unregister_thread();
 
 #ifdef RCU_MEMBARRIER
@@ -616,7 +616,7 @@ void rcu_init(void)
 	init_done = 1;
 	rcu_sys_membarrier_init();
 }
-__attribute__((alias(urcu_stringify(rcu_init))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
 void alias_rcu_init(void);
 #endif
 
@@ -657,7 +657,7 @@ void rcu_init(void)
 	if (ret)
 		urcu_die(errno);
 }
-__attribute__((alias(urcu_stringify(rcu_init))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
 void alias_rcu_init(void);
 
 void rcu_exit(void)
@@ -671,7 +671,7 @@ void rcu_exit(void)
 	 * assert(cds_list_empty(&registry));
 	 */
 }
-__attribute__((alias(urcu_stringify(rcu_exit))))
+URCU_ATTR_ALIAS(urcu_stringify(rcu_exit))
 void alias_rcu_exit(void);
 
 #endif /* #ifdef RCU_SIGNAL */
