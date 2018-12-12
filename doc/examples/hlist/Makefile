@@ -1,4 +1,4 @@
-# Copyright (C) 2013  Mathieu Desnoyers <mathieu.desnoyers$(AM_V_at)efficios.com>
+# Copyright (C) 2013  Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 #
 # THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
 # OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.

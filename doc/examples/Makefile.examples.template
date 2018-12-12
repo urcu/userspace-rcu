@@ -17,12 +17,14 @@ AM_V_P := :
 all: $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	@if $(AM_V_P); then set -x; else echo "  CCLD     $@"; fi; \
+	@verbose="$(AM_V_P)"; if [ "x$$verbose" = "x" ]; then verbose=":"; fi; \
+		if $$verbose; then set -x; else echo "  CCLD     $@"; fi; \
 		$(CC) $(LOCAL_CFLAGS) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 		-o $@ $(OBJECTS) $(LIBS)
 
 $(OBJECTS): $(SOURCES) $(DEPS)
-	@if $(AM_V_P); then set -x; else echo "  CC       $@"; fi; \
+	@verbose="$(AM_V_P)"; if [ "x$$verbose" = "x" ]; then verbose=":"; fi; \
+		if $$verbose; then set -x; else echo "  CC       $@"; fi; \
 		$(CC) $(LOCAL_CFLAGS) $(AM_CFLAGS) $(CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) \
 		-c -o $@ $(SOURCES)
 
