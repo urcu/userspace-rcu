@@ -138,8 +138,7 @@ extern struct urcu_gp alias_rcu_gp;
  * writers.
  */
 DEFINE_URCU_TLS(struct urcu_reader, rcu_reader);
-URCU_ATTR_ALIAS(urcu_stringify(rcu_reader))
-extern struct urcu_reader alias_rcu_reader;
+DEFINE_URCU_TLS_ALIAS(struct urcu_reader, rcu_reader, alias_rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 

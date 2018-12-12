@@ -151,8 +151,7 @@ URCU_ATTR_ALIAS("urcu_bp_gp") extern struct urcu_bp_gp rcu_gp_bp;
  * by both the reader and the writers.
  */
 DEFINE_URCU_TLS(struct urcu_bp_reader *, urcu_bp_reader);
-URCU_ATTR_ALIAS("urcu_bp_reader")
-extern struct urcu_bp_reader *rcu_reader_bp;
+DEFINE_URCU_TLS_ALIAS(struct urcu_bp_reader *, urcu_bp_reader, rcu_reader_bp);
 
 static CDS_LIST_HEAD(registry);
 

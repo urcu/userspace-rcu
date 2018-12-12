@@ -33,4 +33,18 @@
 #define URCU_ATTR_ALIAS(x) __attribute__((alias(x)))
 #endif
 
+#ifdef CONFIG_RCU_TLS
+#define DEFINE_URCU_TLS_ALIAS_1(type, name, alias)		\
+	URCU_ATTR_ALIAS(#name)					\
+	extern type alias
+
+#else
+#define DEFINE_URCU_TLS_ALIAS_1(type, name, alias)		\
+	URCU_ATTR_ALIAS("*__tls_access_" #name)			\
+	type *__tls_access_ ## alias()
+#endif
+
+#define DEFINE_URCU_TLS_ALIAS(type, name, alias)		\
+	DEFINE_URCU_TLS_ALIAS_1(type, name, alias)
+
 #endif /* _URCU_UTILS_H */

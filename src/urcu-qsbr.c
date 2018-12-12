@@ -81,8 +81,7 @@ URCU_ATTR_ALIAS("urcu_qsbr_gp") extern struct urcu_gp rcu_gp_qsbr;
  * writers.
  */
 DEFINE_URCU_TLS(struct urcu_qsbr_reader, urcu_qsbr_reader);
-URCU_ATTR_ALIAS("urcu_qsbr_reader")
-extern struct urcu_qsbr_reader rcu_reader_qsbr;
+DEFINE_URCU_TLS_ALIAS(struct urcu_qsbr_reader, urcu_qsbr_reader, rcu_reader_qsbr);
 
 static CDS_LIST_HEAD(registry);
 
