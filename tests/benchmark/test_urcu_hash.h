@@ -249,10 +249,11 @@ uint32_t hash_u32(
 
 	/*----------------------------------- handle the last 3 uint32_t's */
 	switch (length) {	/* all the case statements fall through */
-	case 3: c += k[2];
-	case 2: b += k[1];
+	case 3: c += k[2]; /* fall through */
+	case 2: b += k[1]; /* fall through */
 	case 1: a += k[0];
 		final(a, b, c);
+		/* fall through */
 	case 0:			/* case 0: nothing left to add */
 		break;
 	}
