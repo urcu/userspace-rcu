@@ -32,7 +32,7 @@
 #undef CONFIG_RCU_DEBUG
 
 /* Expose multi-flavor support */
-#define CONFIG_RCU_MULTIFLAVOR 1
+#define CONFIG_RCU_HAVE_MULTIFLAVOR 1
 
 /* Enable extra debugging checks for lock-free hash table iterator
    traversal. */
