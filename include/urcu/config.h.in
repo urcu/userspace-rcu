@@ -33,3 +33,7 @@
 
 /* Expose multi-flavor support */
 #define CONFIG_RCU_MULTIFLAVOR 1
+
+/* Enable extra debugging checks for lock-free hash table iterator
+   traversal. */
+#undef CONFIG_CDS_LFHT_ITER_DEBUG

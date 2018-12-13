@@ -410,6 +410,20 @@ systems can be disabled with:
 theoretically yielding slightly better performance.
 
 
+### Usage of `--enable-cds-lfht-iter-debug`
+
+By default the library is configured with extra debugging checks for
+lock-free hash table iterator traversal disabled.
+
+Building liburcu with --enable-cds-lfht-iter-debug and rebuilding
+application to match the ABI change allows finding cases where the hash
+table iterator is re-purposed to be used on a different hash table while
+still being used to iterate on a hash table.
+
+This option alters the rculfhash ABI. Make sure to compile both library
+and application with matching configuration.
+
+
 Make targets
 ------------
 

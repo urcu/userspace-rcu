@@ -27,6 +27,7 @@
  * _after_ including your URCU flavor.
  */
 
+#include <urcu/config.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <urcu/compiler.h>
@@ -34,6 +35,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct cds_lfht;
 
 /*
  * cds_lfht_node: Contains the next pointers and reverse-hash
@@ -65,6 +68,18 @@ struct cds_lfht_node {
 /* cds_lfht_iter: Used to track state while traversing a hash chain. */
 struct cds_lfht_iter {
 	struct cds_lfht_node *node, *next;
+	/*
+	 * For debugging purposes, build both API users and rculfhash
+	 * library with CDS_LFHT_ITER_DEBUG defined. This enables extra
+	 * consistency checks for calls to a cds_lfht_next() or
+	 * cds_lfht_next_duplicate() after the iterator has been
+	 * re-purposed to iterate on a different hash table. This is a
+	 * common programming mistake when performing hash table lookup
+	 * nested in a hash table traversal.
+	 */
+#ifdef CONFIG_CDS_LFHT_ITER_DEBUG
+	struct cds_lfht *lfht;
+#endif
 };
 
 static inline
@@ -73,7 +88,6 @@ struct cds_lfht_node *cds_lfht_iter_get_node(struct cds_lfht_iter *iter)
 	return iter->node;
 }
 
-struct cds_lfht;
 struct rcu_flavor_struct;
 
 /*

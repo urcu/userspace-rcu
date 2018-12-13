@@ -29,6 +29,7 @@ AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
 AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
 AH_TEMPLATE([CONFIG_RCU_DEBUG], [Enable internal debugging self-checks. Introduce performance penalty.])
+AH_TEMPLATE([CONFIG_CDS_LFHT_ITER_DEBUG], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
 
 # Allow requiring the operating system to support the membarrier system
 # call. Applies to default and bulletproof flavors.
@@ -266,6 +267,13 @@ AC_ARG_ENABLE([rcu-debug],
 		      self-checks. Introduce performance penalty.]))
 AS_IF([test "x$enable_rcu_debug" = "xyes"], [
        AC_DEFINE([CONFIG_RCU_DEBUG], [1])
+])
+
+# rculfhash iterator debugging
+AC_ARG_ENABLE([cds-lfht-iter-debug],
+      AS_HELP_STRING([--enable-cds-lfht-iter-debug], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.]))
+AS_IF([test "x$enable_cds_lfht_iter_debug" = "xyes"], [
+       AC_DEFINE([CONFIG_CDS_LFHT_ITER_DEBUG], [1])
 ])
 
 # From the sched_setaffinity(2)'s man page:
@@ -507,6 +515,10 @@ PPRINT_PROP_BOOL([Require membarrier], $value)
 # RCU debug enabled/disabled
 test "x$enable_rcu_debug" = "xyes" && value=1 || value=0
 PPRINT_PROP_BOOL([Internal debugging], $value)
+
+# rculfhash iterator debug enabled/disabled
+test "x$enable_cds_lfht_iter_debug" = "xyes" && value=1 || value=0
+PPRINT_PROP_BOOL([Lock-free hash table iterator debugging], $value)
 
 PPRINT_PROP_BOOL([Multi-flavor support], 1)
 

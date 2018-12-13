@@ -380,6 +380,27 @@ static int cds_lfht_workqueue_atfork_nesting;
 static void cds_lfht_init_worker(const struct rcu_flavor_struct *flavor);
 static void cds_lfht_fini_worker(const struct rcu_flavor_struct *flavor);
 
+#ifdef CONFIG_CDS_LFHT_ITER_DEBUG
+
+static
+void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+{
+	iter->lfht = ht;
+}
+
+#define cds_lfht_iter_debug_assert(...)		assert(__VA_ARGS__)
+
+#else
+
+static
+void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+{
+}
+
+#define cds_lfht_iter_debug_assert(...)
+
+#endif
+
 /*
  * Algorithm to reverse bits in a word by lookup table, extended to
  * 64-bit words.
@@ -1068,7 +1089,13 @@ void _cds_lfht_add(struct cds_lfht *ht,
 			if (unique_ret
 			    && !is_bucket(next)
 			    && clear_flag(iter)->reverse_hash == node->reverse_hash) {
-				struct cds_lfht_iter d_iter = { .node = node, .next = iter, };
+				struct cds_lfht_iter d_iter = {
+					.node = node,
+					.next = iter,
+#ifdef CONFIG_CDS_LFHT_ITER_DEBUG
+					.lfht = ht,
+#endif
+				};
 
 				/*
 				 * uniquely adding inserts the node as the first
@@ -1600,6 +1627,8 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 	struct cds_lfht_node *node, *next, *bucket;
 	unsigned long reverse_hash, size;
 
+	cds_lfht_iter_debug_set_ht(ht, iter);
+
 	reverse_hash = bit_reverse_ulong(hash);
 
 	size = rcu_dereference(ht->size);
@@ -1637,6 +1666,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
 	struct cds_lfht_node *node, *next;
 	unsigned long reverse_hash;
 
+	cds_lfht_iter_debug_assert(ht == iter->lfht);
 	node = iter->node;
 	reverse_hash = node->reverse_hash;
 	next = iter->next;
@@ -1668,6 +1698,7 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 
+	cds_lfht_iter_debug_assert(ht == iter->lfht);
 	node = clear_flag(iter->next);
 	for (;;) {
 		if (caa_unlikely(is_end(node))) {
@@ -1688,6 +1719,7 @@ void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
+	cds_lfht_iter_debug_set_ht(ht, iter);
 	/*
 	 * Get next after first bucket node. The first bucket node is the
 	 * first node of the linked list.
