@@ -252,6 +252,7 @@ int main(int argc, char **argv)
 	unsigned long long *count_reader, *count_writer;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
+	unsigned int i_thr;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -270,7 +271,7 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
-	
+
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
 		show_usage(argc, argv);
@@ -334,15 +335,15 @@ int main(int argc, char **argv)
 
 	next_aff = 0;
 
-	for (i = 0; i < nr_readers; i++) {
-		err = pthread_create(&tid_reader[i], NULL, thr_reader,
-				     (void *)(long)i);
+	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
+		err = pthread_create(&tid_reader[i_thr], NULL, thr_reader,
+				     (void *)(long)i_thr);
 		if (err != 0)
 			exit(1);
 	}
-	for (i = 0; i < nr_writers; i++) {
-		err = pthread_create(&tid_writer[i], NULL, thr_writer,
-				     (void *)(long)i);
+	for (i_thr = 0; i_thr < nr_writers; i_thr++) {
+		err = pthread_create(&tid_writer[i_thr], NULL, thr_writer,
+				     (void *)(long)i_thr);
 		if (err != 0)
 			exit(1);
 	}
@@ -355,17 +356,17 @@ int main(int argc, char **argv)
 
 	test_stop = 1;
 
-	for (i = 0; i < nr_readers; i++) {
-		err = pthread_join(tid_reader[i], &tret);
+	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
+		err = pthread_join(tid_reader[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_reads += tot_nr_reads[i];
+		tot_reads += tot_nr_reads[i_thr];
 	}
-	for (i = 0; i < nr_writers; i++) {
-		err = pthread_join(tid_writer[i], &tret);
+	for (i_thr = 0; i_thr < nr_writers; i_thr++) {
+		err = pthread_join(tid_writer[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_writes += tot_nr_writes[i];
+		tot_writes += tot_nr_writes[i_thr];
 	}
 
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,

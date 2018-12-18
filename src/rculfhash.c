@@ -279,6 +279,7 @@
 #include <signal.h>
 #include "workqueue.h"
 #include "urcu-die.h"
+#include "urcu-utils.h"
 
 /*
  * Split-counters lazily update the global counter each 1024
@@ -711,9 +712,8 @@ int ht_get_split_count_index(unsigned long hash)
 static
 void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
-	unsigned long split_count;
+	unsigned long split_count, count;
 	int index;
-	long count;
 
 	if (caa_unlikely(!ht->split_count))
 		return;
@@ -732,7 +732,7 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 
 	if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) < size)
 		return;
-	dbg_printf("add set global %ld\n", count);
+	dbg_printf("add set global %lu\n", count);
 	cds_lfht_resize_lazy_count(ht, size,
 		count >> (CHAIN_LEN_TARGET - 1));
 }
@@ -740,9 +740,8 @@ void ht_count_add(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 static
 void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 {
-	unsigned long split_count;
+	unsigned long split_count, count;
 	int index;
-	long count;
 
 	if (caa_unlikely(!ht->split_count))
 		return;
@@ -1247,8 +1246,8 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long partition_len, start = 0;
 	struct partition_resize_work *work;
-	int thread, ret;
-	unsigned long nr_threads;
+	int ret;
+	unsigned long thread, nr_threads;
 
 	assert(nr_cpus_mask != -1);
 	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD)
@@ -1260,7 +1259,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	 * partition size, up to the number of CPUs in the system.
 	 */
 	if (nr_cpus_mask > 0) {
-		nr_threads = min(nr_cpus_mask + 1,
+		nr_threads = min_t(unsigned long, nr_cpus_mask + 1,
 				 len >> MIN_PARTITION_PER_THREAD_ORDER);
 	} else {
 		nr_threads = 1;
@@ -1449,8 +1448,7 @@ static
 void fini_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long last_order)
 {
-	long i;
-	unsigned long free_by_rcu_order = 0;
+	unsigned long free_by_rcu_order = 0, i;
 
 	dbg_printf("fini table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
@@ -1499,11 +1497,15 @@ void fini_table(struct cds_lfht *ht,
 	}
 }
 
+/*
+ * Never called with size < 1.
+ */
 static
 void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 {
 	struct cds_lfht_node *prev, *node;
 	unsigned long order, len, i;
+	int bucket_order;
 
 	cds_lfht_alloc_bucket_table(ht, 0);
 
@@ -1512,7 +1514,10 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 	node->next = flag_bucket(get_end());
 	node->reverse_hash = 0;
 
-	for (order = 1; order < cds_lfht_get_count_order_ulong(size) + 1; order++) {
+	bucket_order = cds_lfht_get_count_order_ulong(size);
+	assert(bucket_order >= 0);
+
+	for (order = 1; order < (unsigned long) bucket_order + 1; order++) {
 		len = 1UL << (order - 1);
 		cds_lfht_alloc_bucket_table(ht, order);
 

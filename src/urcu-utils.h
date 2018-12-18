@@ -26,6 +26,20 @@
 #define urcu_stringify(a) _urcu_stringify(a)
 #define _urcu_stringify(a) #a
 
+#define max_t(type, x, y)				\
+	({						\
+		type __max1 = (x);              	\
+		type __max2 = (y);              	\
+		__max1 > __max2 ? __max1: __max2;	\
+	})
+
+#define min_t(type, x, y)				\
+	({						\
+		type __min1 = (x);              	\
+		type __min2 = (y);              	\
+		__min1 <= __min2 ? __min1: __min2;	\
+	})
+
 /* There is no concept of symbol aliases on MacOS */
 #ifdef __APPLE__
 #define URCU_ATTR_ALIAS(x)

@@ -85,7 +85,7 @@ static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
-	int i, j;
+	unsigned int i, j;
 	struct test_array *local_ptr;
 	caa_cycles_t time1, time2;
 
@@ -122,7 +122,7 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
-	int i, j;
+	unsigned int i, j;
 	struct test_array *new, *old;
 	caa_cycles_t time1, time2;
 

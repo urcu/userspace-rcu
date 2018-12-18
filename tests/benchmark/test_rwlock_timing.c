@@ -69,7 +69,8 @@ static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",
@@ -107,7 +108,8 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 	caa_cycles_t time1, time2;
 
 	printf("thread_begin %s, tid %lu\n",

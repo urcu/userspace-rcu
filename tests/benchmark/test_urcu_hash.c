@@ -309,6 +309,7 @@ int main(int argc, char **argv)
 	unsigned long count;
 	long approx_before, approx_after;
 	int i, a, ret, err, mainret = 0;
+	unsigned int i_thr;
 	struct sigaction act;
 	unsigned int remain;
 	unsigned int nr_readers_created = 0, nr_writers_created = 0;
@@ -333,7 +334,7 @@ int main(int argc, char **argv)
 		mainret = 1;
 		goto end;
 	}
-	
+
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
 		show_usage(argc, argv);
@@ -618,10 +619,10 @@ int main(int argc, char **argv)
 		goto end_close_pipe;
 	}
 
-	for (i = 0; i < nr_readers; i++) {
-		err = pthread_create(&tid_reader[i],
+	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
+		err = pthread_create(&tid_reader[i_thr],
 				     NULL, get_thr_reader_cb(),
-				     &count_reader[i]);
+				     &count_reader[i_thr]);
 		if (err != 0) {
 			errno = err;
 			mainret = 1;
@@ -630,10 +631,10 @@ int main(int argc, char **argv)
 		}
 		nr_readers_created++;
 	}
-	for (i = 0; i < nr_writers; i++) {
-		err = pthread_create(&tid_writer[i],
+	for (i_thr = 0; i_thr < nr_writers; i_thr++) {
+		err = pthread_create(&tid_writer[i_thr],
 				     NULL, get_thr_writer_cb(),
-				     &count_writer[i]);
+				     &count_writer[i_thr]);
 		if (err != 0) {
 			errno = err;
 			mainret = 1;
@@ -655,26 +656,26 @@ int main(int argc, char **argv)
 	test_stop = 1;
 
 end_pthread_join:
-	for (i = 0; i < nr_readers_created; i++) {
-		err = pthread_join(tid_reader[i], &tret);
+	for (i_thr = 0; i_thr < nr_readers_created; i_thr++) {
+		err = pthread_join(tid_reader[i_thr], &tret);
 		if (err != 0) {
 			errno = err;
 			mainret = 1;
 			perror("pthread_join");
 		}
-		tot_reads += count_reader[i];
+		tot_reads += count_reader[i_thr];
 	}
-	for (i = 0; i < nr_writers_created; i++) {
-		err = pthread_join(tid_writer[i], &tret);
+	for (i_thr = 0; i_thr < nr_writers_created; i_thr++) {
+		err = pthread_join(tid_writer[i_thr], &tret);
 		if (err != 0) {
 			errno = err;
 			mainret = 1;
 			perror("pthread_join");
 		}
-		tot_writes += count_writer[i].update_ops;
-		tot_add += count_writer[i].add;
-		tot_add_exist += count_writer[i].add_exist;
-		tot_remove += count_writer[i].remove;
+		tot_writes += count_writer[i_thr].update_ops;
+		tot_add += count_writer[i_thr].add;
+		tot_add_exist += count_writer[i_thr].add_exist;
+		tot_remove += count_writer[i_thr].remove;
 	}
 
 	/* teardown counter thread */

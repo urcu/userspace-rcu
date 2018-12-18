@@ -69,7 +69,7 @@ static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
-	int i, j;
+	unsigned int i, j;
 	caa_cycles_t time1, time2;
 	long tidx = (long)arg;
 
@@ -98,7 +98,7 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
-	int i, j;
+	unsigned int i, j;
 	long tidx;
 	caa_cycles_t time1, time2;
 

@@ -306,6 +306,7 @@ int main(int argc, char **argv)
 	unsigned long long *count_reader;
 	unsigned long long tot_reads = 0, tot_writes = 0;
 	int i, a;
+	unsigned int i_thr;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -323,7 +324,7 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
-	
+
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
 		show_usage(argc, argv);
@@ -396,28 +397,28 @@ int main(int argc, char **argv)
 	count_reader = calloc(nr_readers, sizeof(*count_reader));
 	tot_nr_writes = calloc(nr_writers, sizeof(*tot_nr_writes));
 	pending_reclaims = calloc(nr_writers, sizeof(*pending_reclaims));
-	if (reclaim_batch * sizeof(*pending_reclaims[i].queue)
+	if (reclaim_batch * sizeof(*pending_reclaims[0].queue)
 			< CAA_CACHE_LINE_SIZE)
-		for (i = 0; i < nr_writers; i++)
-			pending_reclaims[i].queue = calloc(1, CAA_CACHE_LINE_SIZE);
+		for (i_thr = 0; i_thr < nr_writers; i_thr++)
+			pending_reclaims[i_thr].queue = calloc(1, CAA_CACHE_LINE_SIZE);
 	else
-		for (i = 0; i < nr_writers; i++)
-			pending_reclaims[i].queue = calloc(reclaim_batch,
-					sizeof(*pending_reclaims[i].queue));
-	for (i = 0; i < nr_writers; i++)
-		pending_reclaims[i].head = pending_reclaims[i].queue;
+		for (i_thr = 0; i_thr < nr_writers; i_thr++)
+			pending_reclaims[i_thr].queue = calloc(reclaim_batch,
+					sizeof(*pending_reclaims[i_thr].queue));
+	for (i_thr = 0; i_thr < nr_writers; i_thr++)
+		pending_reclaims[i_thr].head = pending_reclaims[i_thr].queue;
 
 	next_aff = 0;
 
-	for (i = 0; i < nr_readers; i++) {
-		err = pthread_create(&tid_reader[i], NULL, thr_reader,
-				     &count_reader[i]);
+	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
+		err = pthread_create(&tid_reader[i_thr], NULL, thr_reader,
+				     &count_reader[i_thr]);
 		if (err != 0)
 			exit(1);
 	}
-	for (i = 0; i < nr_writers; i++) {
-		err = pthread_create(&tid_writer[i], NULL, thr_writer,
-				     (void *)(long)i);
+	for (i_thr = 0; i_thr < nr_writers; i_thr++) {
+		err = pthread_create(&tid_writer[i_thr], NULL, thr_writer,
+				     (void *)(long)i_thr);
 		if (err != 0)
 			exit(1);
 	}
@@ -430,20 +431,20 @@ int main(int argc, char **argv)
 
 	test_stop = 1;
 
-	for (i = 0; i < nr_readers; i++) {
-		err = pthread_join(tid_reader[i], &tret);
+	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
+		err = pthread_join(tid_reader[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_reads += count_reader[i];
+		tot_reads += count_reader[i_thr];
 	}
-	for (i = 0; i < nr_writers; i++) {
-		err = pthread_join(tid_writer[i], &tret);
+	for (i_thr = 0; i_thr < nr_writers; i_thr++) {
+		err = pthread_join(tid_writer[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_writes += tot_nr_writes[i];
-		rcu_gc_clear_queue(i);
+		tot_writes += tot_nr_writes[i_thr];
+		rcu_gc_clear_queue(i_thr);
 	}
-	
+
 	printf_verbose("total number of reads : %llu, writes %llu\n", tot_reads,
 	       tot_writes);
 	printf("SUMMARY %-25s testdur %4lu nr_readers %3u rdur %6lu wdur %6lu "
@@ -453,12 +454,14 @@ int main(int argc, char **argv)
 		argv[0], duration, nr_readers, rduration, wduration,
 		nr_writers, wdelay, tot_reads, tot_writes,
 		tot_reads + tot_writes, reclaim_batch);
+
 	free(tid_reader);
 	free(tid_writer);
 	free(count_reader);
 	free(tot_nr_writes);
-	for (i = 0; i < nr_writers; i++)
-		free(pending_reclaims[i].queue);
+
+	for (i_thr = 0; i_thr < nr_writers; i_thr++)
+		free(pending_reclaims[i_thr].queue);
 	free(pending_reclaims);
 
 	return 0;

@@ -37,7 +37,7 @@ int match(struct cds_lfht_node *ht_node, const void *_key)
 {
 	struct mynode *node =
 		caa_container_of(ht_node, struct mynode, node);
-	const unsigned int *key = _key;
+	const int *key = _key;
 
 	return *key == node->value;
 }

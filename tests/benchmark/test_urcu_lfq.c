@@ -282,6 +282,7 @@ int main(int argc, char **argv)
 			   tot_successful_dequeues = 0;
 	unsigned long long end_dequeues = 0;
 	int i, a;
+	unsigned int i_thr;
 
 	if (argc < 4) {
 		show_usage(argc, argv);
@@ -299,7 +300,7 @@ int main(int argc, char **argv)
 		show_usage(argc, argv);
 		return -1;
 	}
-	
+
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
 		show_usage(argc, argv);
@@ -360,15 +361,15 @@ int main(int argc, char **argv)
 
 	next_aff = 0;
 
-	for (i = 0; i < nr_enqueuers; i++) {
-		err = pthread_create(&tid_enqueuer[i], NULL, thr_enqueuer,
-				     &count_enqueuer[2 * i]);
+	for (i_thr = 0; i_thr < nr_enqueuers; i_thr++) {
+		err = pthread_create(&tid_enqueuer[i_thr], NULL, thr_enqueuer,
+				     &count_enqueuer[2 * i_thr]);
 		if (err != 0)
 			exit(1);
 	}
-	for (i = 0; i < nr_dequeuers; i++) {
-		err = pthread_create(&tid_dequeuer[i], NULL, thr_dequeuer,
-				     &count_dequeuer[2 * i]);
+	for (i_thr = 0; i_thr < nr_dequeuers; i_thr++) {
+		err = pthread_create(&tid_dequeuer[i_thr], NULL, thr_dequeuer,
+				     &count_dequeuer[2 * i_thr]);
 		if (err != 0)
 			exit(1);
 	}
@@ -377,7 +378,7 @@ int main(int argc, char **argv)
 
 	test_go = 1;
 
-	for (i = 0; i < duration; i++) {
+	for (i_thr = 0; i_thr < duration; i_thr++) {
 		sleep(1);
 		if (verbose_mode) {
 			fwrite(".", sizeof(char), 1, stdout);
@@ -387,21 +388,21 @@ int main(int argc, char **argv)
 
 	test_stop = 1;
 
-	for (i = 0; i < nr_enqueuers; i++) {
-		err = pthread_join(tid_enqueuer[i], &tret);
+	for (i_thr = 0; i_thr < nr_enqueuers; i_thr++) {
+		err = pthread_join(tid_enqueuer[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_enqueues += count_enqueuer[2 * i];
-		tot_successful_enqueues += count_enqueuer[2 * i + 1];
+		tot_enqueues += count_enqueuer[2 * i_thr];
+		tot_successful_enqueues += count_enqueuer[2 * i_thr + 1];
 	}
-	for (i = 0; i < nr_dequeuers; i++) {
-		err = pthread_join(tid_dequeuer[i], &tret);
+	for (i_thr = 0; i_thr < nr_dequeuers; i_thr++) {
+		err = pthread_join(tid_dequeuer[i_thr], &tret);
 		if (err != 0)
 			exit(1);
-		tot_dequeues += count_dequeuer[2 * i];
-		tot_successful_dequeues += count_dequeuer[2 * i + 1];
+		tot_dequeues += count_dequeuer[2 * i_thr];
+		tot_successful_dequeues += count_dequeuer[2 * i_thr + 1];
 	}
-	
+
 	test_end(&q, &end_dequeues);
 	err = cds_lfq_destroy_rcu(&q);
 	assert(!err);
@@ -432,5 +433,6 @@ int main(int argc, char **argv)
 	free(count_dequeuer);
 	free(tid_enqueuer);
 	free(tid_dequeuer);
+
 	return 0;
 }
