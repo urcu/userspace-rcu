@@ -220,7 +220,7 @@ void *thr_writer(void *data)
 	cmm_smp_mb();
 
 	for (;;) {
-		for (tidx = 0; tidx < nr_readers; tidx++) {
+		for (tidx = 0; tidx < (long)nr_readers; tidx++) {
 			urcu_mutex_lock(&per_thread_lock[tidx].lock);
 		}
 		test_array.a = 0;
