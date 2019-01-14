@@ -1,5 +1,5 @@
 AC_PREREQ(2.59)
-AC_INIT([userspace-rcu],[0.10.1],[mathieu dot desnoyers at efficios dot com], [], [http://liburcu.org/])
+AC_INIT([userspace-rcu],[0.10.2],[mathieu dot desnoyers at efficios dot com], [], [http://liburcu.org/])
 
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html

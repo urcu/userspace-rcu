@@ -1,3 +1,15 @@
+2019-01-14 Userspace RCU 0.10.2
+	* Fix: only wait if work queue is empty in real-time mode
+	* Fix: don't wait after completion of a work queue job batch
+	* Fix: don't wait after completion of job batch if work queue is empty
+	* Fix: workqueue: struct urcu_work vs rcu_head mixup
+	* Cleanup: workqueue: update comments referring to call-rcu
+	* Fix: mixup between URCU_WORKQUEUE_RT and URCU_CALL_RCU_RT
+	* test_rwlock: Add per-thread count to verbose output
+	* Add *.exe to gitignore for Cygwin
+	* Fix: pthread_rwlock initialization on Cygwin
+	* Fix: compat_futex_noasync on Cygwin
+
 2018-01-23 Userspace RCU 0.10.1
 	* Fix: don't use overlapping mmap mappings on Cygwin
 	* Fix: don't use membarrier SHARED syscall command in liburcu-bp
