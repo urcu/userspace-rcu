@@ -120,3 +120,66 @@
 		urcu_register_rculfhash_atfork_bp
 #define alias_urcu_unregister_rculfhash_atfork	\
 		urcu_unregister_rculfhash_atfork_bp
+
+
+/* Compat identifiers for prior undocumented multiflavor usage */
+#ifndef URCU_NO_COMPAT_IDENTIFIERS
+
+#define rcu_dereference_bp		urcu_bp_dereference
+#define rcu_cmpxchg_pointer_bp		urcu_bp_cmpxchg_pointer
+#define rcu_xchg_pointer_bp		urcu_bp_xchg_pointer
+#define rcu_set_pointer_bp		urcu_bp_set_pointer
+
+#define rcu_bp_before_fork		urcu_bp_before_fork
+#define rcu_bp_after_fork_parent	urcu_bp_after_fork_parent
+#define rcu_bp_after_fork_child		urcu_bp_after_fork_child
+
+#define rcu_read_lock_bp		urcu_bp_read_lock
+#define _rcu_read_lock_bp		_urcu_bp_read_lock
+#define rcu_read_unlock_bp		urcu_bp_read_unlock
+#define _rcu_read_unlock_bp		_urcu_bp_read_unlock
+#define rcu_read_ongoing_bp		urcu_bp_read_ongoing
+#define _rcu_read_ongoing_bp		_urcu_bp_read_ongoing
+#define rcu_register_thread_bp		urcu_bp_register_thread
+#define rcu_unregister_thread_bp	urcu_bp_unregister_thread
+#define rcu_init_bp			urcu_bp_init
+#define rcu_exit_bp			urcu_bp_exit
+#define synchronize_rcu_bp		urcu_bp_synchronize_rcu
+#define rcu_reader_bp			urcu_bp_reader
+#define rcu_gp_bp			urcu_bp_gp
+
+#define get_cpu_call_rcu_data_bp	urcu_bp_get_cpu_call_rcu_data
+#define get_call_rcu_thread_bp		urcu_bp_get_call_rcu_thread
+#define create_call_rcu_data_bp		urcu_bp_create_call_rcu_data
+#define set_cpu_call_rcu_data_bp	urcu_bp_set_cpu_call_rcu_data
+#define get_default_call_rcu_data_bp	urcu_bp_get_default_call_rcu_data
+#define get_call_rcu_data_bp		urcu_bp_get_call_rcu_data
+#define get_thread_call_rcu_data_bp	urcu_bp_get_thread_call_rcu_data
+#define set_thread_call_rcu_data_bp	urcu_bp_set_thread_call_rcu_data
+#define create_all_cpu_call_rcu_data_bp	urcu_bp_create_all_cpu_call_rcu_data
+#define free_all_cpu_call_rcu_data_bp	urcu_bp_free_all_cpu_call_rcu_data
+#define call_rcu_bp			urcu_bp_call_rcu
+#define call_rcu_data_free_bp		urcu_bp_call_rcu_data_free
+#define call_rcu_before_fork_bp		urcu_bp_call_rcu_before_fork
+#define call_rcu_after_fork_parent_bp	urcu_bp_call_rcu_after_fork_parent
+#define call_rcu_after_fork_child_bp	urcu_bp_call_rcu_after_fork_child
+#define rcu_barrier_bp			urcu_bp_barrier
+
+#define defer_rcu_bp			urcu_bp_defer_rcu
+#define rcu_defer_register_thread_bp	urcu_bp_defer_register_thread
+#define rcu_defer_unregister_thread_bp	urcu_bp_defer_unregister_thread
+#define rcu_defer_barrier_bp		urcu_bp_defer_barrier
+#define rcu_defer_barrier_thread_bp	urcu_bp_defer_barrier_thread
+#define rcu_defer_exit_bp		urcu_bp_defer_exit
+
+#define rcu_flavor_bp			urcu_bp_flavor
+
+#define rcu_yield_active_bp		urcu_bp_yield_active
+#define rcu_rand_yield_bp		urcu_bp_rand_yield
+
+#define urcu_register_rculfhash_atfork_bp	\
+	urcu_bp_register_rculfhash_atfork
+#define urcu_unregister_rculfhash_atfork_bp	\
+	urcu_bp_unregister_rculfhash_atfork
+
+#endif /* URCU_NO_COMPAT_IDENTIFIERS */

@@ -23,6 +23,7 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
+#define URCU_NO_COMPAT_IDENTIFIERS
 #define _LGPL_SOURCE
 #include <stdio.h>
 #include <pthread.h>

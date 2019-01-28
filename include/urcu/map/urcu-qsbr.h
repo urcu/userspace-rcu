@@ -126,3 +126,65 @@
 #define alias_rcu_defer_barrier		rcu_defer_barrier_qsbr
 #define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_qsbr
 #define alias_rcu_defer_exit		rcu_defer_exit_qsbr
+
+
+/* Compat identifiers for prior undocumented multiflavor usage */
+#ifndef URCU_NO_COMPAT_IDENTIFIERS
+
+#define rcu_dereference_qsbr		urcu_qsbr_dereference
+#define rcu_cmpxchg_pointer_qsbr	urcu_qsbr_cmpxchg_pointer
+#define rcu_xchg_pointer_qsbr		urcu_qsbr_xchg_pointer
+#define rcu_set_pointer_qsbr		urcu_qsbr_set_pointer
+
+#define rcu_qsbr_before_fork		urcu_qsbr_before_fork
+#define rcu_qsbr_after_fork_parent	urcu_qsbr_after_fork_parent
+#define rcu_qsbr_after_fork_child	urcu_qsbr_after_fork_child
+
+#define rcu_read_lock_qsbr		urcu_qsbr_read_lock
+#define _rcu_read_lock_qsbr		_urcu_qsbr_read_lock
+#define rcu_read_unlock_qsbr		urcu_qsbr_read_unlock
+#define _rcu_read_unlock_qsbr		_urcu_qsbr_read_unlock
+#define rcu_read_ongoing_qsbr		urcu_qsbr_read_ongoing
+#define _rcu_read_ongoing_qsbr		_urcu_qsbr_read_ongoing
+#define rcu_register_thread_qsbr	urcu_qsbr_register_thread
+#define rcu_unregister_thread_qsbr	urcu_qsbr_unregister_thread
+#define rcu_init_qsbr			urcu_qsbr_init
+#define rcu_exit_qsbr			urcu_qsbr_exit
+#define synchronize_rcu_qsbr		urcu_qsbr_synchronize_rcu
+#define rcu_reader_qsbr			urcu_qsbr_reader
+#define rcu_gp_qsbr			urcu_qsbr_gp
+
+#define get_cpu_call_rcu_data_qsbr	urcu_qsbr_get_cpu_call_rcu_data
+#define get_call_rcu_thread_qsbr	urcu_qsbr_get_call_rcu_thread
+#define create_call_rcu_data_qsbr	urcu_qsbr_create_call_rcu_data
+#define set_cpu_call_rcu_data_qsbr	urcu_qsbr_set_cpu_call_rcu_data
+#define get_default_call_rcu_data_qsbr	urcu_qsbr_get_default_call_rcu_data
+#define get_call_rcu_data_qsbr		urcu_qsbr_get_call_rcu_data
+#define get_thread_call_rcu_data_qsbr	urcu_qsbr_get_thread_call_rcu_data
+#define set_thread_call_rcu_data_qsbr	urcu_qsbr_set_thread_call_rcu_data
+#define create_all_cpu_call_rcu_data_qsbr	\
+		urcu_qsbr_create_all_cpu_call_rcu_data
+#define free_all_cpu_call_rcu_data_qsbr	urcu_qsbr_free_all_cpu_call_rcu_data
+#define call_rcu_qsbr			urcu_qsbr_call_rcu
+#define call_rcu_data_free_qsbr		urcu_qsbr_call_rcu_data_free
+#define call_rcu_before_fork_qsbr	urcu_qsbr_call_rcu_before_fork
+#define call_rcu_after_fork_parent_qsbr	urcu_qsbr_call_rcu_after_fork_parent
+#define call_rcu_after_fork_child_qsbr	urcu_qsbr_call_rcu_after_fork_child
+#define rcu_barrier_qsbr		urcu_qsbr_barrier
+
+#define defer_rcu_qsbr			urcu_qsbr_defer_rcu
+#define rcu_defer_register_thread_qsbr	urcu_qsbr_defer_register_thread
+#define rcu_defer_unregister_thread_qsbr	\
+		urcu_qsbr_defer_unregister_thread
+#define rcu_defer_barrier_qsbr		urcu_qsbr_defer_barrier
+#define rcu_defer_barrier_thread_qsbr	urcu_qsbr_defer_barrier_thread
+#define rcu_defer_exit_qsbr		urcu_qsbr_defer_exit
+
+#define rcu_flavor_qsbr			urcu_qsbr_flavor
+
+#define urcu_register_rculfhash_atfork_qsbr	\
+		urcu_qsbr_register_rculfhash_atfork
+#define urcu_unregister_rculfhash_atfork_qsbr	\
+		urcu_qsbr_unregister_rculfhash_atfork
+
+#endif /* URCU_NO_COMPAT_IDENTIFIERS */

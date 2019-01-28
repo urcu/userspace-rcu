@@ -129,3 +129,65 @@
 #define alias_rcu_defer_barrier		rcu_defer_barrier_sig
 #define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_sig
 #define alias_rcu_defer_exit		rcu_defer_exit_sig
+
+
+/* Compat identifiers for prior undocumented multiflavor usage */
+#ifndef URCU_NO_COMPAT_IDENTIFIERS
+
+#define rcu_dereference_sig		urcu_signal_dereference
+#define rcu_cmpxchg_pointer_sig		urcu_signal_cmpxchg_pointer
+#define rcu_xchg_pointer_sig		urcu_signal_xchg_pointer
+#define rcu_set_pointer_sig		urcu_signal_set_pointer
+
+#define rcu_sig_before_fork		urcu_signal_before_fork
+#define rcu_sig_after_fork_parent	urcu_signal_after_fork_parent
+#define rcu_sig_after_fork_child	urcu_signal_after_fork_child
+
+#define rcu_read_lock_sig		urcu_signal_read_lock
+#define _rcu_read_lock_sig		_urcu_signal_read_lock
+#define rcu_read_unlock_sig		urcu_signal_read_unlock
+#define _rcu_read_unlock_sig		_urcu_signal_read_unlock
+#define rcu_read_ongoing_sig		urcu_signal_read_ongoing
+#define _rcu_read_ongoing_sig		_urcu_signal_read_ongoing
+#define rcu_register_thread_sig		urcu_signal_register_thread
+#define rcu_unregister_thread_sig	urcu_signal_unregister_thread
+#define rcu_init_sig			urcu_signal_init
+#define rcu_exit_sig			urcu_signal_exit
+#define synchronize_rcu_sig		urcu_signal_synchronize_rcu
+#define rcu_reader_sig			urcu_signal_reader
+#define rcu_gp_sig			urcu_signal_gp
+
+#define get_cpu_call_rcu_data_sig	urcu_signal_get_cpu_call_rcu_data
+#define get_call_rcu_thread_sig		urcu_signal_get_call_rcu_thread
+#define create_call_rcu_data_sig	urcu_signal_create_call_rcu_data
+#define set_cpu_call_rcu_data_sig	urcu_signal_set_cpu_call_rcu_data
+#define get_default_call_rcu_data_sig	urcu_signal_get_default_call_rcu_data
+#define get_call_rcu_data_sig		urcu_signal_get_call_rcu_data
+#define get_thread_call_rcu_data_sig	urcu_signal_get_thread_call_rcu_data
+#define set_thread_call_rcu_data_sig	urcu_signal_set_thread_call_rcu_data
+#define create_all_cpu_call_rcu_data_sig	\
+		urcu_signal_create_all_cpu_call_rcu_data
+#define free_all_cpu_call_rcu_data_sig	urcu_signal_free_all_cpu_call_rcu_data
+#define call_rcu_sig			urcu_signal_call_rcu
+#define call_rcu_data_free_sig		urcu_signal_call_rcu_data_free
+#define call_rcu_before_fork_sig		\
+		urcu_signal_call_rcu_before_fork
+#define call_rcu_after_fork_parent_sig	urcu_signal_call_rcu_after_fork_parent
+#define call_rcu_after_fork_child_sig	urcu_signal_call_rcu_after_fork_child
+#define rcu_barrier_sig			urcu_signal_barrier
+
+#define defer_rcu_sig			urcu_signal_defer_rcu
+#define rcu_defer_register_thread_sig	urcu_signal_defer_register_thread
+#define rcu_defer_unregister_thread_sig	urcu_signal_defer_unregister_thread
+#define rcu_defer_barrier_sig		urcu_signal_defer_barrier
+#define rcu_defer_barrier_thread_sig	urcu_signal_defer_barrier_thread
+#define rcu_defer_exit_sig		urcu_signal_defer_exit
+
+#define rcu_flavor_sig			urcu_signal_flavor
+
+#define urcu_register_rculfhash_atfork_sig	\
+		urcu_signal_register_rculfhash_atfork
+#define urcu_unregister_rculfhash_atfork_sig	\
+		urcu_signal_unregister_rculfhash_atfork
+
+#endif /* URCU_NO_COMPAT_IDENTIFIERS */
