@@ -5,7 +5,7 @@ IBM Corporation allowed LGPLv2.1+ licensing of their contribution to the
 userspace RCU library in a patch submitted on May 8, 2009 from Paul E.
 McKenney and reviewed by Steven L. Bennett:
 
-   http://lists.casi.polymtl.ca/pipermail/ltt-dev/2009-May/001584.html
+   https://lists.lttng.org/pipermail/lttng-dev/2009-May/012835.html
 
 I (Mathieu Desnoyers) re-implemented ACCESS_ONCE(), likely(), unlikely() and
 barrier() from scratch without reference to the original code.
