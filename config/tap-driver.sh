@@ -273,6 +273,9 @@ function report(result, details)
     msg = msg " " details
   # Output on console might be colorized.
   print decorate_result(result) msg
+  # Flush stdout after each test result, this is useful when stdout
+  # is buffered, for example in a CI system.
+  fflush()
   # Log the result in the log file too, to help debugging (this is
   # especially true when said result is a TAP error or "Bail out!").
   print result msg | "cat >&3";
