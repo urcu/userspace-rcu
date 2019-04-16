@@ -45,6 +45,11 @@ AC_ARG_ENABLE([compiler-tls],
 	[def_compiler_tls=$enableval],
 	[def_compiler_tls="yes"])
 
+# Checks for C compiler
+AC_USE_SYSTEM_EXTENSIONS
+AC_PROG_CC
+AC_PROG_CC_STDC
+
 # If not overridden, use ax_tls.m4 to check if TLS is available.
 AS_IF([test "x$def_compiler_tls" = "xyes"],
 	[AX_TLS([def_tls_detect=$ac_cv_tls], [:])],
@@ -53,11 +58,6 @@ AS_IF([test "x$def_compiler_tls" = "xyes"],
 AS_IF([test "x$def_tls_detect" = "x"],
 	[:],
 	[AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $def_tls_detect)])
-
-# Checks for C compiler
-AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_CC
-AC_PROG_CC_STDC
 
 # Checks for programs.
 AC_PROG_AWK
