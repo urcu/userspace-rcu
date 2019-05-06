@@ -60,8 +60,13 @@ struct urcu_wait_queue {
 	struct cds_wfs_stack stack;
 };
 
-#define URCU_WAIT_QUEUE_HEAD_INIT(name)			\
-	{ .stack.head = CDS_WFS_END, .stack.lock = PTHREAD_MUTEX_INITIALIZER }
+#define URCU_WAIT_QUEUE_HEAD_INIT(name)				\
+	{							\
+		 .stack = {					\
+			.head = CDS_WFS_END,			\
+			.lock = PTHREAD_MUTEX_INITIALIZER,	\
+		},						\
+	}
 
 #define DECLARE_URCU_WAIT_QUEUE(name)			\
 	struct urcu_wait_queue name
