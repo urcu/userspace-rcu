@@ -1,3 +1,62 @@
+2019-05-06 Userspace RCU 0.11.0
+	* Bump library version to 6:0:1
+	* Cleanup: update code layout to fix old gcc warning
+	* Fix: typo CPPLAGS in examples Makefile
+	* Harmonize pprint macro across projects
+	* Check for TLS support after CC detection
+	* Update macros from the autotools archive
+	* tap-driver.sh: flush stdout after each test result
+	* Update dead link in lgpl-relicensing.txt
+	* Add multiflavor compat identifiers
+	* Cleanup: missing sign compare fixes
+	* Cleanup: enable signed/unsigned compare compiler warning
+	* Cleanup: compiler warning on 32-bit architectures
+	* config.h.in: rename CONFIG_RCU_MULTIFLAVOR to CONFIG_RCU_HAVE_MULTIFLAVOR
+	* rculfhash: implement iterator debugging config option
+	* Fix: examples silent rules on Solaris
+	* Add missing fall through annotations
+	* Fix: symbol aliases with TLS compat
+	* Port: no symbols aliases on MacOS
+	* Add -Wextra to CFLAGS
+	* Add silent mode to examples Makefiles
+	* doc: update examples to API changes
+	* test multiflavor single compile unit
+	* Update README following API changes
+	* Use new header locations for includes from urcu code
+	* Update call-rcu.h and defer.h comments and include guards
+	* rculfqueue.h: do not include urcu-call-rcu.h
+	* rculfhash: support use with multiple flavors per compile unit
+	* rculfhash: do not include urcu-call-rcu.h from public API
+	* Refactor liburcu to support many flavors per compile unit
+	* Fix: only wait if work queue is empty in real-time mode
+	* Fix: don't wait after completion of a work queue job batch
+	* Fix: don't wait after completion of job batch if work queue is empty
+	* Fix: workqueue: struct urcu_work vs rcu_head mixup
+	* Cleanup: workqueue: update comments referring to call-rcu
+	* Fix: mixup between URCU_WORKQUEUE_RT and URCU_CALL_RCU_RT
+	* test_rwlock: Add per-thread count to verbose output
+	* Add *.exe to gitignore for Cygwin
+	* Fix: pthread_rwlock initialization on Cygwin
+	* Fix: compat_futex_noasync on Cygwin
+	* wfcqueue: allow defining CDS_WFCQ_WAIT_SLEEP to override `poll'
+	* Update documentation for call_rcu before/after fork
+	* Add support for the RISC-V architecture
+	* Tests: Add tap-driver.sh for automake < 1.12
+	* Tests: Replace prove by autotools tap runner
+	* liburcu-bp: Use membarrier private expedited when available
+	* liburcu: Use membarrier private expedited when available
+	* rculfhash: improve error handling of mmap backend
+	* Fix: don't use overlapping mmap mappings on Cygwin
+	* Tests fix: errors in shell scripts
+	* Revert "Use initial-exec tls model"
+	* Use initial-exec tls model
+	* Fix: don't use membarrier SHARED syscall command in liburcu-bp
+	* Tests fix: add missing Cygwin thread id
+	* Fix: assignment from incompatible pointer type warnings
+	* Tests fix: unused variable warnings
+	* Fix: add missing m68k headers to dist
+	* Bump version to 0.11-pre
+
 2017-06-12 Userspace RCU 0.10.0
 	* Bump library soname due to urcu flavor structure change
 	* Cleanup: use mutex_lock() wrapper in rculfhash
