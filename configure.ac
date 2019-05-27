@@ -332,7 +332,7 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 		#include <sched.h>
 		int main()
 		{
-			cpu_set_t foo, mask; CPU_SET(0, &foo);
+			cpu_set_t foo; CPU_SET(0, &foo);
 			return 0;
 		}
 	]])
