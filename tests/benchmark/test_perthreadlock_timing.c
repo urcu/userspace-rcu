@@ -69,9 +69,10 @@ static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 void *thr_reader(void *arg)
 {
-	unsigned int i, j;
 	caa_cycles_t time1, time2;
 	long tidx = (long)arg;
+	unsigned int i, j;
+	int ret;
 
 	printf("thread_begin %s, tid %lu\n",
 		"reader", urcu_get_thread_id());
@@ -80,9 +81,17 @@ void *thr_reader(void *arg)
 	time1 = caa_get_cycles();
 	for (i = 0; i < OUTER_READ_LOOP; i++) {
 		for (j = 0; j < INNER_READ_LOOP; j++) {
-			pthread_mutex_lock(&per_thread_lock[tidx].lock);
+			ret = pthread_mutex_lock(&per_thread_lock[tidx].lock);
+			if (ret) {
+				perror("Error in pthread mutex lock");
+				exit(-1);
+			}
 			assert(test_array.a == 8);
-			pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+			ret = pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+			if (ret) {
+				perror("Error in pthread mutex unlock");
+				exit(-1);
+			}
 		}
 	}
 	time2 = caa_get_cycles();
@@ -98,9 +107,10 @@ void *thr_reader(void *arg)
 
 void *thr_writer(void *arg)
 {
+	caa_cycles_t time1, time2;
 	unsigned int i, j;
 	long tidx;
-	caa_cycles_t time1, time2;
+	int ret;
 
 	printf("thread_begin %s, tid %lu\n",
 		"writer", urcu_get_thread_id());
@@ -110,11 +120,19 @@ void *thr_writer(void *arg)
 		for (j = 0; j < INNER_WRITE_LOOP; j++) {
 			time1 = caa_get_cycles();
 			for (tidx = 0; tidx < NR_READ; tidx++) {
-				pthread_mutex_lock(&per_thread_lock[tidx].lock);
+				ret = pthread_mutex_lock(&per_thread_lock[tidx].lock);
+				if (ret) {
+					perror("Error in pthread mutex lock");
+					exit(-1);
+				}
 			}
 			test_array.a = 8;
 			for (tidx = NR_READ - 1; tidx >= 0; tidx--) {
-				pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+				ret = pthread_mutex_unlock(&per_thread_lock[tidx].lock);
+				if (ret) {
+					perror("Error in pthread mutex unlock");
+					exit(-1);
+				}
 			}
 			time2 = caa_get_cycles();
 			writer_time[(unsigned long)arg] += time2 - time1;
