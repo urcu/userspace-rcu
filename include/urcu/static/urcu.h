@@ -43,6 +43,7 @@
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
 #include <urcu/debug.h>
+#include <urcu/static/urcu-signal.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,19 +61,6 @@ extern "C" {
  * performance degradation on the read-side due to the added function calls.
  * This is required to permit relinking with newer versions of the library.
  */
-
-/*
- * The signal number used by the RCU library can be overridden with
- * -DSIGRCU= when compiling the library.
- * Provide backward compatibility for liburcu 0.3.x SIGURCU.
- */
-#ifdef SIGURCU
-#define SIGRCU SIGURCU
-#endif
-
-#ifndef SIGRCU
-#define SIGRCU SIGUSR1
-#endif
 
 enum rcu_state {
 	RCU_READER_ACTIVE_CURRENT,
