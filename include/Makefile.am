@@ -14,7 +14,8 @@ nobase_dist_include_HEADERS = urcu/compiler.h urcu/hlist.h urcu/list.h \
 		urcu/static/urcu-qsbr.h urcu/static/wfcqueue.h \
 		urcu/static/wfqueue.h urcu/static/wfstack.h \
 		urcu/static/urcu-mb.h urcu/static/urcu-memb.h \
-		urcu/static/urcu-signal.h urcu/static/urcu-common.h \
+		urcu/static/urcu-signal.h urcu/static/urcu-signal-nr.h \
+		urcu/static/urcu-common.h \
 		urcu/tls-compat.h urcu/debug.h urcu/urcu.h urcu/urcu-bp.h \
 		urcu/call-rcu.h urcu/defer.h \
 		urcu/pointer.h urcu/urcu-qsbr.h urcu/flavor.h \
