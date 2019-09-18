@@ -43,7 +43,7 @@
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
 #include <urcu/debug.h>
-#include <urcu/static/urcu-signal.h>
+#include <urcu/static/urcu-signal-nr.h>
 
 #ifdef __cplusplus
 extern "C" {
