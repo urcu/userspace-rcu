@@ -2168,7 +2168,7 @@ static void cds_lfht_worker_init(struct urcu_workqueue *workqueue,
 		urcu_die(errno);
 	ret = sigdelset(&mask, SIGRCU);
 	if (ret)
-		urcu_die(ret);
+		urcu_die(errno);
 	ret = pthread_sigmask(SIG_SETMASK, &mask, NULL);
 	if (ret)
 		urcu_die(ret);
