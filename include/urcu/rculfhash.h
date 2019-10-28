@@ -499,7 +499,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
  * This function does not issue any memory barrier.
  */
 extern
-int cds_lfht_is_node_deleted(struct cds_lfht_node *node);
+int cds_lfht_is_node_deleted(const struct cds_lfht_node *node);
 
 /*
  * cds_lfht_resize - Force a hash table resize

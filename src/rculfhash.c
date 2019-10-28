@@ -826,7 +826,7 @@ struct cds_lfht_node *clear_flag(struct cds_lfht_node *node)
 }
 
 static
-int is_removed(struct cds_lfht_node *node)
+int is_removed(const struct cds_lfht_node *node)
 {
 	return ((unsigned long) node) & REMOVED_FLAG;
 }
@@ -1830,7 +1830,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 	return ret;
 }
 
-int cds_lfht_is_node_deleted(struct cds_lfht_node *node)
+int cds_lfht_is_node_deleted(const struct cds_lfht_node *node)
 {
 	return is_removed(CMM_LOAD_SHARED(node->next));
 }
