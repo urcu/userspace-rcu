@@ -151,12 +151,14 @@ extern void urcu_bp_after_fork_parent(void);
 extern void urcu_bp_after_fork_child(void);
 
 /*
+ * In the bulletproof version, thread registration is performed lazily,
+ * but it can be forced by issuing an explicit urcu_bp_register_thread().
+ */
+extern void urcu_bp_register_thread(void);
+
+/*
  * In the bulletproof version, the following functions are no-ops.
  */
-static inline void urcu_bp_register_thread(void)
-{
-}
-
 static inline void urcu_bp_unregister_thread(void)
 {
 }

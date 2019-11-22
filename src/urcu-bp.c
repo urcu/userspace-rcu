@@ -566,6 +566,12 @@ end:
 }
 URCU_ATTR_ALIAS("urcu_bp_register") void rcu_bp_register();
 
+void urcu_bp_register_thread(void)
+{
+	if (caa_unlikely(!URCU_TLS(urcu_bp_reader)))
+		urcu_bp_register(); /* If not yet registered. */
+}
+
 /* Disable signals, take mutex, remove from registry */
 static
 void urcu_bp_unregister(struct rcu_reader *rcu_reader_reg)

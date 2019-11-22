@@ -224,10 +224,11 @@ be overridden with `-DSIGRCU` by modifying `Makefile.build.inc`.
 
 The BP library flavor stands for "bulletproof". It is specifically
 designed to help tracing library to hook on applications without
-requiring to modify these applications. `urcu_bp_init()`,
-`urcu_bp_register_thread()` and `urcu_bp_unregister_thread()` all become
-nops. The state is dealt with by the library internally at the expense
-of read-side and write-side performance.
+requiring to modify these applications. `urcu_bp_init()`, and
+`urcu_bp_unregister_thread()` all become nops, whereas calling
+`urcu_bp_register_thread()` becomes optional. The state is dealt with by
+the library internally at the expense of read-side and write-side
+performance.
 
 
 ### Initialization
