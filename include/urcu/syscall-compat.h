@@ -32,8 +32,9 @@
 #elif defined(__linux__) || defined(__GLIBC__)
 #include <syscall.h>
 
-#elif defined(__CYGWIN__) || defined(__APPLE__)
-/* Don't include anything on Cygwin or MacOSX. */
+#elif defined(__CYGWIN__) || defined(__APPLE__) || \
+	defined(__FreeBSD__) || defined(__DragonFly__)
+/* Don't include anything on these platforms. */
 
 #else
 #error "Add platform support to urcu/syscall-compat.h"
