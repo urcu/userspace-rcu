@@ -24,6 +24,7 @@
  */
 
 #include <urcu/config.h>
+#include <errno.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -101,6 +102,49 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 				uaddr2, val3);
 	}
 	return ret;
+}
+
+#elif defined(__FreeBSD__)
+
+#include <sys/types.h>
+#include <sys/umtx.h>
+
+static inline int futex_async(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	int umtx_op;
+	void *umtx_uaddr = NULL, *umtx_uaddr2 = NULL;
+	struct _umtx_time umtx_timeout = {
+		._flags = UMTX_ABSTIME,
+		._clockid = CLOCK_MONOTONIC,
+	};
+
+	switch (op) {
+	case FUTEX_WAIT:
+		/* On FreeBSD, a "u_int" is a 32-bit integer. */
+		umtx_op = UMTX_OP_WAIT_UINT;
+		if (timeout != NULL) {
+			umtx_timeout._timeout = *timeout;
+			umtx_uaddr = (void *) sizeof(umtx_timeout);
+			umtx_uaddr2 = (void *) &umtx_timeout;
+		}
+		break;
+	case FUTEX_WAKE:
+		umtx_op = UMTX_OP_WAKE;
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	return _umtx_op(uaddr, umtx_op, (uint32_t) val, umtx_uaddr,
+			umtx_uaddr2);
+}
+
+static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	return futex_async(uaddr, op, val, timeout, uaddr2, val3);
 }
 
 #elif defined(__CYGWIN__)
