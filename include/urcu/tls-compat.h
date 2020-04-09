@@ -70,6 +70,9 @@ extern "C" {
 # define DEFINE_URCU_TLS(type, name)	\
 	CONFIG_RCU_TLS type name
 
+# define DEFINE_URCU_TLS_INIT(type, name, init)	\
+	CONFIG_RCU_TLS type name = (init)
+
 # define URCU_TLS(name)		(name)
 
 #else /* #ifndef CONFIG_RCU_TLS */
@@ -95,14 +98,14 @@ struct urcu_tls {
  * Note: we don't free memory at process exit, since it will be dealt
  * with by the OS.
  */
-# define DEFINE_URCU_TLS_1(type, name)				\
+# define DEFINE_URCU_TLS_INIT_1(type, name, do_init)		\
 	type *__tls_access_ ## name(void)			\
 	{							\
 		static struct urcu_tls __tls_ ## name = {	\
 			.init_mutex = PTHREAD_MUTEX_INITIALIZER,\
 			.init_done = 0,				\
 		};						\
-		void *__tls_p;					\
+		__typeof__(type) *__tls_p;			\
 		if (!__tls_ ## name.init_done) {		\
 			/* Mutex to protect concurrent init */	\
 			pthread_mutex_lock(&__tls_ ## name.init_mutex); \
@@ -118,14 +121,21 @@ struct urcu_tls {
 		__tls_p = pthread_getspecific(__tls_ ## name.key); \
 		if (caa_unlikely(__tls_p == NULL)) {		\
 			__tls_p = calloc(1, sizeof(type));	\
+			do_init					\
 			(void) pthread_setspecific(__tls_ ## name.key,	\
 				__tls_p);			\
 		}						\
 		return __tls_p;					\
 	}
 
+# define _URCU_TLS_INIT(init)					\
+	*__tls_p = (init);
+
+# define DEFINE_URCU_TLS_INIT(type, name, init)			\
+	DEFINE_URCU_TLS_INIT_1(type, name, _URCU_TLS_INIT(init))
+
 # define DEFINE_URCU_TLS(type, name)				\
-	DEFINE_URCU_TLS_1(type, name)
+	DEFINE_URCU_TLS_INIT_1(type, name, /* empty */)
 
 # define URCU_TLS_1(name)	(*__tls_access_ ## name())
 
