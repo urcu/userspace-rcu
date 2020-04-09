@@ -1,3 +1,17 @@
+2020-04-09 Userspace RCU 0.12.0
+	* tls-compat.h: introduce DEFINE_URCU_TLS_INIT
+	* Use _umtx_op for futex on FreeBSD
+	* Add FreeBSD, DragonFly to syscall-compat.h
+	* urcu-bp: perform thread registration on urcu_bp_register_thread
+	* Require automake >= 1.12
+	* cds_lfht_is_node_deleted parameter can be marked const
+	* Fix: provide errno as argument to urcu_die()
+	* Fix: rculfhash worker needs to unblock to SIGRCU
+	* Cleanup: test_perthreadlock_timing: handle pthread mutex errors
+	* Fix: SONAME bump to 6.1.0
+	* Cleanup: remove unused variable from configure.ac check
+	* Fix: urcu/futex.h: users of struct timespec should include time.h
+
 2019-05-06 Userspace RCU 0.11.0
 	* Bump library version to 6:0:1
 	* Cleanup: update code layout to fix old gcc warning
