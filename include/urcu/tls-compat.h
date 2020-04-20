@@ -32,7 +32,17 @@
 extern "C" {
 #endif
 
-#ifdef CONFIG_RCU_TLS	/* Based on ax_tls.m4 */
+#ifdef CONFIG_RCU_TLS
+
+#if defined (__cplusplus) && (__cplusplus >= 201103L)
+# define URCU_TLS_STORAGE_CLASS	thread_local
+#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+# define URCU_TLS_STORAGE_CLASS	_Thread_local
+#elif defined (_MSC_VER)
+# define URCU_TLS_STORAGE_CLASS	__declspec(thread)
+#else
+# define URCU_TLS_STORAGE_CLASS	__thread
+#endif
 
 /*
  * Hint: How to define/declare TLS variables of compound types
@@ -65,13 +75,13 @@ extern "C" {
  */
 
 # define DECLARE_URCU_TLS(type, name)	\
-	CONFIG_RCU_TLS type name
+	URCU_TLS_STORAGE_CLASS type name
 
 # define DEFINE_URCU_TLS(type, name)	\
-	CONFIG_RCU_TLS type name
+	URCU_TLS_STORAGE_CLASS type name
 
 # define DEFINE_URCU_TLS_INIT(type, name, init)	\
-	CONFIG_RCU_TLS type name = (init)
+	URCU_TLS_STORAGE_CLASS type name = (init)
 
 # define URCU_TLS(name)		(name)
 
