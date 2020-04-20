@@ -50,14 +50,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_STDC
 
-# If not overridden, use ax_tls.m4 to check if TLS is available.
-AS_IF([test "x$def_compiler_tls" = "xyes"],
-	[AX_TLS([def_tls_detect=$ac_cv_tls], [:])],
-	[:])
-
-AS_IF([test "x$def_tls_detect" = "x"],
-	[:],
-	[AC_DEFINE_UNQUOTED([CONFIG_RCU_TLS], $def_tls_detect)])
+AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
 
 # Checks for programs.
 AC_PROG_AWK
@@ -501,7 +494,7 @@ test "x$compat_futex_test" = "x0" && value=1 || value=0
 PPRINT_PROP_BOOL([Futex support], $value)
 
 # TLS
-test "x$def_tls_detect" = "x" && value="pthread_getspecific()" || value="$def_tls_detect"
+test "x$def_compiler_tls" = "xyes" && value="compiler TLS" || value="pthread_getspecific()"
 PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
 
 # clock_gettime() available
