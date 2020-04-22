@@ -1,3 +1,7 @@
+2020-04-22 Userspace RCU 0.12.1
+	* Fix: tls-compat.h exposes compiler-dependent public configuration
+	* Fix: tap array subscript has type char warning
+
 2020-04-09 Userspace RCU 0.12.0
 	* tls-compat.h: introduce DEFINE_URCU_TLS_INIT
 	* Use _umtx_op for futex on FreeBSD
