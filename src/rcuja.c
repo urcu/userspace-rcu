@@ -2527,7 +2527,7 @@ int cds_ja_del(struct cds_ja *ja, uint64_t key,
 	unsigned int tree_depth, i;
 	struct cds_ja_inode_flag *snapshot[JA_MAX_DEPTH];
 	struct cds_ja_inode_flag **snapshot_ptr[JA_MAX_DEPTH];
-	uint8_t snapshot_n[JA_MAX_DEPTH];
+	uint8_t snapshot_n[JA_MAX_DEPTH-1];
 	struct cds_ja_inode_flag *node_flag;
 	struct cds_ja_inode_flag **prev_node_flag_ptr,
 		**node_flag_ptr;
@@ -2544,8 +2544,6 @@ retry:
 		key, node);
 
 	/* snapshot for level 0 is only for shadow node lookup */
-	snapshot_n[0] = 0;
-	snapshot_n[1] = 0;
 	snapshot_ptr[nr_snapshot] = NULL;
 	snapshot[nr_snapshot++] = (struct cds_ja_inode_flag *) &ja->root;
 	node_flag = rcu_dereference(ja->root);
@@ -2562,7 +2560,7 @@ retry:
 			return -ENOENT;
 		}
 		iter_key = (uint8_t) (key >> (JA_BITS_PER_BYTE * (tree_depth - i - 1)));
-		snapshot_n[nr_snapshot + 1] = iter_key;
+		snapshot_n[nr_snapshot - 1] = iter_key;
 		snapshot_ptr[nr_snapshot] = prev_node_flag_ptr;
 		snapshot[nr_snapshot++] = node_flag;
 		node_flag = ja_node_get_nth(node_flag,
