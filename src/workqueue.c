@@ -412,7 +412,7 @@ void urcu_workqueue_queue_completion(struct urcu_workqueue *workqueue,
 {
 	struct urcu_workqueue_completion_work *work;
 
-	work = calloc(sizeof(*work), 1);
+	work = calloc(1, sizeof(*work));
 	if (!work)
 		urcu_die(errno);
 	work->completion = completion;
