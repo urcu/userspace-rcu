@@ -772,9 +772,13 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOPPED) == 0)
 			(void) poll(NULL, 0, 1);
 	}
+	call_rcu_lock(&call_rcu_mutex);
 	if (!cds_wfcq_empty(&crdp->cbs_head, &crdp->cbs_tail)) {
-		/* Create default call rcu data if need be */
+		call_rcu_unlock(&call_rcu_mutex);
+		/* Create default call rcu data if need be. */
+		/* CBs queued here will be handed to the default list. */
 		(void) get_default_call_rcu_data();
+		call_rcu_lock(&call_rcu_mutex);
 		__cds_wfcq_splice_blocking(&default_call_rcu_data->cbs_head,
 			&default_call_rcu_data->cbs_tail,
 			&crdp->cbs_head, &crdp->cbs_tail);
@@ -783,7 +787,6 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 		wake_call_rcu_thread(default_call_rcu_data);
 	}
 
-	call_rcu_lock(&call_rcu_mutex);
 	cds_list_del(&crdp->list);
 	call_rcu_unlock(&call_rcu_mutex);
 
