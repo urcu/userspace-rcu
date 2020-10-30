@@ -7,5 +7,5 @@ Name: Userspace RCU signal
 Description: A userspace RCU (read-copy-update) library, signal version
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lurcu-signal
+Libs: -L${libdir} -lurcu-common -lurcu-signal
 Cflags: -I${includedir} 

@@ -7,5 +7,5 @@ Name: Userspace RCU
 Description: A userspace RCU (read-copy-update) library, standard version
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lurcu
+Libs: -L${libdir} -lurcu-common -lurcu
 Cflags: -I${includedir} 
