@@ -7,5 +7,5 @@ Name: Userspace RCU Concurrent Data Structures
 Description: Data structures leveraging RCU and atomic operations to provide efficient concurrency-aware storage
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lurcu-cds
+Libs: -L${libdir} -lurcu-common -lurcu-cds
 Cflags: -I${includedir} 

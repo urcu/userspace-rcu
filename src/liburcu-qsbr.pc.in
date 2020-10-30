@@ -7,5 +7,5 @@ Name: Userspace RCU QSBR
 Description: A userspace RCU (read-copy-update) library, quiescent state version
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lurcu-qsbr
+Libs: -L${libdir} -lurcu-common -lurcu-qsbr
 Cflags: -I${includedir} 
