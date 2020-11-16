@@ -388,7 +388,7 @@ For always-on debugging self-checks:
 	./configure --enable-rcu-debug
 
 For fine grained enabling of debugging self-checks, build
-urserspace-rcu with DEBUG_RCU defined and compile dependent
+userspace-rcu with DEBUG_RCU defined and compile dependent
 applications with DEBUG_RCU defined when necessary.
 
 Warning: Enabling this feature result in a performance penalty.
