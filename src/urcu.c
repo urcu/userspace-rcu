@@ -38,6 +38,7 @@
 #include <stdbool.h>
 #include <poll.h>
 
+#include <urcu/config.h>
 #include <urcu/arch.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/map/urcu.h>

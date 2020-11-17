@@ -20,6 +20,7 @@
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
+#include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
