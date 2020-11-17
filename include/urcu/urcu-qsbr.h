@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#include <urcu/config.h>
+
 /*
  * See urcu/pointer.h and urcu/static/pointer.h for pointer
  * publication headers.

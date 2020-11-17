@@ -37,6 +37,7 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 
+#include <urcu/config.h>
 #include <urcu/arch.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/map/urcu-bp.h>
