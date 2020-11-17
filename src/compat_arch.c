@@ -1,7 +1,7 @@
 /*
- * compat_arch_x86.c
+ * compat_arch.c
  *
- * Userspace RCU library - x86 compatibility checks
+ * Userspace RCU library - architecture compatibility checks
  *
  * Copyright (c) 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  *
@@ -19,6 +19,10 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include <urcu/arch.h>
+
+#if defined(URCU_ARCH_I386)
 
 #include <stdio.h>
 #include <pthread.h>
@@ -301,3 +305,4 @@ int __rcu_cas_init(void)
 		__rcu_cas_avail = compare_and_swap_is_available();
 	return __rcu_cas_avail;
 }
+#endif

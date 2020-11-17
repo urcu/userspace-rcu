@@ -1,5 +1,3 @@
-include/urcu/arch.h
-include/urcu/uatomic.h
 tests/api.h
 
 

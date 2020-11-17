@@ -20,6 +20,7 @@
  * Boehm-Demers-Weiser conservative garbage collector.
  */
 
+#include <urcu/arch.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/system.h>
@@ -517,7 +518,11 @@ void __uatomic_dec(void *addr, int len)
 
 #define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
 
-#if ((CAA_BITS_PER_LONG != 64) && defined(CONFIG_RCU_COMPAT_ARCH))
+#if ((CAA_BITS_PER_LONG != 64) && defined(URCU_ARCH_I386))
+
+/* For backwards compat */
+#define CONFIG_RCU_COMPAT_ARCH 1
+
 extern int __rcu_cas_avail;
 extern int __rcu_cas_init(void);
 

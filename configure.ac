@@ -21,9 +21,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_RCU_HAVE_FENCE], [Defined when on a system that has memory fence instructions.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
-AH_TEMPLATE([CONFIG_RCU_COMPAT_ARCH], [Compatibility mode for i386 which lacks cmpxchg instruction.])
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
@@ -118,58 +116,17 @@ AC_CHECK_HEADERS([ \
 	sys/time.h \
 ])
 
-# Find arch type
-AS_CASE([$host_cpu],
-	[k1om], [ARCHTYPE="x86"],
-	[i386], [ARCHTYPE="x86" && SUBARCHTYPE="x86compat"],
-	[i486], [ARCHTYPE="x86"],
-	[i586], [ARCHTYPE="x86"],
-	[i686], [ARCHTYPE="x86"],
-	[amd64], [ARCHTYPE="x86"],
-	[x86_64], [ARCHTYPE="x86"],
-	[powerpc], [ARCHTYPE="ppc"],
-	[ppc64], [ARCHTYPE="ppc"],
-	[powerpc64], [ARCHTYPE="ppc"],
-	[powerpc64le], [ARCHTYPE="ppc"],
-	[ppc], [ARCHTYPE="ppc"],
-	[s390], [ARCHTYPE="s390"],
-	[s390x], [ARCHTYPE="s390"],
-	[sparc], [ARCHTYPE="sparc64"],
-	[sparc64], [ARCHTYPE="sparc64"],
-	[alpha*], [ARCHTYPE="alpha"],
-	[ia64], [ARCHTYPE="ia64"],
-	[arm*], [ARCHTYPE="arm"],
-	[aarch64*], [ARCHTYPE="aarch64"],
-	[mips*], [ARCHTYPE="mips"],
-	[nios2*], [ARCHTYPE="nios2"],
-	[tile*], [ARCHTYPE="tile"],
-	[hppa*], [ARCHTYPE="hppa"],
-	[m68k], [ARCHTYPE="m68k"],
-	[riscv*], [ARCHTYPE="riscv"],
-	[ARCHTYPE="unknown"]
-)
-
 AS_CASE([$host],[*-cygwin*],
 	[AM_CONDITIONAL(USE_CYGWIN, true)],
 	[AM_CONDITIONAL(USE_CYGWIN, false)]
 )
-
-AC_SUBST(ARCHTYPE)
-AC_SUBST(SUBARCHTYPE)
-
-UATOMICSRC=include/urcu/uatomic/$ARCHTYPE.h
-ARCHSRC=include/urcu/arch/$ARCHTYPE.h
-
-AS_IF([test "x$SUBARCHTYPE" = xx86compat],[
-	AC_DEFINE([CONFIG_RCU_COMPAT_ARCH], [1])
-])
 
 AS_IF([test "$host_cpu" = "armv7l"],[
 	AM_CFLAGS="$AM_CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
 ])
 
 # ARM-specific checks
-AS_IF([test "x$ARCHTYPE" = "xarm"],[
+AS_CASE([$host_cpu], [arm*], [
 	AC_MSG_CHECKING([for dmb instruction])
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 				int main()
@@ -183,40 +140,6 @@ AS_IF([test "x$ARCHTYPE" = "xarm"],[
 		AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
 	],[
 		AC_MSG_RESULT([no])
-	])
-])
-
-# Tile-specific checks
-AS_IF([echo "$host_cpu" | grep "^tile"],[
-	AC_MSG_CHECKING([for Tile architecture type])
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-				#ifndef __tilegx__
-				#error
-				#endif
-		]])
-	],[
-		AC_MSG_RESULT([ok])
-	],[
-		AC_MSG_FAILURE([URCU has only been tested on the TileGx architecture. For other Tile* architectures, please run the tests first and report the results to the maintainer so that proper support can be added.])
-	])
-])
-
-# x86-specific checks
-AS_IF([test "x$ARCHTYPE" = "xx86"],[
-	AC_MSG_CHECKING([if architecture really supports the mfence instruction])
-	#For now, using lock; addl compatibility mode even for i686, because the
-	#Pentium III is seen as a i686, but lacks mfence instruction.
-	#Only using fence for x86_64.
-	#
-	#k1om is the name for the Intel MIC family (Xeon Phi). It is an x86_64
-	#variant but lacks fence instructions.
-	AS_IF([test "x$host_cpu" != "xi386" -a "x$host_cpu" != "xi486" -a "x$host_cpu" != "xi586" -a "x$host_cpu" != "xi686" -a "x$host_vendor" != "xk1om" -a "x$host_cpu" != "xk1om"],[
-		AC_MSG_RESULT([yes])
-		AC_DEFINE([CONFIG_RCU_HAVE_FENCE], [1])
-		config_rcu_have_fence=yes
-	],[
-		AC_MSG_RESULT([no])
-		config_rcu_have_fence=no
 	])
 ])
 
@@ -244,7 +167,6 @@ AC_SEARCH_LIBS([clock_gettime], [rt], [
 ], [])
 
 AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
-AM_CONDITIONAL([COMPAT_ARCH], [test "x$SUBARCHTYPE" = "xx86compat"])
 AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
 
 # smp-support configure option
@@ -377,10 +299,6 @@ AC_SUBST(AM_CPPFLAGS)
 AM_CFLAGS="-Wall -Wextra -Wno-unused-parameter $AM_CFLAGS"
 AC_SUBST(AM_CFLAGS)
 
-AC_CONFIG_LINKS([
-	include/urcu/arch.h:$ARCHSRC
-	include/urcu/uatomic.h:$UATOMICSRC
-])
 AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
@@ -484,10 +402,6 @@ PPRINT_PROP_STRING([Target architecture], $host_cpu)
 # SMP support enabled/disabled
 test "x$def_smp_support" = "xyes" && value=1 || value=0
 PPRINT_PROP_BOOL([SMP support], $value)
-
-# Memory fence support available
-test "x$config_rcu_have_fence" = "xyes" && value=1 || value=0
-PPRINT_PROP_BOOL([Memory fence instructions], $value)
 
 # Futex support available
 test "x$compat_futex_test" = "x0" && value=1 || value=0

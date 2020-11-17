@@ -33,7 +33,19 @@ extern "C" {
 
 #define CAA_CACHE_LINE_SIZE	128
 
-#ifdef CONFIG_RCU_HAVE_FENCE
+/*
+ * For now, using lock; addl compatibility mode even for i686, because the
+ * Pentium III is seen as a i686, but lacks mfence instruction.  Only using
+ * fence for x86_64.
+ *
+ * k1om (__MIC__) is the name for the Intel MIC family (Xeon Phi). It is an
+ * x86_64 variant but lacks fence instructions.
+ */
+#if (defined(URCU_ARCH_AMD64) && !defined(URCU_ARCH_K1OM))
+
+/* For backwards compat */
+#define CONFIG_RCU_HAVE_FENCE 1
+
 #define cmm_mb()    __asm__ __volatile__ ("mfence":::"memory")
 
 /*
@@ -45,7 +57,9 @@ extern "C" {
 #define cmm_wmb()     __asm__ __volatile__ ("sfence"::: "memory")
 #define cmm_smp_rmb() cmm_barrier()
 #define cmm_smp_wmb() cmm_barrier()
+
 #else
+
 /*
  * We leave smp_rmb/smp_wmb as full barriers for processors that do not have
  * fence instructions.

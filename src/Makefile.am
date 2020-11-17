@@ -10,13 +10,7 @@ endif
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h \
 	compat-rand.h urcu-utils.h
 
-if COMPAT_ARCH
-COMPAT=compat_arch_@ARCHTYPE@.c
-else
-COMPAT=
-endif
-
-COMPAT+=compat_futex.c
+COMPAT = compat_arch.c compat_futex.c
 
 RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
 		rculfhash-mm-mmap.c
@@ -63,7 +57,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
 	liburcu-signal.pc liburcu-mb.pc
 
-EXTRA_DIST = compat_arch_x86.c \
+EXTRA_DIST = \
 	urcu-call-rcu-impl.h \
 	urcu-defer-impl.h \
 	rculfhash-internal.h
