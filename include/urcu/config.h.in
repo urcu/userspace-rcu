@@ -28,7 +28,7 @@
 #undef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 
 /* Enable internal debugging self-checks.
-   Introduce performance penalty. */
+   Introduces a performance penalty. */
 #undef CONFIG_RCU_DEBUG
 
 /* Expose multi-flavor support */
