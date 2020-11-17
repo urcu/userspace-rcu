@@ -21,7 +21,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_RCU_HAVE_FUTEX], [Defined when on a system with futex support.])
 AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
@@ -143,30 +142,12 @@ AS_CASE([$host_cpu], [arm*], [
 	])
 ])
 
-# Check if sys_futex() is available
-AC_MSG_CHECKING([for sys_futex()])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-		#include <sys/syscall.h>
-		#ifndef __NR_futex
-		#error "futexes not available"
-		#endif
-	]])
-],[
-	AC_MSG_RESULT([yes])
-	AC_DEFINE([CONFIG_RCU_HAVE_FUTEX], [1])
-	compat_futex_test=0
-],[
-	AC_MSG_RESULT([no])
-	compat_futex_test=1
-])
-
 # Search for clock_gettime
 AC_SEARCH_LIBS([clock_gettime], [rt], [
 	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
 	config_rcu_have_clock_gettime=yes
 ], [])
 
-AM_CONDITIONAL([COMPAT_FUTEX], [test "x$compat_futex_test" = "x1"])
 AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
 
 # smp-support configure option
@@ -402,10 +383,6 @@ PPRINT_PROP_STRING([Target architecture], $host_cpu)
 # SMP support enabled/disabled
 test "x$def_smp_support" = "xyes" && value=1 || value=0
 PPRINT_PROP_BOOL([SMP support], $value)
-
-# Futex support available
-test "x$compat_futex_test" = "x0" && value=1 || value=0
-PPRINT_PROP_BOOL([Futex support], $value)
 
 # TLS
 test "x$def_compiler_tls" = "xyes" && value="compiler TLS" || value="pthread_getspecific()"

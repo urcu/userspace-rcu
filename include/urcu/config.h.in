@@ -1,8 +1,5 @@
 /* urcu/config.h.in. Manually generated for control over the contained defs. */
 
-/* Defined when on a system with futex support. */
-#undef CONFIG_RCU_HAVE_FUTEX
-
 /* Enable SMP support. With SMP support enabled, uniprocessors are also
    supported. With SMP support disabled, UP systems work fine, but the
    behavior of SMP systems is undefined. */
