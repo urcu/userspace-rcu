@@ -56,7 +56,7 @@ extern int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
 
-#if (defined(__linux__) && defined(__NR_futex_))
+#if (defined(__linux__) && defined(__NR_futex))
 
 /* For backwards compat */
 #define CONFIG_RCU_HAVE_FUTEX 1
