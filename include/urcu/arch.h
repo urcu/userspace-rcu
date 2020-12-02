@@ -49,15 +49,12 @@
  * URCU_ARCH_M68K : All Motorola 68000 variants
  * URCU_ARCH_RISCV : All RISC-V variants
  */
-#if (defined(__i386__) || defined(__i386))
+
+#if (defined(__INTEL_OFFLOAD) || defined(__TARGET_ARCH_MIC) || defined(__MIC__))
 
 #define URCU_ARCH_X86 1
-#define URCU_ARCH_I386 1
-#include <urcu/arch/x86.h>
-
-#elif (defined(__i486__) || defined(__i586__) || defined(__i686__))
-
-#define URCU_ARCH_X86 1
+#define URCU_ARCH_AMD64 1
+#define URCU_ARCH_K1OM 1
 #include <urcu/arch/x86.h>
 
 #elif (defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64))
@@ -66,22 +63,26 @@
 #define URCU_ARCH_AMD64 1
 #include <urcu/arch/x86.h>
 
-#elif (defined(__INTEL_OFFLOAD) || defined(__TARGET_ARCH_MIC) || defined(__MIC__))
+#elif (defined(__i486__) || defined(__i586__) || defined(__i686__))
 
 #define URCU_ARCH_X86 1
-#define URCU_ARCH_AMD64 1
-#define URCU_ARCH_K1OM 1
 #include <urcu/arch/x86.h>
 
-#elif (defined(__powerpc__) || defined(__powerpc) || defined(__ppc__))
+#elif (defined(__i386__) || defined(__i386))
 
-#define URCU_ARCH_PPC 1
-#include <urcu/arch/ppc.h>
+#define URCU_ARCH_X86 1
+#define URCU_ARCH_I386 1
+#include <urcu/arch/x86.h>
 
 #elif (defined(__powerpc64__) || defined(__ppc64__))
 
 #define URCU_ARCH_PPC 1
 #define URCU_ARCH_PPC64 1
+#include <urcu/arch/ppc.h>
+
+#elif (defined(__powerpc__) || defined(__powerpc) || defined(__ppc__))
+
+#define URCU_ARCH_PPC 1
 #include <urcu/arch/ppc.h>
 
 #elif (defined(__s390__) || defined(__s390x__) || defined(__zarch__))
