@@ -108,7 +108,7 @@ static void spin_unlock(spinlock_t *sp)
 
 typedef pthread_t thread_id_t;
 
-#define NR_THREADS 128
+#define NR_THREADS 4096
 
 #define __THREAD_ID_MAP_EMPTY ((thread_id_t) 0)
 #define __THREAD_ID_MAP_WAITING ((thread_id_t) 1)
