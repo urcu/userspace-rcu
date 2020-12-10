@@ -41,6 +41,7 @@
  * URCU_ARCH_ALPHA : All DEC Alpha variants
  * URCU_ARCH_IA64 : All Intel Itanium variants
  * URCU_ARCH_ARM : All ARM 32 bits variants
+ *   URCU_ARCH_ARMV7 : All ARMv7 ISA variants
  * URCU_ARCH_AARCH64 : All ARM 64 bits variants
  * URCU_ARCH_MIPS : All MIPS variants
  * URCU_ARCH_NIOS2 : All Intel / Altera NIOS II variants
@@ -104,6 +105,12 @@
 
 #define URCU_ARCH_IA64 1
 #include <urcu/arch/ia64.h>
+
+#elif (defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7__))
+
+#define URCU_ARCH_ARMV7 1
+#define URCU_ARCH_ARM 1
+#include <urcu/arch/arm.h>
 
 #elif (defined(__arm__) || defined(__arm))
 

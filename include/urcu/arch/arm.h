@@ -30,7 +30,15 @@
 extern "C" {
 #endif
 
-#ifdef CONFIG_RCU_ARM_HAVE_DMB
+/*
+ * Using DMB is faster than the builtin __sync_synchronize and this instruction is
+ * part of the baseline ARMv7 ISA.
+ */
+#ifdef URCU_ARCH_ARMV7
+
+/* For backwards compat. */
+#define CONFIG_RCU_ARM_HAVE_DMB 1
+
 /*
  * Issues full system DMB operation.
  */
@@ -44,7 +52,8 @@ extern "C" {
 #define cmm_smp_mb()	__asm__ __volatile__ ("dmb ish":::"memory")
 #define cmm_smp_rmb()	__asm__ __volatile__ ("dmb ish":::"memory")
 #define cmm_smp_wmb()	__asm__ __volatile__ ("dmb ish":::"memory")
-#endif /* CONFIG_RCU_ARM_HAVE_DMB */
+
+#endif /* URCU_ARCH_ARMV7 */
 
 #include <stdlib.h>
 #include <sys/time.h>

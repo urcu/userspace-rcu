@@ -21,7 +21,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_RCU_ARM_HAVE_DMB], [Use the dmb instruction if available for use on ARM.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
 AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
@@ -122,24 +121,6 @@ AS_CASE([$host],[*-cygwin*],
 
 AS_IF([test "$host_cpu" = "armv7l"],[
 	AM_CFLAGS="$AM_CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
-])
-
-# ARM-specific checks
-AS_CASE([$host_cpu], [arm*], [
-	AC_MSG_CHECKING([for dmb instruction])
-	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-				int main()
-				{
-					asm volatile("dmb":::"memory");
-					return 0;
-				}
-		]])
-	],[
-		AC_MSG_RESULT([yes])
-		AC_DEFINE([CONFIG_RCU_ARM_HAVE_DMB], [1])
-	],[
-		AC_MSG_RESULT([no])
-	])
 ])
 
 # Search for clock_gettime
