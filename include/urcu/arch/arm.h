@@ -70,6 +70,15 @@ extern "C" {
 # endif
 #endif
 
+/*
+ * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=42263
+ */
+#ifdef URCU_GCC_VERSION
+# if URCU_GCC_VERSION >= 40400 && URCU_GCC_VERSION <= 40402
+#  error Your gcc version has a non-functional __sync_synchronize()
+# endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
