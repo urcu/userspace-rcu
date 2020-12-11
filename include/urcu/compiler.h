@@ -108,23 +108,10 @@
 
 #define CAA_ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 
-/*
- * Don't allow compiling with buggy compiler.
- */
-
 #ifdef __GNUC__
 # define URCU_GCC_VERSION	(__GNUC__ * 10000 \
 				+ __GNUC_MINOR__ * 100 \
 				+ __GNUC_PATCHLEVEL__)
-
-/*
- * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
- */
-# ifdef __ARMEL__
-#  if URCU_GCC_VERSION >= 40800 && URCU_GCC_VERSION <= 40802
-#   error Your gcc version produces clobbered frame accesses
-#  endif
-# endif
 #endif
 
 #endif /* _URCU_COMPILER_H */

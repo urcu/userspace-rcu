@@ -57,6 +57,19 @@ extern "C" {
 #define __NR_membarrier		389
 #endif
 
+/*
+ * Error out for compilers with known bugs.
+ */
+
+/*
+ * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
+ */
+#ifdef URCU_GCC_VERSION
+# if URCU_GCC_VERSION >= 40800 && URCU_GCC_VERSION <= 40802
+#  error Your gcc version produces clobbered frame accesses
+# endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
