@@ -119,10 +119,6 @@ AS_CASE([$host],[*-cygwin*],
 	[AM_CONDITIONAL(USE_CYGWIN, false)]
 )
 
-AS_IF([test "$host_cpu" = "armv7l"],[
-	AM_CFLAGS="$AM_CFLAGS -mcpu=cortex-a9 -mtune=cortex-a9 -O1"
-])
-
 # Search for clock_gettime
 AC_SEARCH_LIBS([clock_gettime], [rt], [
 	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
