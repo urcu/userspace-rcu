@@ -42,6 +42,15 @@ extern "C" {
 #define __NR_membarrier		283
 #endif
 
+/*
+ * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63293
+ */
+#ifdef URCU_GCC_VERSION
+# if URCU_GCC_VERSION < 50100
+#  error Your gcc version performs unsafe access to deallocated stack
+# endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
