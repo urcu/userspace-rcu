@@ -110,9 +110,13 @@
 
 /*
  * Don't allow compiling with buggy compiler.
+ *
+ * URCU_GCC_VERSION is used to blacklist specific GCC versions with known
+ * bugs, clang also defines these macros to an equivalent GCC version it
+ * claims to support, so exclude it.
  */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 # define URCU_GCC_VERSION	(__GNUC__ * 10000 \
 				+ __GNUC_MINOR__ * 100 \
 				+ __GNUC_PATCHLEVEL__)
