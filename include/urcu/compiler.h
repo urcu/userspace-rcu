@@ -108,7 +108,12 @@
 
 #define CAA_ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
 
-#ifdef __GNUC__
+/*
+ * URCU_GCC_VERSION is used to blacklist specific GCC versions with known
+ * bugs, clang also defines these macros to an equivalent GCC version it
+ * claims to support, so exclude it.
+ */
+#if defined(__GNUC__) && !defined(__clang__)
 # define URCU_GCC_VERSION	(__GNUC__ * 10000 \
 				+ __GNUC_MINOR__ * 100 \
 				+ __GNUC_PATCHLEVEL__)
