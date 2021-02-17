@@ -1,3 +1,14 @@
+2021-02-17 Userspace RCU 0.12.2
+	* fix: exclude clang from GCC version blacklists
+	* aarch64: blacklist gcc prior to 5.1
+	* Fix: configure: support Autoconf 2.70
+	* fix: bump tests thread limit to 4096
+	* cleanup: Improve wording of CONFIG_RCU_DEBUG description
+	* fix: explicitly include urcu/config.h in files using CONFIG_RCU_ defines
+	* Fix typo in README.md
+	* fix: add -lurcu-common to pkg-config libs for each flavor
+	* call_rcu: Fix race between rcu_barrier() and call_rcu_data_free()
+
 2020-04-22 Userspace RCU 0.12.1
 	* Fix: tls-compat.h exposes compiler-dependent public configuration
 	* Fix: tap array subscript has type char warning
