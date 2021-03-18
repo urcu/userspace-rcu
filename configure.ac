@@ -1,9 +1,31 @@
-AC_PREREQ(2.59)
-AC_INIT([userspace-rcu],[0.12.0],[mathieu dot desnoyers at efficios dot com], [], [http://liburcu.org/])
+dnl SPDX-License-Identifier: LGPL-2.1-only
+dnl
+dnl Copyright (C) 2021 EfficiOS, Inc.
+dnl
+dnl Process this file with autoconf to produce a configure script.
 
+# Project version information
+m4_define([urcu_version_major], [0])
+m4_define([urcu_version_minor], [12])
+m4_define([urcu_version_patch], [0])
+m4_define([urcu_version_dev_stage], [])
+m4_define([urcu_version], urcu_version_major[.]urcu_version_minor[.]urcu_version_patch[]urcu_version_dev_stage)
+
+# Library version information of "liburcu"
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-AC_SUBST([URCU_LIBRARY_VERSION], [7:0:1])
+m4_define([urcu_lib_version_current], [7])
+m4_define([urcu_lib_version_revision], [0])
+m4_define([urcu_lib_version_age], [1])
+m4_define([urcu_lib_version], urcu_lib_version_current[:]urcu_lib_version_revision[:]urcu_lib_version_age)
+
+
+##                     ##
+## Autoconf base setup ##
+##                     ##
+
+AC_PREREQ(2.59)
+AC_INIT([userspace-rcu],[urcu_version],[mathieu dot desnoyers at efficios dot com],[],[http://liburcu.org/])
 
 AC_CONFIG_HEADERS([include/config.h include/urcu/config.h])
 AC_CONFIG_AUX_DIR([config])
@@ -250,6 +272,13 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 		AC_DEFINE(SCHED_SETAFFINITY_ARGS, 3)
 	])
 ])
+
+##                                             ##
+## Substitute variables for use in Makefile.am ##
+##                                             ##
+
+# Library versions for libtool
+AC_SUBST([URCU_LIBRARY_VERSION], [urcu_lib_version])
 
 AM_CPPFLAGS="-include config.h"
 AC_SUBST(AM_CPPFLAGS)
