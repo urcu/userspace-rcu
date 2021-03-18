@@ -163,55 +163,67 @@ AC_SEARCH_LIBS([clock_gettime], [rt], [
 ])
 
 
+##                              ##
+## Optionnal features selection ##
+##                              ##
 
-AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
-AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
-AH_TEMPLATE([CONFIG_RCU_DEBUG], [Enable internal debugging self-checks. Introduces a performance penalty.])
-AH_TEMPLATE([CONFIG_CDS_LFHT_ITER_DEBUG], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
+# Allow to fallback to FIXME if the membarrier syscall is unavailable on the
+# running kernel, when disabled, abort if the syscall is unavailable. Applies
+# to default and bulletproof flavors.
+# Enabled by default
+AE_FEATURE_DEFAULT_ENABLE
+AE_FEATURE([sys-membarrier-fallback], [Abort if sys-membarrier is needed but not available rather than using a fallback.])
 
-# Allow requiring the operating system to support the membarrier system
-# call. Applies to default and bulletproof flavors.
-AC_ARG_ENABLE([sys-membarrier-fallback],
-	AS_HELP_STRING([--disable-sys-membarrier-fallback], [Abort if sys-membarrier is needed but not available rather than using a fallback.]),
-	[def_sys_membarrier_fallback=$enableval],
-	[def_sys_membarrier_fallback="yes"])
-AS_IF([test "x$def_sys_membarrier_fallback" != "xyes"], [AC_DEFINE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [1])])
+# Use compiler Thread Local Storage, when disabled use pthread_getspecific() to emulate TLS.
+# Enabled by default
+AE_FEATURE_DEFAULT_ENABLE
+AE_FEATURE([compiler-tls], [Use pthread_getspecific() to emulate Thread Local Storage (TLS) variables.])
 
-# Allow overriding storage used for TLS variables.
-AC_ARG_ENABLE([compiler-tls],
-	AS_HELP_STRING([--disable-compiler-tls], [Use pthread_getspecific() to emulate Thread Local Storage (TLS) variables.]),
-	[def_compiler_tls=$enableval],
-	[def_compiler_tls="yes"])
+# smp-support configure option
+# Enabled by default
+AE_FEATURE_DEFAULT_ENABLE
+AE_FEATURE([smp-support], [Disable SMP support. Warning: only use this on uniprocessor systems.])
 
-AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
+# RCU debugging option
+# Disabled by default
+AE_FEATURE_DEFAULT_DISABLE
+AE_FEATURE([rcu-debug], [Enable internal debugging self-checks. Introduces a performance penalty.])
 
+# rculfhash iterator debugging
+# Disabled by default
+AE_FEATURE_DEFAULT_DISABLE
+AE_FEATURE([cds-lfht-iter-debug], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
+
+
+##                                                                    ##
+## Set defines for optional features conditionnals in the source code ##
+##                                                                    ##
+
+AE_IF_FEATURE_DISABLED([sys-membarrier-fallback], [
+  AC_DEFINE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [1], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
+])
+
+AE_IF_FEATURE_ENABLED([compiler-tls], [
+  AC_DEFINE([CONFIG_RCU_TLS], [1], [Use compiler provided Thread Local Storage.])
+])
+
+AE_IF_FEATURE_ENABLED([smp-support], [
+  AC_DEFINE([CONFIG_RCU_SMP], [1], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
+])
+
+AE_IF_FEATURE_ENABLED([rcu-debug], [
+  AC_DEFINE([CONFIG_RCU_DEBUG], [1], [Enable internal debugging self-checks. Introduces a performance penalty.])
+])
+
+AE_IF_FEATURE_ENABLED([cds-lfht-iter-debug], [
+  AC_DEFINE([CONFIG_CDS_LFHT_ITER_DEBUG], [1], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
+])
 
 AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
 
 AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
 
-# smp-support configure option
-AC_ARG_ENABLE([smp-support], 
-	AS_HELP_STRING([--disable-smp-support], [Disable SMP support. Warning: only use this on uniprocessor systems. [default=enabled]]),
-	[def_smp_support=$enableval],
-	[def_smp_support="yes"])
-AS_IF([test "x$def_smp_support" = "xyes"], [AC_DEFINE([CONFIG_RCU_SMP], [1])])
 
-# RCU debugging option
-AC_ARG_ENABLE([rcu-debug],
-      AS_HELP_STRING([--enable-rcu-debug], [Enable internal debugging
-		      self-checks. Introduces a performance penalty.]))
-AS_IF([test "x$enable_rcu_debug" = "xyes"], [
-       AC_DEFINE([CONFIG_RCU_DEBUG], [1])
-])
-
-# rculfhash iterator debugging
-AC_ARG_ENABLE([cds-lfht-iter-debug],
-      AS_HELP_STRING([--enable-cds-lfht-iter-debug], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.]))
-AS_IF([test "x$enable_cds_lfht_iter_debug" = "xyes"], [
-       AC_DEFINE([CONFIG_CDS_LFHT_ITER_DEBUG], [1])
-])
 
 # From the sched_setaffinity(2)'s man page:
 # ~~~~
@@ -431,11 +443,11 @@ PPRINT_SUBTITLE([Features])
 PPRINT_PROP_STRING([Target architecture], $host_cpu)
 
 # SMP support enabled/disabled
-test "x$def_smp_support" = "xyes" && value=1 || value=0
+AE_IS_FEATURE_ENABLED([smp-support]) && value=1 || value=0
 PPRINT_PROP_BOOL([SMP support], $value)
 
 # TLS
-test "x$def_compiler_tls" = "xyes" && value="compiler TLS" || value="pthread_getspecific()"
+AE_IS_FEATURE_ENABLED([compiler-tls]) && value="compiler TLS" || value="pthread_getspecific()"
 PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
 
 # clock_gettime() available
@@ -443,23 +455,23 @@ test "x$ac_cv_search_function_clock_gettime" != "xno" && value=1 || value=0
 PPRINT_PROP_BOOL([clock_gettime()], $value)
 
 # Require membarrier
-test "x$def_sys_membarrier_fallback" != "xyes" && value=1 || value=0
+AE_IS_FEATURE_ENABLED([sys-membarrier-fallback]) && value=0 || value=1
 PPRINT_PROP_BOOL([Require membarrier], $value)
 
 # RCU debug enabled/disabled
-test "x$enable_rcu_debug" = "xyes" && value=1 || value=0
+AE_IS_FEATURE_ENABLED([rcu-debug]) && value=1 || value=0
 PPRINT_PROP_BOOL([Internal debugging], $value)
 
 # rculfhash iterator debug enabled/disabled
-test "x$enable_cds_lfht_iter_debug" = "xyes" && value=1 || value=0
-PPRINT_PROP_BOOL([Lock-free hash table iterator debugging], $value)
+AE_IS_FEATURE_ENABLED([cds-lfht-iter-debug]) && value=1 || value=0
+PPRINT_PROP_BOOL([Lock-free HT iterator debugging], $value)
 
 PPRINT_PROP_BOOL([Multi-flavor support], 1)
 
 report_bindir="`eval eval echo $bindir`"
 report_libdir="`eval eval echo $libdir`"
 
-# Print the bindir and libdir this `make install' will install into.
+# Print the bindir and libdir this 'make install' will install into.
 AS_ECHO
 PPRINT_SUBTITLE([Install directories])
 PPRINT_PROP_STRING([Binaries], [$report_bindir])
