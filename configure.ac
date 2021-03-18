@@ -132,31 +132,9 @@ AC_SUBST([NPROC_CMD], [$NPROC_CMD])
 LT_INIT
 
 
-AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
-AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
-AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
-AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
-AH_TEMPLATE([CONFIG_RCU_DEBUG], [Enable internal debugging self-checks. Introduces a performance penalty.])
-AH_TEMPLATE([CONFIG_CDS_LFHT_ITER_DEBUG], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
-
-# Allow requiring the operating system to support the membarrier system
-# call. Applies to default and bulletproof flavors.
-AC_ARG_ENABLE([sys-membarrier-fallback],
-	AS_HELP_STRING([--disable-sys-membarrier-fallback], [Abort if sys-membarrier is needed but not available rather than using a fallback.]),
-	[def_sys_membarrier_fallback=$enableval],
-	[def_sys_membarrier_fallback="yes"])
-AS_IF([test "x$def_sys_membarrier_fallback" != "xyes"], [AC_DEFINE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [1])])
-
-# Allow overriding storage used for TLS variables.
-AC_ARG_ENABLE([compiler-tls],
-	AS_HELP_STRING([--disable-compiler-tls], [Use pthread_getspecific() to emulate Thread Local Storage (TLS) variables.]),
-	[def_compiler_tls=$enableval],
-	[def_compiler_tls="yes"])
-
-AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
-
-
-AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
+##                ##
+## Library checks ##
+##                ##
 
 # Checks for library functions.
 AC_FUNC_MMAP
@@ -179,11 +157,37 @@ AC_CHECK_FUNCS([ \
 # AC_FUNC_MALLOC causes problems when cross-compiling.
 #AC_FUNC_MALLOC
 
-# Search for clock_gettime
+# Search for clock_gettime() in -lrt
 AC_SEARCH_LIBS([clock_gettime], [rt], [
-	AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1])
-	config_rcu_have_clock_gettime=yes
-], [])
+  AC_DEFINE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [1], [clock_gettime() is detected.])
+])
+
+
+
+AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
+AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
+AH_TEMPLATE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [Require the operating system to support the membarrier system call for default and bulletproof flavors.])
+AH_TEMPLATE([CONFIG_RCU_DEBUG], [Enable internal debugging self-checks. Introduces a performance penalty.])
+AH_TEMPLATE([CONFIG_CDS_LFHT_ITER_DEBUG], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
+
+# Allow requiring the operating system to support the membarrier system
+# call. Applies to default and bulletproof flavors.
+AC_ARG_ENABLE([sys-membarrier-fallback],
+	AS_HELP_STRING([--disable-sys-membarrier-fallback], [Abort if sys-membarrier is needed but not available rather than using a fallback.]),
+	[def_sys_membarrier_fallback=$enableval],
+	[def_sys_membarrier_fallback="yes"])
+AS_IF([test "x$def_sys_membarrier_fallback" != "xyes"], [AC_DEFINE([CONFIG_RCU_FORCE_SYS_MEMBARRIER], [1])])
+
+# Allow overriding storage used for TLS variables.
+AC_ARG_ENABLE([compiler-tls],
+	AS_HELP_STRING([--disable-compiler-tls], [Use pthread_getspecific() to emulate Thread Local Storage (TLS) variables.]),
+	[def_compiler_tls=$enableval],
+	[def_compiler_tls="yes"])
+
+AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
+
+
+AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
 
 AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
 
@@ -435,7 +439,7 @@ test "x$def_compiler_tls" = "xyes" && value="compiler TLS" || value="pthread_get
 PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
 
 # clock_gettime() available
-test "x$config_rcu_have_clock_gettime" = "xyes" && value=1 || value=0
+test "x$ac_cv_search_function_clock_gettime" != "xno" && value=1 || value=0
 PPRINT_PROP_BOOL([clock_gettime()], $value)
 
 # Require membarrier
