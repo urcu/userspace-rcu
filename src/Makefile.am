@@ -2,10 +2,7 @@ AM_CPPFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)
 
 #Add the -version-info directly here since we are only building
 # library that use the version-info
-AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION)
-if USE_CYGWIN
-AM_LDFLAGS+=-no-undefined
-endif
+AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION) $(LT_NO_UNDEFINED)
 
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h \
 	compat-rand.h urcu-utils.h

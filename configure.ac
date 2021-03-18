@@ -45,6 +45,16 @@ AM_MAINTAINER_MODE([enable])
 # Enable silent rules by default
 AM_SILENT_RULES([yes])
 
+
+##                               ##
+## OS and Arch specific defaults ##
+##                               ##
+
+AS_CASE([$host],
+  [*-cygwin*], [LT_NO_UNDEFINED="-no-undefined"]
+)
+
+
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
@@ -138,11 +148,6 @@ AC_CHECK_HEADERS([ \
 	sys/param.h \
 	sys/time.h \
 ])
-
-AS_CASE([$host],[*-cygwin*],
-	[AM_CONDITIONAL(USE_CYGWIN, true)],
-	[AM_CONDITIONAL(USE_CYGWIN, false)]
-)
 
 # Search for clock_gettime
 AC_SEARCH_LIBS([clock_gettime], [rt], [
@@ -282,6 +287,8 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 
 # Library versions for libtool
 AC_SUBST([URCU_LIBRARY_VERSION], [urcu_lib_version])
+
+AC_SUBST(LT_NO_UNDEFINED)
 
 AM_CPPFLAGS="-include config.h"
 AC_SUBST(AM_CPPFLAGS)
