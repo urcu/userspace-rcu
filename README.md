@@ -108,7 +108,7 @@ This source tree is based on the autotools suite from GNU to simplify
 portability. Here are some things you should have on your system in order to
 compile the git repository tree :
 
-  - GNU autotools (automake >=1.10, autoconf >=2.50, autoheader >=2.50)
+  - GNU autotools (automake >=1.12, autoconf >=2.69)
     (make sure your system wide `automake` points to a recent version!)
   - GNU Libtool >=2.2
     (for more information, go to http://www.gnu.org/software/autoconf/)

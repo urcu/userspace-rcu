@@ -24,7 +24,7 @@ m4_define([urcu_lib_version], urcu_lib_version_current[:]urcu_lib_version_revisi
 ## Autoconf base setup ##
 ##                     ##
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.69])
 AC_INIT([userspace-rcu],[urcu_version],[mathieu dot desnoyers at efficios dot com],[],[http://liburcu.org/])
 
 AC_CONFIG_HEADERS([include/config.h include/urcu/config.h])
@@ -34,11 +34,16 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE([1.12 foreign dist-bzip2 no-dist-gzip nostdinc])
+
+##                     ##
+## Automake base setup ##
+##                     ##
+
+AM_INIT_AUTOMAKE([1.12 foreign dist-bzip2 no-dist-gzip nostdinc -Wall -Wno-portability -Werror])
 AM_MAINTAINER_MODE([enable])
 
-# Enable silent rules if available (Introduced in AM 1.11)
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+# Enable silent rules by default
+AM_SILENT_RULES([yes])
 
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
