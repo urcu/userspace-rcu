@@ -1,18 +1,7 @@
 #! /bin/sh
-# Copyright (C) 2011-2014 Free Software Foundation, Inc.
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2, or (at your option)
-# any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (C) 2011-2018 Free Software Foundation, Inc.
 
 # As a special exception to the GNU General Public License, if you
 # distribute this file as part of a program that contains a
@@ -132,7 +121,7 @@ fi
     # last `echo $?' statement), and would thus die reporting an internal
     # error.
     # For more information, see the Autoconf manual and the threads:
-    # <http://lists.gnu.org/archive/html/bug-autoconf/2011-09/msg00004.html>
+    # <https://lists.gnu.org/archive/html/bug-autoconf/2011-09/msg00004.html>
     # <http://mail.opensolaris.org/pipermail/ksh93-integration-discuss/2009-February/004121.html>
     trap : 1 3 2 13 15
     if test $merge -gt 0; then
@@ -646,9 +635,9 @@ test $? -eq 0 || fatal "I/O or internal error"
 # Local Variables:
 # mode: shell-script
 # sh-indentation: 2
-# eval: (add-hook 'write-file-hooks 'time-stamp)
+# eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-start: "scriptversion="
 # time-stamp-format: "%:y-%02m-%02d.%02H"
-# time-stamp-time-zone: "UTC"
+# time-stamp-time-zone: "UTC0"
 # time-stamp-end: "; # UTC"
 # End:

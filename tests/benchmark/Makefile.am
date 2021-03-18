@@ -3,7 +3,7 @@ AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/s
 TEST_EXTENSIONS = .tap
 TAP_LOG_DRIVER_FLAGS = --merge --comments
 TAP_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
-	$(top_srcdir)/config/tap-driver.sh
+	$(top_srcdir)/tests/utils/tap-driver.sh
 
 SCRIPT_LIST = common.sh \
 	run-urcu-tests.sh \

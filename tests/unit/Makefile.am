@@ -2,7 +2,7 @@ AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/s
 
 LOG_DRIVER_FLAGS = --merge --comments
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
-	$(top_srcdir)/config/tap-driver.sh
+	$(top_srcdir)/tests/utils/tap-driver.sh
 
 noinst_PROGRAMS = test_uatomic \
 	test_urcu_multiflavor \

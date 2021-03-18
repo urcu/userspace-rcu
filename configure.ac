@@ -45,8 +45,6 @@ AM_MAINTAINER_MODE([enable])
 # Enable silent rules by default
 AM_SILENT_RULES([yes])
 
-AC_REQUIRE_AUX_FILE([tap-driver.sh])
-
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])

@@ -3,9 +3,9 @@ AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/s
 noinst_LIBRARIES = libtap.a
 libtap_a_SOURCES = tap.c tap.h
 
-SCRIPT_LIST = tap.sh
+SCRIPT_LIST = tap.sh tap-driver.sh
 
-dist_noinst_SCRIPTS = $(SCRIPT_LIST)
+dist_check_SCRIPTS = $(SCRIPT_LIST)
 
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
