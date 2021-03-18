@@ -55,6 +55,48 @@ AS_CASE([$host],
 )
 
 
+##                   ##
+## C compiler checks ##
+##                   ##
+
+# Choose the C compiler
+AC_PROG_CC
+# AC_PROG_CC_STDC was merged in AC_PROG_CC in autoconf 2.70
+m4_version_prereq([2.70], [], [AC_PROG_CC_STDC])
+
+# Make sure the C compiler supports C99
+AS_IF([test "$ac_cv_prog_cc_c99" = "no"], [AC_MSG_ERROR([The compiler does not support C99])])
+
+# Enable available system extensions and LFS support
+AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
+
+# Make sure the C compiler supports __attribute__
+AX_C___ATTRIBUTE__
+AS_IF([test "x$ax_cv___attribute__" != "xyes"],
+  [AC_MSG_ERROR([The compiler does not support __attribute__ extensions])])
+
+# Make sure we have pthread support
+AX_PTHREAD([], [AC_MSG_ERROR([Could not configure pthread support])])
+
+# Make sure the C compiler supports weak symbols
+AX_SYS_WEAK_ALIAS
+AS_IF([test "x$ax_cv_sys_weak_alias" = "xno"],
+  [AC_MSG_ERROR([Your platform doesn't support weak symbols.])])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_INLINE
+AC_C_TYPEOF
+AC_TYPE_INT32_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
+
+
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
@@ -76,11 +118,6 @@ AC_ARG_ENABLE([compiler-tls],
 	[def_compiler_tls=$enableval],
 	[def_compiler_tls="yes"])
 
-# Checks for C compiler
-AC_USE_SYSTEM_EXTENSIONS
-AC_PROG_CC
-# AC_PROG_CC_STDC was merged in AC_PROG_CC in autoconf 2.70
-m4_version_prereq([2.70], [], [AC_PROG_CC_STDC])
 AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
 
 # Checks for programs.
@@ -98,24 +135,6 @@ AS_IF([test "x$NPROC" != "x"],
 AC_SUBST([NPROC_CMD], [$NPROC_CMD])
 
 LT_INIT
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_INLINE
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT16_T
-AC_TYPE_INT32_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
-
-AX_C___ATTRIBUTE__
-AS_IF([test "x$ax_cv___attribute__" = "xyes"],
-	[:],
-	[AC_MSG_ERROR([The compiler does not support __attribute__ extensions])])
-
-AX_PTHREAD(,[AC_MSG_ERROR([Could not configure pthreads support])])
 
 AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
 
