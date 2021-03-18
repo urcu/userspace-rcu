@@ -97,6 +97,41 @@ AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 
 
+##               ##
+## Header checks ##
+##               ##
+
+AC_HEADER_STDBOOL
+AC_CHECK_HEADERS([ \
+	limits.h \
+	stddef.h \
+	sys/param.h \
+	sys/time.h \
+])
+
+
+##                 ##
+## Programs checks ##
+##                 ##
+
+AC_PROG_AWK
+AC_PROG_GREP
+AC_PROG_MAKE_SET
+AC_CHECK_PROGS(NPROC, [nproc gnproc])
+AC_CHECK_PROG(GETCONF, [getconf])
+AS_IF([test "x$NPROC" != "x"],
+	[NPROC_CMD=$NPROC],
+	[AS_IF([test "x$GETCONF" != "x"],
+		[NPROC_CMD="$GETCONF _NPROCESSORS_ONLN"],
+		[NPROC_CMD="echo 1"]
+	)]
+)
+AC_SUBST([NPROC_CMD], [$NPROC_CMD])
+
+# Initialize and configure libtool
+LT_INIT
+
+
 AH_TEMPLATE([CONFIG_RCU_SMP], [Enable SMP support. With SMP support enabled, uniprocessors are also supported. With SMP support disabled, UP systems work fine, but the behavior of SMP systems is undefined.])
 AH_TEMPLATE([CONFIG_RCU_TLS], [TLS provided by the compiler.])
 AH_TEMPLATE([CONFIG_RCU_HAVE_CLOCK_GETTIME], [clock_gettime() is detected.])
@@ -120,21 +155,6 @@ AC_ARG_ENABLE([compiler-tls],
 
 AS_IF([test "x$def_compiler_tls" = "xyes"], AC_DEFINE([CONFIG_RCU_TLS], [1]), [:])
 
-# Checks for programs.
-AC_PROG_AWK
-AC_PROG_MAKE_SET
-AC_CHECK_PROGS(NPROC, [nproc gnproc])
-AC_CHECK_PROGS(GETCONF, [getconf])
-AS_IF([test "x$NPROC" != "x"],
-	[NPROC_CMD=$NPROC],
-	[AS_IF([test "x$GETCONF" != "x"],
-		[NPROC_CMD="$GETCONF _NPROCESSORS_ONLN"],
-		[NPROC_CMD="echo 1"]
-	)]
-)
-AC_SUBST([NPROC_CMD], [$NPROC_CMD])
-
-LT_INIT
 
 AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
 
@@ -158,15 +178,6 @@ AC_CHECK_FUNCS([ \
 
 # AC_FUNC_MALLOC causes problems when cross-compiling.
 #AC_FUNC_MALLOC
-
-# Check for headers
-AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([ \
-	limits.h \
-	stddef.h \
-	sys/param.h \
-	sys/time.h \
-])
 
 # Search for clock_gettime
 AC_SEARCH_LIBS([clock_gettime], [rt], [
