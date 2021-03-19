@@ -219,11 +219,6 @@ AE_IF_FEATURE_ENABLED([cds-lfht-iter-debug], [
   AC_DEFINE([CONFIG_CDS_LFHT_ITER_DEBUG], [1], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
 ])
 
-AM_CFLAGS="$AM_CFLAGS $PTHREAD_CFLAGS"
-
-AM_CONDITIONAL([NO_SHARED], [test "x$enable_shared" = "xno"])
-
-
 
 # From the sched_setaffinity(2)'s man page:
 # ~~~~
@@ -327,6 +322,15 @@ AC_CHECK_FUNCS([sched_setaffinity],[
 	])
 ])
 
+
+##                                                                          ##
+## Set automake variables for optional feature conditionnals in Makefile.am ##
+##                                                                          ##
+
+# Building the examples requires the shared libraries to be enabled
+AM_CONDITIONAL([ENABLE_EXAMPLES], AE_IS_FEATURE_ENABLED([shared]))
+
+
 ##                                             ##
 ## Substitute variables for use in Makefile.am ##
 ##                                             ##
@@ -339,7 +343,7 @@ AC_SUBST(LT_NO_UNDEFINED)
 AM_CPPFLAGS="-include config.h"
 AC_SUBST(AM_CPPFLAGS)
 
-AM_CFLAGS="-Wall -Wextra -Wno-unused-parameter $AM_CFLAGS"
+AM_CFLAGS="-Wall -Wextra -Wno-unused-parameter $PTHREAD_CFLAGS"
 AC_SUBST(AM_CFLAGS)
 
 AC_CONFIG_FILES([

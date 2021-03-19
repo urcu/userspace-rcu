@@ -111,10 +111,8 @@ dist_doc_examples_rculfhash_DATA = \
 	rculfhash/cds_lfht_lookup.c \
 	rculfhash/cds_lfht_for_each_entry_duplicate.c
 
-if NO_SHARED
-# Don't build examples if shared libraries support was explicitly
-# disabled.
-else
+# Building the examples requires the shared libraries to be enabled
+if ENABLE_EXAMPLES
 
 SUBDIRS_PROXY = hlist list urcu-flavors wfcqueue rculfqueue \
 	wfstack lfstack rculfhash
