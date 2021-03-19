@@ -1,4 +1,4 @@
-AM_CPPFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src
+AM_CPPFLAGS += -I$(top_srcdir)/src
 
 #Add the -version-info directly here since we are only building
 # library that use the version-info

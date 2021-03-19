@@ -238,7 +238,10 @@ AC_SUBST([URCU_LIBRARY_VERSION], [urcu_lib_version])
 
 AC_SUBST(LT_NO_UNDEFINED)
 
-AM_CPPFLAGS="-include config.h"
+# The order in which the include folders are searched is important.
+# The top_builddir should always be searched first in the event that a build
+# time generated file is included.
+AM_CPPFLAGS="-I\$(top_builddir)/include -I\$(top_srcdir)/include -include config.h"
 AC_SUBST(AM_CPPFLAGS)
 
 AM_CFLAGS="-Wall -Wextra -Wno-unused-parameter $PTHREAD_CFLAGS"

@@ -1,4 +1,4 @@
-AM_CFLAGS += -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common -g
+AM_CPPFLAGS += -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common
 
 LOG_DRIVER_FLAGS = --merge --comments
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
