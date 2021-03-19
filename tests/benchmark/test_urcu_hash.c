@@ -157,11 +157,7 @@ void set_affinity(void)
 	}
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
-#if SCHED_SETAFFINITY_ARGS == 2
-	sched_setaffinity(0, &mask);
-#else
 	sched_setaffinity(0, sizeof(mask), &mask);
-#endif
 #endif /* HAVE_SCHED_SETAFFINITY */
 }
 

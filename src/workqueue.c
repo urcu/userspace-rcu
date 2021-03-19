@@ -107,11 +107,8 @@ static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
 
 	CPU_ZERO(&mask);
 	CPU_SET(workqueue->cpu_affinity, &mask);
-#if SCHED_SETAFFINITY_ARGS == 2
-	ret = sched_setaffinity(0, &mask);
-#else
 	ret = sched_setaffinity(0, sizeof(mask), &mask);
-#endif
+
 	/*
 	 * EINVAL is fine: can be caused by hotunplugged CPUs, or by
 	 * cpuset(7). This is why we should always retry if we detect
