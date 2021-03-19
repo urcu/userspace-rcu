@@ -118,7 +118,7 @@ AC_PROG_AWK
 AC_PROG_GREP
 AC_PROG_MAKE_SET
 AC_CHECK_PROGS(NPROC, [nproc gnproc])
-AC_CHECK_PROG(GETCONF, [getconf])
+AC_CHECK_PROGS(GETCONF, [getconf])
 AS_IF([test "x$NPROC" != "x"],
 	[NPROC_CMD=$NPROC],
 	[AS_IF([test "x$GETCONF" != "x"],
