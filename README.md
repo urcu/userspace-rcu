@@ -91,6 +91,9 @@ supported, with the following exceptions:
 
 Clang version 3.0 (based on LLVM 3.0) is supported.
 
+Glibc >= 2.4 should work but the older version we test against is
+currently 2.17.
+
 For developers using the Git tree:
 
 This source tree is based on the autotools suite from GNU to simplify
