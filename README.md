@@ -58,7 +58,7 @@ Tested on:
   - FreeBSD 8.2/8.3/9.0/9.1/10.0 i386/amd64
   - Solaris 10/11 i386
   - Cygwin i386/amd64
-  - MacOSX amd64
+  - MacOS amd64/arm64
 
 Should also work on:
 
@@ -90,17 +90,6 @@ supported, with the following exceptions:
     perform unsafe access to deallocated stack.
 
 Clang version 3.0 (based on LLVM 3.0) is supported.
-
-Building on MacOS X (Darwin) requires a work-around for processor
-detection:
-
-  - 32-bit:
-
-        ./configure --build=i686-apple-darwin11
-
-  - 64-bit:
-
-        ./configure --build=x86_64-apple-darwin11
 
 For developers using the Git tree:
 
