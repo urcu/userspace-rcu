@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR
-static inline __attribute__((always_inline))
+static inline __attribute__((always_inline, noreturn))
 void _uatomic_link_error(void)
 {
 #ifdef ILLEGAL_INSTR
