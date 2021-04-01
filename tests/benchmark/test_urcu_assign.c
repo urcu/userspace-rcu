@@ -137,6 +137,7 @@ static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static
 void rcu_copy_mutex_lock(void)
 {
 	int ret;
@@ -147,6 +148,7 @@ void rcu_copy_mutex_lock(void)
 	}
 }
 
+static
 void rcu_copy_mutex_unlock(void)
 {
 	int ret;
@@ -191,6 +193,7 @@ static void test_array_free(struct test_array *ptr)
 	ptr->a = ARRAY_POISON;
 }
 
+static
 void *thr_reader(void *_count)
 {
 	unsigned long long *count = _count;
@@ -231,6 +234,7 @@ void *thr_reader(void *_count)
 
 }
 
+static
 void *thr_writer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -272,6 +276,7 @@ void *thr_writer(void *_count)
 	return ((void*)2);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",

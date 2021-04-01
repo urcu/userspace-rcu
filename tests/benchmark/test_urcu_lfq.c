@@ -139,6 +139,7 @@ struct test {
 
 static struct cds_lfq_queue_rcu q;
 
+static
 void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -194,6 +195,7 @@ void free_node_cb(struct rcu_head *head)
 	free(node);
 }
 
+static
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -243,6 +245,7 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
+static
 void test_end(struct cds_lfq_queue_rcu *q, unsigned long long *nr_dequeues)
 {
 	struct cds_lfq_node_rcu *snode;
@@ -259,6 +262,7 @@ void test_end(struct cds_lfq_queue_rcu *q, unsigned long long *nr_dequeues)
 	} while (snode);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",

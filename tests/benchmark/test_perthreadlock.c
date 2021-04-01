@@ -170,6 +170,7 @@ static void urcu_mutex_unlock(pthread_mutex_t *lock)
 	}
 }
 
+static
 void *thr_reader(void *data)
 {
 	unsigned long tidx = (unsigned long)data;
@@ -204,6 +205,7 @@ void *thr_reader(void *data)
 
 }
 
+static
 void *thr_writer(void *data)
 {
 	unsigned long wtidx = (unsigned long)data;
@@ -243,6 +245,7 @@ void *thr_writer(void *data)
 	return ((void*)2);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",

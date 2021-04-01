@@ -56,26 +56,31 @@ struct test_hash_cb test_hash_cb[] = {
 
 static enum test_hash test_choice = TEST_HASH_RW;
 
+static
 void (*get_sigusr1_cb(void))(int)
 {
 	return test_hash_cb[test_choice].sigusr1;
 }
 
+static
 void (*get_sigusr2_cb(void))(int)
 {
 	return test_hash_cb[test_choice].sigusr2;
 }
 
+static
 void *(*get_thr_reader_cb(void))(void *)
 {
 	return test_hash_cb[test_choice].thr_reader;
 }
 
+static
 void *(*get_thr_writer_cb(void))(void *)
 {
 	return test_hash_cb[test_choice].thr_writer;
 }
 
+static
 int (*get_populate_hash_cb(void))(void)
 {
 	return test_hash_cb[test_choice].populate_hash;
@@ -198,6 +203,7 @@ unsigned long test_compare(const void *key1, size_t key1_len,
 		return 1;
 }
 
+static
 void *thr_count(void *arg)
 {
 	printf_verbose("thread_begin %s, tid %lu\n",
@@ -263,6 +269,7 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 	printf("deleted %lu nodes.\n", count);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
