@@ -137,27 +137,7 @@ static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void rcu_copy_mutex_lock(void)
-{
-	int ret;
-	ret = pthread_mutex_lock(&rcu_copy_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
-}
-
-void rcu_copy_mutex_unlock(void)
-{
-	int ret;
-
-	ret = pthread_mutex_unlock(&rcu_copy_mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
-}
-
+static
 void *thr_reader(void *data)
 {
 	unsigned long tidx = (unsigned long)data;
@@ -192,6 +172,7 @@ void *thr_reader(void *data)
 
 }
 
+static
 void *thr_writer(void *data)
 {
 	unsigned long wtidx = (unsigned long)data;
@@ -226,6 +207,7 @@ void *thr_writer(void *data)
 	return ((void*)2);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
