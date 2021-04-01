@@ -83,7 +83,7 @@ static int test_mf_qsbr(void)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	plan_tests(5);
 

@@ -61,7 +61,7 @@ extern "C" {
  * cds_lfs_node_init: initialize lock-free stack node.
  */
 static inline
-void _cds_lfs_node_init(struct cds_lfs_node *node)
+void _cds_lfs_node_init(struct cds_lfs_node *node __attribute__((unused)))
 {
 }
 

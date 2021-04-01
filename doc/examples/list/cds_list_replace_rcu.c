@@ -37,7 +37,7 @@ void free_node_rcu(struct rcu_head *head)
 	free(node);
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	CDS_LIST_HEAD(mylist);		/* Defines an empty list head */

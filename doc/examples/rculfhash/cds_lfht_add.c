@@ -32,7 +32,7 @@ struct mynode {
 	struct cds_lfht_node node;	/* Chaining in hash table */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 42, 36, 24, };	/* 42 is duplicated */
 	struct cds_lfht *ht;	/* Hash table */

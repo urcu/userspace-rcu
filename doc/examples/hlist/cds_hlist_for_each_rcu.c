@@ -31,7 +31,7 @@ struct mynode {
 	struct cds_hlist_node node;	/* Linked-list chaining */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	CDS_HLIST_HEAD(mylist);		/* Defines an empty hlist head */

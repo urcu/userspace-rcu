@@ -54,7 +54,7 @@ int add_node(uint64_t v)
 	return 0;
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	uint64_t values[] = { 42, 36, 24, };
 	unsigned int i;

@@ -264,7 +264,7 @@ void *thr_writer(void *data)
 }
 
 static
-void show_usage(int argc, char **argv)
+void show_usage(char **argv)
 {
 	printf("Usage : %s nr_readers nr_writers duration (s) <OPTIONS>\n",
 		argv[0]);
@@ -290,25 +290,25 @@ int main(int argc, char **argv)
 	unsigned int i_thr;
 
 	if (argc < 4) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[1], "%u", &nr_readers);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[2], "%u", &nr_writers);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 			break;
 		case 'a':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			a = atoi(argv[++i]);
@@ -334,28 +334,28 @@ int main(int argc, char **argv)
 			break;
 		case 'b':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			reclaim_batch = atol(argv[++i]);
 			break;
 		case 'c':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			rduration = atol(argv[++i]);
 			break;
 		case 'd':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			wdelay = atol(argv[++i]);
 			break;
 		case 'e':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			wduration = atol(argv[++i]);

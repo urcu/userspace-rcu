@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 static inline
-void _cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node)
+void _cds_lfs_node_init_rcu(struct cds_lfs_node_rcu *node __attribute__((unused)))
 {
 }
 

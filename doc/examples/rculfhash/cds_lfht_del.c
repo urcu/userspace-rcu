@@ -50,7 +50,7 @@ void free_node(struct rcu_head *head)
 	free(node);
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 42, 36, 24, };	/* 42 is duplicated */
 	int remove_values[] = { 42, 36, 24, 123, };

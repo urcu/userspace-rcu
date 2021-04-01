@@ -30,7 +30,7 @@ enum urcu_hash_addremove {
 
 static enum urcu_hash_addremove addremove; /* 1: add, -1 remove, 0: random */
 
-void test_hash_rw_sigusr1_handler(int signo)
+void test_hash_rw_sigusr1_handler(int signo __attribute__((unused)))
 {
 	switch (addremove) {
 	case AR_ADD:
@@ -48,7 +48,7 @@ void test_hash_rw_sigusr1_handler(int signo)
 	}
 }
 
-void test_hash_rw_sigusr2_handler(int signo)
+void test_hash_rw_sigusr2_handler(int signo __attribute__((unused)))
 {
 	char msg[1] = { 0x42 };
 	ssize_t ret;

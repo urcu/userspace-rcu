@@ -395,7 +395,8 @@ void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 #else
 
 static
-void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht __attribute__((unused)),
+		struct cds_lfht_iter *iter __attribute__((unused)))
 {
 }
 
@@ -1570,7 +1571,8 @@ const struct cds_lfht_mm_type *get_mm_type(unsigned long max_nr_buckets)
  * For 32-bit architectures, use the order allocator.
  */
 static
-const struct cds_lfht_mm_type *get_mm_type(unsigned long max_nr_buckets)
+const struct cds_lfht_mm_type *get_mm_type(
+		unsigned long max_nr_buckets __attribute__((unused)))
 {
 	return &cds_lfht_mm_order;
 }
@@ -1675,7 +1677,8 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 	iter->next = next;
 }
 
-void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
+void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((unused)),
+		cds_lfht_match_fct match,
 		const void *key, struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
@@ -1709,7 +1712,8 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht, cds_lfht_match_fct match,
 	iter->next = next;
 }
 
-void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter)
+void cds_lfht_next(struct cds_lfht *ht __attribute__((unused)),
+		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
 
@@ -2115,7 +2119,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	__cds_lfht_resize_lazy_launch(ht);
 }
 
-static void cds_lfht_before_fork(void *priv)
+static void cds_lfht_before_fork(void *priv __attribute__((unused)))
 {
 	if (cds_lfht_workqueue_atfork_nesting++)
 		return;
@@ -2125,7 +2129,7 @@ static void cds_lfht_before_fork(void *priv)
 	urcu_workqueue_pause_worker(cds_lfht_workqueue);
 }
 
-static void cds_lfht_after_fork_parent(void *priv)
+static void cds_lfht_after_fork_parent(void *priv __attribute__((unused)))
 {
 	if (--cds_lfht_workqueue_atfork_nesting)
 		return;
@@ -2136,7 +2140,7 @@ end:
 	mutex_unlock(&cds_lfht_fork_mutex);
 }
 
-static void cds_lfht_after_fork_child(void *priv)
+static void cds_lfht_after_fork_child(void *priv __attribute__((unused)))
 {
 	if (--cds_lfht_workqueue_atfork_nesting)
 		return;
@@ -2158,8 +2162,9 @@ static struct urcu_atfork cds_lfht_atfork = {
  * disturb the application. The SIGRCU signal needs to be unblocked for
  * the urcu-signal flavor.
  */
-static void cds_lfht_worker_init(struct urcu_workqueue *workqueue,
-		void *priv)
+static void cds_lfht_worker_init(
+		struct urcu_workqueue *workqueue __attribute__((unused)),
+		void *priv __attribute__((unused)))
 {
 	int ret;
 	sigset_t mask;
