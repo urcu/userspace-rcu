@@ -248,18 +248,18 @@ void *thr_dequeuer(void *_count)
 }
 
 static
-void test_end(struct cds_lfs_stack_rcu *s, unsigned long long *nr_dequeues)
+void test_end(unsigned long long *nr_dequeues_l)
 {
 	struct cds_lfs_node_rcu *snode;
 
 	do {
-		snode = cds_lfs_pop_rcu(s);
+		snode = cds_lfs_pop_rcu(&s);
 		if (snode) {
 			struct test *node;
 
 			node = caa_container_of(snode, struct test, list);
 			free(node);
-			(*nr_dequeues)++;
+			(*nr_dequeues_l)++;
 		}
 	} while (snode);
 }
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 		tot_successful_dequeues += count_dequeuer[2 * i_thr + 1];
 	}
 
-	test_end(&s, &end_dequeues);
+	test_end(&end_dequeues);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);

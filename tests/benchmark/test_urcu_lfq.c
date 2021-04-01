@@ -246,18 +246,18 @@ void *thr_dequeuer(void *_count)
 }
 
 static
-void test_end(struct cds_lfq_queue_rcu *q, unsigned long long *nr_dequeues)
+void test_end(unsigned long long *nr_dequeues_l)
 {
 	struct cds_lfq_node_rcu *snode;
 
 	do {
-		snode = cds_lfq_dequeue_rcu(q);
+		snode = cds_lfq_dequeue_rcu(&q);
 		if (snode) {
 			struct test *node;
 
 			node = caa_container_of(snode, struct test, list);
 			free(node);	/* no more concurrent access */
-			(*nr_dequeues)++;
+			(*nr_dequeues_l)++;
 		}
 	} while (snode);
 }
@@ -407,7 +407,7 @@ int main(int argc, char **argv)
 		tot_successful_dequeues += count_dequeuer[2 * i_thr + 1];
 	}
 
-	test_end(&q, &end_dequeues);
+	test_end(&end_dequeues);
 	err = cds_lfq_destroy_rcu(&q);
 	assert(!err);
 
