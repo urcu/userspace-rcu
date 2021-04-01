@@ -50,7 +50,7 @@ static inline void loop_sleep(unsigned long loops)
 #define LOOPS 1048576
 #define TESTS 10
 
-int main(int argc, char **argv)
+int main(void)
 {
 	unsigned long i;
 	caa_cycles_t time1, time2;

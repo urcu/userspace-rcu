@@ -230,7 +230,7 @@ void test_end(unsigned long long *nr_dequeues_l)
 }
 
 static
-void show_usage(int argc, char **argv)
+void show_usage(char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",
 		argv[0]);
@@ -256,25 +256,25 @@ int main(int argc, char **argv)
 	unsigned int i_thr;
 
 	if (argc < 4) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[1], "%u", &nr_dequeuers);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[2], "%u", &nr_enqueuers);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
 	err = sscanf(argv[3], "%lu", &duration);
 	if (err != 1) {
-		show_usage(argc, argv);
+		show_usage(argv);
 		return -1;
 	}
 
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 		switch (argv[i][1]) {
 		case 'a':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			a = atoi(argv[++i]);
@@ -294,14 +294,14 @@ int main(int argc, char **argv)
 			break;
 		case 'c':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			rduration = atol(argv[++i]);
 			break;
 		case 'd':
 			if (argc < i + 2) {
-				show_usage(argc, argv);
+				show_usage(argv);
 				return -1;
 			}
 			wdelay = atol(argv[++i]);

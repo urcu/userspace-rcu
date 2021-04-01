@@ -43,7 +43,7 @@ int match(struct cds_lfht_node *ht_node, const void *_key)
 	return *key == node->value;
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 42, 36, 24, };	/* 42 is duplicated */
 	struct cds_lfht *ht;	/* Hash table */

@@ -29,7 +29,7 @@ struct mynode {
 	struct cds_lfq_node_rcu node;	/* Chaining in queue */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	struct cds_lfq_queue_rcu myqueue;	/* Queue */

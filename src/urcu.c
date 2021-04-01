@@ -622,7 +622,9 @@ void alias_rcu_init(void);
 #endif
 
 #ifdef RCU_SIGNAL
-static void sigrcu_handler(int signo, siginfo_t *siginfo, void *context)
+static void sigrcu_handler(int signo __attribute__((unused)),
+		siginfo_t *siginfo __attribute__((unused)),
+		void *context __attribute__((unused)))
 {
 	/*
 	 * Executing this cmm_smp_mb() is the only purpose of this signal handler.

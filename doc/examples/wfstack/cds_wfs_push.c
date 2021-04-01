@@ -27,7 +27,7 @@ struct mynode {
 	struct cds_wfs_node node;	/* Chaining in stack */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	struct cds_wfs_stack mystack;	/* Stack */
