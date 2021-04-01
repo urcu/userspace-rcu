@@ -27,7 +27,7 @@ struct mynode {
 	struct cds_wfcq_node node;	/* Chaining in queue */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	struct cds_wfcq_head myqueue_head;	/* Queue head */

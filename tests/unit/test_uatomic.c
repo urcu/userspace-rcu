@@ -91,7 +91,7 @@ do {						\
 						\
 } while (0)
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int nr_run = 2;
 #ifdef UATOMIC_HAS_ATOMIC_BYTE

@@ -105,7 +105,7 @@ typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, const void *key);
  * (detection of memory corruption).
  */
 static inline
-void cds_lfht_node_init(struct cds_lfht_node *node)
+void cds_lfht_node_init(struct cds_lfht_node *node __attribute__((unused)))
 {
 }
 

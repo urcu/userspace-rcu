@@ -62,7 +62,7 @@ void rcu_free_node(struct rcu_head *rh)
 	free(node);
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	uint64_t values[] = { 42, 36, 24, };
 	unsigned int i;

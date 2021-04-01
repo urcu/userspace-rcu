@@ -112,7 +112,7 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
  * cds_wfcq_init().
  */
 static inline void _cds_wfcq_destroy(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+		struct cds_wfcq_tail *tail __attribute__((unused)))
 {
 	int ret = pthread_mutex_destroy(&head->lock);
 	assert(!ret);
@@ -158,7 +158,7 @@ static inline bool _cds_wfcq_empty(cds_wfcq_head_ptr_t u_head,
 }
 
 static inline void _cds_wfcq_dequeue_lock(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+		struct cds_wfcq_tail *tail __attribute__((unused)))
 {
 	int ret;
 
@@ -167,7 +167,7 @@ static inline void _cds_wfcq_dequeue_lock(struct cds_wfcq_head *head,
 }
 
 static inline void _cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+		struct cds_wfcq_tail *tail __attribute__((unused)))
 {
 	int ret;
 
@@ -331,7 +331,7 @@ ___cds_wfcq_first_nonblocking(cds_wfcq_head_ptr_t head,
 }
 
 static inline struct cds_wfcq_node *
-___cds_wfcq_next(cds_wfcq_head_ptr_t head,
+___cds_wfcq_next(cds_wfcq_head_ptr_t head __attribute__((unused)),
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node,
 		int blocking)

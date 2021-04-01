@@ -1053,7 +1053,7 @@ end:
 URCU_ATTR_ALIAS(urcu_stringify(urcu_register_rculfhash_atfork))
 void alias_urcu_register_rculfhash_atfork();
 
-void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork)
+void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((unused)))
 {
 	call_rcu_lock(&call_rcu_mutex);
 	if (--registered_rculfhash_atfork_refcount)

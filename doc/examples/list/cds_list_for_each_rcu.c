@@ -30,7 +30,7 @@ struct mynode {
 	struct cds_list_head node;	/* Linked-list chaining */
 };
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values[] = { -5, 42, 36, 24, };
 	CDS_LIST_HEAD(mylist);		/* Defines an empty list head */

@@ -376,7 +376,7 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 	wake_up_defer();
 }
 
-static void *thr_defer(void *args)
+static void *thr_defer(void *args __attribute__((unused)))
 {
 	for (;;) {
 		/*

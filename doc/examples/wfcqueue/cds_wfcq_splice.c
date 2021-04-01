@@ -69,7 +69,7 @@ void print_queue(struct cds_wfcq_head *head,
 	printf("\n");
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
 	int values_A[] = { -5, 42, 36, 24, };
 	int values_B[] = { 200, 300, 400, };
