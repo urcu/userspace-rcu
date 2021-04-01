@@ -216,15 +216,15 @@ void *thr_dequeuer(void *_count)
 }
 
 static
-void test_end(struct cds_wfq_queue *q, unsigned long long *nr_dequeues)
+void test_end(unsigned long long *nr_dequeues_l)
 {
 	struct cds_wfq_node *node;
 
 	do {
-		node = cds_wfq_dequeue_blocking(q);
+		node = cds_wfq_dequeue_blocking(&q);
 		if (node) {
 			free(node);
-			(*nr_dequeues)++;
+			(*nr_dequeues_l)++;
 		}
 	} while (node);
 }
@@ -370,7 +370,7 @@ int main(int argc, char **argv)
 		tot_successful_dequeues += count_dequeuer[2 * i_thr + 1];
 	}
 
-	test_end(&q, &end_dequeues);
+	test_end(&end_dequeues);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);

@@ -291,19 +291,19 @@ static void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-static void test_end(struct cds_wfs_stack *s, unsigned long long *nr_dequeues,
-		unsigned long long *nr_pop_last)
+static void test_end(unsigned long long *nr_dequeues_l,
+		unsigned long long *nr_pop_last_l)
 {
 	struct cds_wfs_node *node;
 	int state;
 
 	do {
-		node = cds_wfs_pop_with_state_blocking(s, &state);
+		node = cds_wfs_pop_with_state_blocking(&s, &state);
 		if (node) {
 			if (state & CDS_WFS_STATE_LAST)
-				(*nr_pop_last)++;
+				(*nr_pop_last_l)++;
 			free(node);
-			(*nr_dequeues)++;
+			(*nr_dequeues_l)++;
 		}
 	} while (node);
 }
@@ -510,7 +510,7 @@ int main(int argc, char **argv)
 		tot_pop_last += count_dequeuer[4 * i_thr + 3];
 	}
 
-	test_end(&s, &end_dequeues, &tot_pop_last);
+	test_end(&end_dequeues, &tot_pop_last);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);

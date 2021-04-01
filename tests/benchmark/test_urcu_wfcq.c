@@ -303,8 +303,8 @@ static void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
-static void test_end(unsigned long long *nr_dequeues,
-		unsigned long long *nr_dequeue_last)
+static void test_end(unsigned long long *nr_dequeues_l,
+		unsigned long long *nr_dequeue_last_l)
 {
 	struct cds_wfcq_node *node;
 	int state;
@@ -314,9 +314,9 @@ static void test_end(unsigned long long *nr_dequeues,
 				&state);
 		if (node) {
 			if (state & CDS_WFCQ_STATE_LAST)
-				(*nr_dequeue_last)++;
+				(*nr_dequeue_last_l)++;
 			free(node);
-			(*nr_dequeues)++;
+			(*nr_dequeues_l)++;
 		}
 	} while (node);
 }
