@@ -581,6 +581,7 @@ unsigned int cds_lfht_fls_ulong(unsigned long x)
  * Return the minimum order for which x <= (1UL << order).
  * Return -1 if x is 0.
  */
+static
 int cds_lfht_get_count_order_u32(uint32_t x)
 {
 	if (!x)

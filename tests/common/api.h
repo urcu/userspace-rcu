@@ -248,6 +248,7 @@ static void run_on(int cpu)
  * timekeeping -- very crude -- should use MONOTONIC...
  */
 
+static inline
 long long get_microseconds(void)
 {
 	struct timeval tv;

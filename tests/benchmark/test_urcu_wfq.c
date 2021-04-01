@@ -138,6 +138,7 @@ static unsigned int nr_dequeuers;
 
 static struct cds_wfq_queue q;
 
+static
 void *thr_enqueuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -179,6 +180,7 @@ fail:
 
 }
 
+static
 void *thr_dequeuer(void *_count)
 {
 	unsigned long long *count = _count;
@@ -218,6 +220,7 @@ void *thr_dequeuer(void *_count)
 	return ((void*)2);
 }
 
+static
 void test_end(struct cds_wfq_queue *q, unsigned long long *nr_dequeues)
 {
 	struct cds_wfq_node *node;
@@ -231,6 +234,7 @@ void test_end(struct cds_wfq_queue *q, unsigned long long *nr_dequeues)
 	} while (node);
 }
 
+static
 void show_usage(int argc, char **argv)
 {
 	printf("Usage : %s nr_dequeuers nr_enqueuers duration (s) <OPTIONS>\n",
