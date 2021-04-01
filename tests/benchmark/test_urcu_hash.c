@@ -695,11 +695,11 @@ end_pthread_join:
 	}
 	{
 		char msg[1] = { 0x42 };
-		ssize_t ret;
+		ssize_t sret;
 
 		do {
-			ret = write(count_pipe[1], msg, 1);	/* wakeup thread */
-		} while (ret == -1L && errno == EINTR);
+			sret = write(count_pipe[1], msg, 1);	/* wakeup thread */
+		} while (sret == -1L && errno == EINTR);
 	}
 	err = pthread_join(tid_count, &tret);
 	if (err != 0) {
