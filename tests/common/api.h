@@ -230,7 +230,7 @@ static void wait_all_threads(void)
 
 static void run_on(int cpu)
 {
-#if HAVE_SCHED_SETAFFINITY
+#ifdef HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
 
 	CPU_ZERO(&mask);
