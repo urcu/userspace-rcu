@@ -92,7 +92,7 @@ struct urcu_workqueue_completion_work {
  * Losing affinity can be caused by CPU hotunplug/hotplug, or by
  * cpuset(7).
  */
-#if HAVE_SCHED_SETAFFINITY
+#ifdef HAVE_SCHED_SETAFFINITY
 static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
 {
 	cpu_set_t mask;

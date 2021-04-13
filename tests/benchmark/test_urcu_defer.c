@@ -86,7 +86,7 @@ pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void set_affinity(void)
 {
-#if HAVE_SCHED_SETAFFINITY
+#ifdef HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
 	int cpu, ret;
 #endif /* HAVE_SCHED_SETAFFINITY */
@@ -94,7 +94,7 @@ static void set_affinity(void)
 	if (!use_affinity)
 		return;
 
-#if HAVE_SCHED_SETAFFINITY
+#ifdef HAVE_SCHED_SETAFFINITY
 	ret = pthread_mutex_lock(&affinity_mutex);
 	if (ret) {
 		perror("Error in pthread mutex lock");
