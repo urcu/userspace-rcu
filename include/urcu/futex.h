@@ -110,7 +110,9 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 #include <sys/umtx.h>
 
 static inline int futex_async(int32_t *uaddr, int op, int32_t val,
-		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+		const struct timespec *timeout,
+		int32_t *uaddr2 __attribute__((unused)),
+		int32_t val3 __attribute__((unused)))
 {
 	int umtx_op;
 	void *umtx_uaddr = NULL, *umtx_uaddr2 = NULL;
