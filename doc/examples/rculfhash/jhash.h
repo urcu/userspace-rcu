@@ -1,6 +1,10 @@
 #ifndef _JHASH_H
 #define _JHASH_H
 
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#endif
+
 /*
  * jhash.h
  *
