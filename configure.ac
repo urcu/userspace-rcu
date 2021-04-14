@@ -79,11 +79,6 @@ AS_IF([test "x$ax_cv___attribute__" != "xyes"],
 # Make sure we have pthread support
 AX_PTHREAD([], [AC_MSG_ERROR([Could not configure pthread support])])
 
-# Make sure the C compiler supports weak symbols
-AX_SYS_WEAK_ALIAS
-AS_IF([test "x$ax_cv_sys_weak_alias" = "xno"],
-  [AC_MSG_ERROR([Your platform doesn't support weak symbols.])])
-
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_C_TYPEOF
