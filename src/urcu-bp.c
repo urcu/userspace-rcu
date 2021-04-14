@@ -75,8 +75,10 @@ void *mremap_wrapper(void *old_address, size_t old_size,
  * This is not generic.
 */
 static
-void *mremap_wrapper(void *old_address, size_t old_size,
-		size_t new_size, int flags)
+void *mremap_wrapper(void *old_address __attribute__((unused)),
+		size_t old_size __attribute__((unused)),
+		size_t new_size __attribute__((unused)),
+		int flags)
 {
 	assert(!(flags & MREMAP_MAYMOVE));
 
