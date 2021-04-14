@@ -121,7 +121,7 @@ static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
 	return ret;
 }
 #else
-static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
+static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue __attribute__((unused)))
 {
 	return 0;
 }

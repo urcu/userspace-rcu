@@ -228,16 +228,20 @@ static void wait_all_threads(void)
 	}
 }
 
+#ifdef HAVE_SCHED_SETAFFINITY
 static void run_on(int cpu)
 {
-#ifdef HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
 
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
 	sched_setaffinity(0, sizeof(mask), &mask);
-#endif /* HAVE_SCHED_SETAFFINITY */
 }
+#else
+
+static void run_on(int cpu __attribute__((unused)))
+{}
+#endif /* HAVE_SCHED_SETAFFINITY */
 
 /*
  * timekeeping -- very crude -- should use MONOTONIC...

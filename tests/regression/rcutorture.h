@@ -532,6 +532,9 @@ int stresstest(int nreaders)
  */
 
 static
+void usage(char *argv[]) __attribute__((noreturn));
+
+static
 void usage(char *argv[])
 {
 	diag("Usage: %s nreaders [ perf | rperf | uperf | stress ] [ stride ] [ callrcu_global | callrcu_percpu | callrcu_perthread ]\n", argv[0]);

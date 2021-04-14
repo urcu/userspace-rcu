@@ -230,7 +230,7 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 }
 #else
 static
-int set_thread_cpu_affinity(struct call_rcu_data *crdp)
+int set_thread_cpu_affinity(struct call_rcu_data *crdp __attribute__((unused)))
 {
 	return 0;
 }
