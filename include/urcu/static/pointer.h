@@ -49,14 +49,29 @@ extern "C" {
  * Inserts memory barriers on architectures that require them (currently only
  * Alpha) and documents which pointers are protected by RCU.
  *
- * The compiler memory barrier in CMM_LOAD_SHARED() ensures that value-speculative
- * optimizations (e.g. VSS: Value Speculation Scheduling) does not perform the
- * data read before the pointer read by speculating the value of the pointer.
- * Correct ordering is ensured because the pointer is read as a volatile access.
- * This acts as a global side-effect operation, which forbids reordering of
- * dependent memory operations. Note that such concern about dependency-breaking
- * optimizations will eventually be taken care of by the "memory_order_consume"
- * addition to forthcoming C++ standard.
+ * With C standards prior to C11/C++11, the compiler memory barrier in
+ * CMM_LOAD_SHARED() ensures that value-speculative optimizations (e.g.
+ * VSS: Value Speculation Scheduling) does not perform the data read
+ * before the pointer read by speculating the value of the pointer.
+ * Correct ordering is ensured because the pointer is read as a volatile
+ * access. This acts as a global side-effect operation, which forbids
+ * reordering of dependent memory operations.
+ *
+ * With C standards C11/C++11, concerns about dependency-breaking
+ * optimizations are taken care of by the "memory_order_consume" atomic
+ * load.
+ *
+ * By defining URCU_DEREFERENCE_USE_VOLATILE, the user requires use of
+ * volatile access to implement rcu_dereference rather than
+ * memory_order_consume load from the C11/C++11 standards.
+ *
+ * This may improve performance on weakly-ordered architectures where
+ * the compiler implements memory_order_consume as a
+ * memory_order_acquire, which is stricter than required by the
+ * standard.
+ *
+ * Note that using volatile accesses for rcu_dereference may cause
+ * LTO to generate incorrectly ordered code starting from C11/C++11.
  *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
  *
@@ -64,10 +79,31 @@ extern "C" {
  * meets the 10-line criterion in LGPL, allowing this function to be
  * expanded directly in non-LGPL code.
  */
+
+#ifdef URCU_DEREFERENCE_USE_VOLATILE
+# define __rcu_dereference(p)	CMM_LOAD_SHARED(p)
+#else
+# if defined (__cplusplus)
+#  if __cplusplus >= 201103L
+#   include <atomic>
+#   define __rcu_dereference(p)	((std::atomic<__typeof__(p)>)(p)).load(std::memory_order_consume)
+#  else
+#   define __rcu_dereference(p)	CMM_LOAD_SHARED(x)
+#  endif
+# else
+#  if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#   include <stdatomic.h>
+#   define __rcu_dereference(p)	atomic_load_explicit(&(p), memory_order_consume)
+#  else
+#   define __rcu_dereference(p)	CMM_LOAD_SHARED(p)
+#  endif
+# endif
+#endif
+
 #define _rcu_dereference(p)						\
 				__extension__				\
 				({					\
-				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p); \
+				__typeof__(p) _________p1 = __rcu_dereference(p); \
 				cmm_smp_read_barrier_depends();		\
 				(_________p1);				\
 				})
