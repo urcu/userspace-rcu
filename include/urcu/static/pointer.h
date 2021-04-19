@@ -61,6 +61,10 @@ extern "C" {
  * optimizations are taken care of by the "memory_order_consume" atomic
  * load.
  *
+ * Use the gcc __atomic_load() rather than C11/C++11 atomic load
+ * explicit because the pointer used as input argument is a pointer,
+ * not an _Atomic type as required by C11/C++11.
+ *
  * By defining URCU_DEREFERENCE_USE_VOLATILE, the user requires use of
  * volatile access to implement rcu_dereference rather than
  * memory_order_consume load from the C11/C++11 standards.
@@ -80,33 +84,25 @@ extern "C" {
  * expanded directly in non-LGPL code.
  */
 
-#ifdef URCU_DEREFERENCE_USE_VOLATILE
-# define __rcu_dereference(p)	CMM_LOAD_SHARED(p)
-#else
-# if defined (__cplusplus)
-#  if __cplusplus >= 201103L
-#   include <atomic>
-#   define __rcu_dereference(p)	((std::atomic<__typeof__(p)>)(p)).load(std::memory_order_consume)
-#  else
-#   define __rcu_dereference(p)	CMM_LOAD_SHARED(x)
-#  endif
-# else
-#  if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
-#   include <stdatomic.h>
-#   define __rcu_dereference(p)	atomic_load_explicit(&(p), memory_order_consume)
-#  else
-#   define __rcu_dereference(p)	CMM_LOAD_SHARED(p)
-#  endif
-# endif
+#if !defined (URCU_DEREFERENCE_USE_VOLATILE) &&		\
+	((defined (__cplusplus) && __cplusplus >= 201103L) ||	\
+	(defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L))
+# define __URCU_DEREFERENCE_USE_ATOMIC_CONSUME
 #endif
 
-#define _rcu_dereference(p)						\
-				__extension__				\
-				({					\
-				__typeof__(p) _________p1 = __rcu_dereference(p); \
-				cmm_smp_read_barrier_depends();		\
-				(_________p1);				\
-				})
+#ifdef __URCU_DEREFERENCE_USE_ATOMIC_CONSUME
+# define _rcu_dereference(p) __extension__ ({						\
+				__typeof__(p) _________p1;				\
+				__atomic_load(&(p), &_________p1, __ATOMIC_CONSUME);	\
+				(_________p1);						\
+			})
+#else
+# define _rcu_dereference(p) __extension__ ({						\
+				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p);		\
+				cmm_smp_read_barrier_depends();				\
+				(_________p1);						\
+			})
+#endif
 
 /**
  * _rcu_cmpxchg_pointer - same as rcu_assign_pointer, but tests if the pointer
