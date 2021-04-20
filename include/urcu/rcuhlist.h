@@ -55,8 +55,8 @@ void cds_hlist_del_rcu(struct cds_hlist_node *elem)
  * This must be done while rcu_read_lock() is held.
  */
 #define cds_hlist_for_each_rcu(pos, head) \
-	for (pos = rcu_dereference((head)->next); pos != NULL; \
-		pos = rcu_dereference(pos->next))
+	for (pos = rcu_dereference((head)->next); (pos) != NULL; \
+		pos = rcu_dereference((pos)->next))
 
 /*
  * cds_hlist_for_each_entry_rcu takes 4 arguments, while the Linux
@@ -66,16 +66,16 @@ void cds_hlist_del_rcu(struct cds_hlist_node *elem)
  */
 #define cds_hlist_for_each_entry_rcu(entry, pos, head, member) \
 	for (pos = rcu_dereference((head)->next), \
-			entry = cds_hlist_entry(pos, __typeof__(*entry), member); \
-		pos != NULL; \
-		pos = rcu_dereference(pos->next), \
-			entry = cds_hlist_entry(pos, __typeof__(*entry), member))
+			entry = cds_hlist_entry(pos, __typeof__(*(entry)), member); \
+		(pos) != NULL; \
+		pos = rcu_dereference((pos)->next), \
+			entry = cds_hlist_entry(pos, __typeof__(*(entry)), member))
 
 #define cds_hlist_for_each_entry_rcu_2(entry, head, member) \
 	for (entry = cds_hlist_entry_safe(rcu_dereference((head)->next), \
-			__typeof__(*entry), member); \
-		entry != NULL; \
-		entry = cds_hlist_entry_safe(rcu_dereference(entry->member.next), \
-			__typeof__(*entry), member))
+			__typeof__(*(entry)), member); \
+		(entry) != NULL; \
+		entry = cds_hlist_entry_safe(rcu_dereference((entry)->member.next), \
+			__typeof__(*(entry)), member))
 
 #endif	/* _URCU_RCUHLIST_H */
