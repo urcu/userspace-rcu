@@ -25,6 +25,8 @@
 #ifndef _CDS_LIST_H
 #define _CDS_LIST_H	1
 
+#include <urcu/compiler.h>
+
 /*
  * The definitions of this file are adopted from those which can be
  * found in the Linux kernel headers to enable people familiar with the
@@ -121,8 +123,7 @@ void cds_list_splice(struct cds_list_head *add, struct cds_list_head *head)
 }
 
 /* Get typed element from list at a given position. */
-#define cds_list_entry(ptr, type, member) \
-	((type *) ((char *) (ptr) - (unsigned long) (&((type *) 0)->member)))
+#define cds_list_entry(ptr, type, member) 	caa_container_of(ptr, type, member)
 
 
 /* Get first entry from a list. */
@@ -131,54 +132,54 @@ void cds_list_splice(struct cds_list_head *add, struct cds_list_head *head)
 
 /* Iterate forward over the elements of the list. */
 #define cds_list_for_each(pos, head) \
-	for (pos = (head)->next; pos != (head); pos = pos->next)
+	for (pos = (head)->next; (pos) != (head); pos = (pos)->next)
 
 /*
  * Iterate forward over the elements list. The list elements can be
  * removed from the list while doing this.
  */
 #define cds_list_for_each_safe(pos, p, head) \
-	for (pos = (head)->next, p = pos->next; \
-		pos != (head); \
-		pos = p, p = pos->next)
+	for (pos = (head)->next, p = (pos)->next; \
+		(pos) != (head); \
+		pos = (p), p = (pos)->next)
 
 /* Iterate backward over the elements of the list. */
 #define cds_list_for_each_prev(pos, head) \
-	for (pos = (head)->prev; pos != (head); pos = pos->prev)
+	for (pos = (head)->prev; (pos) != (head); pos = (pos)->prev)
 
 /*
  * Iterate backwards over the elements list. The list elements can be
  * removed from the list while doing this.
  */
 #define cds_list_for_each_prev_safe(pos, p, head) \
-	for (pos = (head)->prev, p = pos->prev; \
-		pos != (head); \
-		pos = p, p = pos->prev)
+	for (pos = (head)->prev, p = (pos)->prev; \
+		(pos) != (head); \
+		pos = (p), p = (pos)->prev)
 
 #define cds_list_for_each_entry(pos, head, member) \
-	for (pos = cds_list_entry((head)->next, __typeof__(*pos), member); \
-		&pos->member != (head); \
-		pos = cds_list_entry(pos->member.next, __typeof__(*pos), member))
+	for (pos = cds_list_entry((head)->next, __typeof__(*(pos)), member); \
+		&(pos)->member != (head); \
+		pos = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member))
 
 #define cds_list_for_each_entry_reverse(pos, head, member) \
-	for (pos = cds_list_entry((head)->prev, __typeof__(*pos), member); \
-		&pos->member != (head); \
-		pos = cds_list_entry(pos->member.prev, __typeof__(*pos), member))
+	for (pos = cds_list_entry((head)->prev, __typeof__(*(pos)), member); \
+		&(pos)->member != (head); \
+		pos = cds_list_entry((pos)->member.prev, __typeof__(*(pos)), member))
 
 #define cds_list_for_each_entry_safe(pos, p, head, member) \
-	for (pos = cds_list_entry((head)->next, __typeof__(*pos), member), \
-			p = cds_list_entry(pos->member.next, __typeof__(*pos), member); \
-		&pos->member != (head); \
-		pos = p, p = cds_list_entry(pos->member.next, __typeof__(*pos), member))
+	for (pos = cds_list_entry((head)->next, __typeof__(*(pos)), member), \
+			p = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member); \
+		&(pos)->member != (head); \
+		pos = (p), p = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member))
 
 /*
  * Same as cds_list_for_each_entry_safe, but starts from "pos" which should
  * point to an entry within the list.
  */
 #define cds_list_for_each_entry_safe_from(pos, p, head, member) \
-        for (p = cds_list_entry(pos->member.next, __typeof__(*pos), member); \
-                &pos->member != (head); \
-                pos = p, p = cds_list_entry(pos->member.next, __typeof__(*pos), member))
+        for (p = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member); \
+                &(pos)->member != (head); \
+                pos = (p), p = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member))
 
 static inline
 int cds_list_empty(struct cds_list_head *head)
