@@ -72,10 +72,10 @@ void cds_hlist_del_rcu(struct cds_hlist_node *elem)
 			entry = cds_hlist_entry(pos, __typeof__(*entry), member))
 
 #define cds_hlist_for_each_entry_rcu_2(entry, head, member) \
-	for (entry = cds_hlist_entry(rcu_dereference((head)->next), \
+	for (entry = cds_hlist_entry_safe(rcu_dereference((head)->next), \
 			__typeof__(*entry), member); \
-		&entry->member != NULL; \
-		entry = cds_hlist_entry(rcu_dereference(entry->member.next), \
+		entry != NULL; \
+		entry = cds_hlist_entry_safe(rcu_dereference(entry->member.next), \
 			__typeof__(*entry), member))
 
 #endif	/* _URCU_RCUHLIST_H */
