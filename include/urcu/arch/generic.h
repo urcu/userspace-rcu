@@ -153,23 +153,7 @@ extern "C" {
 #ifndef HAS_CAA_GET_CYCLES
 #define HAS_CAA_GET_CYCLES
 
-#ifdef CONFIG_RCU_HAVE_CLOCK_GETTIME
-
-#include <time.h>
-#include <stdint.h>
-
-typedef uint64_t caa_cycles_t;
-
-static inline caa_cycles_t caa_get_cycles (void)
-{
-	struct timespec ts;
-
-	if (caa_unlikely(clock_gettime(CLOCK_MONOTONIC, &ts)))
-		return -1ULL;
-	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
-}
-
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 
 #include <mach/mach.h>
 #include <mach/clock.h>
@@ -190,6 +174,22 @@ static inline caa_cycles_t caa_get_cycles (void)
 			return -1ULL;
 	}
 	if (caa_unlikely(clock_get_time(clock_service, &ts)))
+		return -1ULL;
+	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
+}
+
+#elif defined(CONFIG_RCU_HAVE_CLOCK_GETTIME)
+
+#include <time.h>
+#include <stdint.h>
+
+typedef uint64_t caa_cycles_t;
+
+static inline caa_cycles_t caa_get_cycles (void)
+{
+	struct timespec ts;
+
+	if (caa_unlikely(clock_gettime(CLOCK_MONOTONIC, &ts)))
 		return -1ULL;
 	return ((uint64_t) ts.tv_sec * 1000000000ULL) + ts.tv_nsec;
 }
