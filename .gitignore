@@ -2,6 +2,7 @@ tests/api.h
 
 
 tests/unit/urcu-asm.S
+tests/unit/test_arch
 tests/unit/test_uatomic
 tests/unit/test_urcu_multiflavor
 tests/unit/test_urcu_multiflavor_dynlink
