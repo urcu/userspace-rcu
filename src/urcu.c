@@ -94,8 +94,6 @@ static int urcu_memb_has_sys_membarrier_private_expedited;
  * uninitialized variable.
  */
 int urcu_memb_has_sys_membarrier = 0;
-URCU_ATTR_ALIAS("urcu_memb_has_sys_membarrier")
-extern int rcu_has_sys_membarrier_memb;
 #endif
 
 void __attribute__((constructor)) rcu_init(void);
@@ -105,8 +103,6 @@ void __attribute__((constructor)) rcu_init(void);
 void rcu_init(void)
 {
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
-void alias_rcu_init(void);
 #endif
 
 #ifdef RCU_SIGNAL
@@ -132,15 +128,12 @@ static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 struct urcu_gp rcu_gp = { .ctr = URCU_GP_COUNT };
-URCU_ATTR_ALIAS(urcu_stringify(rcu_gp))
-extern struct urcu_gp alias_rcu_gp;
 
 /*
  * Written to only by each individual reader. Read by both the reader and the
  * writers.
  */
 DEFINE_URCU_TLS(struct urcu_reader, rcu_reader);
-DEFINE_URCU_TLS_ALIAS(struct urcu_reader, rcu_reader, alias_rcu_reader);
 
 static CDS_LIST_HEAD(registry);
 
@@ -516,8 +509,6 @@ out:
 	 */
 	urcu_wake_all_waiters(&waiters);
 }
-URCU_ATTR_ALIAS(urcu_stringify(synchronize_rcu))
-void alias_synchronize_rcu();
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
@@ -527,22 +518,16 @@ void rcu_read_lock(void)
 {
 	_rcu_read_lock();
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_read_lock))
-void alias_rcu_read_lock();
 
 void rcu_read_unlock(void)
 {
 	_rcu_read_unlock();
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_read_unlock))
-void alias_rcu_read_unlock();
 
 int rcu_read_ongoing(void)
 {
 	return _rcu_read_ongoing();
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_read_ongoing))
-void alias_rcu_read_ongoing();
 
 void rcu_register_thread(void)
 {
@@ -557,8 +542,6 @@ void rcu_register_thread(void)
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
 	mutex_unlock(&rcu_registry_lock);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_register_thread))
-void alias_rcu_register_thread();
 
 void rcu_unregister_thread(void)
 {
@@ -568,8 +551,6 @@ void rcu_unregister_thread(void)
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_unregister_thread))
-void alias_rcu_unregister_thread();
 
 #ifdef RCU_MEMBARRIER
 
@@ -617,8 +598,6 @@ void rcu_init(void)
 	init_done = 1;
 	rcu_sys_membarrier_init();
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
-void alias_rcu_init(void);
 #endif
 
 #ifdef RCU_SIGNAL
@@ -660,8 +639,6 @@ void rcu_init(void)
 	if (ret)
 		urcu_die(errno);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
-void alias_rcu_init(void);
 
 void rcu_exit(void)
 {
@@ -674,13 +651,10 @@ void rcu_exit(void)
 	 * assert(cds_list_empty(&registry));
 	 */
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_exit))
-void alias_rcu_exit(void);
 
 #endif /* #ifdef RCU_SIGNAL */
 
 DEFINE_RCU_FLAVOR(rcu_flavor);
-DEFINE_RCU_FLAVOR_ALIAS(rcu_flavor, alias_rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"

@@ -462,8 +462,6 @@ struct call_rcu_data *get_cpu_call_rcu_data(int cpu)
 		return NULL;
 	return rcu_dereference(pcpu_crdp[cpu]);
 }
-URCU_ATTR_ALIAS(urcu_stringify(get_cpu_call_rcu_data))
-struct call_rcu_data *alias_get_cpu_call_rcu_data();
 
 /*
  * Return the tid corresponding to the call_rcu thread whose
@@ -474,8 +472,6 @@ pthread_t get_call_rcu_thread(struct call_rcu_data *crdp)
 {
 	return crdp->tid;
 }
-URCU_ATTR_ALIAS(urcu_stringify(get_call_rcu_thread))
-pthread_t alias_get_call_rcu_thread();
 
 /*
  * Create a call_rcu_data structure (with thread) and return a pointer.
@@ -490,8 +486,6 @@ static struct call_rcu_data *__create_call_rcu_data(unsigned long flags,
 	return crdp;
 }
 
-URCU_ATTR_ALIAS(urcu_stringify(create_call_rcu_data))
-struct call_rcu_data *alias_create_call_rcu_data();
 struct call_rcu_data *create_call_rcu_data(unsigned long flags,
 					   int cpu_affinity)
 {
@@ -548,8 +542,6 @@ int set_cpu_call_rcu_data(int cpu, struct call_rcu_data *crdp)
 	call_rcu_unlock(&call_rcu_mutex);
 	return 0;
 }
-URCU_ATTR_ALIAS(urcu_stringify(set_cpu_call_rcu_data))
-int alias_set_cpu_call_rcu_data();
 
 /*
  * Return a pointer to the default call_rcu_data structure, creating
@@ -570,8 +562,6 @@ struct call_rcu_data *get_default_call_rcu_data(void)
 	call_rcu_unlock(&call_rcu_mutex);
 	return default_call_rcu_data;
 }
-URCU_ATTR_ALIAS(urcu_stringify(get_default_call_rcu_data))
-struct call_rcu_data *alias_get_default_call_rcu_data();
 
 /*
  * Return the call_rcu_data structure that applies to the currently
@@ -599,8 +589,6 @@ struct call_rcu_data *get_call_rcu_data(void)
 
 	return get_default_call_rcu_data();
 }
-URCU_ATTR_ALIAS(urcu_stringify(get_call_rcu_data))
-struct call_rcu_data *alias_get_call_rcu_data();
 
 /*
  * Return a pointer to this task's call_rcu_data if there is one.
@@ -610,8 +598,6 @@ struct call_rcu_data *get_thread_call_rcu_data(void)
 {
 	return URCU_TLS(thread_call_rcu_data);
 }
-URCU_ATTR_ALIAS(urcu_stringify(get_thread_call_rcu_data))
-struct call_rcu_data *alias_get_thread_call_rcu_data();
 
 /*
  * Set this task's call_rcu_data structure as specified, regardless
@@ -628,8 +614,6 @@ void set_thread_call_rcu_data(struct call_rcu_data *crdp)
 {
 	URCU_TLS(thread_call_rcu_data) = crdp;
 }
-URCU_ATTR_ALIAS(urcu_stringify(set_thread_call_rcu_data))
-void alias_set_thread_call_rcu_data();
 
 /*
  * Create a separate call_rcu thread for each CPU.  This does not
@@ -681,8 +665,6 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
 	}
 	return 0;
 }
-URCU_ATTR_ALIAS(urcu_stringify(create_all_cpu_call_rcu_data))
-int alias_create_all_cpu_call_rcu_data();
 
 /*
  * Wake up the call_rcu thread corresponding to the specified
@@ -730,7 +712,6 @@ void call_rcu(struct rcu_head *head,
 	_call_rcu(head, func, crdp);
 	_rcu_read_unlock();
 }
-URCU_ATTR_ALIAS(urcu_stringify(call_rcu)) void alias_call_rcu();
 
 /*
  * Free up the specified call_rcu_data structure, terminating the
@@ -789,8 +770,6 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 
 	free(crdp);
 }
-URCU_ATTR_ALIAS(urcu_stringify(call_rcu_data_free))
-void alias_call_rcu_data_free();
 
 /*
  * Clean up all the per-CPU call_rcu threads.
@@ -831,16 +810,6 @@ void free_all_cpu_call_rcu_data(void)
 	}
 	free(crdp);
 }
-#ifdef RCU_QSBR
-/* ABI6 has a non-namespaced free_all_cpu_call_rcu_data for qsbr */
-#undef free_all_cpu_call_rcu_data
-URCU_ATTR_ALIAS("urcu_qsbr_free_all_cpu_call_rcu_data")
-void free_all_cpu_call_rcu_data();
-#define free_all_cpu_call_rcu_data urcu_qsbr_free_all_cpu_call_rcu_data
-#else
-URCU_ATTR_ALIAS(urcu_stringify(free_all_cpu_call_rcu_data))
-void alias_free_all_cpu_call_rcu_data();
-#endif
 
 static
 void free_completion(struct urcu_ref *ref)
@@ -932,8 +901,6 @@ online:
 	if (was_online)
 		rcu_thread_online();
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_barrier))
-void alias_rcu_barrier();
 
 /*
  * Acquire the call_rcu_mutex in order to ensure that the child sees
@@ -962,8 +929,6 @@ void call_rcu_before_fork(void)
 			(void) poll(NULL, 0, 1);
 	}
 }
-URCU_ATTR_ALIAS(urcu_stringify(call_rcu_before_fork))
-void alias_call_rcu_before_fork();
 
 /*
  * Clean up call_rcu data structures in the parent of a successful fork()
@@ -986,8 +951,6 @@ void call_rcu_after_fork_parent(void)
 		atfork->after_fork_parent(atfork->priv);
 	call_rcu_unlock(&call_rcu_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(call_rcu_after_fork_parent))
-void alias_call_rcu_after_fork_parent();
 
 /*
  * Clean up call_rcu data structures in the child of a successful fork()
@@ -1035,8 +998,6 @@ void call_rcu_after_fork_child(void)
 		call_rcu_data_free(crdp);
 	}
 }
-URCU_ATTR_ALIAS(urcu_stringify(call_rcu_after_fork_child))
-void alias_call_rcu_after_fork_child();
 
 void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
 {
@@ -1047,8 +1008,6 @@ void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
 end:
 	call_rcu_unlock(&call_rcu_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(urcu_register_rculfhash_atfork))
-void alias_urcu_register_rculfhash_atfork();
 
 void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((unused)))
 {
@@ -1059,5 +1018,3 @@ void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((
 end:
 	call_rcu_unlock(&call_rcu_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(urcu_unregister_rculfhash_atfork))
-void alias_urcu_unregister_rculfhash_atfork();

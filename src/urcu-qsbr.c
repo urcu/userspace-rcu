@@ -70,7 +70,6 @@ static pthread_mutex_t rcu_gp_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 static pthread_mutex_t rcu_registry_lock = PTHREAD_MUTEX_INITIALIZER;
 struct urcu_gp urcu_qsbr_gp = { .ctr = URCU_QSBR_GP_ONLINE };
-URCU_ATTR_ALIAS("urcu_qsbr_gp") extern struct urcu_gp rcu_gp_qsbr;
 
 /*
  * Active attempts to check for reader Q.S. before calling futex().
@@ -82,7 +81,6 @@ URCU_ATTR_ALIAS("urcu_qsbr_gp") extern struct urcu_gp rcu_gp_qsbr;
  * writers.
  */
 DEFINE_URCU_TLS(struct urcu_qsbr_reader, urcu_qsbr_reader);
-DEFINE_URCU_TLS_ALIAS(struct urcu_qsbr_reader, urcu_qsbr_reader, rcu_reader_qsbr);
 
 static CDS_LIST_HEAD(registry);
 
@@ -431,8 +429,6 @@ gp_end:
 		cmm_smp_mb();
 }
 #endif  /* !(CAA_BITS_PER_LONG < 64) */
-URCU_ATTR_ALIAS("urcu_qsbr_synchronize_rcu")
-void synchronize_rcu_qsbr();
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
@@ -442,41 +438,34 @@ void urcu_qsbr_read_lock(void)
 {
 	_urcu_qsbr_read_lock();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_read_lock") void rcu_read_lock_qsbr();
 
 void urcu_qsbr_read_unlock(void)
 {
 	_urcu_qsbr_read_unlock();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_read_unlock") void rcu_read_unlock_qsbr();
 
 int urcu_qsbr_read_ongoing(void)
 {
 	return _urcu_qsbr_read_ongoing();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_read_ongoing")
 void rcu_read_ongoing_qsbr();
 
 void urcu_qsbr_quiescent_state(void)
 {
 	_urcu_qsbr_quiescent_state();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_quiescent_state")
 void rcu_quiescent_state_qsbr();
 
 void urcu_qsbr_thread_offline(void)
 {
 	_urcu_qsbr_thread_offline();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_thread_offline")
 void rcu_thread_offline_qsbr();
 
 void urcu_qsbr_thread_online(void)
 {
 	_urcu_qsbr_thread_online();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_thread_online")
-void rcu_thread_online_qsbr();
 
 void urcu_qsbr_register_thread(void)
 {
@@ -490,8 +479,6 @@ void urcu_qsbr_register_thread(void)
 	mutex_unlock(&rcu_registry_lock);
 	_urcu_qsbr_thread_online();
 }
-URCU_ATTR_ALIAS("urcu_qsbr_register_thread")
-void rcu_register_thread_qsbr();
 
 void urcu_qsbr_unregister_thread(void)
 {
@@ -506,8 +493,6 @@ void urcu_qsbr_unregister_thread(void)
 	cds_list_del(&URCU_TLS(urcu_qsbr_reader).node);
 	mutex_unlock(&rcu_registry_lock);
 }
-URCU_ATTR_ALIAS("urcu_qsbr_unregister_thread")
-void rcu_unregister_thread_qsbr();
 
 void urcu_qsbr_exit(void)
 {
@@ -517,10 +502,8 @@ void urcu_qsbr_exit(void)
 	 * assert(cds_list_empty(&registry));
 	 */
 }
-URCU_ATTR_ALIAS("urcu_qsbr_exit") void rcu_exit_qsbr();
 
 DEFINE_RCU_FLAVOR(rcu_flavor);
-DEFINE_RCU_FLAVOR_ALIAS(rcu_flavor, alias_rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"

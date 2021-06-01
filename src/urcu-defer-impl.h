@@ -265,8 +265,6 @@ void rcu_defer_barrier_thread(void)
 	_rcu_defer_barrier_thread();
 	mutex_unlock(&rcu_defer_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_barrier_thread))
-void alias_rcu_defer_barrier_thread();
 
 /*
  * rcu_defer_barrier - Execute all queued rcu callbacks.
@@ -307,8 +305,6 @@ void rcu_defer_barrier(void)
 end:
 	mutex_unlock(&rcu_defer_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_barrier))
-void alias_rcu_defer_barrier();
 
 /*
  * _defer_rcu - Queue a RCU callback.
@@ -401,7 +397,6 @@ void defer_rcu(void (*fct)(void *p), void *p)
 {
 	_defer_rcu(fct, p);
 }
-URCU_ATTR_ALIAS(urcu_stringify(defer_rcu)) void alias_defer_rcu();
 
 static void start_defer_thread(void)
 {
@@ -450,8 +445,6 @@ int rcu_defer_register_thread(void)
 	mutex_unlock(&defer_thread_mutex);
 	return 0;
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_register_thread))
-int alias_rcu_defer_register_thread();
 
 void rcu_defer_unregister_thread(void)
 {
@@ -470,14 +463,10 @@ void rcu_defer_unregister_thread(void)
 		stop_defer_thread();
 	mutex_unlock(&defer_thread_mutex);
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_unregister_thread))
-void alias_rcu_defer_unregister_thread();
 
 void rcu_defer_exit(void)
 {
 	assert(cds_list_empty(&registry_defer));
 }
-URCU_ATTR_ALIAS(urcu_stringify(rcu_defer_exit))
-void alias_rcu_defer_exit();
 
 #endif /* _URCU_DEFER_IMPL_H */

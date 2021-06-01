@@ -84,44 +84,6 @@
 		urcu_bp_unregister_rculfhash_atfork
 
 
-/* Aliases for ABI(6) compat */
-
-#define alias_rcu_flavor		rcu_flavor_bp
-
-#define alias_get_cpu_call_rcu_data	get_cpu_call_rcu_data_bp
-#define alias_get_call_rcu_thread	get_call_rcu_thread_bp
-#define alias_create_call_rcu_data	create_call_rcu_data_bp
-#define alias_set_cpu_call_rcu_data	set_cpu_call_rcu_data_bp
-#define alias_get_default_call_rcu_data	get_default_call_rcu_data_bp
-#define alias_get_call_rcu_data		get_call_rcu_data_bp
-#define alias_get_thread_call_rcu_data	get_thread_call_rcu_data_bp
-#define alias_set_thread_call_rcu_data	set_thread_call_rcu_data_bp
-#define alias_create_all_cpu_call_rcu_data	\
-		create_all_cpu_call_rcu_data_bp
-#define alias_free_all_cpu_call_rcu_data	\
-		free_all_cpu_call_rcu_data_bp
-#define alias_call_rcu			call_rcu_bp
-#define alias_call_rcu_data_free	call_rcu_data_free_bp
-#define alias_call_rcu_before_fork	call_rcu_before_fork_bp
-#define alias_call_rcu_after_fork_parent	\
-		call_rcu_after_fork_parent_bp
-#define alias_call_rcu_after_fork_child	call_rcu_after_fork_child_bp
-#define alias_rcu_barrier		rcu_barrier_bp
-
-#define alias_defer_rcu			defer_rcu_bp
-#define alias_rcu_defer_register_thread	rcu_defer_register_thread_bp
-#define alias_rcu_defer_unregister_thread	\
-		rcu_defer_unregister_thread_bp
-#define alias_rcu_defer_barrier		rcu_defer_barrier_bp
-#define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_bp
-#define alias_rcu_defer_exit		rcu_defer_exit_bp
-
-#define alias_urcu_register_rculfhash_atfork	\
-		urcu_register_rculfhash_atfork_bp
-#define alias_urcu_unregister_rculfhash_atfork	\
-		urcu_unregister_rculfhash_atfork_bp
-
-
 /* Compat identifiers for prior undocumented multiflavor usage */
 #ifndef URCU_NO_COMPAT_IDENTIFIERS
 

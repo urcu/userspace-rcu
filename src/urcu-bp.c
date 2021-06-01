@@ -148,14 +148,12 @@ static int initialized;
 static pthread_key_t urcu_bp_key;
 
 struct urcu_bp_gp urcu_bp_gp = { .ctr = URCU_BP_GP_COUNT };
-URCU_ATTR_ALIAS("urcu_bp_gp") extern struct urcu_bp_gp rcu_gp_bp;
 
 /*
  * Pointer to registry elements. Written to only by each individual reader. Read
  * by both the reader and the writers.
  */
 DEFINE_URCU_TLS(struct urcu_bp_reader *, urcu_bp_reader);
-DEFINE_URCU_TLS_ALIAS(struct urcu_bp_reader *, urcu_bp_reader, rcu_reader_bp);
 
 static CDS_LIST_HEAD(registry);
 
@@ -349,7 +347,6 @@ out:
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-URCU_ATTR_ALIAS("urcu_bp_synchronize_rcu") void synchronize_rcu_bp();
 
 /*
  * library wrappers to be used by non-LGPL compatible source code.
@@ -359,19 +356,16 @@ void urcu_bp_read_lock(void)
 {
 	_urcu_bp_read_lock();
 }
-URCU_ATTR_ALIAS("urcu_bp_read_lock") void rcu_read_lock_bp();
 
 void urcu_bp_read_unlock(void)
 {
 	_urcu_bp_read_unlock();
 }
-URCU_ATTR_ALIAS("urcu_bp_read_unlock") void rcu_read_unlock_bp();
 
 int urcu_bp_read_ongoing(void)
 {
 	return _urcu_bp_read_ongoing();
 }
-URCU_ATTR_ALIAS("urcu_bp_read_ongoing") int rcu_read_ongoing_bp();
 
 /*
  * Only grow for now. If empty, allocate a ARENA_INIT_ALLOC sized chunk.
@@ -567,7 +561,6 @@ end:
 	if (ret)
 		abort();
 }
-URCU_ATTR_ALIAS("urcu_bp_register") void rcu_bp_register();
 
 void urcu_bp_register_thread(void)
 {
@@ -699,7 +692,6 @@ void urcu_bp_before_fork(void)
 	mutex_lock(&rcu_registry_lock);
 	saved_fork_signal_mask = oldmask;
 }
-URCU_ATTR_ALIAS("urcu_bp_before_fork") void rcu_bp_before_fork();
 
 void urcu_bp_after_fork_parent(void)
 {
@@ -712,8 +704,6 @@ void urcu_bp_after_fork_parent(void)
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-URCU_ATTR_ALIAS("urcu_bp_after_fork_parent")
-void rcu_bp_after_fork_parent(void);
 
 /*
  * Prune all entries from registry except our own thread. Fits the Linux
@@ -750,15 +740,11 @@ void urcu_bp_after_fork_child(void)
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	assert(!ret);
 }
-URCU_ATTR_ALIAS("urcu_bp_after_fork_child")
-void rcu_bp_after_fork_child(void);
 
 void *urcu_bp_dereference_sym(void *p)
 {
 	return _rcu_dereference(p);
 }
-URCU_ATTR_ALIAS("urcu_bp_dereference_sym")
-void *rcu_dereference_sym_bp();
 
 void *urcu_bp_set_pointer_sym(void **p, void *v)
 {
@@ -766,27 +752,20 @@ void *urcu_bp_set_pointer_sym(void **p, void *v)
 	uatomic_set(p, v);
 	return v;
 }
-URCU_ATTR_ALIAS("urcu_bp_set_pointer_sym")
-void *rcu_set_pointer_sym_bp();
 
 void *urcu_bp_xchg_pointer_sym(void **p, void *v)
 {
 	cmm_wmb();
 	return uatomic_xchg(p, v);
 }
-URCU_ATTR_ALIAS("urcu_bp_xchg_pointer_sym")
-void *rcu_xchg_pointer_sym_bp();
 
 void *urcu_bp_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
 	cmm_wmb();
 	return uatomic_cmpxchg(p, old, _new);
 }
-URCU_ATTR_ALIAS("urcu_bp_cmpxchg_pointer_sym")
-void *rcu_cmpxchg_pointer_sym_bp();
 
 DEFINE_RCU_FLAVOR(rcu_flavor);
-DEFINE_RCU_FLAVOR_ALIAS(rcu_flavor, alias_rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"

@@ -77,57 +77,6 @@
 #define urcu_unregister_rculfhash_atfork	\
 		urcu_qsbr_unregister_rculfhash_atfork
 
-/* Aliases for ABI(6) compat */
-
-#define alias_rcu_flavor		rcu_flavor_qsbr
-
-/* src/urcu.c */
-#define alias_rcu_read_lock		rcu_read_lock_qsbr
-#define alias_rcu_read_unlock		rcu_read_unlock_qsbr
-#define alias_rcu_read_ongoing		rcu_read_ongoing_qsbr
-#define alias_rcu_register_thread	rcu_register_thread_qsbr
-#define alias_rcu_unregister_thread	rcu_unregister_thread_qsbr
-#define alias_rcu_init			rcu_init_qsbr
-#define alias_synchronize_rcu		synchronize_rcu_qsbr
-#define alias_rcu_reader		rcu_reader_qsbr
-#define alias_rcu_gp			rcu_gp_qsbr
-
-/* src/urcu-call-rcu-impl.h */
-#define alias_get_cpu_call_rcu_data	get_cpu_call_rcu_data_qsbr
-#define alias_get_call_rcu_thread	get_call_rcu_thread_qsbr
-#define alias_create_call_rcu_data	create_call_rcu_data_qsbr
-#define alias_set_cpu_call_rcu_data	set_cpu_call_rcu_data_qsbr
-#define alias_get_default_call_rcu_data	get_default_call_rcu_data_qsbr
-#define alias_get_call_rcu_data		get_call_rcu_data_qsbr
-#define alias_get_thread_call_rcu_data	get_thread_call_rcu_data_qsbr
-#define alias_set_thread_call_rcu_data	set_thread_call_rcu_data_qsbr
-#define alias_create_all_cpu_call_rcu_data	\
-		create_all_cpu_call_rcu_data_qsbr
-#define alias_free_all_cpu_call_rcu_data	\
-		free_all_cpu_call_rcu_data_qsbr
-#define alias_call_rcu			call_rcu_qsbr
-#define alias_call_rcu_data_free	call_rcu_data_free_qsbr
-#define alias_call_rcu_before_fork	call_rcu_before_fork_qsbr
-#define alias_call_rcu_after_fork_parent	\
-		call_rcu_after_fork_parent_qsbr
-#define alias_call_rcu_after_fork_child	call_rcu_after_fork_child_qsbr
-#define alias_rcu_barrier		rcu_barrier_qsbr
-
-#define alias_urcu_register_rculfhash_atfork	\
-		urcu_register_rculfhash_atfork_qsbr
-#define alias_urcu_unregister_rculfhash_atfork	\
-		urcu_unregister_rculfhash_atfork_qsbr
-
-/* src/urcu-defer-impl.h */
-#define alias_defer_rcu			defer_rcu_qsbr
-#define alias_rcu_defer_register_thread	rcu_defer_register_thread_qsbr
-#define alias_rcu_defer_unregister_thread	\
-		rcu_defer_unregister_thread_qsbr
-#define alias_rcu_defer_barrier		rcu_defer_barrier_qsbr
-#define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_qsbr
-#define alias_rcu_defer_exit		rcu_defer_exit_qsbr
-
-
 /* Compat identifiers for prior undocumented multiflavor usage */
 #ifndef URCU_NO_COMPAT_IDENTIFIERS
 

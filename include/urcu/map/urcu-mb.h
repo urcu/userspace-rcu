@@ -79,57 +79,6 @@
 		urcu_mb_unregister_rculfhash_atfork
 
 
-/* Aliases for ABI(6) compat */
-
-#define alias_rcu_flavor		rcu_flavor_mb
-
-/* src/urcu.c */
-#define alias_rcu_read_lock		rcu_read_lock_mb
-#define alias_rcu_read_unlock		rcu_read_unlock_mb
-#define alias_rcu_read_ongoing		rcu_read_ongoing_mb
-#define alias_rcu_register_thread	rcu_register_thread_mb
-#define alias_rcu_unregister_thread	rcu_unregister_thread_mb
-#define alias_rcu_init			rcu_init_mb
-#define alias_synchronize_rcu		synchronize_rcu_mb
-#define alias_rcu_reader		rcu_reader_mb
-#define alias_rcu_gp			rcu_gp_mb
-
-/* src/urcu-call-rcu-impl.h */
-#define alias_get_cpu_call_rcu_data	get_cpu_call_rcu_data_mb
-#define alias_get_call_rcu_thread	get_call_rcu_thread_mb
-#define alias_create_call_rcu_data	create_call_rcu_data_mb
-#define alias_set_cpu_call_rcu_data	set_cpu_call_rcu_data_mb
-#define alias_get_default_call_rcu_data	get_default_call_rcu_data_mb
-#define alias_get_call_rcu_data		get_call_rcu_data_mb
-#define alias_get_thread_call_rcu_data	get_thread_call_rcu_data_mb
-#define alias_set_thread_call_rcu_data	set_thread_call_rcu_data_mb
-#define alias_create_all_cpu_call_rcu_data	\
-		create_all_cpu_call_rcu_data_mb
-#define alias_free_all_cpu_call_rcu_data	\
-		free_all_cpu_call_rcu_data_mb
-#define alias_call_rcu			call_rcu_mb
-#define alias_call_rcu_data_free	call_rcu_data_free_mb
-#define alias_call_rcu_before_fork	call_rcu_before_fork_mb
-#define alias_call_rcu_after_fork_parent	\
-		call_rcu_after_fork_parent_mb
-#define alias_call_rcu_after_fork_child	call_rcu_after_fork_child_mb
-#define alias_rcu_barrier		rcu_barrier_mb
-
-#define alias_urcu_register_rculfhash_atfork	\
-		urcu_register_rculfhash_atfork_mb
-#define alias_urcu_unregister_rculfhash_atfork	\
-		urcu_unregister_rculfhash_atfork_mb
-
-/* src/urcu-defer-impl.h */
-#define alias_defer_rcu			defer_rcu_mb
-#define alias_rcu_defer_register_thread	rcu_defer_register_thread_mb
-#define alias_rcu_defer_unregister_thread	\
-		rcu_defer_unregister_thread_mb
-#define alias_rcu_defer_barrier		rcu_defer_barrier_mb
-#define alias_rcu_defer_barrier_thread	rcu_defer_barrier_thread_mb
-#define alias_rcu_defer_exit		rcu_defer_exit_mb
-
-
 /* Compat identifiers for prior undocumented multiflavor usage */
 #ifndef URCU_NO_COMPAT_IDENTIFIERS
 
