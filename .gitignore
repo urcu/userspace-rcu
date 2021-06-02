@@ -125,7 +125,6 @@ doc/examples/rculfhash/cds_lfht_for_each_entry_duplicate
 .deps/
 .libs/
 Makefile.in
-Makefile
 *.la
 *.bz2
 *.o
@@ -162,3 +161,16 @@ liburcu-cds.pc
 liburcu-qsbr.pc
 liburcu-mb.pc
 liburcu-signal.pc
+
+/Makefile
+/doc/Makefile
+/doc/examples/Makefile
+/extras/Makefile
+/include/Makefile
+/src/Makefile
+/tests/Makefile
+/tests/benchmark/Makefile
+/tests/common/Makefile
+/tests/regression/Makefile
+/tests/unit/Makefile
+/tests/utils/Makefile
