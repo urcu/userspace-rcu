@@ -284,6 +284,7 @@ AC_CONFIG_FILES([
 	Makefile
 	doc/Makefile
 	doc/examples/Makefile
+	extras/Makefile
 	include/Makefile
 	src/Makefile
 	tests/Makefile
