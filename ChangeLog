@@ -1,3 +1,65 @@
+2020-06-03 Userspace RCU 0.13.0
+	* Document known ABI issue in README.md
+	* Add serialized ABI definition files
+	* bump SONAME major to 8
+	* Remove all SONAME(6) ABI aliases
+	* .gitignore: list ignored Makefiles
+	* tests: Add a simple compile test for caa_get_cycles
+	* fix: clock_gettime on macOs
+	* Fix: rculist header: use parenthesis around macro parameters
+	* Fix: rcuhlist header: use parenthesis around macro parameters
+	* Fix: hlist header: use parenthesis around macro parameters
+	* Fix: list.h: use parenthesis around macro parameters, caa_container_of()
+	* Fix: hlist iteration relies on undefined behavior
+	* Fix: use __atomic_load() rather than atomic load explicit
+	* Fix: use atomic load memory_order_consume for rcu_dereference on C11/C++11
+	* fix: we used weak symbols not weak aliases
+	* fix: include 'sys/endian.h' on FreeBSD
+	* fix: warnings on non-Linux platforms
+	* fix: HAVE_SCHED_SETAFFINITY is not defined
+	* configure: enable extended compiler warnings
+	* cleanup: explicitly mark unused parameters (-Wunused-parameter)
+	* fix: shadowed local variable (-Wshadow)
+	* cleanup: all functions have declarations (-Wmissing-prototypes)
+	* Import libtap from babeltrace
+	* cleanup: add 'noreturn' attribute to '_uatomic_link_error'
+	* fix: add missing 'S' to AC_CHECK_PROGS
+	* README.md: Document supported Glibc version
+	* README: cleanup stale MacOS information
+	* Bump version to 0.13.0-pre
+	* configure: standardise include path
+	* Remove glibc < 2.4 compat code for sched_setaffinity
+	* configure: regroup automake conditionals
+	* Introduce AE_FEATURE to manage configure features
+	* configure: regroup library checks
+	* configure: regroup and expand C header and program checks
+	* configure: regroup and expand C compiler checks
+	* configure: host specific config
+	* tests: Move tap-driver.sh out of the autotools aux directory
+	* configure: Set autotools baseline
+	* configure: centralize version information
+	* fix: exclude clang from GCC version blacklists
+	* aarch64: blacklist gcc prior to 5.1
+	* Fix: configure: support Autoconf 2.70
+	* Don't force a target and optimization level on ARMv7
+	* Use DMB only on ARMv7
+	* Blacklist GCC 4.4.0, 4.4.1 and 4.4.2 on ARM
+	* Cleanup: Move ARM specific code to urcu/arch/arm.h
+	* fix: bump tests thread limit to 4096
+	* fix: reorder x86 arch detection
+	* fix: typo in futex syscall define check
+	* Compile time futex syscall detection
+	* Static arch and uatomic headers
+	* Add git-review config
+	* cleanup: Improve wording of CONFIG_RCU_DEBUG description
+	* fix: explicitly include urcu/config.h in files using CONFIG_RCU_ defines
+	* Fix typo in README.md
+	* fix: add -lurcu-common to pkg-config libs for each flavor
+	* call_rcu: Fix race between rcu_barrier() and call_rcu_data_free()
+	* Cleanup: tls-compat.h: add parentheses around expression (coding style)
+	* Fix: tls-compat.h exposes compiler-dependent public configuration
+	* Fix: tap array subscript has type char warning
+
 2020-04-09 Userspace RCU 0.12.0
 	* tls-compat.h: introduce DEFINE_URCU_TLS_INIT
 	* Use _umtx_op for futex on FreeBSD
