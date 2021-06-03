@@ -433,6 +433,33 @@ In addition to the usual `make check` target, Userspace RCU features
   - `make bench`: long (many hours) benchmarks.
 
 
+Known issues
+------------
+
+There is an application vs library compatibility issue between
+applications built using Userspace RCU 0.10 headers linked against
+Userspace RCU 0.11 or 0.12 shared objects. The problem occurs as
+follows:
+
+  - An application executable is built with _LGPL_SOURCE defined, includes
+    any of the Userspace RCU 0.10 urcu flavor headers, and is built
+    without the -fpic compiler option.
+
+  - The Userspace RCU 0.10 library shared objects are updated to 0.11
+    or 0.12 without rebuilding the application.
+
+  - The application will hang, typically when RCU grace period
+    (synchronize_rcu) is invoked.
+
+Some possible work-arounds for this are:
+
+  - Rebuild the application against Userspace RCU 0.11+.
+
+  - Rebuild the application with -fpic.
+
+  - Upgrade Userspace RCU to 0.13+ without installing 0.11 nor 0.12.
+
+
 Contacts
 --------
 
