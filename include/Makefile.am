@@ -7,6 +7,7 @@ nobase_include_HEADERS = \
 	urcu/arch.h \
 	urcu/arch/hppa.h \
 	urcu/arch/ia64.h \
+	urcu/arch/loongarch.h \
 	urcu/arch/m68k.h \
 	urcu/arch/mips.h \
 	urcu/arch/nios2.h \
@@ -68,6 +69,7 @@ nobase_include_HEADERS = \
 	urcu/uatomic.h \
 	urcu/uatomic/hppa.h \
 	urcu/uatomic/ia64.h \
+	urcu/uatomic/loongarch.h \
 	urcu/uatomic/m68k.h \
 	urcu/uatomic/mips.h \
 	urcu/uatomic/nios2.h \

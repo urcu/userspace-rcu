@@ -51,6 +51,8 @@
 #include <urcu/uatomic/m68k.h>
 #elif defined(URCU_ARCH_RISCV)
 #include <urcu/uatomic/riscv.h>
+#elif defined(URCU_ARCH_LOONGARCH)
+#include <urcu/uatomic/loongarch.h>
 #else
 #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
 #endif

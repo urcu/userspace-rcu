@@ -49,6 +49,7 @@
  * URCU_ARCH_HPPA : All HP PA-RISC variants
  * URCU_ARCH_M68K : All Motorola 68000 variants
  * URCU_ARCH_RISCV : All RISC-V variants
+ * URCU_ARCH_LOONGARCH : All LoongArch variants
  */
 
 #if (defined(__INTEL_OFFLOAD) || defined(__TARGET_ARCH_MIC) || defined(__MIC__))
@@ -166,6 +167,11 @@
 
 #define URCU_ARCH_RISCV 1
 #include <urcu/arch/riscv.h>
+
+#elif defined(__loongarch__)
+
+#define URCU_ARCH_LOONGARCH 1
+#include <urcu/arch/loongarch.h>
 
 #else
 #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
