@@ -61,10 +61,14 @@ extern "C" {
 
 #endif /* !COMPILER_HAVE_SHORT_MEM_OPERAND */
 
-struct __uatomic_dummy {
-	unsigned long v[10];
-};
-#define __hp(x)	((struct __uatomic_dummy *)(x))
+/*
+ * The __hp() macro casts the void pointer "x" to a pointer to a structure
+ * containing an array of char of the specified size. This allows passing the
+ * @addr arguments of the following inline functions as "m" and "+m" operands
+ * to the assembly.
+ */
+
+#define __hp(size, x)	((struct { char v[size]; } *)(x))
 
 /* xchg */
 
@@ -79,8 +83,8 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 			"0:	cs %0,%2," MEMOP_REF(%3) "\n"
 			"	brc 4,0b\n"
-			: "=&r" (old_val), MEMOP_OUT (__hp(addr))
-			: "r" (val), MEMOP_IN (__hp(addr))
+			: "=&r" (old_val), MEMOP_OUT (__hp(len, addr))
+			: "r" (val), MEMOP_IN (__hp(len, addr))
 			: "memory", "cc");
 		return old_val;
 	}
@@ -92,8 +96,8 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 		__asm__ __volatile__(
 			"0:	csg %0,%2," MEMOP_REF(%3) "\n"
 			"	brc 4,0b\n"
-			: "=&r" (old_val), MEMOP_OUT (__hp(addr))
-			: "r" (val), MEMOP_IN (__hp(addr))
+			: "=&r" (old_val), MEMOP_OUT (__hp(len, addr))
+			: "r" (val), MEMOP_IN (__hp(len, addr))
 			: "memory", "cc");
 		return old_val;
 	}
@@ -123,8 +127,8 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 
 		__asm__ __volatile__(
 			"	cs %0,%2," MEMOP_REF(%3) "\n"
-			: "+r" (old_val), MEMOP_OUT (__hp(addr))
-			: "r" (_new), MEMOP_IN (__hp(addr))
+			: "+r" (old_val), MEMOP_OUT (__hp(len, addr))
+			: "r" (_new), MEMOP_IN (__hp(len, addr))
 			: "memory", "cc");
 		return old_val;
 	}
@@ -133,8 +137,8 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	{
 		__asm__ __volatile__(
 			"	csg %0,%2," MEMOP_REF(%3) "\n"
-			: "+r" (old), MEMOP_OUT (__hp(addr))
-			: "r" (_new), MEMOP_IN (__hp(addr))
+			: "+r" (old), MEMOP_OUT (__hp(len, addr))
+			: "r" (_new), MEMOP_IN (__hp(len, addr))
 			: "memory", "cc");
 		return old;
 	}
