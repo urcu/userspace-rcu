@@ -40,10 +40,16 @@ extern "C" {
  * containing an array of char of the specified size. This allows passing the
  * @addr arguments of the following inline functions as "m" and "+m" operands
  * to the assembly. The @size parameter should be a constant to support
- * compilers such as clang which do not support VLA.
+ * compilers such as clang which do not support VLA. Create typedefs because
+ * C++ does not allow types be defined in casts.
  */
 
-#define __hp(size, x)	((struct { char v[size]; } *)(x))
+typedef struct { char v[1]; } __hp_1;
+typedef struct { char v[2]; } __hp_2;
+typedef struct { char v[4]; } __hp_4;
+typedef struct { char v[8]; } __hp_8;
+
+#define __hp(size, x)	((__hp_##size *)(x))
 
 #define _uatomic_set(addr, v)	((void) CMM_STORE_SHARED(*(addr), (v)))
 
