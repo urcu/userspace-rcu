@@ -57,7 +57,7 @@ extern "C" {
  * synchronization.
  */
 
-#define CDS_WFS_WOULDBLOCK	((void *) -1UL)
+#define CDS_WFS_WOULDBLOCK	((struct cds_wfs_node *) -1UL)
 
 enum cds_wfs_state {
 	CDS_WFS_STATE_LAST =		(1U << 0),
@@ -95,11 +95,13 @@ struct cds_wfs_stack {
  * The transparent union allows calling functions that work on both
  * struct cds_wfs_stack and struct __cds_wfs_stack on any of those two
  * types.
+ *
+ * Avoid complaints from clang++ not knowing this attribute.
  */
 typedef union {
 	struct __cds_wfs_stack *_s;
 	struct cds_wfs_stack *s;
-} __attribute__((__transparent_union__)) cds_wfs_stack_ptr_t;
+} caa_c_transparent_union cds_wfs_stack_ptr_t;
 
 #ifdef _LGPL_SOURCE
 

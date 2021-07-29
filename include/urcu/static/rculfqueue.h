@@ -66,7 +66,8 @@ struct cds_lfq_node_rcu *make_dummy(struct cds_lfq_queue_rcu *q,
 {
 	struct cds_lfq_node_rcu_dummy *dummy;
 
-	dummy = malloc(sizeof(struct cds_lfq_node_rcu_dummy));
+	dummy = (struct cds_lfq_node_rcu_dummy *)
+		malloc(sizeof(struct cds_lfq_node_rcu_dummy));
 	urcu_posix_assert(dummy);
 	dummy->parent.next = next;
 	dummy->parent.dummy = 1;

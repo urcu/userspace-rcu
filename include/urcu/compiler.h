@@ -119,4 +119,10 @@
 				+ __GNUC_PATCHLEVEL__)
 #endif
 
+#ifndef __cplusplus
+#define caa_c_transparent_union	__attribute__((__transparent_union__))
+#else
+#define caa_c_transparent_union
+#endif
+
 #endif /* _URCU_COMPILER_H */

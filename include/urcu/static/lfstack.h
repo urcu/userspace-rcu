@@ -289,9 +289,11 @@ struct cds_lfs_node *
 _cds_lfs_pop_blocking(struct cds_lfs_stack *s)
 {
 	struct cds_lfs_node *retnode;
+	cds_lfs_stack_ptr_t stack;
 
 	_cds_lfs_pop_lock(s);
-	retnode = ___cds_lfs_pop(s);
+	stack.s = s;
+	retnode = ___cds_lfs_pop(stack);
 	_cds_lfs_pop_unlock(s);
 	return retnode;
 }
@@ -304,9 +306,11 @@ struct cds_lfs_head *
 _cds_lfs_pop_all_blocking(struct cds_lfs_stack *s)
 {
 	struct cds_lfs_head *rethead;
+	cds_lfs_stack_ptr_t stack;
 
 	_cds_lfs_pop_lock(s);
-	rethead = ___cds_lfs_pop_all(s);
+	stack.s = s;
+	rethead = ___cds_lfs_pop_all(stack);
 	_cds_lfs_pop_unlock(s);
 	return rethead;
 }

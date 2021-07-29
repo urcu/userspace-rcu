@@ -29,6 +29,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <pthread.h>
+#include <urcu/compiler.h>
 
 /*
  * Lock-free stack.
@@ -83,11 +84,13 @@ struct cds_lfs_stack {
  * The transparent union allows calling functions that work on both
  * struct cds_lfs_stack and struct __cds_lfs_stack on any of those two
  * types.
+ *
+ * Avoid complaints from clang++ not knowing this attribute.
  */
 typedef union {
 	struct __cds_lfs_stack *_s;
 	struct cds_lfs_stack *s;
-} __attribute__((__transparent_union__)) cds_lfs_stack_ptr_t;
+} caa_c_transparent_union cds_lfs_stack_ptr_t;
 
 #ifdef _LGPL_SOURCE
 
