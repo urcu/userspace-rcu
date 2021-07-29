@@ -63,7 +63,7 @@ void _cds_lfs_init_rcu(struct cds_lfs_stack_rcu *s)
  * always performing an exclusive cacheline access, rather than doing
  * non-exclusive followed by exclusive cacheline access (which would be
  * required if we first read the old head value). This design decision
- * might be revisited after more throrough benchmarking on various
+ * might be revisited after more thorough benchmarking on various
  * platforms.
  *
  * Returns 0 if the stack was empty prior to adding the node.

@@ -119,7 +119,7 @@ static inline void _urcu_signal_read_unlock_update_and_wakeup(unsigned long tmp)
 }
 
 /*
- * Exit an RCU read-side crtical section.  Both this function and its
+ * Exit an RCU read-side critical section.  Both this function and its
  * helper are smaller than 10 lines of code, and are intended to be
  * usable by non-LGPL code, as called out in LGPL.
  */

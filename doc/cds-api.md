@@ -76,7 +76,7 @@ This queue relies on RCU for existence guarantees.
 ### `urcu/rculfhash.h`
 
 Lock-Free Resizable RCU Hash Table. RCU used to provide
-existance guarantees. Provides scalable updates, and scalable
+existence guarantees. Provides scalable updates, and scalable
 RCU read-side lookups and traversals. Unique and duplicate keys
 are supported. Provides "uniquify add" and "replace add"
 operations, along with associated read-side traversal uniqueness

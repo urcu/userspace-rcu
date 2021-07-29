@@ -1,5 +1,5 @@
 This directory contains the serialized ABI definitions for a typical build of
-the liburcu librairies. This information is extracted using libabigail
+the liburcu libraries. This information is extracted using libabigail
 (https://sourceware.org/libabigail/).
 
 The artefacts used to generate these were built with CFLAGS="-O0 -ggdb".

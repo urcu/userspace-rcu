@@ -278,7 +278,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
 	 * wait_for_readers() can release and grab again rcu_registry_lock
-	 * interally.
+	 * internally.
 	 */
 	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
 
@@ -321,7 +321,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe new parity or be quiescent.
 	 * wait_for_readers() can release and grab again rcu_registry_lock
-	 * interally.
+	 * internally.
 	 */
 	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
 
@@ -410,7 +410,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	/*
 	 * Wait for readers to observe new count of be quiescent.
 	 * wait_for_readers() can release and grab again rcu_registry_lock
-	 * interally.
+	 * internally.
 	 */
 	wait_for_readers(&registry, NULL, &qsreaders);
 

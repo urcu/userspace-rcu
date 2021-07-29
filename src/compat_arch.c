@@ -41,7 +41,7 @@
 /*
  * It does not really matter if the constructor is called before using
  * the library, as long as the caller checks if __rcu_cas_avail < 0 and calls
- * compat_arch_init() explicitely if needed.
+ * compat_arch_init() explicitly if needed.
  */
 int __attribute__((constructor)) __rcu_cas_init(void);
 

@@ -211,7 +211,7 @@ m4_pushdef([FEATURE], patsubst([$1], -, _))dnl
 ])
 
 
-dnl Disabled by default, unless already overriden
+dnl Disabled by default, unless already overridden
 m4_ifndef([ae_feature_default_arg],[AE_FEATURE_DEFAULT_DISABLE])
 
 

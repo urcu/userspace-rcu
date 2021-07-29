@@ -192,9 +192,9 @@ AC_SEARCH_LIBS([clock_gettime], [rt], [
 ])
 
 
-##                              ##
-## Optionnal features selection ##
-##                              ##
+##                             ##
+## Optional features selection ##
+##                             ##
 
 # Allow to fallback to FIXME if the membarrier syscall is unavailable on the
 # running kernel, when disabled, abort if the syscall is unavailable. Applies
