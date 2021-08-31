@@ -88,7 +88,7 @@ static void test_rcu(void)
 	rcu_read_lock();
 	rcu_read_unlock();
 
-	node = malloc(sizeof(*node));
+	node = (struct test_node *) malloc(sizeof(*node));
 	urcu_posix_assert(node);
 
 	call_rcu(&node->head, cb);

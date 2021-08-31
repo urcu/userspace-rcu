@@ -3,19 +3,35 @@ tests/api.h
 
 tests/unit/urcu-asm.S
 tests/unit/test_arch
+tests/unit/test_arch_cxx
+tests/unit/test_build
+tests/unit/test_build_cxx
+tests/unit/test_build_dynlink
+tests/unit/test_build_dynlink_cxx
 tests/unit/test_uatomic
+tests/unit/test_uatomic_cxx
 tests/unit/test_urcu_multiflavor
+tests/unit/test_urcu_multiflavor_cxx
 tests/unit/test_urcu_multiflavor_dynlink
+tests/unit/test_urcu_multiflavor_dynlink_cxx
 tests/unit/test_urcu_multiflavor_single_unit
+tests/unit/test_urcu_multiflavor_single_unit_cxx
 tests/unit/test_urcu_multiflavor_single_unit_dynlink
+tests/unit/test_urcu_multiflavor_single_unit_dynlink_cxx
 
 tests/utils/libtap.a
 
-tests/regression/rcutorture_urcu_membarrier
 tests/regression/rcutorture_urcu_bp
+tests/regression/rcutorture_urcu_bp_cxx
 tests/regression/rcutorture_urcu_mb
+tests/regression/rcutorture_urcu_mb_cxx
+tests/regression/rcutorture_urcu_membarrier
+tests/regression/rcutorture_urcu_membarrier_cxx
 tests/regression/rcutorture_urcu_qsbr
+tests/regression/rcutorture_urcu_qsbr_cxx
 tests/regression/rcutorture_urcu_signal
+tests/regression/rcutorture_urcu_signal_cxx
+tests/regression/test_urcu_fork_cxx.tap
 tests/regression/test_urcu_fork.tap
 tests/regression/rcutorture*.tap
 

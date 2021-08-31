@@ -290,7 +290,7 @@ struct rcu_stress {
 	int mbtest;
 };
 
-struct rcu_stress rcu_stress_array[RCU_STRESS_PIPE_LEN] = { { 0 } };
+struct rcu_stress rcu_stress_array[RCU_STRESS_PIPE_LEN] = { { 0, 0 } };
 struct rcu_stress *rcu_stress_current;
 int rcu_stress_idx = 0;
 

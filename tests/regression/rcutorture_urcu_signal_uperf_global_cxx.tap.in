@@ -1,0 +1,1 @@
+./rcutorture_urcu_signal_cxx `@NPROC_CMD@` uperf 1 callrcu_global

@@ -5,6 +5,10 @@
  * Copyright (C) 2017 Jérémie Galarneau
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* '## __VA_ARGS__' is a gcc'ism. C99 doesn't allow the token pasting
    and requires the caller to add the final comma if they've ommitted
    the optional arguments */
@@ -87,3 +91,7 @@ unsigned int rdiag_start(void);
 __attribute__((format(TAP_PRINTF_FORMAT, 1, 2)))
 unsigned int rdiag(const char *fmt, ...);
 unsigned int rdiag_end(void);
+
+#ifdef __cplusplus
+}
+#endif

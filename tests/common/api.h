@@ -165,7 +165,7 @@ static int smp_thread_id(void)
 	id = pthread_getspecific(thread_id_key);
 	if (id == NULL)
 		return __smp_thread_id();
-	return (long)(id - 1);
+	return ((long) id - 1);
 }
 
 static thread_id_t create_thread(void *(*func)(void *), void *arg)
