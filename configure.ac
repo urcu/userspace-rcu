@@ -124,6 +124,8 @@ AC_LANG_PUSH([C])
 AX_APPEND_COMPILE_FLAGS([WARN_FLAGS_LIST], [WARN_CFLAGS], [-Werror])
 AC_LANG_POP([C])
 
+AE_IF_FEATURE_ENABLED([Werror], [WARN_CFLAGS="${WARN_CFLAGS} -Werror"])
+
 
 ##               ##
 ## Header checks ##
@@ -223,6 +225,10 @@ AE_FEATURE([rcu-debug], [Enable internal debugging self-checks. Introduces a per
 AE_FEATURE_DEFAULT_DISABLE
 AE_FEATURE([cds-lfht-iter-debug], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
 
+# When given, add -Werror to WARN_CFLAGS and WARN_CXXFLAGS.
+# Disabled by default
+AE_FEATURE_DEFAULT_DISABLE
+AE_FEATURE([Werror],[Treat compiler warnings as errors.])
 
 ##                                                                    ##
 ## Set defines for optional features conditionnals in the source code ##
