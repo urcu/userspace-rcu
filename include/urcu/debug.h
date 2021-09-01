@@ -24,9 +24,15 @@
 #include <urcu/config.h>
 
 #if defined(DEBUG_RCU) || defined(CONFIG_RCU_DEBUG)
-#define urcu_assert(...)	assert(__VA_ARGS__)
+# define urcu_assert_debug(...) assert(__VA_ARGS__)
 #else
-#define urcu_assert(...)
+# define urcu_assert_debug(...)
 #endif
+
+/*
+ * For backward compatibility reasons, this file must expose the urcu_assert()
+ * macro.
+ */
+#define urcu_assert(_cond) urcu_assert_debug(_cond)
 
 #endif /* _URCU_DEBUG_H */

@@ -117,7 +117,7 @@ static inline enum urcu_state urcu_qsbr_reader_state(unsigned long *ctr)
  */
 static inline void _urcu_qsbr_read_lock(void)
 {
-	urcu_assert(URCU_TLS(urcu_qsbr_reader).ctr);
+	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).ctr);
 }
 
 /*
@@ -129,7 +129,7 @@ static inline void _urcu_qsbr_read_lock(void)
  */
 static inline void _urcu_qsbr_read_unlock(void)
 {
-	urcu_assert(URCU_TLS(urcu_qsbr_reader).ctr);
+	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).ctr);
 }
 
 /*
@@ -178,7 +178,7 @@ static inline void _urcu_qsbr_quiescent_state(void)
 {
 	unsigned long gp_ctr;
 
-	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
+	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
 	if ((gp_ctr = CMM_LOAD_SHARED(urcu_qsbr_gp.ctr)) == URCU_TLS(urcu_qsbr_reader).ctr)
 		return;
 	_urcu_qsbr_quiescent_state_update_and_wakeup(gp_ctr);
@@ -194,7 +194,7 @@ static inline void _urcu_qsbr_quiescent_state(void)
  */
 static inline void _urcu_qsbr_thread_offline(void)
 {
-	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
+	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_smp_mb();
 	CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, 0);
 	cmm_smp_mb();	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
@@ -212,7 +212,7 @@ static inline void _urcu_qsbr_thread_offline(void)
  */
 static inline void _urcu_qsbr_thread_online(void)
 {
-	urcu_assert(URCU_TLS(urcu_qsbr_reader).registered);
+	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, CMM_LOAD_SHARED(urcu_qsbr_gp.ctr));
 	cmm_smp_mb();

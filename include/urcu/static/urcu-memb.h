@@ -114,10 +114,10 @@ static inline void _urcu_memb_read_lock(void)
 {
 	unsigned long tmp;
 
-	urcu_assert(URCU_TLS(urcu_memb_reader).registered);
+	urcu_assert_debug(URCU_TLS(urcu_memb_reader).registered);
 	cmm_barrier();
 	tmp = URCU_TLS(urcu_memb_reader).ctr;
-	urcu_assert((tmp & URCU_GP_CTR_NEST_MASK) != URCU_GP_CTR_NEST_MASK);
+	urcu_assert_debug((tmp & URCU_GP_CTR_NEST_MASK) != URCU_GP_CTR_NEST_MASK);
 	_urcu_memb_read_lock_update(tmp);
 }
 
@@ -149,9 +149,9 @@ static inline void _urcu_memb_read_unlock(void)
 {
 	unsigned long tmp;
 
-	urcu_assert(URCU_TLS(urcu_memb_reader).registered);
+	urcu_assert_debug(URCU_TLS(urcu_memb_reader).registered);
 	tmp = URCU_TLS(urcu_memb_reader).ctr;
-	urcu_assert(tmp & URCU_GP_CTR_NEST_MASK);
+	urcu_assert_debug(tmp & URCU_GP_CTR_NEST_MASK);
 	_urcu_memb_read_unlock_update_and_wakeup(tmp);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
