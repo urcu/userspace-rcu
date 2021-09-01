@@ -33,7 +33,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <signal.h>
-#include <assert.h>
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
@@ -43,6 +42,7 @@
 
 #include "urcu/futex.h"
 
+#include <urcu/assert.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/uatomic.h>
@@ -325,9 +325,9 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 	 * Worse-case: must allow 2 supplementary entries for fct pointer.
 	 */
 	if (caa_unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
-		assert(head - tail <= DEFER_QUEUE_SIZE);
+		urcu_posix_assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
-		assert(head - CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail) == 0);
+		urcu_posix_assert(head - CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail) == 0);
 	}
 
 	/*
@@ -403,7 +403,7 @@ static void start_defer_thread(void)
 	int ret;
 
 	ret = pthread_create(&tid_defer, NULL, thr_defer, NULL);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static void stop_defer_thread(void)
@@ -417,19 +417,19 @@ static void stop_defer_thread(void)
 	wake_up_defer();
 
 	ret = pthread_join(tid_defer, &tret);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 
 	CMM_STORE_SHARED(defer_thread_stop, 0);
 	/* defer thread should always exit when futex value is 0 */
-	assert(uatomic_read(&defer_thread_futex) == 0);
+	urcu_posix_assert(uatomic_read(&defer_thread_futex) == 0);
 }
 
 int rcu_defer_register_thread(void)
 {
 	int was_empty;
 
-	assert(URCU_TLS(defer_queue).last_head == 0);
-	assert(URCU_TLS(defer_queue).q == NULL);
+	urcu_posix_assert(URCU_TLS(defer_queue).last_head == 0);
+	urcu_posix_assert(URCU_TLS(defer_queue).q == NULL);
 	URCU_TLS(defer_queue).q = malloc(sizeof(void *) * DEFER_QUEUE_SIZE);
 	if (!URCU_TLS(defer_queue).q)
 		return -ENOMEM;
@@ -466,7 +466,7 @@ void rcu_defer_unregister_thread(void)
 
 void rcu_defer_exit(void)
 {
-	assert(cds_list_empty(&registry_defer));
+	urcu_posix_assert(cds_list_empty(&registry_defer));
 }
 
 #endif /* _URCU_DEFER_IMPL_H */

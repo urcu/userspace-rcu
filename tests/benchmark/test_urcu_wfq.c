@@ -31,10 +31,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
 

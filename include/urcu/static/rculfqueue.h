@@ -27,9 +27,9 @@
  */
 
 #include <urcu-call-rcu.h>
+#include <urcu/assert.h>
 #include <urcu/uatomic.h>
 #include <urcu-pointer.h>
-#include <assert.h>
 #include <errno.h>
 
 #ifdef __cplusplus
@@ -67,7 +67,7 @@ struct cds_lfq_node_rcu *make_dummy(struct cds_lfq_queue_rcu *q,
 	struct cds_lfq_node_rcu_dummy *dummy;
 
 	dummy = malloc(sizeof(struct cds_lfq_node_rcu_dummy));
-	assert(dummy);
+	urcu_posix_assert(dummy);
 	dummy->parent.next = next;
 	dummy->parent.dummy = 1;
 	dummy->q = q;
@@ -87,7 +87,7 @@ void rcu_free_dummy(struct cds_lfq_node_rcu *node)
 {
 	struct cds_lfq_node_rcu_dummy *dummy;
 
-	assert(node->dummy);
+	urcu_posix_assert(node->dummy);
 	dummy = caa_container_of(node, struct cds_lfq_node_rcu_dummy, parent);
 	dummy->q->queue_call_rcu(&dummy->head, free_dummy_cb);
 }
@@ -97,7 +97,7 @@ void free_dummy(struct cds_lfq_node_rcu *node)
 {
 	struct cds_lfq_node_rcu_dummy *dummy;
 
-	assert(node->dummy);
+	urcu_posix_assert(node->dummy);
 	dummy = caa_container_of(node, struct cds_lfq_node_rcu_dummy, parent);
 	free(dummy);
 }

@@ -42,7 +42,6 @@
 #include <urcu/list.h>
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
-#include <urcu/debug.h>
 
 #ifdef __cplusplus
 extern "C" {

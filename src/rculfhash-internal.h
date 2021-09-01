@@ -24,10 +24,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <urcu/assert.h>
 #include <urcu/rculfhash.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #ifdef DEBUG
 #define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
@@ -170,7 +170,7 @@ struct cds_lfht *__default_alloc_cds_lfht(
 	struct cds_lfht *ht;
 
 	ht = calloc(1, cds_lfht_size);
-	assert(ht);
+	urcu_posix_assert(ht);
 
 	ht->mm = mm;
 	ht->bucket_at = mm->bucket_at;

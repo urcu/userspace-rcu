@@ -31,10 +31,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 #include <signal.h>
 
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include <compat-rand.h>
 #include "thread-id.h"
@@ -304,7 +304,7 @@ unsigned long test_hash_mix(const void *_key, size_t length, unsigned long seed)
 {
 	unsigned int key = (unsigned int) _key;
 
-	assert(length == sizeof(unsigned int));
+	urcu_posix_assert(length == sizeof(unsigned int));
 	return hash_u32(&key, 1, seed);
 }
 #else
@@ -320,7 +320,7 @@ unsigned long test_hash_mix(const void *_key, size_t length, unsigned long seed)
 		uint32_t v32[2];
 	} key;
 
-	assert(length == sizeof(unsigned long));
+	urcu_posix_assert(length == sizeof(unsigned long));
 	v.v64 = (uint64_t) seed;
 	key.v64 = (uint64_t) _key;
 	hashword2(key.v32, 2, &v.v32[0], &v.v32[1]);
@@ -345,7 +345,7 @@ unsigned long test_hash(const void *_key, size_t length,
 	} else {
 		unsigned long v;
 
-		assert(length == sizeof(unsigned long));
+		urcu_posix_assert(length == sizeof(unsigned long));
 		v = (unsigned long) _key;
 		return v % nr_hash_chains;
 	}
@@ -367,7 +367,7 @@ static inline
 void cds_lfht_test_lookup(struct cds_lfht *ht, void *key, size_t key_len,
 		struct cds_lfht_iter *iter)
 {
-	assert(key_len == sizeof(unsigned long));
+	urcu_posix_assert(key_len == sizeof(unsigned long));
 
 	cds_lfht_lookup(ht, test_hash(key, key_len, TEST_HASH_SEED),
 			test_match, key, iter);

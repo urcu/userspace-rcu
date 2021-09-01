@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <urcu/assert.h>
 #include "rculfhash-internal.h"
 
 #ifndef MAP_ANONYMOUS
@@ -133,7 +134,7 @@ void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 			/* small table */
 			ht->tbl_mmap = calloc(ht->max_nr_buckets,
 					sizeof(*ht->tbl_mmap));
-			assert(ht->tbl_mmap);
+			urcu_posix_assert(ht->tbl_mmap);
 			return;
 		}
 		/* large table */
@@ -145,7 +146,7 @@ void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 		/* large table */
 		unsigned long len = 1UL << (order - 1);
 
-		assert(ht->min_nr_alloc_buckets < ht->max_nr_buckets);
+		urcu_posix_assert(ht->min_nr_alloc_buckets < ht->max_nr_buckets);
 		memory_populate(ht->tbl_mmap + len,
 				len * sizeof(*ht->tbl_mmap));
 	}
@@ -173,7 +174,7 @@ void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 		/* large table */
 		unsigned long len = 1UL << (order - 1);
 
-		assert(ht->min_nr_alloc_buckets < ht->max_nr_buckets);
+		urcu_posix_assert(ht->min_nr_alloc_buckets < ht->max_nr_buckets);
 		memory_discard(ht->tbl_mmap + len, len * sizeof(*ht->tbl_mmap));
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */

@@ -28,10 +28,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
 
@@ -184,7 +184,7 @@ void *thr_reader(void *data)
 
 		urcu_mutex_lock(&per_thread_lock[tidx].lock);
 		v = test_array.a;
-		assert(v == 8);
+		urcu_posix_assert(v == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		urcu_mutex_unlock(&per_thread_lock[tidx].lock);

@@ -31,10 +31,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include <urcu/uatomic.h>
 #include "thread-id.h"
@@ -233,7 +233,7 @@ static void do_test_splice(enum test_sync sync)
 
 	switch (ret) {
 	case CDS_WFCQ_RET_WOULDBLOCK:
-		assert(0);	/* blocking call */
+		urcu_posix_assert(0);	/* blocking call */
 		break;
 	case CDS_WFCQ_RET_DEST_EMPTY:
 		URCU_TLS(nr_splice)++;
@@ -241,7 +241,7 @@ static void do_test_splice(enum test_sync sync)
 		/* ok */
 		break;
 	case CDS_WFCQ_RET_DEST_NON_EMPTY:
-		assert(0);	/* entirely unexpected */
+		urcu_posix_assert(0);	/* entirely unexpected */
 		break;
 	case CDS_WFCQ_RET_SRC_EMPTY:
 		/* ok, we could even skip iteration on dest if we wanted */

@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <urcu/assert.h>
 #include <urcu/uatomic.h>
 #include <urcu/wfstack.h>
 #include "urcu-die.h"
@@ -126,7 +127,7 @@ static inline
 void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
 	cmm_smp_mb();
-	assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
+	urcu_posix_assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
 	uatomic_set(&wait->state, URCU_WAIT_WAKEUP);
 	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
 		if (futex_noasync(&wait->state, FUTEX_WAKE, 1,
@@ -183,7 +184,7 @@ skip_futex_wait:
 	}
 	while (!(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN))
 		poll(NULL, 0, 10);
-	assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
+	urcu_posix_assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
 }
 
 static inline

@@ -33,6 +33,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <urcu/debug.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
@@ -40,7 +41,6 @@
 #include <urcu/uatomic.h>
 #include <urcu/list.h>
 #include <urcu/tls-compat.h>
-#include <urcu/debug.h>
 
 /*
  * This code section can only be included in LGPL 2.1 compatible source code.

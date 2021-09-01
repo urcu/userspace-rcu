@@ -28,10 +28,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
 #include "../common/debug-yield.h"
@@ -172,7 +172,7 @@ static struct test_array *test_array_alloc(void)
 	int index;
 
 	index = array_index % ARRAY_SIZE;
-	assert(test_array[index].a == ARRAY_POISON ||
+	urcu_posix_assert(test_array[index].a == ARRAY_POISON ||
 		test_array[index].a == 0);
 	ret = &test_array[index];
 	array_index++;
@@ -211,7 +211,7 @@ void *thr_reader(void *_count)
 		local_ptr = rcu_dereference(test_rcu_pointer);
 		rcu_debug_yield_read();
 		if (local_ptr)
-			assert(local_ptr->a == 8);
+			urcu_posix_assert(local_ptr->a == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		rcu_read_unlock();

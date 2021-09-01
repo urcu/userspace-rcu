@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -39,6 +38,7 @@
 #include <poll.h>
 
 #include <urcu/config.h>
+#include <urcu/assert.h>
 #include <urcu/arch.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/map/urcu.h>
@@ -532,11 +532,11 @@ int rcu_read_ongoing(void)
 void rcu_register_thread(void)
 {
 	URCU_TLS(rcu_reader).tid = pthread_self();
-	assert(URCU_TLS(rcu_reader).need_mb == 0);
-	assert(!(URCU_TLS(rcu_reader).ctr & URCU_GP_CTR_NEST_MASK));
+	urcu_posix_assert(URCU_TLS(rcu_reader).need_mb == 0);
+	urcu_posix_assert(!(URCU_TLS(rcu_reader).ctr & URCU_GP_CTR_NEST_MASK));
 
 	mutex_lock(&rcu_registry_lock);
-	assert(!URCU_TLS(rcu_reader).registered);
+	urcu_posix_assert(!URCU_TLS(rcu_reader).registered);
 	URCU_TLS(rcu_reader).registered = 1;
 	rcu_init();	/* In case gcc does not support constructor attribute */
 	cds_list_add(&URCU_TLS(rcu_reader).node, &registry);
@@ -546,7 +546,7 @@ void rcu_register_thread(void)
 void rcu_unregister_thread(void)
 {
 	mutex_lock(&rcu_registry_lock);
-	assert(URCU_TLS(rcu_reader).registered);
+	urcu_posix_assert(URCU_TLS(rcu_reader).registered);
 	URCU_TLS(rcu_reader).registered = 0;
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
@@ -648,7 +648,7 @@ void rcu_exit(void)
 	 * application exits.
 	 * Assertion disabled because call_rcu threads are now rcu
 	 * readers, and left running at exit.
-	 * assert(cds_list_empty(&registry));
+	 * urcu_posix_assert(cds_list_empty(&registry));
 	 */
 }
 

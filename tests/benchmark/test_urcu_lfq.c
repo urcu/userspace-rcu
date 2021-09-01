@@ -31,10 +31,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
 
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
 
 	test_end(&end_dequeues);
 	err = cds_lfq_destroy_rcu(&q);
-	assert(!err);
+	urcu_posix_assert(!err);
 
 	printf_verbose("total number of enqueues : %llu, dequeues %llu\n",
 		       tot_enqueues, tot_dequeues);

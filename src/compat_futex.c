@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-#include <assert.h>
 #include <errno.h>
 #include <poll.h>
 #include <stdint.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/futex.h>
 #include <urcu/system.h>
 
@@ -60,9 +60,9 @@ int compat_futex_noasync(int32_t *uaddr, int op, int32_t val,
 	 * Check if NULL. Don't let users expect that they are taken into
 	 * account.
 	 */
-	assert(!timeout);
-	assert(!uaddr2);
-	assert(!val3);
+	urcu_posix_assert(!timeout);
+	urcu_posix_assert(!uaddr2);
+	urcu_posix_assert(!val3);
 
 	/*
 	 * memory barriers to serialize with the previous uaddr modification.
@@ -124,9 +124,9 @@ int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 	 * Check if NULL. Don't let users expect that they are taken into
 	 * account.
 	 */
-	assert(!timeout);
-	assert(!uaddr2);
-	assert(!val3);
+	urcu_posix_assert(!timeout);
+	urcu_posix_assert(!uaddr2);
+	urcu_posix_assert(!val3);
 
 	/*
 	 * Ensure previous memory operations on uaddr have completed.

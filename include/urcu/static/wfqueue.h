@@ -27,8 +27,8 @@
  */
 
 #include <pthread.h>
-#include <assert.h>
 #include <poll.h>
+#include <urcu/assert.h>
 #include <urcu/compiler.h>
 #include <urcu/uatomic.h>
 
@@ -62,13 +62,13 @@ static inline void _cds_wfq_init(struct cds_wfq_queue *q)
 	q->head = &q->dummy;
 	q->tail = &q->dummy.next;
 	ret = pthread_mutex_init(&q->lock, NULL);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static inline void _cds_wfq_destroy(struct cds_wfq_queue *q)
 {
 	int ret = pthread_mutex_destroy(&q->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
@@ -157,10 +157,10 @@ _cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 	int ret;
 
 	ret = pthread_mutex_lock(&q->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 	retnode = ___cds_wfq_dequeue_blocking(q);
 	ret = pthread_mutex_unlock(&q->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 	return retnode;
 }
 

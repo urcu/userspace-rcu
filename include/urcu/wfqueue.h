@@ -24,7 +24,6 @@
  */
 
 #include <pthread.h>
-#include <assert.h>
 #include <urcu/compiler.h>
 
 #ifdef __cplusplus

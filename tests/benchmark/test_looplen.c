@@ -28,11 +28,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <sched.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 
 #ifndef DYNAMIC_LINK_TEST
 #define _LGPL_SOURCE

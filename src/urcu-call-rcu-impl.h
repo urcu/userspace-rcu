@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -35,6 +34,7 @@
 #include <sched.h>
 
 #include "compat-getcpu.h"
+#include <urcu/assert.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/call-rcu.h>
 #include <urcu/pointer.h>
@@ -355,8 +355,8 @@ static void *call_rcu_thread(void *arg)
 		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &crdp->cbs_head, &crdp->cbs_tail);
-		assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
-		assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
+		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
+		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
 		if (splice_ret != CDS_WFCQ_RET_SRC_EMPTY) {
 			synchronize_rcu();
 			cbcount = 0;

@@ -258,7 +258,6 @@
 #define _LGPL_SOURCE
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -266,6 +265,7 @@
 #include <unistd.h>
 
 #include "compat-getcpu.h"
+#include <urcu/assert.h>
 #include <urcu/pointer.h>
 #include <urcu/call-rcu.h>
 #include <urcu/flavor.h>
@@ -390,7 +390,7 @@ void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 	iter->lfht = ht;
 }
 
-#define cds_lfht_iter_debug_assert(...)		assert(__VA_ARGS__)
+#define cds_lfht_iter_debug_assert(...)		urcu_posix_assert(__VA_ARGS__)
 
 #else
 
@@ -682,12 +682,12 @@ void alloc_split_items_count(struct cds_lfht *ht)
 			cds_lfht_get_count_order_ulong(split_count_mask + 1);
 	}
 
-	assert(split_count_mask >= 0);
+	urcu_posix_assert(split_count_mask >= 0);
 
 	if (ht->flags & CDS_LFHT_ACCOUNTING) {
 		ht->split_count = calloc(split_count_mask + 1,
 					sizeof(struct ht_items_count));
-		assert(ht->split_count);
+		urcu_posix_assert(ht->split_count);
 	} else {
 		ht->split_count = NULL;
 	}
@@ -704,7 +704,7 @@ int ht_get_split_count_index(unsigned long hash)
 {
 	int cpu;
 
-	assert(split_count_mask >= 0);
+	urcu_posix_assert(split_count_mask >= 0);
 	cpu = urcu_sched_getcpu();
 	if (caa_unlikely(cpu < 0))
 		return hash & split_count_mask;
@@ -917,7 +917,7 @@ static inline
 struct cds_lfht_node *lookup_bucket(struct cds_lfht *ht, unsigned long size,
 		unsigned long hash)
 {
-	assert(size > 0);
+	urcu_posix_assert(size > 0);
 	return bucket_at(ht, hash & (size - 1));
 }
 
@@ -929,26 +929,26 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *bucket, struct cds_lfht_node *nod
 {
 	struct cds_lfht_node *iter_prev, *iter, *next, *new_next;
 
-	assert(!is_bucket(bucket));
-	assert(!is_removed(bucket));
-	assert(!is_removal_owner(bucket));
-	assert(!is_bucket(node));
-	assert(!is_removed(node));
-	assert(!is_removal_owner(node));
+	urcu_posix_assert(!is_bucket(bucket));
+	urcu_posix_assert(!is_removed(bucket));
+	urcu_posix_assert(!is_removal_owner(bucket));
+	urcu_posix_assert(!is_bucket(node));
+	urcu_posix_assert(!is_removed(node));
+	urcu_posix_assert(!is_removal_owner(node));
 	for (;;) {
 		iter_prev = bucket;
 		/* We can always skip the bucket node initially */
 		iter = rcu_dereference(iter_prev->next);
-		assert(!is_removed(iter));
-		assert(!is_removal_owner(iter));
-		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		urcu_posix_assert(!is_removed(iter));
+		urcu_posix_assert(!is_removal_owner(iter));
+		urcu_posix_assert(iter_prev->reverse_hash <= node->reverse_hash);
 		/*
 		 * We should never be called with bucket (start of chain)
 		 * and logically removed node (end of path compression
 		 * marker) being the actual same node. This would be a
 		 * bug in the algorithm implementation.
 		 */
-		assert(bucket != node);
+		urcu_posix_assert(bucket != node);
 		for (;;) {
 			if (caa_unlikely(is_end(iter)))
 				return;
@@ -960,8 +960,8 @@ void _cds_lfht_gc_bucket(struct cds_lfht_node *bucket, struct cds_lfht_node *nod
 			iter_prev = clear_flag(iter);
 			iter = next;
 		}
-		assert(!is_removed(iter));
-		assert(!is_removal_owner(iter));
+		urcu_posix_assert(!is_removed(iter));
+		urcu_posix_assert(!is_removal_owner(iter));
 		if (is_bucket(iter))
 			new_next = flag_bucket(clear_flag(next));
 		else
@@ -981,13 +981,13 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	if (!old_node)	/* Return -ENOENT if asked to replace NULL node */
 		return -ENOENT;
 
-	assert(!is_removed(old_node));
-	assert(!is_removal_owner(old_node));
-	assert(!is_bucket(old_node));
-	assert(!is_removed(new_node));
-	assert(!is_removal_owner(new_node));
-	assert(!is_bucket(new_node));
-	assert(new_node != old_node);
+	urcu_posix_assert(!is_removed(old_node));
+	urcu_posix_assert(!is_removal_owner(old_node));
+	urcu_posix_assert(!is_bucket(old_node));
+	urcu_posix_assert(!is_removed(new_node));
+	urcu_posix_assert(!is_removal_owner(new_node));
+	urcu_posix_assert(!is_bucket(new_node));
+	urcu_posix_assert(new_node != old_node);
 	for (;;) {
 		/* Insert after node to be replaced */
 		if (is_removed(old_next)) {
@@ -997,14 +997,14 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 			 */
 			return -ENOENT;
 		}
-		assert(old_next == clear_flag(old_next));
-		assert(new_node != old_next);
+		urcu_posix_assert(old_next == clear_flag(old_next));
+		urcu_posix_assert(new_node != old_next);
 		/*
 		 * REMOVAL_OWNER flag is _NEVER_ set before the REMOVED
 		 * flag. It is either set atomically at the same time
 		 * (replace) or after (del).
 		 */
-		assert(!is_removal_owner(old_next));
+		urcu_posix_assert(!is_removal_owner(old_next));
 		new_node->next = old_next;
 		/*
 		 * Here is the whole trick for lock-free replace: we add
@@ -1036,7 +1036,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(old_node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, new_node);
 
-	assert(is_removed(CMM_LOAD_SHARED(old_node->next)));
+	urcu_posix_assert(is_removed(CMM_LOAD_SHARED(old_node->next)));
 	return 0;
 }
 
@@ -1058,9 +1058,9 @@ void _cds_lfht_add(struct cds_lfht *ht,
 			*return_node;
 	struct cds_lfht_node *bucket;
 
-	assert(!is_bucket(node));
-	assert(!is_removed(node));
-	assert(!is_removal_owner(node));
+	urcu_posix_assert(!is_bucket(node));
+	urcu_posix_assert(!is_removed(node));
+	urcu_posix_assert(!is_removal_owner(node));
 	bucket = lookup_bucket(ht, size, hash);
 	for (;;) {
 		uint32_t chain_len = 0;
@@ -1072,7 +1072,7 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		iter_prev = bucket;
 		/* We can always skip the bucket node initially */
 		iter = rcu_dereference(iter_prev->next);
-		assert(iter_prev->reverse_hash <= node->reverse_hash);
+		urcu_posix_assert(iter_prev->reverse_hash <= node->reverse_hash);
 		for (;;) {
 			if (caa_unlikely(is_end(iter)))
 				goto insert;
@@ -1125,12 +1125,12 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		}
 
 	insert:
-		assert(node != clear_flag(iter));
-		assert(!is_removed(iter_prev));
-		assert(!is_removal_owner(iter_prev));
-		assert(!is_removed(iter));
-		assert(!is_removal_owner(iter));
-		assert(iter_prev != node);
+		urcu_posix_assert(node != clear_flag(iter));
+		urcu_posix_assert(!is_removed(iter_prev));
+		urcu_posix_assert(!is_removal_owner(iter_prev));
+		urcu_posix_assert(!is_removed(iter));
+		urcu_posix_assert(!is_removal_owner(iter));
+		urcu_posix_assert(iter_prev != node);
 		if (!bucket_flag)
 			node->next = clear_flag(iter);
 		else
@@ -1148,8 +1148,8 @@ void _cds_lfht_add(struct cds_lfht *ht,
 		}
 
 	gc_node:
-		assert(!is_removed(iter));
-		assert(!is_removal_owner(iter));
+		urcu_posix_assert(!is_removed(iter));
+		urcu_posix_assert(!is_removal_owner(iter));
 		if (is_bucket(iter))
 			new_next = flag_bucket(clear_flag(next));
 		else
@@ -1174,9 +1174,9 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 		return -ENOENT;
 
 	/* logically delete the node */
-	assert(!is_bucket(node));
-	assert(!is_removed(node));
-	assert(!is_removal_owner(node));
+	urcu_posix_assert(!is_bucket(node));
+	urcu_posix_assert(!is_removed(node));
+	urcu_posix_assert(!is_removal_owner(node));
 
 	/*
 	 * We are first checking if the node had previously been
@@ -1187,7 +1187,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	next = CMM_LOAD_SHARED(node->next);	/* next is not dereferenced */
 	if (caa_unlikely(is_removed(next)))
 		return -ENOENT;
-	assert(!is_bucket(next));
+	urcu_posix_assert(!is_bucket(next));
 	/*
 	 * The del operation semantic guarantees a full memory barrier
 	 * before the uatomic_or atomic commit of the deletion flag.
@@ -1210,7 +1210,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, node);
 
-	assert(is_removed(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(is_removed(CMM_LOAD_SHARED(node->next)));
 	/*
 	 * Last phase: atomically exchange node->next with a version
 	 * having "REMOVAL_OWNER_FLAG" set. If the returned node->next
@@ -1252,7 +1252,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	int ret;
 	unsigned long thread, nr_threads;
 
-	assert(nr_cpus_mask != -1);
+	urcu_posix_assert(nr_cpus_mask != -1);
 	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD)
 		goto fallback;
 
@@ -1292,11 +1292,11 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 			nr_threads = thread;
 			break;
 		}
-		assert(!ret);
+		urcu_posix_assert(!ret);
 	}
 	for (thread = 0; thread < nr_threads; thread++) {
 		ret = pthread_join(work[thread].thread_id, NULL);
-		assert(!ret);
+		urcu_posix_assert(!ret);
 	}
 	free(work);
 
@@ -1328,12 +1328,12 @@ void init_table_populate_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j, size = 1UL << (i - 1);
 
-	assert(i > MIN_TABLE_ORDER);
+	urcu_posix_assert(i > MIN_TABLE_ORDER);
 	ht->flavor->read_lock();
 	for (j = size + start; j < size + start + len; j++) {
 		struct cds_lfht_node *new_node = bucket_at(ht, j);
 
-		assert(j >= size && j < (size << 1));
+		urcu_posix_assert(j >= size && j < (size << 1));
 		dbg_printf("init populate: order %lu index %lu hash %lu\n",
 			   i, j, j);
 		new_node->reverse_hash = bit_reverse_ulong(j);
@@ -1357,7 +1357,7 @@ void init_table(struct cds_lfht *ht,
 
 	dbg_printf("init table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > MIN_TABLE_ORDER);
+	urcu_posix_assert(first_order > MIN_TABLE_ORDER);
 	for (i = first_order; i <= last_order; i++) {
 		unsigned long len;
 
@@ -1420,13 +1420,13 @@ void remove_table_partition(struct cds_lfht *ht, unsigned long i,
 {
 	unsigned long j, size = 1UL << (i - 1);
 
-	assert(i > MIN_TABLE_ORDER);
+	urcu_posix_assert(i > MIN_TABLE_ORDER);
 	ht->flavor->read_lock();
 	for (j = size + start; j < size + start + len; j++) {
 		struct cds_lfht_node *fini_bucket = bucket_at(ht, j);
 		struct cds_lfht_node *parent_bucket = bucket_at(ht, j - size);
 
-		assert(j >= size && j < (size << 1));
+		urcu_posix_assert(j >= size && j < (size << 1));
 		dbg_printf("remove entry: order %lu index %lu hash %lu\n",
 			   i, j, j);
 		/* Set the REMOVED_FLAG to freeze the ->next for gc */
@@ -1455,7 +1455,7 @@ void fini_table(struct cds_lfht *ht,
 
 	dbg_printf("fini table: first_order %lu last_order %lu\n",
 		   first_order, last_order);
-	assert(first_order > MIN_TABLE_ORDER);
+	urcu_posix_assert(first_order > MIN_TABLE_ORDER);
 	for (i = last_order; i >= first_order; i--) {
 		unsigned long len;
 
@@ -1518,7 +1518,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 	node->reverse_hash = 0;
 
 	bucket_order = cds_lfht_get_count_order_ulong(size);
-	assert(bucket_order >= 0);
+	urcu_posix_assert(bucket_order >= 0);
 
 	for (order = 1; order < (unsigned long) bucket_order + 1; order++) {
 		len = 1UL << (order - 1);
@@ -1544,7 +1544,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 			node->reverse_hash = bit_reverse_ulong(len + i);
 
 			/* insert after prev */
-			assert(is_bucket(prev->next));
+			urcu_posix_assert(is_bucket(prev->next));
 			node->next = prev->next;
 			prev->next = flag_bucket(node);
 		}
@@ -1620,9 +1620,9 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	init_size = min(init_size, max_nr_buckets);
 
 	ht = mm->alloc_cds_lfht(min_nr_alloc_buckets, max_nr_buckets);
-	assert(ht);
-	assert(ht->mm == mm);
-	assert(ht->bucket_at == mm->bucket_at);
+	urcu_posix_assert(ht);
+	urcu_posix_assert(ht->mm == mm);
+	urcu_posix_assert(ht->bucket_at == mm->bucket_at);
 
 	ht->flags = flags;
 	ht->flavor = flavor;
@@ -1663,7 +1663,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 			break;
 		}
 		next = rcu_dereference(node->next);
-		assert(node == clear_flag(node));
+		urcu_posix_assert(node == clear_flag(node));
 		if (caa_likely(!is_removed(next))
 		    && !is_bucket(next)
 		    && node->reverse_hash == reverse_hash
@@ -1672,7 +1672,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1707,7 +1707,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((unused)),
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1731,7 +1731,7 @@ void cds_lfht_next(struct cds_lfht *ht __attribute__((unused)),
 		}
 		node = clear_flag(next);
 	}
-	assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1852,8 +1852,8 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 		node = clear_flag(node)->next;
 		if (!is_bucket(node))
 			return -EPERM;
-		assert(!is_removed(node));
-		assert(!is_removal_owner(node));
+		urcu_posix_assert(!is_removed(node));
+		urcu_posix_assert(!is_removal_owner(node));
 	} while (!is_end(node));
 	/*
 	 * size accessed without rcu_dereference because hash table is
@@ -1865,7 +1865,7 @@ int cds_lfht_delete_bucket(struct cds_lfht *ht)
 		node = bucket_at(ht, i);
 		dbg_printf("delete bucket: index %lu expected hash %lu hash %lu\n",
 			i, i, bit_reverse_ulong(node->reverse_hash));
-		assert(is_bucket(node->next));
+		urcu_posix_assert(is_bucket(node->next));
 	}
 
 	for (order = cds_lfht_get_count_order_ulong(size); (long)order >= 0; order--)
@@ -1962,7 +1962,7 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
-	assert(new_size > old_size);
+	urcu_posix_assert(new_size > old_size);
 	init_table(ht, old_order + 1, new_order);
 }
 
@@ -1978,7 +1978,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
-	assert(new_size < old_size);
+	urcu_posix_assert(new_size < old_size);
 
 	/* Remove and unlink all bucket nodes to remove. */
 	fini_table(ht, new_order + 1, old_order);

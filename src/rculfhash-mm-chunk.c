@@ -21,6 +21,7 @@
  */
 
 #include <stddef.h>
+#include <urcu/assert.h>
 #include <rculfhash-internal.h>
 
 static
@@ -29,14 +30,14 @@ void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 	if (order == 0) {
 		ht->tbl_chunk[0] = calloc(ht->min_nr_alloc_buckets,
 			sizeof(struct cds_lfht_node));
-		assert(ht->tbl_chunk[0]);
+		urcu_posix_assert(ht->tbl_chunk[0]);
 	} else if (order > ht->min_alloc_buckets_order) {
 		unsigned long i, len = 1UL << (order - 1 - ht->min_alloc_buckets_order);
 
 		for (i = len; i < 2 * len; i++) {
 			ht->tbl_chunk[i] = calloc(ht->min_nr_alloc_buckets,
 				sizeof(struct cds_lfht_node));
-			assert(ht->tbl_chunk[i]);
+			urcu_posix_assert(ht->tbl_chunk[i]);
 		}
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */

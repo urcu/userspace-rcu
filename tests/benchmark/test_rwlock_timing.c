@@ -28,11 +28,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <pthread.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 
 #include "thread-id.h"
 
@@ -87,7 +87,7 @@ void *thr_reader(void *arg)
 				abort();
 			}
 
-			assert(test_array.a == 8);
+			urcu_posix_assert(test_array.a == 8);
 
 			ret = pthread_rwlock_unlock(&lock);
 			if (ret) {

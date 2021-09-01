@@ -31,10 +31,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include <urcu/uatomic.h>
 #include "thread-id.h"
@@ -255,7 +255,7 @@ static void *thr_dequeuer(void *_count)
 	}
 	cmm_smp_mb();
 
-	assert(test_pop || test_pop_all);
+	urcu_posix_assert(test_pop || test_pop_all);
 
 	for (;;) {
 		if (test_pop && test_pop_all) {

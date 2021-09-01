@@ -192,7 +192,7 @@ unsigned long test_compare(const void *key1, size_t key1_len,
 {
 	if (caa_unlikely(key1_len != key2_len))
 		return -1;
-	assert(key1_len == sizeof(unsigned long));
+	urcu_posix_assert(key1_len == sizeof(unsigned long));
 	if (key1 == key2)
 		return 0;
 	else
@@ -258,7 +258,7 @@ void test_delete_all_nodes(struct cds_lfht *ht)
 		int ret;
 
 		ret = cds_lfht_del(test_ht, cds_lfht_iter_get_node(&iter));
-		assert(!ret);
+		urcu_posix_assert(!ret);
 		call_rcu(&node->head, free_node_cb);
 		count++;
 	}
@@ -599,7 +599,7 @@ int main(int argc, char **argv)
 	 */
 	rcu_register_thread();
 	ret = (get_populate_hash_cb())();
-	assert(!ret);
+	urcu_posix_assert(!ret);
 
 	rcu_thread_offline();
 

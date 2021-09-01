@@ -28,9 +28,9 @@
  */
 
 #include <pthread.h>
-#include <assert.h>
 #include <poll.h>
 #include <stdbool.h>
+#include <urcu/assert.h>
 #include <urcu/compiler.h>
 #include <urcu/uatomic.h>
 
@@ -104,7 +104,7 @@ static inline void _cds_wfcq_init(struct cds_wfcq_head *head,
 	_cds_wfcq_node_init(&head->node);
 	tail->p = &head->node;
 	ret = pthread_mutex_init(&head->lock, NULL);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 /*
@@ -115,7 +115,7 @@ static inline void _cds_wfcq_destroy(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail __attribute__((unused)))
 {
 	int ret = pthread_mutex_destroy(&head->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 /*
@@ -163,7 +163,7 @@ static inline void _cds_wfcq_dequeue_lock(struct cds_wfcq_head *head,
 	int ret;
 
 	ret = pthread_mutex_lock(&head->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static inline void _cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
@@ -172,7 +172,7 @@ static inline void _cds_wfcq_dequeue_unlock(struct cds_wfcq_head *head,
 	int ret;
 
 	ret = pthread_mutex_unlock(&head->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static inline bool ___cds_wfcq_append(cds_wfcq_head_ptr_t u_head,

@@ -27,9 +27,9 @@
  */
 
 #include <pthread.h>
-#include <assert.h>
 #include <poll.h>
 #include <stdbool.h>
+#include <urcu/assert.h>
 #include <urcu/compiler.h>
 #include <urcu/uatomic.h>
 
@@ -96,7 +96,7 @@ void _cds_wfs_init(struct cds_wfs_stack *s)
 
 	s->head = CDS_WFS_END;
 	ret = pthread_mutex_init(&s->lock, NULL);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 /*
@@ -107,7 +107,7 @@ static inline
 void _cds_wfs_destroy(struct cds_wfs_stack *s)
 {
 	int ret = pthread_mutex_destroy(&s->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 static inline bool ___cds_wfs_end(void *node)
@@ -142,7 +142,7 @@ int _cds_wfs_push(cds_wfs_stack_ptr_t u_stack, struct cds_wfs_node *node)
 	struct __cds_wfs_stack *s = u_stack._s;
 	struct cds_wfs_head *old_head, *new_head;
 
-	assert(node->next == NULL);
+	urcu_posix_assert(node->next == NULL);
 	new_head = caa_container_of(node, struct cds_wfs_head, node);
 	/*
 	 * uatomic_xchg() implicit memory barrier orders earlier stores
@@ -323,7 +323,7 @@ static inline void _cds_wfs_pop_lock(struct cds_wfs_stack *s)
 	int ret;
 
 	ret = pthread_mutex_lock(&s->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 /*
@@ -334,7 +334,7 @@ static inline void _cds_wfs_pop_unlock(struct cds_wfs_stack *s)
 	int ret;
 
 	ret = pthread_mutex_unlock(&s->lock);
-	assert(!ret);
+	urcu_posix_assert(!ret);
 }
 
 /*

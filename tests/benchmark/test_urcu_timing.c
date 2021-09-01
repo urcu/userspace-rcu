@@ -28,9 +28,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
+
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 
 #include "thread-id.h"
 
@@ -104,7 +105,7 @@ void *thr_reader(void *arg)
 			rcu_read_lock();
 			local_ptr = rcu_dereference(test_rcu_pointer);
 			if (local_ptr) {
-				assert(local_ptr->a == 8);
+				urcu_posix_assert(local_ptr->a == 8);
 			}
 			rcu_read_unlock();
 		}
@@ -140,7 +141,7 @@ void *thr_writer(void *arg)
 			rcu_copy_mutex_lock();
 			old = test_rcu_pointer;
 			if (old) {
-				assert(old->a == 8);
+				urcu_posix_assert(old->a == 8);
 			}
 			new->a = 8;
 			old = rcu_xchg_pointer(&test_rcu_pointer, new);

@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/debug.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 #include <urcu/system.h>
@@ -42,7 +43,6 @@
 #include <urcu/list.h>
 #include <urcu/futex.h>
 #include <urcu/tls-compat.h>
-#include <urcu/debug.h>
 #include <urcu/static/urcu-common.h>
 
 #ifdef __cplusplus

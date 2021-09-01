@@ -28,9 +28,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
+#include <urcu/assert.h>
 #include <urcu/arch.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
@@ -140,7 +140,7 @@ void *thr_reader(void *_count)
 	set_affinity();
 
 	rcu_register_thread();
-	assert(!rcu_read_ongoing());
+	urcu_posix_assert(!rcu_read_ongoing());
 
 	while (!test_go)
 	{
@@ -149,11 +149,11 @@ void *thr_reader(void *_count)
 
 	for (;;) {
 		rcu_read_lock();
-		assert(rcu_read_ongoing());
+		urcu_posix_assert(rcu_read_ongoing());
 		local_ptr = rcu_dereference(test_rcu_pointer);
 		rcu_debug_yield_read();
 		if (local_ptr)
-			assert(*local_ptr == 8);
+			urcu_posix_assert(*local_ptr == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 		rcu_read_unlock();
@@ -193,7 +193,7 @@ void *thr_writer(void *_count)
 
 	for (;;) {
 		new = malloc(sizeof(int));
-		assert(new);
+		urcu_posix_assert(new);
 		*new = 8;
 		old = rcu_xchg_pointer(&test_rcu_pointer, new);
 		if (caa_unlikely(wduration))

@@ -28,10 +28,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <assert.h>
 #include <errno.h>
 
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 #include <urcu/tls-compat.h>
 #include "thread-id.h"
 
@@ -161,7 +161,7 @@ void *thr_reader(void *_count)
 		}
 
 		a = test_array.a;
-		assert(a == 8);
+		urcu_posix_assert(a == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
 

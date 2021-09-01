@@ -14,10 +14,10 @@
  * published by the Free  Software Foundation.
  */
 
-#include <assert.h>
 #include <stdbool.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <urcu/assert.h>
 #include <urcu/uatomic.h>
 
 struct urcu_ref {
@@ -63,7 +63,7 @@ static inline void urcu_ref_put(struct urcu_ref *ref,
 				void (*release)(struct urcu_ref *))
 {
 	long res = uatomic_sub_return(&ref->refcount, 1);
-	assert (res >= 0);
+	urcu_posix_assert(res >= 0);
 	if (res == 0)
 		release(ref);
 }

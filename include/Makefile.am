@@ -16,6 +16,7 @@ nobase_include_HEADERS = \
 	urcu/arch/sparc64.h \
 	urcu/arch/tile.h \
 	urcu/arch/x86.h \
+	urcu/assert.h \
 	urcu/call-rcu.h \
 	urcu/cds.h \
 	urcu/compiler.h \

@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -36,6 +35,7 @@
 #include <sched.h>
 
 #include "compat-getcpu.h"
+#include <urcu/assert.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/pointer.h>
 #include <urcu/list.h>
@@ -210,8 +210,8 @@ static void *workqueue_thread(void *arg)
 		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &workqueue->cbs_head, &workqueue->cbs_tail);
-		assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
-		assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
+		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
+		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
 		if (splice_ret != CDS_WFCQ_RET_SRC_EMPTY) {
 			if (workqueue->grace_period_fct)
 				workqueue->grace_period_fct(workqueue, workqueue->priv);
@@ -336,7 +336,7 @@ void urcu_workqueue_destroy(struct urcu_workqueue *workqueue)
 	if (urcu_workqueue_destroy_worker(workqueue)) {
 		urcu_die(errno);
 	}
-	assert(cds_wfcq_empty(&workqueue->cbs_head, &workqueue->cbs_tail));
+	urcu_posix_assert(cds_wfcq_empty(&workqueue->cbs_head, &workqueue->cbs_tail));
 	free(workqueue);
 }
 
