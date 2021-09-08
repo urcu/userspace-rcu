@@ -81,11 +81,12 @@ struct cds_lfs_stack {
 };
 
 /*
- * The transparent union allows calling functions that work on both
- * struct cds_lfs_stack and struct __cds_lfs_stack on any of those two
- * types.
+ * In C, the transparent union allows calling functions that work on
+ * both struct cds_lfs_stack and struct __cds_lfs_stack on any of those
+ * two types.
  *
- * Avoid complaints from clang++ not knowing this attribute.
+ * In C++, implement static inline wrappers using function overloading
+ * to obtain an API similar to C.
  */
 typedef union {
 	struct __cds_lfs_stack *_s;
@@ -258,6 +259,70 @@ extern struct cds_lfs_head *__cds_lfs_pop_all(cds_lfs_stack_ptr_t s);
 
 #ifdef __cplusplus
 }
-#endif
+
+/*
+ * In C++, implement static inline wrappers using function overloading
+ * to obtain an API similar to C.
+ */
+
+static inline cds_lfs_stack_ptr_t __cds_lfs_stack_cast(struct __cds_lfs_stack *s)
+{
+	cds_lfs_stack_ptr_t ret = {
+		._s = s,
+	};
+	return ret;
+}
+
+static inline cds_lfs_stack_ptr_t cds_lfs_stack_cast(struct cds_lfs_stack *s)
+{
+	cds_lfs_stack_ptr_t ret = {
+		.s = s,
+	};
+	return ret;
+}
+
+static inline bool cds_lfs_empty(struct __cds_lfs_stack *_s)
+{
+	return cds_lfs_empty(__cds_lfs_stack_cast(_s));
+}
+
+static inline bool cds_lfs_empty(struct cds_lfs_stack *s)
+{
+	return cds_lfs_empty(cds_lfs_stack_cast(s));
+}
+
+static inline bool cds_lfs_push(struct __cds_lfs_stack *s,
+			struct cds_lfs_node *node)
+{
+	return cds_lfs_push(__cds_lfs_stack_cast(s), node);
+}
+
+static inline bool cds_lfs_push(struct cds_lfs_stack *s,
+			struct cds_lfs_node *node)
+{
+	return cds_lfs_push(cds_lfs_stack_cast(s), node);
+}
+
+static inline struct cds_lfs_node *__cds_lfs_pop(struct __cds_lfs_stack *s)
+{
+	return __cds_lfs_pop(__cds_lfs_stack_cast(s));
+}
+
+static inline struct cds_lfs_node *__cds_lfs_pop(struct cds_lfs_stack *s)
+{
+	return __cds_lfs_pop(cds_lfs_stack_cast(s));
+}
+
+static inline struct cds_lfs_head *__cds_lfs_pop_all(struct __cds_lfs_stack *s)
+{
+	return __cds_lfs_pop_all(__cds_lfs_stack_cast(s));
+}
+
+static inline struct cds_lfs_head *__cds_lfs_pop_all(struct cds_lfs_stack *s)
+{
+	return __cds_lfs_pop_all(cds_lfs_stack_cast(s));
+}
+
+#endif	/* __cplusplus */
 
 #endif /* _URCU_LFSTACK_H */
