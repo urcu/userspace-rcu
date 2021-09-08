@@ -46,7 +46,7 @@ struct cds_list_head {
 #define CDS_INIT_LIST_HEAD(ptr) \
 	(ptr)->next = (ptr)->prev = (ptr)
 
-#define CDS_LIST_HEAD_INIT(name) { .prev = &(name), .next = &(name) }
+#define CDS_LIST_HEAD_INIT(name) { .next = &(name), .prev = &(name) }
 
 /* Add new element at the head of the list. */
 static inline
