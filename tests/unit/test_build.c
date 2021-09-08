@@ -93,6 +93,19 @@ static void test_wfcqueue(void)
 		ok(1, "cds_wfcq_empty");
 }
 
+static
+void test_build_cds_list_head_init(void)
+{
+	/* Test that the CDS_LIST_HEAD_INIT macro builds correctly.  */
+	struct struct_with_list {
+		struct cds_list_head head;
+	};
+
+	struct struct_with_list list = {
+		.head = CDS_LIST_HEAD_INIT(list.head),
+	};
+}
+
 int main(void)
 {
 	/* Need at least 1 test to make a valid TAP test plan. */
@@ -102,6 +115,7 @@ int main(void)
 	test_lfstack();
 	test_wfstack();
 	test_wfcqueue();
+	test_build_cds_list_head_init();
 
 	return exit_status();
 }
