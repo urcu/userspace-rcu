@@ -92,11 +92,12 @@ struct cds_wfs_stack {
 };
 
 /*
- * The transparent union allows calling functions that work on both
+ * In C, the transparent union allows calling functions that work on both
  * struct cds_wfs_stack and struct __cds_wfs_stack on any of those two
  * types.
  *
- * Avoid complaints from clang++ not knowing this attribute.
+ * In C++, implement static inline wrappers using function overloading
+ * to obtain an API similar to C.
  */
 typedef union {
 	struct __cds_wfs_stack *_s;
@@ -320,10 +321,6 @@ extern struct cds_wfs_head *__cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack);
 
 #endif /* !_LGPL_SOURCE */
 
-#ifdef __cplusplus
-}
-#endif
-
 /*
  * cds_wfs_for_each_blocking: Iterate over all nodes returned by
  * __cds_wfs_pop_all().
@@ -354,5 +351,106 @@ extern struct cds_wfs_head *__cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack);
 			n = (node ? cds_wfs_next_blocking(node) : NULL);   \
 		node != NULL;						   \
 		node = n, n = (node ? cds_wfs_next_blocking(node) : NULL))
+
+#ifdef __cplusplus
+}
+
+/*
+ * In C++, implement static inline wrappers using function overloading
+ * to obtain an API similar to C.
+ */
+
+static inline cds_wfs_stack_ptr_t __cds_wfs_stack_cast(struct __cds_wfs_stack *s)
+{
+	cds_wfs_stack_ptr_t ret = {
+		._s = s,
+	};
+	return ret;
+}
+
+static inline cds_wfs_stack_ptr_t cds_wfs_stack_cast(struct cds_wfs_stack *s)
+{
+	cds_wfs_stack_ptr_t ret = {
+		.s = s,
+	};
+	return ret;
+}
+
+static inline bool cds_wfs_empty(struct __cds_wfs_stack *s)
+{
+	return cds_wfs_empty(__cds_wfs_stack_cast(s));
+}
+
+static inline bool cds_wfs_empty(struct cds_wfs_stack *s)
+{
+	return cds_wfs_empty(cds_wfs_stack_cast(s));
+}
+
+static inline int cds_wfs_push(struct __cds_wfs_stack *s, struct cds_wfs_node *node)
+{
+	return cds_wfs_push(__cds_wfs_stack_cast(s), node);
+}
+
+static inline int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
+{
+	return cds_wfs_push(cds_wfs_stack_cast(s), node);
+}
+
+static inline struct cds_wfs_node *__cds_wfs_pop_blocking(struct __cds_wfs_stack *s)
+{
+	return __cds_wfs_pop_blocking(__cds_wfs_stack_cast(s));
+}
+
+static inline struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
+{
+	return __cds_wfs_pop_blocking(cds_wfs_stack_cast(s));
+}
+
+static inline struct cds_wfs_node *
+	__cds_wfs_pop_with_state_blocking(struct __cds_wfs_stack *s, int *state)
+{
+	return __cds_wfs_pop_with_state_blocking(__cds_wfs_stack_cast(s), state);
+}
+
+static inline struct cds_wfs_node *
+	__cds_wfs_pop_with_state_blocking(struct cds_wfs_stack *s, int *state)
+{
+	return __cds_wfs_pop_with_state_blocking(cds_wfs_stack_cast(s), state);
+}
+
+static inline struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct __cds_wfs_stack *s)
+
+{
+	return __cds_wfs_pop_nonblocking(__cds_wfs_stack_cast(s));
+}
+
+static inline struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
+{
+	return __cds_wfs_pop_nonblocking(cds_wfs_stack_cast(s));
+}
+
+static inline struct cds_wfs_node *
+	__cds_wfs_pop_with_state_nonblocking(struct __cds_wfs_stack *s, int *state)
+{
+	return __cds_wfs_pop_with_state_nonblocking(__cds_wfs_stack_cast(s), state);
+}
+
+static inline struct cds_wfs_node *
+	__cds_wfs_pop_with_state_nonblocking(struct cds_wfs_stack *s, int *state)
+{
+	return __cds_wfs_pop_with_state_nonblocking(cds_wfs_stack_cast(s), state);
+}
+
+static inline struct cds_wfs_head *__cds_wfs_pop_all(struct __cds_wfs_stack *s)
+{
+	return __cds_wfs_pop_all(__cds_wfs_stack_cast(s));
+}
+
+static inline struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s)
+{
+	return __cds_wfs_pop_all(cds_wfs_stack_cast(s));
+}
+
+#endif
 
 #endif /* _URCU_WFSTACK_H */
