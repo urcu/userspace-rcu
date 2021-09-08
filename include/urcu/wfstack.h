@@ -360,7 +360,7 @@ extern struct cds_wfs_head *__cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack);
  * to obtain an API similar to C.
  */
 
-static inline cds_wfs_stack_ptr_t __cds_wfs_stack_cast(struct __cds_wfs_stack *s)
+static inline cds_wfs_stack_ptr_t cds_wfs_stack_cast(struct __cds_wfs_stack *s)
 {
 	cds_wfs_stack_ptr_t ret = {
 		._s = s,
@@ -378,7 +378,7 @@ static inline cds_wfs_stack_ptr_t cds_wfs_stack_cast(struct cds_wfs_stack *s)
 
 static inline bool cds_wfs_empty(struct __cds_wfs_stack *s)
 {
-	return cds_wfs_empty(__cds_wfs_stack_cast(s));
+	return cds_wfs_empty(cds_wfs_stack_cast(s));
 }
 
 static inline bool cds_wfs_empty(struct cds_wfs_stack *s)
@@ -388,7 +388,7 @@ static inline bool cds_wfs_empty(struct cds_wfs_stack *s)
 
 static inline int cds_wfs_push(struct __cds_wfs_stack *s, struct cds_wfs_node *node)
 {
-	return cds_wfs_push(__cds_wfs_stack_cast(s), node);
+	return cds_wfs_push(cds_wfs_stack_cast(s), node);
 }
 
 static inline int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *node)
@@ -398,7 +398,7 @@ static inline int cds_wfs_push(struct cds_wfs_stack *s, struct cds_wfs_node *nod
 
 static inline struct cds_wfs_node *__cds_wfs_pop_blocking(struct __cds_wfs_stack *s)
 {
-	return __cds_wfs_pop_blocking(__cds_wfs_stack_cast(s));
+	return __cds_wfs_pop_blocking(cds_wfs_stack_cast(s));
 }
 
 static inline struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *s)
@@ -409,7 +409,7 @@ static inline struct cds_wfs_node *__cds_wfs_pop_blocking(struct cds_wfs_stack *
 static inline struct cds_wfs_node *
 	__cds_wfs_pop_with_state_blocking(struct __cds_wfs_stack *s, int *state)
 {
-	return __cds_wfs_pop_with_state_blocking(__cds_wfs_stack_cast(s), state);
+	return __cds_wfs_pop_with_state_blocking(cds_wfs_stack_cast(s), state);
 }
 
 static inline struct cds_wfs_node *
@@ -421,7 +421,7 @@ static inline struct cds_wfs_node *
 static inline struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct __cds_wfs_stack *s)
 
 {
-	return __cds_wfs_pop_nonblocking(__cds_wfs_stack_cast(s));
+	return __cds_wfs_pop_nonblocking(cds_wfs_stack_cast(s));
 }
 
 static inline struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stack *s)
@@ -432,7 +432,7 @@ static inline struct cds_wfs_node *__cds_wfs_pop_nonblocking(struct cds_wfs_stac
 static inline struct cds_wfs_node *
 	__cds_wfs_pop_with_state_nonblocking(struct __cds_wfs_stack *s, int *state)
 {
-	return __cds_wfs_pop_with_state_nonblocking(__cds_wfs_stack_cast(s), state);
+	return __cds_wfs_pop_with_state_nonblocking(cds_wfs_stack_cast(s), state);
 }
 
 static inline struct cds_wfs_node *
@@ -443,7 +443,7 @@ static inline struct cds_wfs_node *
 
 static inline struct cds_wfs_head *__cds_wfs_pop_all(struct __cds_wfs_stack *s)
 {
-	return __cds_wfs_pop_all(__cds_wfs_stack_cast(s));
+	return __cds_wfs_pop_all(cds_wfs_stack_cast(s));
 }
 
 static inline struct cds_wfs_head *__cds_wfs_pop_all(struct cds_wfs_stack *s)
