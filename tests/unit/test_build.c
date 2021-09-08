@@ -64,10 +64,7 @@ static void test_lfstack(void)
 	struct cds_lfs_stack s;
 
 	cds_lfs_init(&s);
-	if (!cds_lfs_empty(&s))
-		fail("cds_lfs_empty");
-	else
-		ok(1, "cds_lfs_empty");
+	ok(cds_lfs_empty(&s), "cds_lfs_empty");
 }
 
 static void test_wfstack(void)
@@ -75,10 +72,7 @@ static void test_wfstack(void)
 	struct cds_wfs_stack s;
 
 	cds_wfs_init(&s);
-	if (!cds_wfs_empty(&s))
-		fail("cds_lfs_empty");
-	else
-		ok(1, "cds_lfs_empty");
+	ok(cds_wfs_empty(&s), "cds_lfs_empty");
 }
 
 static void test_wfcqueue(void)
@@ -87,10 +81,7 @@ static void test_wfcqueue(void)
 	struct cds_wfcq_tail tail;
 
 	cds_wfcq_init(&head, &tail);
-	if (!cds_wfcq_empty(&head, &tail))
-		fail("cds_wfcq_empty");
-	else
-		ok(1, "cds_wfcq_empty");
+	ok(cds_wfcq_empty(&head, &tail), "cds_wfcq_empty");
 }
 
 static
@@ -108,9 +99,7 @@ void test_build_cds_list_head_init(void)
 
 int main(void)
 {
-	/* Need at least 1 test to make a valid TAP test plan. */
 	plan_tests(3);
-	ok(1, "dummy");
 
 	test_lfstack();
 	test_wfstack();
