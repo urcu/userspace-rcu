@@ -23,8 +23,8 @@ extern "C" {
 		 _gen_result(1, __func__, __FILE__, __LINE__, "%s", #e) : \
 		 _gen_result(0, __func__, __FILE__, __LINE__, "%s", #e))
 
-# define pass(test, ...) ok(1, test, ## __VA_ARGS__);
-# define fail(test, ...) ok(0, test, ## __VA_ARGS__);
+# define pass(test, ...) ok(1, test, ## __VA_ARGS__)
+# define fail(test, ...) ok(0, test, ## __VA_ARGS__)
 
 # define skip_start(test, n, fmt, ...)			\
 	do {						\
@@ -43,8 +43,8 @@ extern "C" {
 		 _gen_result(1, __func__, __FILE__, __LINE__, "%s", #e) : \
 		 _gen_result(0, __func__, __FILE__, __LINE__, "%s", #e))
 
-# define pass(...) ok(1, __VA_ARGS__);
-# define fail(...) ok(0, __VA_ARGS__);
+# define pass(...) ok(1, __VA_ARGS__)
+# define fail(...) ok(0, __VA_ARGS__)
 
 # define skip_start(test, n, ...)			\
 	do {						\
