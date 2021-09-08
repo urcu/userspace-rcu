@@ -281,44 +281,23 @@ static inline cds_lfs_stack_ptr_t cds_lfs_stack_cast(struct cds_lfs_stack *s)
 	return ret;
 }
 
-static inline bool cds_lfs_empty(struct __cds_lfs_stack *s)
+template<typename T> static inline bool cds_lfs_empty(T s)
 {
 	return cds_lfs_empty(cds_lfs_stack_cast(s));
 }
 
-static inline bool cds_lfs_empty(struct cds_lfs_stack *s)
-{
-	return cds_lfs_empty(cds_lfs_stack_cast(s));
-}
-
-static inline bool cds_lfs_push(struct __cds_lfs_stack *s,
+template<typename T> static inline bool cds_lfs_push(T s,
 			struct cds_lfs_node *node)
 {
 	return cds_lfs_push(cds_lfs_stack_cast(s), node);
 }
 
-static inline bool cds_lfs_push(struct cds_lfs_stack *s,
-			struct cds_lfs_node *node)
-{
-	return cds_lfs_push(cds_lfs_stack_cast(s), node);
-}
-
-static inline struct cds_lfs_node *__cds_lfs_pop(struct __cds_lfs_stack *s)
+template<typename T> static inline struct cds_lfs_node *__cds_lfs_pop(T s)
 {
 	return __cds_lfs_pop(cds_lfs_stack_cast(s));
 }
 
-static inline struct cds_lfs_node *__cds_lfs_pop(struct cds_lfs_stack *s)
-{
-	return __cds_lfs_pop(cds_lfs_stack_cast(s));
-}
-
-static inline struct cds_lfs_head *__cds_lfs_pop_all(struct __cds_lfs_stack *s)
-{
-	return __cds_lfs_pop_all(cds_lfs_stack_cast(s));
-}
-
-static inline struct cds_lfs_head *__cds_lfs_pop_all(struct cds_lfs_stack *s)
+template<typename T> static inline struct cds_lfs_head *__cds_lfs_pop_all(T s)
 {
 	return __cds_lfs_pop_all(cds_lfs_stack_cast(s));
 }
