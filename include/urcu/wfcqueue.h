@@ -504,101 +504,49 @@ static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast_cpp(struct cds_wfcq_head *h
 	return ret;
 }
 
-static inline bool cds_wfcq_empty(struct __cds_wfcq_head *head,
+template<typename T> static inline bool cds_wfcq_empty(T head,
 		struct cds_wfcq_tail *tail)
 {
 	return cds_wfcq_empty(cds_wfcq_head_cast_cpp(head), tail);
 }
 
-static inline bool cds_wfcq_empty(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
-{
-	return cds_wfcq_empty(cds_wfcq_head_cast_cpp(head), tail);
-}
-
-static inline bool cds_wfcq_enqueue(struct __cds_wfcq_head *head,
+template<typename T> static inline bool cds_wfcq_enqueue(T head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
 	return cds_wfcq_enqueue(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
-static inline bool cds_wfcq_enqueue(struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		struct cds_wfcq_node *node)
-{
-	return cds_wfcq_enqueue(cds_wfcq_head_cast_cpp(head), tail, node);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
+		T head, struct cds_wfcq_tail *tail)
 {
 	return __cds_wfcq_dequeue_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
-{
-	return __cds_wfcq_dequeue_blocking(cds_wfcq_head_cast_cpp(head), tail);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		int *state)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
+		T head, struct cds_wfcq_tail *tail, int *state)
 {
 	return __cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		int *state)
-{
-	return __cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast_cpp(head),
-			tail, state);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
+		T head, struct cds_wfcq_tail *tail)
 {
 	return __cds_wfcq_dequeue_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
-{
-	return __cds_wfcq_dequeue_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		int *state)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
+		T head, struct cds_wfcq_tail *tail, int *state)
 {
 	return __cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		int *state)
-{
-	return __cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_cast_cpp(head),
-			tail, state);
-}
-
-/* Support the power set of type combinations. */
-static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
-		struct __cds_wfcq_head *dest_q_head,
+template<typename T, typename U> static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
+		T dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
-		struct __cds_wfcq_head *src_q_head,
+		U src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
 	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
@@ -607,47 +555,10 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 			src_q_tail);
 }
 
-static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
-		struct cds_wfcq_head *dest_q_head,
+template<typename T, typename U> static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
+		T dest_q_head,
 		struct cds_wfcq_tail *dest_q_tail,
-		struct __cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
-		struct __cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
-		struct cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-/* Support the power set of type combinations. */
-static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
-		struct __cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct __cds_wfcq_head *src_q_head,
+		U *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
 	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
@@ -656,96 +567,28 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 			src_q_tail);
 }
 
-static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
-		struct cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct __cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
-		struct __cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
-		struct cds_wfcq_head *dest_q_head,
-		struct cds_wfcq_tail *dest_q_tail,
-		struct cds_wfcq_head *src_q_head,
-		struct cds_wfcq_tail *src_q_tail)
-{
-	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
-			dest_q_tail,
-			cds_wfcq_head_cast_cpp(src_q_head),
-			src_q_tail);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_first_blocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_first_blocking(
+		T head, struct cds_wfcq_tail *tail)
 {
 	return __cds_wfcq_first_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_first_blocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
-{
-	return __cds_wfcq_first_blocking(cds_wfcq_head_cast_cpp(head), tail);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
+		T head, struct cds_wfcq_tail *tail)
 {
 	return __cds_wfcq_first_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail)
-{
-	return __cds_wfcq_first_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
-		struct __cds_wfcq_head *head,
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
+		T head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
 	return __cds_wfcq_next_blocking(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
-static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
-		struct cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		struct cds_wfcq_node *node)
-{
-	return __cds_wfcq_next_blocking(cds_wfcq_head_cast_cpp(head), tail, node);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
-		struct __cds_wfcq_head *head,
-		struct cds_wfcq_tail *tail,
-		struct cds_wfcq_node *node)
-{
-	return __cds_wfcq_next_nonblocking(cds_wfcq_head_cast_cpp(head), tail, node);
-}
-
-static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
-		struct cds_wfcq_head *head,
+template<typename T> static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
+		T head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
