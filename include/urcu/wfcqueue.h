@@ -107,8 +107,8 @@ static inline struct cds_wfcq_head *cds_wfcq_head_cast(struct cds_wfcq_head *hea
 #else /* #ifndef __cplusplus */
 
 /*
- * This static inline is used by C++ function overloading. It is also
- * used internally in the static inline implementation of the API.
+ * This static inline is used by internally in the static inline
+ * implementation of the API.
  */
 static inline cds_wfcq_head_ptr_t __cds_wfcq_head_cast(struct __cds_wfcq_head *head)
 {
@@ -117,8 +117,8 @@ static inline cds_wfcq_head_ptr_t __cds_wfcq_head_cast(struct __cds_wfcq_head *h
 }
 
 /*
- * This static inline is used by C++ function overloading. It is also
- * used internally in the static inline implementation of the API.
+ * This static inline is used by internally in the static inline
+ * implementation of the API.
  */
 static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast(struct cds_wfcq_head *head)
 {
@@ -492,44 +492,56 @@ extern struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
  * to obtain an API similar to C.
  */
 
+static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast_cpp(struct __cds_wfcq_head *head)
+{
+	cds_wfcq_head_ptr_t ret = { ._h = head };
+	return ret;
+}
+
+static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast_cpp(struct cds_wfcq_head *head)
+{
+	cds_wfcq_head_ptr_t ret = { .h = head };
+	return ret;
+}
+
 static inline bool cds_wfcq_empty(struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return cds_wfcq_empty(__cds_wfcq_head_cast(head), tail);
+	return cds_wfcq_empty(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline bool cds_wfcq_empty(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return cds_wfcq_empty(cds_wfcq_head_cast(head), tail);
+	return cds_wfcq_empty(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline bool cds_wfcq_enqueue(struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return cds_wfcq_enqueue(__cds_wfcq_head_cast(head), tail, node);
+	return cds_wfcq_enqueue(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 static inline bool cds_wfcq_enqueue(struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return cds_wfcq_enqueue(cds_wfcq_head_cast(head), tail, node);
+	return cds_wfcq_enqueue(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 		struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_dequeue_blocking(__cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_dequeue_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_dequeue_blocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_dequeue_blocking(cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_dequeue_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
@@ -537,7 +549,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
 		struct cds_wfcq_tail *tail,
 		int *state)
 {
-	return __cds_wfcq_dequeue_with_state_blocking(__cds_wfcq_head_cast(head),
+	return __cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
@@ -546,7 +558,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_blocking(
 		struct cds_wfcq_tail *tail,
 		int *state)
 {
-	return __cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast(head),
+	return __cds_wfcq_dequeue_with_state_blocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
@@ -554,14 +566,14 @@ static inline struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
 		struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_dequeue_nonblocking(__cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_dequeue_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_dequeue_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_dequeue_nonblocking(cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_dequeue_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
@@ -569,7 +581,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
 		struct cds_wfcq_tail *tail,
 		int *state)
 {
-	return __cds_wfcq_dequeue_with_state_nonblocking(__cds_wfcq_head_cast(head),
+	return __cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
@@ -578,7 +590,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_dequeue_with_state_nonblocking(
 		struct cds_wfcq_tail *tail,
 		int *state)
 {
-	return __cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_cast(head),
+	return __cds_wfcq_dequeue_with_state_nonblocking(cds_wfcq_head_cast_cpp(head),
 			tail, state);
 }
 
@@ -589,9 +601,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct __cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_blocking(__cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			__cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -601,9 +613,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct __cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			__cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -613,9 +625,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_blocking(__cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -625,9 +637,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_blocking(
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_blocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -638,9 +650,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 		struct __cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_nonblocking(__cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			__cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -650,9 +662,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 		struct __cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			__cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -662,9 +674,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_nonblocking(__cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -674,9 +686,9 @@ static inline enum cds_wfcq_ret __cds_wfcq_splice_nonblocking(
 		struct cds_wfcq_head *src_q_head,
 		struct cds_wfcq_tail *src_q_tail)
 {
-	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast(dest_q_head),
+	return __cds_wfcq_splice_nonblocking(cds_wfcq_head_cast_cpp(dest_q_head),
 			dest_q_tail,
-			cds_wfcq_head_cast(src_q_head),
+			cds_wfcq_head_cast_cpp(src_q_head),
 			src_q_tail);
 }
 
@@ -684,28 +696,28 @@ static inline struct cds_wfcq_node *__cds_wfcq_first_blocking(
 		struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_first_blocking(__cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_first_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_first_blocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_first_blocking(cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_first_blocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
 		struct __cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_first_nonblocking(__cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_first_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_first_nonblocking(
 		struct cds_wfcq_head *head,
 		struct cds_wfcq_tail *tail)
 {
-	return __cds_wfcq_first_nonblocking(cds_wfcq_head_cast(head), tail);
+	return __cds_wfcq_first_nonblocking(cds_wfcq_head_cast_cpp(head), tail);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
@@ -713,7 +725,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return __cds_wfcq_next_blocking(__cds_wfcq_head_cast(head), tail, node);
+	return __cds_wfcq_next_blocking(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
@@ -721,7 +733,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_next_blocking(
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return __cds_wfcq_next_blocking(cds_wfcq_head_cast(head), tail, node);
+	return __cds_wfcq_next_blocking(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
@@ -729,7 +741,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return __cds_wfcq_next_nonblocking(__cds_wfcq_head_cast(head), tail, node);
+	return __cds_wfcq_next_nonblocking(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
@@ -737,7 +749,7 @@ static inline struct cds_wfcq_node *__cds_wfcq_next_nonblocking(
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *node)
 {
-	return __cds_wfcq_next_nonblocking(cds_wfcq_head_cast(head), tail, node);
+	return __cds_wfcq_next_nonblocking(cds_wfcq_head_cast_cpp(head), tail, node);
 }
 
 #endif
