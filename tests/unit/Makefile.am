@@ -105,21 +105,21 @@ test_urcu_multiflavor_single_unit_dynlink_cxx_LDADD = $(URCU_LIB) $(URCU_MB_LIB)
 
 test_build_SOURCES = \
 	test_build.c
-test_build_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)
+test_build_LDADD = $(URCU_COMMON_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
 
 test_build_cxx_SOURCES = \
 	test_build_cxx.cpp
-test_build_cxx_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)
+test_build_cxx_LDADD = $(URCU_COMMON_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
 
 test_build_dynlink_SOURCES = \
 	test_build.c
 test_build_dynlink_CFLAGS = -DDYNAMIC_LINK_TEST $(AM_CFLAGS)
-test_build_dynlink_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)
+test_build_dynlink_LDADD = $(URCU_COMMON_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
 
 test_build_dynlink_cxx_SOURCES = \
 	test_build_cxx.cpp
 test_build_dynlink_cxx_CXXFLAGS = -DDYNAMIC_LINK_TEST $(AM_CXXFLAGS)
-test_build_dynlink_cxx_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)
+test_build_dynlink_cxx_LDADD = $(URCU_COMMON_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
 
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
