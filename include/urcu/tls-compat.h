@@ -34,7 +34,12 @@ extern "C" {
 
 #ifdef CONFIG_RCU_TLS
 
-#if defined (__cplusplus) && (__cplusplus >= 201103L)
+/*
+ * Don't use C++ 'thread_local' on MacOs, the implementation is incompatible
+ * with C and will result in a link error when accessing an extern variable
+ * provided by the C library from C++ code.
+ */
+#if defined (__cplusplus) && (__cplusplus >= 201103L) && !defined(__APPLE__)
 # define URCU_TLS_STORAGE_CLASS	thread_local
 #elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 # define URCU_TLS_STORAGE_CLASS	_Thread_local
