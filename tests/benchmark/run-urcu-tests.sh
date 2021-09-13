@@ -1,6 +1,24 @@
 #!/bin/bash
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# SPDX-FileCopyrightText: 2022 EfficiOS Inc.
+#
 
-#first parameter: seconds per test
+if [ "x${URCU_TESTS_SRCDIR:-}" != "x" ]; then
+	UTILSSH="$URCU_TESTS_SRCDIR/utils/utils.sh"
+else
+	UTILSSH="$(dirname "$0")/../utils/utils.sh"
+fi
+
+# Enable TAP
+SH_TAP=1
+
+# shellcheck source=../utils/utils.sh
+source "$UTILSSH"
+
+
+# First parameter: seconds per test
 DURATION=$1
 
 if [ "x${DURATION}" = "x" ]; then
@@ -8,20 +26,14 @@ if [ "x${DURATION}" = "x" ]; then
 	exit 1
 fi
 
-. ../utils/tap.sh
-. ./common.sh
+# Create a temporary file for tests output
+TMPFILE=$(mktemp)
 
-NUM_CPUS="1"
-for i in nproc gnproc; do
-	NUM_CPUS=$($i 2>/dev/null)
-	if [ "$?" -eq "0" ]; then
-		break
-	else
-		NUM_CPUS="1"
-	fi
-done
+# Set trap to delete the temporary file on exit and call tap.sh '_exit'
+trap 'rm -f "$TMPFILE"; _exit' EXIT
 
-#set to number of active CPUS
+# Set to number of active CPUS
+NUM_CPUS="$(urcu_nproc)"
 if [[ ${NUM_CPUS} -lt 4 ]]; then
 	NUM_CPUS=4	# Floor at 4 due to following assumptions.
 fi
@@ -56,6 +68,7 @@ diag "Executing URCU tests"
 #x: vary update fraction from 0 to 0.0001
   #fix number of readers and reader C.S. length, vary delay between updates
 #y: ops/s
+EXTRA_OPTS=""
 
 
 diag "Executing batch RCU test"
@@ -69,9 +82,9 @@ NR_READERS=$((NUM_CPUS - NR_WRITERS))
 
 for BATCH_SIZE in ${BATCH_ARRAY}; do
 	for TEST in ${BATCH_TEST_ARRAY}; do
-		okx ${TEST_TIME_BIN} ./"${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
+		okx ${URCU_TESTS_TIME_BIN} "${URCU_TESTS_BUILDDIR}/benchmark/${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
 			-d 0 -b "${BATCH_SIZE}" ${EXTRA_OPTS} 2>"${TMPFILE}"
-		while read line; do
+		while read -r line; do
 			echo "## $line"
 		done <"${TMPFILE}"
 	done
@@ -95,9 +108,9 @@ NR_READERS=$((NUM_CPUS - NR_WRITERS))
 
 for WDELAY in ${WDELAY_ARRAY}; do
 	for TEST in ${TEST_ARRAY}; do
-		okx ${TEST_TIME_BIN} ./"${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
+		okx ${URCU_TESTS_TIME_BIN} "${URCU_TESTS_BUILDDIR}/benchmark/${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
 			-d "${WDELAY}" ${EXTRA_OPTS} 2>"${TMPFILE}"
-		while read line; do
+		while read -r line; do
 			echo "## $line"
 		done <"${TMPFILE}"
 	done
@@ -112,11 +125,11 @@ diag "Executing scalability test"
 
 NR_WRITERS=0
 
-for NR_READERS in $(xseq 1 ${NUM_CPUS}); do
+for NR_READERS in $(urcu_xseq 1 ${NUM_CPUS}); do
 	for TEST in ${TEST_ARRAY}; do
-		okx ${TEST_TIME_BIN} ./"${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
+		okx ${URCU_TESTS_TIME_BIN} "${URCU_TESTS_BUILDDIR}/benchmark/${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
 			${EXTRA_OPTS} 2>"${TMPFILE}"
-		while read line; do
+		while read -r line; do
 			echo "## $line"
 		done <"${TMPFILE}"
 	done
@@ -137,9 +150,9 @@ READERCSLEN_ARRAY="0 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 3276
 
 for READERCSLEN in ${READERCSLEN_ARRAY}; do
 	for TEST in ${TEST_ARRAY}; do
-		okx ${TEST_TIME_BIN} ./"${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
+		okx ${URCU_TESTS_TIME_BIN} "${URCU_TESTS_BUILDDIR}/benchmark/${TEST}" "${NR_READERS}" "${NR_WRITERS}" "${DURATION}" \
 			-c "${READERCSLEN}" ${EXTRA_OPTS} 2>"${TMPFILE}"
-		while read line; do
+		while read -r line; do
 			echo "## $line"
 		done <"${TMPFILE}"
 	done

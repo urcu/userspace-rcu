@@ -1,8 +1,10 @@
 AM_CPPFLAGS += -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common
 
 LOG_DRIVER_FLAGS = --merge --comments
-LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
-	$(top_srcdir)/tests/utils/tap-driver.sh
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' \
+	URCU_TESTS_SRCDIR='$(abs_top_srcdir)/tests' \
+	URCU_TESTS_BUILDDIR='$(abs_top_builddir)/tests' \
+	$(SHELL) $(top_srcdir)/tests/utils/tap-driver.sh
 
 noinst_PROGRAMS = \
 	test_arch \
@@ -120,18 +122,3 @@ test_build_dynlink_cxx_SOURCES = \
 	test_build_cxx.cpp
 test_build_dynlink_cxx_CXXFLAGS = -DDYNAMIC_LINK_TEST $(AM_CXXFLAGS)
 test_build_dynlink_cxx_LDADD = $(URCU_COMMON_LIB) $(URCU_CDS_LIB) $(TAP_LIB)
-
-all-local:
-	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST); do \
-			cp -f $(srcdir)/$$script $(builddir); \
-		done; \
-	fi
-
-clean-local:
-	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST); do \
-			rm -f $(builddir)/$$script; \
-		done; \
-	fi
-

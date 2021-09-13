@@ -20,6 +20,7 @@ tests/unit/test_urcu_multiflavor_single_unit_dynlink
 tests/unit/test_urcu_multiflavor_single_unit_dynlink_cxx
 
 tests/utils/libtap.a
+tests/utils/env.sh
 
 tests/regression/rcutorture_urcu_bp
 tests/regression/rcutorture_urcu_bp_cxx
@@ -33,7 +34,6 @@ tests/regression/rcutorture_urcu_signal
 tests/regression/rcutorture_urcu_signal_cxx
 tests/regression/test_urcu_fork_cxx.tap
 tests/regression/test_urcu_fork.tap
-tests/regression/rcutorture*.tap
 
 tests/benchmark/test_rwlock_timing
 tests/benchmark/test_urcu

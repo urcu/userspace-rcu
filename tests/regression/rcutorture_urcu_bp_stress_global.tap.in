@@ -1,1 +1,0 @@
-./rcutorture_urcu_bp `@NPROC_CMD@` stress 1 callrcu_global

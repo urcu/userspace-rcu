@@ -1,1 +1,0 @@
-./rcutorture_urcu_signal `@NPROC_CMD@` uperf 1 callrcu_percpu

@@ -2,13 +2,12 @@ AM_CPPFLAGS += -I$(top_srcdir)/src -I$(top_srcdir)/tests/common
 
 TEST_EXTENSIONS = .tap
 TAP_LOG_DRIVER_FLAGS = --merge --comments
-TAP_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
-	$(top_srcdir)/tests/utils/tap-driver.sh
+TAP_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' \
+	URCU_TESTS_SRCDIR='$(abs_top_srcdir)/tests' \
+	URCU_TESTS_BUILDDIR='$(abs_top_builddir)/tests' \
+	$(SHELL) $(top_srcdir)/tests/utils/tap-driver.sh
 
-SCRIPT_LIST = common.sh \
-	run-urcu-tests.sh \
-	runhash.sh \
-	runtests.sh \
+SCRIPT_LIST = \
 	runpaul-phase1.sh \
 	runpaul-phase2.sh \
 	runpaul-phase3.sh \
@@ -16,10 +15,14 @@ SCRIPT_LIST = common.sh \
 	runpaul-phase5.sh \
 	runpaul-phase6.sh \
 	runpaul-phase7.sh \
-	runtests-batch.sh \
 	subphase4.sh
 
-dist_noinst_SCRIPTS = $(SCRIPT_LIST)
+dist_noinst_SCRIPTS = \
+	runhash.sh \
+	runtests-batch.sh \
+	runtests.sh \
+	run-urcu-tests.sh \
+	$(SCRIPT_LIST)
 
 dist_noinst_DATA = \
 	hashtable_1_seconds.tap \
@@ -220,14 +223,14 @@ test_urcu_hash_LDADD = $(URCU_QSBR_LIB) $(URCU_COMMON_LIB) $(URCU_CDS_LIB)
 
 all-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST) $(TEST_LIST); do \
+		for script in $(SCRIPT_LIST); do \
 			cp -f $(srcdir)/$$script $(builddir); \
 		done; \
 	fi
 
 clean-local:
 	@if [ x"$(srcdir)" != x"$(builddir)" ]; then \
-		for script in $(SCRIPT_LIST) $(TEST_LIST); do \
+		for script in $(SCRIPT_LIST); do \
 			rm -f $(builddir)/$$script; \
 		done; \
 	fi

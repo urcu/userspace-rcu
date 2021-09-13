@@ -1,1 +1,0 @@
-./rcutorture_urcu_mb `@NPROC_CMD@` stress 1 callrcu_percpu
