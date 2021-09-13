@@ -80,11 +80,21 @@ struct cds_wfcq_head {
  *
  * In C++, implement static inline wrappers using function overloading
  * to obtain an API similar to C.
+ *
+ * Avoid complaints from clang++ not knowing the transparent union
+ * attribute.
  */
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#endif
 typedef union {
 	struct __cds_wfcq_head *_h;
 	struct cds_wfcq_head *h;
-} caa_c_transparent_union cds_wfcq_head_ptr_t;
+} __attribute__((__transparent_union__)) cds_wfcq_head_ptr_t;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #ifndef __cplusplus
 /*

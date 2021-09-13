@@ -98,11 +98,21 @@ struct cds_wfs_stack {
  *
  * In C++, implement static inline wrappers using function overloading
  * to obtain an API similar to C.
+ *
+ * Avoid complaints from clang++ not knowing the transparent union
+ * attribute.
  */
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#endif
 typedef union {
 	struct __cds_wfs_stack *_s;
 	struct cds_wfs_stack *s;
-} caa_c_transparent_union cds_wfs_stack_ptr_t;
+} __attribute__((__transparent_union__)) cds_wfs_stack_ptr_t;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #ifdef _LGPL_SOURCE
 
