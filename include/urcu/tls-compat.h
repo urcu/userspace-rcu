@@ -35,15 +35,14 @@ extern "C" {
 #ifdef CONFIG_RCU_TLS
 
 /*
- * Don't use C++ 'thread_local' on MacOs, the implementation is incompatible
- * with C and will result in a link error when accessing an extern variable
- * provided by the C library from C++ code.
+ * Default to '__thread' on all C and C++ compilers except MSVC. While C11 has
+ * '_Thread_local' and C++11 has 'thread_local', only '__thread' seems to have
+ * a compatible implementation when linking public extern symbols across
+ * language boundaries.
+ *
+ * For more details, see 'https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html'.
  */
-#if defined (__cplusplus) && (__cplusplus >= 201103L) && !defined(__APPLE__)
-# define URCU_TLS_STORAGE_CLASS	thread_local
-#elif defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-# define URCU_TLS_STORAGE_CLASS	_Thread_local
-#elif defined (_MSC_VER)
+#if defined(_MSC_VER)
 # define URCU_TLS_STORAGE_CLASS	__declspec(thread)
 #else
 # define URCU_TLS_STORAGE_CLASS	__thread
