@@ -72,6 +72,9 @@ Should also work on:
 Linux ARM depends on running a Linux kernel 2.6.15 or better, GCC 4.4 or
 better.
 
+The C compiler used needs to support at least C99. The C++ compiler used
+needs to support at least C++11.
+
 The GCC compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
 supported, with the following exceptions:
 
