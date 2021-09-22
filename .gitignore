@@ -162,4 +162,5 @@ liburcu-bp.pc
 liburcu-cds.pc
 liburcu-qsbr.pc
 liburcu-mb.pc
+liburcu-memb.pc
 liburcu-signal.pc
