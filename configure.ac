@@ -298,6 +298,7 @@ AC_CONFIG_FILES([
 	src/liburcu-cds.pc
 	src/liburcu-qsbr.pc
 	src/liburcu-mb.pc
+	src/liburcu-memb.pc
 	src/liburcu-signal.pc
 ])
 
