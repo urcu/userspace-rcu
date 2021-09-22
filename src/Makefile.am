@@ -61,7 +61,7 @@ liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
-	liburcu-signal.pc liburcu-mb.pc
+	liburcu-signal.pc liburcu-mb.pc liburcu-memb.pc
 
 EXTRA_DIST = compat_arch_x86.c \
 	urcu-call-rcu-impl.h \
