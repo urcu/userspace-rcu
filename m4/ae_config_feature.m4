@@ -95,7 +95,7 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-#serial 1
+#serial 2
 
 
 # AE_FEATURE_DEFAULT_ENABLE: The next feature defined with AE_FEATURE will
@@ -230,7 +230,7 @@ AS_IF([test "x$enable_[]FEATURE[]" = x && test "ae_feature_default_arg" = yes],[
 
 AC_ARG_ENABLE([$1],
   AS_HELP_STRING([--ae_feature_default_switch-$1],dnl
-                 [$2 [default=ae_feature_default_arg]]),[
+                 [$2]),[
 case "${enableval}" in
    yes)
      enable_[]FEATURE[]=yes
