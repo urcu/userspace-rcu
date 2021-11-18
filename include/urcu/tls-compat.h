@@ -112,6 +112,7 @@ struct urcu_tls {
 	type *__tls_access_ ## name(void)			\
 	{							\
 		static struct urcu_tls __tls_ ## name = {	\
+			.key = 0,				\
 			.init_mutex = PTHREAD_MUTEX_INITIALIZER,\
 			.init_done = 0,				\
 		};						\
@@ -128,9 +129,9 @@ struct urcu_tls {
 			pthread_mutex_unlock(&__tls_ ## name.init_mutex); \
 		}						\
 		cmm_smp_rmb();	/* read init_done before getting key */ \
-		__tls_p = pthread_getspecific(__tls_ ## name.key); \
+		__tls_p = (__typeof__(type) *) pthread_getspecific(__tls_ ## name.key); \
 		if (caa_unlikely(__tls_p == NULL)) {		\
-			__tls_p = calloc(1, sizeof(type));	\
+			__tls_p = (__typeof__(type) *) calloc(1, sizeof(type));	\
 			do_init					\
 			(void) pthread_setspecific(__tls_ ## name.key,	\
 				__tls_p);			\
