@@ -59,6 +59,15 @@
 
 #include "tap.h"
 
+struct my_tls_struct {
+	int int1;
+	char char1;
+	void *void1;
+};
+
+static DEFINE_URCU_TLS(int, my_tls_int);
+static DEFINE_URCU_TLS(struct my_tls_struct, my_tls_struct);
+
 static void test_lfstack(void)
 {
 	struct cds_lfs_stack s;
@@ -97,6 +106,15 @@ void test_build_cds_list_head_init(void)
 	};
 }
 
+static
+void test_urcu_tls(void)
+{
+	URCU_TLS(my_tls_int) = 1;
+	URCU_TLS(my_tls_struct).int1 = 1;
+	URCU_TLS(my_tls_struct).char1 = 'a';
+	URCU_TLS(my_tls_struct).void1 = NULL;
+}
+
 int main(void)
 {
 	plan_tests(3);
@@ -105,6 +123,7 @@ int main(void)
 	test_wfstack();
 	test_wfcqueue();
 	test_build_cds_list_head_init();
+	test_urcu_tls();
 
 	return exit_status();
 }
