@@ -22,7 +22,7 @@
 
 #include <urcu/arch.h>
 
-#if defined(URCU_ARCH_I386)
+#ifdef URCU_ARCH_X86_NO_CAS
 
 #include <stdio.h>
 #include <pthread.h>
