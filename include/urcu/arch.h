@@ -64,7 +64,7 @@
 #define URCU_ARCH_AMD64 1
 #include <urcu/arch/x86.h>
 
-#elif (defined(__i386__) || defined(__i386) || defined(__i486__) || defined(__i586__) || defined(__i686__))
+#elif (defined(__i386__) || defined(__i386))
 
 #define URCU_ARCH_X86 1
 
