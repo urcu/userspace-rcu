@@ -529,7 +529,7 @@ void __uatomic_dec(void *addr, int len)
 
 #define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
 
-#if ((CAA_BITS_PER_LONG != 64) && defined(URCU_ARCH_I386))
+#ifdef URCU_ARCH_X86_NO_CAS
 
 /* For backwards compat */
 #define CONFIG_RCU_COMPAT_ARCH 1
