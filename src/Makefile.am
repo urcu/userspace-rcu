@@ -11,7 +11,7 @@ AM_LDFLAGS=-version-info $(URCU_LIBRARY_VERSION) $(LT_NO_UNDEFINED)
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h \
 	urcu-utils.h compat-smp.h
 
-COMPAT = compat_arch.c compat_futex.c
+COMPAT = compat_futex.c
 
 RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
 		rculfhash-mm-mmap.c

@@ -525,80 +525,6 @@ void __uatomic_dec(void *addr, int len)
 		__uatomic_dec((addr), sizeof(*(addr)));				\
 	})
 
-#ifdef URCU_ARCH_X86_NO_CAS
-
-/* For backwards compat */
-#define CONFIG_RCU_COMPAT_ARCH 1
-
-extern int __rcu_cas_avail;
-extern int __rcu_cas_init(void);
-
-#define UATOMIC_COMPAT(insn)							\
-	((caa_likely(__rcu_cas_avail > 0))						\
-	? (_uatomic_##insn)							\
-		: ((caa_unlikely(__rcu_cas_avail < 0)				\
-			? ((__rcu_cas_init() > 0)				\
-				? (_uatomic_##insn)				\
-				: (compat_uatomic_##insn))			\
-			: (compat_uatomic_##insn))))
-
-/*
- * We leave the return value so we don't break the ABI, but remove the
- * return value from the API.
- */
-extern unsigned long _compat_uatomic_set(void *addr,
-					 unsigned long _new, int len);
-#define compat_uatomic_set(addr, _new)				     	       \
-	((void) _compat_uatomic_set((addr),				       \
-				caa_cast_long_keep_sign(_new),		       \
-				sizeof(*(addr))))
-
-
-extern unsigned long _compat_uatomic_xchg(void *addr,
-					  unsigned long _new, int len);
-#define compat_uatomic_xchg(addr, _new)					       \
-	((__typeof__(*(addr))) _compat_uatomic_xchg((addr),		       \
-						caa_cast_long_keep_sign(_new), \
-						sizeof(*(addr))))
-
-extern unsigned long _compat_uatomic_cmpxchg(void *addr, unsigned long old,
-					     unsigned long _new, int len);
-#define compat_uatomic_cmpxchg(addr, old, _new)				       \
-	((__typeof__(*(addr))) _compat_uatomic_cmpxchg((addr),		       \
-						caa_cast_long_keep_sign(old),  \
-						caa_cast_long_keep_sign(_new), \
-						sizeof(*(addr))))
-
-extern void _compat_uatomic_and(void *addr, unsigned long _new, int len);
-#define compat_uatomic_and(addr, v)				       \
-	(_compat_uatomic_and((addr),				       \
-			caa_cast_long_keep_sign(v),		       \
-			sizeof(*(addr))))
-
-extern void _compat_uatomic_or(void *addr, unsigned long _new, int len);
-#define compat_uatomic_or(addr, v)				       \
-	(_compat_uatomic_or((addr),				       \
-			  caa_cast_long_keep_sign(v),		       \
-			  sizeof(*(addr))))
-
-extern unsigned long _compat_uatomic_add_return(void *addr,
-						unsigned long _new, int len);
-#define compat_uatomic_add_return(addr, v)			            \
-	((__typeof__(*(addr))) _compat_uatomic_add_return((addr),     	    \
-						caa_cast_long_keep_sign(v), \
-						sizeof(*(addr))))
-
-#define compat_uatomic_add(addr, v)					       \
-		((void)compat_uatomic_add_return((addr), (v)))
-#define compat_uatomic_inc(addr)					       \
-		(compat_uatomic_add((addr), 1))
-#define compat_uatomic_dec(addr)					       \
-		(compat_uatomic_add((addr), -1))
-
-#else
-#define UATOMIC_COMPAT(insn)	(_uatomic_##insn)
-#endif
-
 /*
  * All RMW operations have an implicit lock prefix.  Thus, ignoring memory
  * ordering for these operations, since they can all be respected by not
@@ -606,33 +532,29 @@ extern unsigned long _compat_uatomic_add_return(void *addr,
  */
 
 #define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)		\
-		UATOMIC_COMPAT(cmpxchg(addr, old, _new))
+		_uatomic_cmpxchg(addr, old, _new)
 
-#define uatomic_xchg_mo(addr, v, mo)		\
-		UATOMIC_COMPAT(xchg(addr, v))
+#define uatomic_xchg_mo(addr, v, mo)		_uatomic_xchg(addr, v)
 
-#define uatomic_and_mo(addr, v, mo)		\
-		UATOMIC_COMPAT(and(addr, v))
+#define uatomic_and_mo(addr, v, mo)		_uatomic_and(addr, v)
 #define cmm_smp_mb__before_uatomic_and()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_and()		cmm_barrier()
 
-#define uatomic_or_mo(addr, v, mo)		\
-		UATOMIC_COMPAT(or(addr, v))
+#define uatomic_or_mo(addr, v, mo)		_uatomic_or(addr, v)
 #define cmm_smp_mb__before_uatomic_or()		cmm_barrier()
 #define cmm_smp_mb__after_uatomic_or()		cmm_barrier()
 
-#define uatomic_add_return_mo(addr, v, mo)		\
-		UATOMIC_COMPAT(add_return(addr, v))
+#define uatomic_add_return_mo(addr, v, mo)	_uatomic_add_return(addr, v)
 
-#define uatomic_add_mo(addr, v, mo)	UATOMIC_COMPAT(add(addr, v))
+#define uatomic_add_mo(addr, v, mo)		_uatomic_add(addr, v)
 #define cmm_smp_mb__before_uatomic_add()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_add()		cmm_barrier()
 
-#define uatomic_inc_mo(addr, mo)	UATOMIC_COMPAT(inc(addr))
+#define uatomic_inc_mo(addr, mo)		_uatomic_inc(addr)
 #define cmm_smp_mb__before_uatomic_inc()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_inc()		cmm_barrier()
 
-#define uatomic_dec_mo(addr, mo)	UATOMIC_COMPAT(dec(addr))
+#define uatomic_dec_mo(addr, mo)		_uatomic_dec(addr)
 #define cmm_smp_mb__before_uatomic_dec()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_dec()		cmm_barrier()
 

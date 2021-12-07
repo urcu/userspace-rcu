@@ -51,23 +51,11 @@
 
 #elif (defined(__i386__) || defined(__i386))
 
-#define URCU_ARCH_X86 1
-
-/*
- * URCU_ARCH_X86_NO_CAS enables a compat layer that will detect the presence of
- * the cmpxchg instructions at runtime and provide a compat mode based on a
- * pthread mutex when it isn't.
- *
- * __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 was introduced in GCC 4.3 and Clang 3.3,
- * building with older compilers will result in the compat layer always being
- * used on x86-32.
- */
 #ifndef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4
-#define URCU_ARCH_X86_NO_CAS 1
-/* For backwards compat */
-#define URCU_ARCH_I386 1
+#error "Missing cmpxchg instructions"
 #endif
 
+#define URCU_ARCH_X86 1
 #include <urcu/arch/x86.h>
 
 #elif (defined(__powerpc64__) || defined(__ppc64__))

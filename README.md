@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+SPDX-FileCopyrightText: 2025 EfficiOS Inc.
 
 SPDX-License-Identifier: CC-BY-4.0
 -->
@@ -29,10 +29,6 @@ Hints:
 
         CFLAGS="-m64 -g -O2" ./configure
 
-  - Forcing a 32-bit build with 386 backward compatibility:
-
-        CFLAGS="-m32 -g -O2" ./configure --host=i386-pc-linux-gnu
-
   - Forcing a 32-bit build for Sparcv9 (typical for Sparc v9)
 
         CFLAGS="-m32 -Wa,-Av9a -g -O2" ./configure
@@ -43,7 +39,7 @@ Architectures supported
 
 Currently, the following architectures are supported:
 
-  - x86 (i386, i486, i586, i686)
+  - x86 (i486, i586, i686)
   - amd64 / x86\_64
   - PowerPC 32/64
   - S390, S390x
@@ -62,8 +58,8 @@ Currently, the following architectures are supported:
 Tested on:
 
   - Linux all architectures
-  - FreeBSD 13 i386/amd64
-  - Cygwin i386/amd64
+  - FreeBSD 13 x86/amd64
+  - Cygwin x86/amd64
   - MacOS amd64/arm64
 
 Should also work on:
@@ -88,7 +84,7 @@ Older GCC versions might still work with the following exceptions:
   - GCC 3.3 and 3.4 have a bug that prevents them from generating volatile
     accesses to offsets in a TLS structure on 32-bit x86. These versions are
     therefore not compatible with `liburcu` on x86 32-bit
-    (i386, i486, i586, i686).
+    (i486, i586, i686).
     The problem has been reported to the GCC community:
     <http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html>
   - GCC 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
