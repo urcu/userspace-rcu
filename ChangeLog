@@ -1,3 +1,28 @@
+2022-01-05 Userspace RCU 0.12.3
+	* fix: use urcu-tls compat with c++ compiler
+	* fix: add missing pkgconfig file for memb flavour lib
+	* Make temporary variable in _rcu_dereference non-const
+	* Fix: x86 and s390: uatomic __hp() macro C++ support
+	* Fix: x86 and s390: uatomic __hp() macro clang support
+	* Fix: x86 and s390 uatomic: __hp() macro warning with gcc 11
+	* Document known ABI issue in README.md
+	* fix: clock_gettime on macOs
+	* Fix: rculist header: use parenthesis around macro parameters
+	* Fix: rcuhlist header: use parenthesis around macro parameters
+	* Fix: hlist header: use parenthesis around macro parameters
+	* Fix: list.h: use parenthesis around macro parameters, caa_container_of()
+	* Fix: hlist iteration relies on undefined behavior
+	* Fix: use __atomic_load() rather than atomic load explicit
+	* Fix: use atomic load memory_order_consume for rcu_dereference on C11/C++11
+	* fix: warnings on non-Linux platforms
+	* fix: HAVE_SCHED_SETAFFINITY is not defined
+	* Add git review config to stable branch
+	* fix: include 'sys/endian.h' on FreeBSD
+	* cleanup: explicitly mark unused parameters (-Wunused-parameter)
+	* fix: shadowed local variable (-Wshadow)
+	* cleanup: all functions have declarations (-Wmissing-prototypes)
+	* Import libtap from babeltrace
+
 2021-02-17 Userspace RCU 0.12.2
 	* fix: exclude clang from GCC version blacklists
 	* aarch64: blacklist gcc prior to 5.1
