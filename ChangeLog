@@ -1,3 +1,14 @@
+2022-01-05 Userspace RCU 0.13.1
+	* fix: properly detect 'cmpxchg' on x86-32
+	* fix: use urcu-tls compat with c++ compiler
+	* fix: remove autoconf features default value in help message
+	* fix: add missing pkgconfig file for memb flavour lib
+	* Make temporary variable in _rcu_dereference non-const
+	* Fix: x86 and s390: uatomic __hp() macro C++ support
+	* Fix: x86 and s390: uatomic __hp() macro clang support
+	* Fix: x86 and s390 uatomic: __hp() macro warning with gcc 11
+	* Fix: changelog: v0.13.0 was released in 2021
+
 2021-06-03 Userspace RCU 0.13.0
 	* Document known ABI issue in README.md
 	* Add serialized ABI definition files
