@@ -1,4 +1,4 @@
-2020-06-03 Userspace RCU 0.13.0
+2021-06-03 Userspace RCU 0.13.0
 	* Document known ABI issue in README.md
 	* Add serialized ABI definition files
 	* bump SONAME major to 8
