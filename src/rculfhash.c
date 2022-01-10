@@ -852,6 +852,12 @@ int is_removal_owner(struct cds_lfht_node *node)
 }
 
 static
+struct cds_lfht_node *flag_removed(struct cds_lfht_node *node)
+{
+	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVED_FLAG);
+}
+
+static
 struct cds_lfht_node *flag_removal_owner(struct cds_lfht_node *node)
 {
 	return (struct cds_lfht_node *) (((unsigned long) node) | REMOVAL_OWNER_FLAG);
@@ -1577,6 +1583,12 @@ const struct cds_lfht_mm_type *get_mm_type(
 	return &cds_lfht_mm_order;
 }
 #endif
+
+void cds_lfht_node_init_deleted(struct cds_lfht_node *node)
+{
+	cds_lfht_node_init(node);
+	node->next = flag_removed(NULL);
+}
 
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,

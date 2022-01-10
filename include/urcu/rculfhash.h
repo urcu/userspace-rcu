@@ -110,6 +110,16 @@ void cds_lfht_node_init(struct cds_lfht_node *node __attribute__((unused)))
 }
 
 /*
+ * cds_lfht_node_init_deleted - initialize a hash table node to "removed" state
+ * @node: the node to initialize.
+ *
+ * Initialize the node such that cds_lfht_is_node_deleted() can be used
+ * on the node before it is added to a hash table.
+ */
+extern
+void cds_lfht_node_init_deleted(struct cds_lfht_node *node);
+
+/*
  * Hash table creation flags.
  */
 enum {
