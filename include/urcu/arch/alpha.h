@@ -33,6 +33,14 @@ extern "C" {
 #define cmm_wmb()			__asm__ __volatile__ ("wmb":::"memory")
 #define cmm_read_barrier_depends()	__asm__ __volatile__ ("mb":::"memory")
 
+/*
+ * On Linux, define the membarrier system call number if not yet available in
+ * the system headers.
+ */
+#if (defined(__linux__) && !defined(__NR_membarrier))
+#define __NR_membarrier		517
+#endif
+
 #ifdef __cplusplus
 }
 #endif
