@@ -1,4 +1,4 @@
-<abi-corpus architecture='elf-amd-x86_64' soname='liburcu-cds.so.6'>
+<abi-corpus architecture='elf-amd-x86_64' soname='liburcu-cds.so.8'>
   <elf-needed>
     <dependency name='libpthread.so.0'/>
     <dependency name='libc.so.6'/>
@@ -42,6 +42,8 @@
     <elf-symbol name='cds_lfht_next' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- cds_lfht_next_duplicate -->
     <elf-symbol name='cds_lfht_next_duplicate' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
+    <!-- cds_lfht_node_init_deleted -->
+    <elf-symbol name='cds_lfht_node_init_deleted' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- cds_lfht_replace -->
     <elf-symbol name='cds_lfht_replace' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- cds_lfht_resize -->
@@ -123,14 +125,14 @@
   </elf-variable-symbols>
   <abi-instr version='1.0' address-size='64' path='rculfqueue.c' comp-dir-path='src' language='LANG_C99'>
     <!-- struct cds_lfq_node_rcu -->
-    <class-decl name='cds_lfq_node_rcu' size-in-bits='128' is-struct='yes' visibility='default' filepath='../include/urcu/rculfqueue.h' line='35' column='1' id='type-id-1'>
+    <class-decl name='cds_lfq_node_rcu' size-in-bits='128' is-struct='yes' visibility='default' filepath='../include/urcu/rculfqueue.h' line='34' column='1' id='type-id-1'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_lfq_node_rcu* cds_lfq_node_rcu::next -->
-        <var-decl name='next' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='36' column='1'/>
+        <var-decl name='next' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='35' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- int cds_lfq_node_rcu::dummy -->
-        <var-decl name='dummy' type-id='type-id-3' visibility='default' filepath='../include/urcu/rculfqueue.h' line='37' column='1'/>
+        <var-decl name='dummy' type-id='type-id-3' visibility='default' filepath='../include/urcu/rculfqueue.h' line='36' column='1'/>
       </data-member>
     </class-decl>
     <!-- cds_lfq_node_rcu* -->
@@ -138,18 +140,18 @@
     <!-- int -->
     <type-decl name='int' size-in-bits='32' id='type-id-3'/>
     <!-- struct cds_lfq_queue_rcu -->
-    <class-decl name='cds_lfq_queue_rcu' size-in-bits='192' is-struct='yes' visibility='default' filepath='../include/urcu/rculfqueue.h' line='40' column='1' id='type-id-4'>
+    <class-decl name='cds_lfq_queue_rcu' size-in-bits='192' is-struct='yes' visibility='default' filepath='../include/urcu/rculfqueue.h' line='39' column='1' id='type-id-4'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_lfq_node_rcu* cds_lfq_queue_rcu::head -->
-        <var-decl name='head' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='41' column='1'/>
+        <var-decl name='head' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='40' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- cds_lfq_node_rcu* cds_lfq_queue_rcu::tail -->
-        <var-decl name='tail' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='41' column='1'/>
+        <var-decl name='tail' type-id='type-id-2' visibility='default' filepath='../include/urcu/rculfqueue.h' line='40' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='128'>
         <!-- void (rcu_head*, void (rcu_head*)*)* cds_lfq_queue_rcu::queue_call_rcu -->
-        <var-decl name='queue_call_rcu' type-id='type-id-5' visibility='default' filepath='../include/urcu/rculfqueue.h' line='42' column='1'/>
+        <var-decl name='queue_call_rcu' type-id='type-id-5' visibility='default' filepath='../include/urcu/rculfqueue.h' line='41' column='1'/>
       </data-member>
     </class-decl>
     <!-- void -->
@@ -166,10 +168,10 @@
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_node -->
-    <class-decl name='cds_wfcq_node' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='59' column='1' id='type-id-8'>
+    <class-decl name='cds_wfcq_node' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='58' column='1' id='type-id-8'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node* cds_wfcq_node::next -->
-        <var-decl name='next' type-id='type-id-10' visibility='default' filepath='../include/urcu/wfcqueue.h' line='60' column='1'/>
+        <var-decl name='next' type-id='type-id-10' visibility='default' filepath='../include/urcu/wfcqueue.h' line='59' column='1'/>
       </data-member>
     </class-decl>
     <!-- cds_wfcq_node* -->
@@ -308,14 +310,14 @@
     <!-- cds_lfs_head* -->
     <pointer-type-def type-id='type-id-19' size-in-bits='64' id='type-id-22'/>
     <!-- union __anonymous_union__ -->
-    <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='../include/urcu/lfstack.h' line='87' column='1' id='type-id-23'>
+    <union-decl name='__anonymous_union__' size-in-bits='64' is-anonymous='yes' visibility='default' filepath='../include/urcu/lfstack.h' line='97' column='1' id='type-id-23'>
       <data-member access='private'>
         <!-- __cds_lfs_stack* __anonymous_union__::_s -->
-        <var-decl name='_s' type-id='type-id-24' visibility='default' filepath='../include/urcu/lfstack.h' line='88' column='1'/>
+        <var-decl name='_s' type-id='type-id-24' visibility='default' filepath='../include/urcu/lfstack.h' line='98' column='1'/>
       </data-member>
       <data-member access='private'>
         <!-- cds_lfs_stack* __anonymous_union__::s -->
-        <var-decl name='s' type-id='type-id-25' visibility='default' filepath='../include/urcu/lfstack.h' line='89' column='1'/>
+        <var-decl name='s' type-id='type-id-25' visibility='default' filepath='../include/urcu/lfstack.h' line='99' column='1'/>
       </data-member>
     </union-decl>
     <!-- struct __cds_lfs_stack -->
@@ -425,7 +427,7 @@
     <!-- cds_lfs_stack* -->
     <pointer-type-def type-id='type-id-27' size-in-bits='64' id='type-id-25'/>
     <!-- typedef __anonymous_union__ cds_lfs_stack_ptr_t -->
-    <typedef-decl name='cds_lfs_stack_ptr_t' type-id='type-id-23' filepath='../include/urcu/lfstack.h' line='90' column='1' id='type-id-41'/>
+    <typedef-decl name='cds_lfs_stack_ptr_t' type-id='type-id-23' filepath='../include/urcu/lfstack.h' line='100' column='1' id='type-id-41'/>
     <!-- cds_lfs_head* __cds_lfs_pop_all(cds_lfs_stack_ptr_t) -->
     <function-decl name='__cds_lfs_pop_all' mangled-name='__cds_lfs_pop_all' filepath='src/lfstack.c' line='88' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='__cds_lfs_pop_all'>
       <!-- parameter of type 'typedef cds_lfs_stack_ptr_t' -->
@@ -584,21 +586,21 @@
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_tail -->
-    <class-decl name='cds_wfcq_tail' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='127' column='1' id='type-id-44'>
+    <class-decl name='cds_wfcq_tail' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='140' column='1' id='type-id-44'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node* cds_wfcq_tail::p -->
-        <var-decl name='p' type-id='type-id-10' visibility='default' filepath='../include/urcu/wfcqueue.h' line='128' column='1'/>
+        <var-decl name='p' type-id='type-id-10' visibility='default' filepath='../include/urcu/wfcqueue.h' line='141' column='1'/>
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_head -->
-    <class-decl name='cds_wfcq_head' size-in-bits='384' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='72' column='1' id='type-id-45'>
+    <class-decl name='cds_wfcq_head' size-in-bits='384' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='71' column='1' id='type-id-45'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node cds_wfcq_head::node -->
-        <var-decl name='node' type-id='type-id-8' visibility='default' filepath='../include/urcu/wfcqueue.h' line='73' column='1'/>
+        <var-decl name='node' type-id='type-id-8' visibility='default' filepath='../include/urcu/wfcqueue.h' line='72' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- pthread_mutex_t cds_wfcq_head::lock -->
-        <var-decl name='lock' type-id='type-id-28' visibility='default' filepath='../include/urcu/wfcqueue.h' line='74' column='1'/>
+        <var-decl name='lock' type-id='type-id-28' visibility='default' filepath='../include/urcu/wfcqueue.h' line='73' column='1'/>
       </data-member>
     </class-decl>
     <!-- typedef int __int32_t -->
@@ -614,30 +616,30 @@
     <!-- void (urcu_workqueue*, void*)* -->
     <pointer-type-def type-id='type-id-52' size-in-bits='64' id='type-id-49'/>
     <!-- void urcu_workqueue_create_worker(urcu_workqueue*) -->
-    <function-decl name='urcu_workqueue_create_worker' mangled-name='urcu_workqueue_create_worker' filepath='src/workqueue.c' line='458' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create_worker'>
+    <function-decl name='urcu_workqueue_create_worker' mangled-name='urcu_workqueue_create_worker' filepath='src/workqueue.c' line='455' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create_worker'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='458' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='455' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_resume_worker(urcu_workqueue*) -->
-    <function-decl name='urcu_workqueue_resume_worker' mangled-name='urcu_workqueue_resume_worker' filepath='src/workqueue.c' line='451' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_resume_worker'>
+    <function-decl name='urcu_workqueue_resume_worker' mangled-name='urcu_workqueue_resume_worker' filepath='src/workqueue.c' line='448' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_resume_worker'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='451' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='448' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_pause_worker(urcu_workqueue*) -->
-    <function-decl name='urcu_workqueue_pause_worker' mangled-name='urcu_workqueue_pause_worker' filepath='src/workqueue.c' line='440' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_pause_worker'>
+    <function-decl name='urcu_workqueue_pause_worker' mangled-name='urcu_workqueue_pause_worker' filepath='src/workqueue.c' line='437' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_pause_worker'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='451' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='448' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_flush_queued_work(urcu_workqueue*) -->
-    <function-decl name='urcu_workqueue_flush_queued_work' mangled-name='urcu_workqueue_flush_queued_work' filepath='src/workqueue.c' line='427' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_flush_queued_work'>
+    <function-decl name='urcu_workqueue_flush_queued_work' mangled-name='urcu_workqueue_flush_queued_work' filepath='src/workqueue.c' line='424' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_flush_queued_work'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='458' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='455' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
@@ -666,30 +668,30 @@
     <!-- urcu_workqueue_completion* -->
     <pointer-type-def type-id='type-id-53' size-in-bits='64' id='type-id-55'/>
     <!-- void urcu_workqueue_queue_completion(urcu_workqueue*, urcu_workqueue_completion*) -->
-    <function-decl name='urcu_workqueue_queue_completion' mangled-name='urcu_workqueue_queue_completion' filepath='src/workqueue.c' line='410' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_queue_completion'>
+    <function-decl name='urcu_workqueue_queue_completion' mangled-name='urcu_workqueue_queue_completion' filepath='src/workqueue.c' line='407' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_queue_completion'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='410' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='407' column='1'/>
       <!-- parameter of type 'urcu_workqueue_completion*' -->
-      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='411' column='1'/>
+      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='408' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_wait_completion(urcu_workqueue_completion*) -->
-    <function-decl name='urcu_workqueue_wait_completion' mangled-name='urcu_workqueue_wait_completion' filepath='src/workqueue.c' line='397' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_wait_completion'>
+    <function-decl name='urcu_workqueue_wait_completion' mangled-name='urcu_workqueue_wait_completion' filepath='src/workqueue.c' line='394' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_wait_completion'>
       <!-- parameter of type 'urcu_workqueue_completion*' -->
-      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='397' column='1'/>
+      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='394' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_destroy_completion(urcu_workqueue_completion*) -->
-    <function-decl name='urcu_workqueue_destroy_completion' mangled-name='urcu_workqueue_destroy_completion' filepath='src/workqueue.c' line='392' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_destroy_completion'>
+    <function-decl name='urcu_workqueue_destroy_completion' mangled-name='urcu_workqueue_destroy_completion' filepath='src/workqueue.c' line='389' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_destroy_completion'>
       <!-- parameter of type 'urcu_workqueue_completion*' -->
-      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='392' column='1'/>
+      <parameter type-id='type-id-55' name='completion' filepath='src/workqueue.c' line='389' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- urcu_workqueue_completion* urcu_workqueue_create_completion() -->
-    <function-decl name='urcu_workqueue_create_completion' mangled-name='urcu_workqueue_create_completion' filepath='src/workqueue.c' line='380' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create_completion'>
+    <function-decl name='urcu_workqueue_create_completion' mangled-name='urcu_workqueue_create_completion' filepath='src/workqueue.c' line='377' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create_completion'>
       <!-- urcu_workqueue_completion* -->
       <return type-id='type-id-55'/>
     </function-decl>
@@ -709,45 +711,45 @@
     <!-- void (urcu_work*)* -->
     <pointer-type-def type-id='type-id-59' size-in-bits='64' id='type-id-57'/>
     <!-- void urcu_workqueue_queue_work(urcu_workqueue*, urcu_work*, void (urcu_work*)*) -->
-    <function-decl name='urcu_workqueue_queue_work' mangled-name='urcu_workqueue_queue_work' filepath='src/workqueue.c' line='346' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_queue_work'>
+    <function-decl name='urcu_workqueue_queue_work' mangled-name='urcu_workqueue_queue_work' filepath='src/workqueue.c' line='343' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_queue_work'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='346' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='343' column='1'/>
       <!-- parameter of type 'urcu_work*' -->
-      <parameter type-id='type-id-58' name='work' filepath='src/workqueue.c' line='347' column='1'/>
+      <parameter type-id='type-id-58' name='work' filepath='src/workqueue.c' line='344' column='1'/>
       <!-- parameter of type 'void (urcu_work*)*' -->
-      <parameter type-id='type-id-57' name='func' filepath='src/workqueue.c' line='348' column='1'/>
+      <parameter type-id='type-id-57' name='func' filepath='src/workqueue.c' line='345' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void urcu_workqueue_destroy(urcu_workqueue*) -->
-    <function-decl name='urcu_workqueue_destroy' mangled-name='urcu_workqueue_destroy' filepath='src/workqueue.c' line='334' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_destroy'>
+    <function-decl name='urcu_workqueue_destroy' mangled-name='urcu_workqueue_destroy' filepath='src/workqueue.c' line='331' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_destroy'>
       <!-- parameter of type 'urcu_workqueue*' -->
-      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='458' column='1'/>
+      <parameter type-id='type-id-51' name='workqueue' filepath='src/workqueue.c' line='455' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- urcu_workqueue* urcu_workqueue_create(unsigned long int, int, void*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*, void (urcu_workqueue*, void*)*) -->
-    <function-decl name='urcu_workqueue_create' mangled-name='urcu_workqueue_create' filepath='src/workqueue.c' line='269' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create'>
+    <function-decl name='urcu_workqueue_create' mangled-name='urcu_workqueue_create' filepath='src/workqueue.c' line='266' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_workqueue_create'>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='flags' filepath='src/workqueue.c' line='269' column='1'/>
+      <parameter type-id='type-id-39' name='flags' filepath='src/workqueue.c' line='266' column='1'/>
       <!-- parameter of type 'int' -->
-      <parameter type-id='type-id-3' name='cpu_affinity' filepath='src/workqueue.c' line='270' column='1'/>
+      <parameter type-id='type-id-3' name='cpu_affinity' filepath='src/workqueue.c' line='267' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='priv' filepath='src/workqueue.c' line='270' column='1'/>
+      <parameter type-id='type-id-48' name='priv' filepath='src/workqueue.c' line='267' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='grace_period_fct' filepath='src/workqueue.c' line='271' column='1'/>
+      <parameter type-id='type-id-49' name='grace_period_fct' filepath='src/workqueue.c' line='268' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='initialize_worker_fct' filepath='src/workqueue.c' line='272' column='1'/>
+      <parameter type-id='type-id-49' name='initialize_worker_fct' filepath='src/workqueue.c' line='269' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='finalize_worker_fct' filepath='src/workqueue.c' line='273' column='1'/>
+      <parameter type-id='type-id-49' name='finalize_worker_fct' filepath='src/workqueue.c' line='270' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='worker_before_wait_fct' filepath='src/workqueue.c' line='274' column='1'/>
+      <parameter type-id='type-id-49' name='worker_before_wait_fct' filepath='src/workqueue.c' line='271' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='worker_after_wake_up_fct' filepath='src/workqueue.c' line='275' column='1'/>
+      <parameter type-id='type-id-49' name='worker_after_wake_up_fct' filepath='src/workqueue.c' line='272' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='worker_before_pause_fct' filepath='src/workqueue.c' line='276' column='1'/>
+      <parameter type-id='type-id-49' name='worker_before_pause_fct' filepath='src/workqueue.c' line='273' column='1'/>
       <!-- parameter of type 'void (urcu_workqueue*, void*)*' -->
-      <parameter type-id='type-id-49' name='worker_after_resume_fct' filepath='src/workqueue.c' line='277' column='1'/>
+      <parameter type-id='type-id-49' name='worker_after_resume_fct' filepath='src/workqueue.c' line='274' column='1'/>
       <!-- urcu_workqueue* -->
       <return type-id='type-id-51'/>
     </function-decl>
@@ -837,22 +839,22 @@
       </data-member>
     </class-decl>
     <!-- struct cds_lfht_mm_type -->
-    <class-decl name='cds_lfht_mm_type' size-in-bits='256' is-struct='yes' visibility='default' filepath='../include/urcu/rculfhash.h' line='120' column='1' id='type-id-67'>
+    <class-decl name='cds_lfht_mm_type' size-in-bits='256' is-struct='yes' visibility='default' filepath='../include/urcu/rculfhash.h' line='130' column='1' id='type-id-67'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_lfht* (unsigned long int, unsigned long int)* cds_lfht_mm_type::alloc_cds_lfht -->
-        <var-decl name='alloc_cds_lfht' type-id='type-id-68' visibility='default' filepath='../include/urcu/rculfhash.h' line='121' column='1'/>
+        <var-decl name='alloc_cds_lfht' type-id='type-id-68' visibility='default' filepath='../include/urcu/rculfhash.h' line='131' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- void (cds_lfht*, unsigned long int)* cds_lfht_mm_type::alloc_bucket_table -->
-        <var-decl name='alloc_bucket_table' type-id='type-id-69' visibility='default' filepath='../include/urcu/rculfhash.h' line='123' column='1'/>
+        <var-decl name='alloc_bucket_table' type-id='type-id-69' visibility='default' filepath='../include/urcu/rculfhash.h' line='133' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='128'>
         <!-- void (cds_lfht*, unsigned long int)* cds_lfht_mm_type::free_bucket_table -->
-        <var-decl name='free_bucket_table' type-id='type-id-69' visibility='default' filepath='../include/urcu/rculfhash.h' line='124' column='1'/>
+        <var-decl name='free_bucket_table' type-id='type-id-69' visibility='default' filepath='../include/urcu/rculfhash.h' line='134' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='192'>
         <!-- cds_lfht_node* (cds_lfht*, unsigned long int)* cds_lfht_mm_type::bucket_at -->
-        <var-decl name='bucket_at' type-id='type-id-65' visibility='default' filepath='../include/urcu/rculfhash.h' line='125' column='1'/>
+        <var-decl name='bucket_at' type-id='type-id-65' visibility='default' filepath='../include/urcu/rculfhash.h' line='135' column='1'/>
       </data-member>
     </class-decl>
     <!-- cds_lfht* -->
@@ -1039,11 +1041,11 @@
 
     </array-type-def>
     <!-- void cds_lfht_resize(cds_lfht*, unsigned long int) -->
-    <function-decl name='cds_lfht_resize' mangled-name='cds_lfht_resize' filepath='src/rculfhash.c' line='2028' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_resize'>
+    <function-decl name='cds_lfht_resize' mangled-name='cds_lfht_resize' filepath='src/rculfhash.c' line='2040' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_resize'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='2028' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='2040' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='new_size' filepath='src/rculfhash.c' line='2028' column='1'/>
+      <parameter type-id='type-id-39' name='new_size' filepath='src/rculfhash.c' line='2040' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
@@ -1052,26 +1054,26 @@
     <!-- unsigned long int* -->
     <pointer-type-def type-id='type-id-39' size-in-bits='64' id='type-id-101'/>
     <!-- void cds_lfht_count_nodes(cds_lfht*, long int*, unsigned long int*, long int*) -->
-    <function-decl name='cds_lfht_count_nodes' mangled-name='cds_lfht_count_nodes' filepath='src/rculfhash.c' line='1906' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_count_nodes'>
+    <function-decl name='cds_lfht_count_nodes' mangled-name='cds_lfht_count_nodes' filepath='src/rculfhash.c' line='1918' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_count_nodes'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1906' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1918' column='1'/>
       <!-- parameter of type 'long int*' -->
-      <parameter type-id='type-id-100' name='approx_before' filepath='src/rculfhash.c' line='1907' column='1'/>
+      <parameter type-id='type-id-100' name='approx_before' filepath='src/rculfhash.c' line='1919' column='1'/>
       <!-- parameter of type 'unsigned long int*' -->
-      <parameter type-id='type-id-101' name='count' filepath='src/rculfhash.c' line='1908' column='1'/>
+      <parameter type-id='type-id-101' name='count' filepath='src/rculfhash.c' line='1920' column='1'/>
       <!-- parameter of type 'long int*' -->
-      <parameter type-id='type-id-100' name='approx_after' filepath='src/rculfhash.c' line='1909' column='1'/>
+      <parameter type-id='type-id-100' name='approx_after' filepath='src/rculfhash.c' line='1921' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- pthread_attr_t** -->
     <pointer-type-def type-id='type-id-63' size-in-bits='64' id='type-id-102'/>
     <!-- int cds_lfht_destroy(cds_lfht*, pthread_attr_t**) -->
-    <function-decl name='cds_lfht_destroy' mangled-name='cds_lfht_destroy' filepath='src/rculfhash.c' line='1881' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_destroy'>
+    <function-decl name='cds_lfht_destroy' mangled-name='cds_lfht_destroy' filepath='src/rculfhash.c' line='1893' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_destroy'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1881' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1893' column='1'/>
       <!-- parameter of type 'pthread_attr_t**' -->
-      <parameter type-id='type-id-102' name='attr' filepath='src/rculfhash.c' line='1881' column='1'/>
+      <parameter type-id='type-id-102' name='attr' filepath='src/rculfhash.c' line='1893' column='1'/>
       <!-- int -->
       <return type-id='type-id-3'/>
     </function-decl>
@@ -1080,18 +1082,18 @@
     <!-- const cds_lfht_node* -->
     <pointer-type-def type-id='type-id-103' size-in-bits='64' id='type-id-104'/>
     <!-- int cds_lfht_is_node_deleted(const cds_lfht_node*) -->
-    <function-decl name='cds_lfht_is_node_deleted' mangled-name='cds_lfht_is_node_deleted' filepath='src/rculfhash.c' line='1838' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_is_node_deleted'>
+    <function-decl name='cds_lfht_is_node_deleted' mangled-name='cds_lfht_is_node_deleted' filepath='src/rculfhash.c' line='1850' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_is_node_deleted'>
       <!-- parameter of type 'const cds_lfht_node*' -->
-      <parameter type-id='type-id-104' name='node' filepath='src/rculfhash.c' line='1838' column='1'/>
+      <parameter type-id='type-id-104' name='node' filepath='src/rculfhash.c' line='1850' column='1'/>
       <!-- int -->
       <return type-id='type-id-3'/>
     </function-decl>
     <!-- int cds_lfht_del(cds_lfht*, cds_lfht_node*) -->
-    <function-decl name='cds_lfht_del' mangled-name='cds_lfht_del' filepath='src/rculfhash.c' line='1822' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_del'>
+    <function-decl name='cds_lfht_del' mangled-name='cds_lfht_del' filepath='src/rculfhash.c' line='1834' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_del'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1822' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1834' column='1'/>
       <!-- parameter of type 'cds_lfht_node*' -->
-      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1822' column='1'/>
+      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1834' column='1'/>
       <!-- int -->
       <return type-id='type-id-3'/>
     </function-decl>
@@ -1113,127 +1115,134 @@
     <!-- typedef int (cds_lfht_node*, void*)* cds_lfht_match_fct -->
     <typedef-decl name='cds_lfht_match_fct' type-id='type-id-108' filepath='../include/urcu/rculfhash.h' line='98' column='1' id='type-id-109'/>
     <!-- int cds_lfht_replace(cds_lfht*, cds_lfht_iter*, unsigned long int, cds_lfht_match_fct, void*, cds_lfht_node*) -->
-    <function-decl name='cds_lfht_replace' mangled-name='cds_lfht_replace' filepath='src/rculfhash.c' line='1801' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_replace'>
+    <function-decl name='cds_lfht_replace' mangled-name='cds_lfht_replace' filepath='src/rculfhash.c' line='1813' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_replace'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1801' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1813' column='1'/>
       <!-- parameter of type 'cds_lfht_iter*' -->
-      <parameter type-id='type-id-106' name='old_iter' filepath='src/rculfhash.c' line='1802' column='1'/>
+      <parameter type-id='type-id-106' name='old_iter' filepath='src/rculfhash.c' line='1814' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1803' column='1'/>
+      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1815' column='1'/>
       <!-- parameter of type 'typedef cds_lfht_match_fct' -->
-      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1804' column='1'/>
+      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1816' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1805' column='1'/>
+      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1817' column='1'/>
       <!-- parameter of type 'cds_lfht_node*' -->
-      <parameter type-id='type-id-74' name='new_node' filepath='src/rculfhash.c' line='1806' column='1'/>
+      <parameter type-id='type-id-74' name='new_node' filepath='src/rculfhash.c' line='1818' column='1'/>
       <!-- int -->
       <return type-id='type-id-3'/>
     </function-decl>
     <!-- cds_lfht_node* cds_lfht_add_replace(cds_lfht*, unsigned long int, cds_lfht_match_fct, void*, cds_lfht_node*) -->
-    <function-decl name='cds_lfht_add_replace' mangled-name='cds_lfht_add_replace' filepath='src/rculfhash.c' line='1778' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add_replace'>
+    <function-decl name='cds_lfht_add_replace' mangled-name='cds_lfht_add_replace' filepath='src/rculfhash.c' line='1790' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add_replace'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1778' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1790' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1779' column='1'/>
+      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1791' column='1'/>
       <!-- parameter of type 'typedef cds_lfht_match_fct' -->
-      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1780' column='1'/>
+      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1792' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1781' column='1'/>
+      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1793' column='1'/>
       <!-- parameter of type 'cds_lfht_node*' -->
-      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1782' column='1'/>
+      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1794' column='1'/>
       <!-- cds_lfht_node* -->
       <return type-id='type-id-74'/>
     </function-decl>
     <!-- cds_lfht_node* cds_lfht_add_unique(cds_lfht*, unsigned long int, cds_lfht_match_fct, void*, cds_lfht_node*) -->
-    <function-decl name='cds_lfht_add_unique' mangled-name='cds_lfht_add_unique' filepath='src/rculfhash.c' line='1761' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add_unique'>
+    <function-decl name='cds_lfht_add_unique' mangled-name='cds_lfht_add_unique' filepath='src/rculfhash.c' line='1773' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add_unique'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1778' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1790' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1779' column='1'/>
+      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1791' column='1'/>
       <!-- parameter of type 'typedef cds_lfht_match_fct' -->
-      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1780' column='1'/>
+      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1792' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1781' column='1'/>
+      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1793' column='1'/>
       <!-- parameter of type 'cds_lfht_node*' -->
-      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1782' column='1'/>
+      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1794' column='1'/>
       <!-- cds_lfht_node* -->
       <return type-id='type-id-74'/>
     </function-decl>
     <!-- void cds_lfht_add(cds_lfht*, unsigned long int, cds_lfht_node*) -->
-    <function-decl name='cds_lfht_add' mangled-name='cds_lfht_add' filepath='src/rculfhash.c' line='1750' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add'>
+    <function-decl name='cds_lfht_add' mangled-name='cds_lfht_add' filepath='src/rculfhash.c' line='1762' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_add'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1750' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1762' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1750' column='1'/>
+      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1762' column='1'/>
       <!-- parameter of type 'cds_lfht_node*' -->
-      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1751' column='1'/>
+      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1763' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void cds_lfht_first(cds_lfht*, cds_lfht_iter*) -->
-    <function-decl name='cds_lfht_first' mangled-name='cds_lfht_first' filepath='src/rculfhash.c' line='1739' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_first'>
+    <function-decl name='cds_lfht_first' mangled-name='cds_lfht_first' filepath='src/rculfhash.c' line='1751' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_first'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1739' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1751' column='1'/>
       <!-- parameter of type 'cds_lfht_iter*' -->
-      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1739' column='1'/>
+      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1751' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void cds_lfht_next(cds_lfht*, cds_lfht_iter*) -->
-    <function-decl name='cds_lfht_next' mangled-name='cds_lfht_next' filepath='src/rculfhash.c' line='1715' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_next'>
+    <function-decl name='cds_lfht_next' mangled-name='cds_lfht_next' filepath='src/rculfhash.c' line='1727' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_next'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1715' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1727' column='1'/>
       <!-- parameter of type 'cds_lfht_iter*' -->
-      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1716' column='1'/>
+      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1728' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void cds_lfht_next_duplicate(cds_lfht*, cds_lfht_match_fct, void*, cds_lfht_iter*) -->
-    <function-decl name='cds_lfht_next_duplicate' mangled-name='cds_lfht_next_duplicate' filepath='src/rculfhash.c' line='1680' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_next_duplicate'>
+    <function-decl name='cds_lfht_next_duplicate' mangled-name='cds_lfht_next_duplicate' filepath='src/rculfhash.c' line='1692' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_next_duplicate'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1680' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1692' column='1'/>
       <!-- parameter of type 'typedef cds_lfht_match_fct' -->
-      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1681' column='1'/>
+      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1693' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1682' column='1'/>
+      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1694' column='1'/>
       <!-- parameter of type 'cds_lfht_iter*' -->
-      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1682' column='1'/>
+      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1694' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- void cds_lfht_lookup(cds_lfht*, unsigned long int, cds_lfht_match_fct, void*, cds_lfht_iter*) -->
-    <function-decl name='cds_lfht_lookup' mangled-name='cds_lfht_lookup' filepath='src/rculfhash.c' line='1640' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_lookup'>
+    <function-decl name='cds_lfht_lookup' mangled-name='cds_lfht_lookup' filepath='src/rculfhash.c' line='1652' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_lookup'>
       <!-- parameter of type 'cds_lfht*' -->
-      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1640' column='1'/>
+      <parameter type-id='type-id-70' name='ht' filepath='src/rculfhash.c' line='1652' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1640' column='1'/>
+      <parameter type-id='type-id-39' name='hash' filepath='src/rculfhash.c' line='1652' column='1'/>
       <!-- parameter of type 'typedef cds_lfht_match_fct' -->
-      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1641' column='1'/>
+      <parameter type-id='type-id-109' name='match' filepath='src/rculfhash.c' line='1653' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1641' column='1'/>
+      <parameter type-id='type-id-48' name='key' filepath='src/rculfhash.c' line='1653' column='1'/>
       <!-- parameter of type 'cds_lfht_iter*' -->
-      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1642' column='1'/>
+      <parameter type-id='type-id-106' name='iter' filepath='src/rculfhash.c' line='1654' column='1'/>
       <!-- void -->
       <return type-id='type-id-6'/>
     </function-decl>
     <!-- cds_lfht* _cds_lfht_new(unsigned long int, unsigned long int, unsigned long int, int, const cds_lfht_mm_type*, const rcu_flavor_struct*, pthread_attr_t*) -->
-    <function-decl name='_cds_lfht_new' mangled-name='_cds_lfht_new' filepath='src/rculfhash.c' line='1581' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='_cds_lfht_new'>
+    <function-decl name='_cds_lfht_new' mangled-name='_cds_lfht_new' filepath='src/rculfhash.c' line='1593' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='_cds_lfht_new'>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='init_size' filepath='src/rculfhash.c' line='1581' column='1'/>
+      <parameter type-id='type-id-39' name='init_size' filepath='src/rculfhash.c' line='1593' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='min_nr_alloc_buckets' filepath='src/rculfhash.c' line='1582' column='1'/>
+      <parameter type-id='type-id-39' name='min_nr_alloc_buckets' filepath='src/rculfhash.c' line='1594' column='1'/>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-39' name='max_nr_buckets' filepath='src/rculfhash.c' line='1583' column='1'/>
+      <parameter type-id='type-id-39' name='max_nr_buckets' filepath='src/rculfhash.c' line='1595' column='1'/>
       <!-- parameter of type 'int' -->
-      <parameter type-id='type-id-3' name='flags' filepath='src/rculfhash.c' line='1584' column='1'/>
+      <parameter type-id='type-id-3' name='flags' filepath='src/rculfhash.c' line='1596' column='1'/>
       <!-- parameter of type 'const cds_lfht_mm_type*' -->
-      <parameter type-id='type-id-61' name='mm' filepath='src/rculfhash.c' line='1585' column='1'/>
+      <parameter type-id='type-id-61' name='mm' filepath='src/rculfhash.c' line='1597' column='1'/>
       <!-- parameter of type 'const rcu_flavor_struct*' -->
-      <parameter type-id='type-id-62' name='flavor' filepath='src/rculfhash.c' line='1586' column='1'/>
+      <parameter type-id='type-id-62' name='flavor' filepath='src/rculfhash.c' line='1598' column='1'/>
       <!-- parameter of type 'pthread_attr_t*' -->
-      <parameter type-id='type-id-63' name='attr' filepath='src/rculfhash.c' line='1587' column='1'/>
+      <parameter type-id='type-id-63' name='attr' filepath='src/rculfhash.c' line='1599' column='1'/>
       <!-- cds_lfht* -->
       <return type-id='type-id-70'/>
+    </function-decl>
+    <!-- void cds_lfht_node_init_deleted(cds_lfht_node*) -->
+    <function-decl name='cds_lfht_node_init_deleted' mangled-name='cds_lfht_node_init_deleted' filepath='src/rculfhash.c' line='1587' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_node_init_deleted'>
+      <!-- parameter of type 'cds_lfht_node*' -->
+      <parameter type-id='type-id-74' name='node' filepath='src/rculfhash.c' line='1587' column='1'/>
+      <!-- void -->
+      <return type-id='type-id-6'/>
     </function-decl>
     <!-- int cds_lfht_get_count_order_ulong(unsigned long int) -->
     <function-decl name='cds_lfht_get_count_order_ulong' mangled-name='cds_lfht_get_count_order_ulong' filepath='src/rculfhash.c' line='598' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='cds_lfht_get_count_order_ulong'>
@@ -1321,15 +1330,15 @@
   </abi-instr>
   <abi-instr version='1.0' address-size='64' path='rculfhash-mm-order.c' comp-dir-path='src' language='LANG_C99'>
     <!-- const cds_lfht_mm_type cds_lfht_mm_order -->
-    <var-decl name='cds_lfht_mm_order' type-id='type-id-76' mangled-name='cds_lfht_mm_order' visibility='default' filepath='../include/urcu/rculfhash.h' line='129' column='1' elf-symbol-id='cds_lfht_mm_order'/>
+    <var-decl name='cds_lfht_mm_order' type-id='type-id-76' mangled-name='cds_lfht_mm_order' visibility='default' filepath='../include/urcu/rculfhash.h' line='139' column='1' elf-symbol-id='cds_lfht_mm_order'/>
   </abi-instr>
   <abi-instr version='1.0' address-size='64' path='rculfhash-mm-chunk.c' comp-dir-path='src' language='LANG_C99'>
     <!-- const cds_lfht_mm_type cds_lfht_mm_chunk -->
-    <var-decl name='cds_lfht_mm_chunk' type-id='type-id-76' mangled-name='cds_lfht_mm_chunk' visibility='default' filepath='../include/urcu/rculfhash.h' line='130' column='1' elf-symbol-id='cds_lfht_mm_chunk'/>
+    <var-decl name='cds_lfht_mm_chunk' type-id='type-id-76' mangled-name='cds_lfht_mm_chunk' visibility='default' filepath='../include/urcu/rculfhash.h' line='140' column='1' elf-symbol-id='cds_lfht_mm_chunk'/>
   </abi-instr>
   <abi-instr version='1.0' address-size='64' path='rculfhash-mm-mmap.c' comp-dir-path='src' language='LANG_C99'>
     <!-- const cds_lfht_mm_type cds_lfht_mm_mmap -->
-    <var-decl name='cds_lfht_mm_mmap' type-id='type-id-76' mangled-name='cds_lfht_mm_mmap' visibility='default' filepath='../include/urcu/rculfhash.h' line='131' column='1' elf-symbol-id='cds_lfht_mm_mmap'/>
+    <var-decl name='cds_lfht_mm_mmap' type-id='type-id-76' mangled-name='cds_lfht_mm_mmap' visibility='default' filepath='../include/urcu/rculfhash.h' line='141' column='1' elf-symbol-id='cds_lfht_mm_mmap'/>
   </abi-instr>
   <abi-instr version='1.0' address-size='64' path='compat_futex.c' comp-dir-path='src' language='LANG_C99'>
     <!-- pthread_mutex_t __urcu_compat_futex_lock -->

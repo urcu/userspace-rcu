@@ -1,4 +1,4 @@
-<abi-corpus architecture='elf-amd-x86_64' soname='liburcu-qsbr.so.6'>
+<abi-corpus architecture='elf-amd-x86_64' soname='liburcu-qsbr.so.8'>
   <elf-needed>
     <dependency name='libpthread.so.0'/>
     <dependency name='libc.so.6'/>
@@ -9,183 +9,109 @@
     <elf-symbol name='_fini' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- _init -->
     <elf-symbol name='_init' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- call_rcu_after_fork_child_qsbr -->
-    <elf-symbol name='call_rcu_after_fork_child_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_call_rcu_after_fork_child' is-defined='yes'/>
-    <!-- call_rcu_after_fork_parent_qsbr -->
-    <elf-symbol name='call_rcu_after_fork_parent_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- call_rcu_before_fork_qsbr -->
-    <elf-symbol name='call_rcu_before_fork_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_call_rcu_before_fork' is-defined='yes'/>
-    <!-- call_rcu_data_free_qsbr -->
-    <elf-symbol name='call_rcu_data_free_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- call_rcu_qsbr -->
-    <elf-symbol name='call_rcu_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- compat_futex_async -->
     <elf-symbol name='compat_futex_async' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- compat_futex_noasync -->
     <elf-symbol name='compat_futex_noasync' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- create_all_cpu_call_rcu_data_qsbr -->
-    <elf-symbol name='create_all_cpu_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- create_call_rcu_data_qsbr -->
-    <elf-symbol name='create_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- defer_rcu_qsbr -->
-    <elf-symbol name='defer_rcu_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_defer_rcu' is-defined='yes'/>
-    <!-- free_all_cpu_call_rcu_data -->
-    <elf-symbol name='free_all_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_free_all_cpu_call_rcu_data' is-defined='yes'/>
-    <!-- get_call_rcu_data_qsbr -->
-    <elf-symbol name='get_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_get_call_rcu_data' is-defined='yes'/>
-    <!-- get_call_rcu_thread_qsbr -->
-    <elf-symbol name='get_call_rcu_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- get_cpu_call_rcu_data_qsbr -->
-    <elf-symbol name='get_cpu_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_get_cpu_call_rcu_data' is-defined='yes'/>
-    <!-- get_default_call_rcu_data_qsbr -->
-    <elf-symbol name='get_default_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- get_thread_call_rcu_data_qsbr -->
-    <elf-symbol name='get_thread_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_barrier_qsbr -->
-    <elf-symbol name='rcu_barrier_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- rcu_cmpxchg_pointer_sym -->
     <elf-symbol name='rcu_cmpxchg_pointer_sym' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_defer_barrier_qsbr -->
-    <elf-symbol name='rcu_defer_barrier_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_defer_barrier' is-defined='yes'/>
-    <!-- rcu_defer_barrier_thread_qsbr -->
-    <elf-symbol name='rcu_defer_barrier_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_defer_barrier_thread' is-defined='yes'/>
-    <!-- rcu_defer_exit_qsbr -->
-    <elf-symbol name='rcu_defer_exit_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_defer_register_thread_qsbr -->
-    <elf-symbol name='rcu_defer_register_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_defer_unregister_thread_qsbr -->
-    <elf-symbol name='rcu_defer_unregister_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- rcu_dereference_sym -->
     <elf-symbol name='rcu_dereference_sym' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_exit_qsbr -->
-    <elf-symbol name='rcu_exit_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_quiescent_state_qsbr -->
-    <elf-symbol name='rcu_quiescent_state_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_read_lock_qsbr -->
-    <elf-symbol name='rcu_read_lock_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_read_lock' is-defined='yes'/>
-    <!-- rcu_read_ongoing_qsbr -->
-    <elf-symbol name='rcu_read_ongoing_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_read_ongoing' is-defined='yes'/>
-    <!-- rcu_read_unlock_qsbr -->
-    <elf-symbol name='rcu_read_unlock_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_register_thread_qsbr -->
-    <elf-symbol name='rcu_register_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- rcu_set_pointer_sym -->
     <elf-symbol name='rcu_set_pointer_sym' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_thread_offline_qsbr -->
-    <elf-symbol name='rcu_thread_offline_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_thread_online_qsbr -->
-    <elf-symbol name='rcu_thread_online_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_unregister_thread_qsbr -->
-    <elf-symbol name='rcu_unregister_thread_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- rcu_xchg_pointer_sym -->
     <elf-symbol name='rcu_xchg_pointer_sym' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- set_cpu_call_rcu_data_qsbr -->
-    <elf-symbol name='set_cpu_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_set_cpu_call_rcu_data' is-defined='yes'/>
-    <!-- set_thread_call_rcu_data_qsbr -->
-    <elf-symbol name='set_thread_call_rcu_data_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_set_thread_call_rcu_data' is-defined='yes'/>
-    <!-- synchronize_rcu_qsbr -->
-    <elf-symbol name='synchronize_rcu_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_barrier -->
-    <elf-symbol name='urcu_qsbr_barrier' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_barrier_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_barrier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_call_rcu -->
-    <elf-symbol name='urcu_qsbr_call_rcu' type='func-type' binding='global-binding' visibility='default-visibility' alias='call_rcu_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_call_rcu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_call_rcu_after_fork_child -->
     <elf-symbol name='urcu_qsbr_call_rcu_after_fork_child' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_call_rcu_after_fork_parent -->
-    <elf-symbol name='urcu_qsbr_call_rcu_after_fork_parent' type='func-type' binding='global-binding' visibility='default-visibility' alias='call_rcu_after_fork_parent_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_call_rcu_after_fork_parent' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_call_rcu_before_fork -->
     <elf-symbol name='urcu_qsbr_call_rcu_before_fork' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_call_rcu_data_free -->
-    <elf-symbol name='urcu_qsbr_call_rcu_data_free' type='func-type' binding='global-binding' visibility='default-visibility' alias='call_rcu_data_free_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_call_rcu_data_free' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_create_all_cpu_call_rcu_data -->
-    <elf-symbol name='urcu_qsbr_create_all_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' alias='create_all_cpu_call_rcu_data_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_create_all_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_create_call_rcu_data -->
-    <elf-symbol name='urcu_qsbr_create_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' alias='create_call_rcu_data_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_create_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_barrier -->
     <elf-symbol name='urcu_qsbr_defer_barrier' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_barrier_thread -->
     <elf-symbol name='urcu_qsbr_defer_barrier_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_exit -->
-    <elf-symbol name='urcu_qsbr_defer_exit' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_defer_exit_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_defer_exit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_rcu -->
     <elf-symbol name='urcu_qsbr_defer_rcu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_register_thread -->
-    <elf-symbol name='urcu_qsbr_defer_register_thread' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_defer_register_thread_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_defer_register_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_defer_unregister_thread -->
-    <elf-symbol name='urcu_qsbr_defer_unregister_thread' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_defer_unregister_thread_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_defer_unregister_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_exit -->
-    <elf-symbol name='urcu_qsbr_exit' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_exit_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_exit' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_free_all_cpu_call_rcu_data -->
     <elf-symbol name='urcu_qsbr_free_all_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_get_call_rcu_data -->
     <elf-symbol name='urcu_qsbr_get_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_get_call_rcu_thread -->
-    <elf-symbol name='urcu_qsbr_get_call_rcu_thread' type='func-type' binding='global-binding' visibility='default-visibility' alias='get_call_rcu_thread_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_get_call_rcu_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_get_cpu_call_rcu_data -->
     <elf-symbol name='urcu_qsbr_get_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_get_default_call_rcu_data -->
-    <elf-symbol name='urcu_qsbr_get_default_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' alias='get_default_call_rcu_data_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_get_default_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_get_thread_call_rcu_data -->
-    <elf-symbol name='urcu_qsbr_get_thread_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' alias='get_thread_call_rcu_data_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_get_thread_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_quiescent_state -->
-    <elf-symbol name='urcu_qsbr_quiescent_state' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_quiescent_state_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_quiescent_state' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_read_lock -->
     <elf-symbol name='urcu_qsbr_read_lock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_read_ongoing -->
     <elf-symbol name='urcu_qsbr_read_ongoing' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_read_unlock -->
-    <elf-symbol name='urcu_qsbr_read_unlock' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_read_unlock_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_read_unlock' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_register_rculfhash_atfork -->
     <elf-symbol name='urcu_qsbr_register_rculfhash_atfork' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_register_thread -->
-    <elf-symbol name='urcu_qsbr_register_thread' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_register_thread_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_register_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_set_cpu_call_rcu_data -->
     <elf-symbol name='urcu_qsbr_set_cpu_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_set_thread_call_rcu_data -->
     <elf-symbol name='urcu_qsbr_set_thread_call_rcu_data' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_synchronize_rcu -->
-    <elf-symbol name='urcu_qsbr_synchronize_rcu' type='func-type' binding='global-binding' visibility='default-visibility' alias='synchronize_rcu_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_synchronize_rcu' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_thread_offline -->
-    <elf-symbol name='urcu_qsbr_thread_offline' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_thread_offline_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_thread_offline' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_thread_online -->
-    <elf-symbol name='urcu_qsbr_thread_online' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_thread_online_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_thread_online' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_unregister_rculfhash_atfork -->
     <elf-symbol name='urcu_qsbr_unregister_rculfhash_atfork' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_unregister_thread -->
-    <elf-symbol name='urcu_qsbr_unregister_thread' type='func-type' binding='global-binding' visibility='default-visibility' alias='rcu_unregister_thread_qsbr' is-defined='yes'/>
-    <!-- urcu_register_rculfhash_atfork_qsbr -->
-    <elf-symbol name='urcu_register_rculfhash_atfork_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_register_rculfhash_atfork' is-defined='yes'/>
-    <!-- urcu_unregister_rculfhash_atfork_qsbr -->
-    <elf-symbol name='urcu_unregister_rculfhash_atfork_qsbr' type='func-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_unregister_rculfhash_atfork' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_unregister_thread' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
   </elf-function-symbols>
   <elf-variable-symbols>
     <!-- __urcu_compat_futex_cond -->
     <elf-symbol name='__urcu_compat_futex_cond' size='48' type='object-type' binding='weak-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- __urcu_compat_futex_lock -->
     <elf-symbol name='__urcu_compat_futex_lock' size='40' type='object-type' binding='weak-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_flavor_qsbr -->
-    <elf-symbol name='rcu_flavor_qsbr' size='112' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <!-- rcu_gp_qsbr -->
-    <elf-symbol name='rcu_gp_qsbr' size='128' type='object-type' binding='global-binding' visibility='default-visibility' alias='urcu_qsbr_gp' is-defined='yes'/>
-    <!-- rcu_reader_qsbr -->
-    <elf-symbol name='rcu_reader_qsbr' size='256' type='tls-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_flavor -->
-    <elf-symbol name='urcu_qsbr_flavor' size='112' type='object-type' binding='global-binding' visibility='default-visibility' alias='rcu_flavor_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_flavor' size='112' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_gp -->
     <elf-symbol name='urcu_qsbr_gp' size='128' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <!-- urcu_qsbr_reader -->
-    <elf-symbol name='urcu_qsbr_reader' size='256' type='tls-type' binding='global-binding' visibility='default-visibility' alias='rcu_reader_qsbr' is-defined='yes'/>
+    <elf-symbol name='urcu_qsbr_reader' size='256' type='tls-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
   </elf-variable-symbols>
   <abi-instr version='1.0' address-size='64' path='urcu-qsbr.c' comp-dir-path='src' language='LANG_C99'>
     <!-- struct urcu_gp -->
-    <class-decl name='urcu_gp' size-in-bits='1024' is-struct='yes' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='67' column='1' id='type-id-1'>
+    <class-decl name='urcu_gp' size-in-bits='1024' is-struct='yes' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='66' column='1' id='type-id-1'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- unsigned long int urcu_gp::ctr -->
-        <var-decl name='ctr' type-id='type-id-2' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='75' column='1'/>
+        <var-decl name='ctr' type-id='type-id-2' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='74' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- int32_t urcu_gp::futex -->
-        <var-decl name='futex' type-id='type-id-3' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='77' column='1'/>
+        <var-decl name='futex' type-id='type-id-3' visibility='default' filepath='../include/urcu/static/urcu-common.h' line='76' column='1'/>
       </data-member>
     </class-decl>
     <!-- unsigned long int -->
@@ -197,7 +123,7 @@
     <!-- typedef __int32_t int32_t -->
     <typedef-decl name='int32_t' type-id='type-id-5' filepath='/usr/include/x86_64-linux-gnu/bits/stdint-intn.h' line='26' column='1' id='type-id-3'/>
     <!-- urcu_gp urcu_qsbr_gp -->
-    <var-decl name='urcu_qsbr_gp' type-id='type-id-1' mangled-name='rcu_gp_qsbr' visibility='default' filepath='../include/urcu/static/urcu-qsbr.h' line='63' column='1' elf-symbol-id='rcu_gp_qsbr'/>
+    <var-decl name='urcu_qsbr_gp' type-id='type-id-1' mangled-name='urcu_qsbr_gp' visibility='default' filepath='../include/urcu/static/urcu-qsbr.h' line='63' column='1' elf-symbol-id='urcu_qsbr_gp'/>
     <!-- struct urcu_qsbr_reader -->
     <class-decl name='urcu_qsbr_reader' size-in-bits='2048' is-struct='yes' visibility='default' filepath='../include/urcu/static/urcu-qsbr.h' line='65' column='1' id='type-id-6'>
       <data-member access='public' layout-offset-in-bits='0'>
@@ -317,10 +243,10 @@
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_node -->
-    <class-decl name='cds_wfcq_node' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='59' column='1' id='type-id-21'>
+    <class-decl name='cds_wfcq_node' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='58' column='1' id='type-id-21'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node* cds_wfcq_node::next -->
-        <var-decl name='next' type-id='type-id-23' visibility='default' filepath='../include/urcu/wfcqueue.h' line='60' column='1'/>
+        <var-decl name='next' type-id='type-id-23' visibility='default' filepath='../include/urcu/wfcqueue.h' line='59' column='1'/>
       </data-member>
     </class-decl>
     <!-- cds_wfcq_node* -->
@@ -363,77 +289,77 @@
     <!-- const rcu_flavor_struct -->
     <qualified-type-def type-id='type-id-11' const='yes' id='type-id-34'/>
     <!-- const rcu_flavor_struct urcu_qsbr_flavor -->
-    <var-decl name='urcu_qsbr_flavor' type-id='type-id-34' mangled-name='urcu_qsbr_flavor' visibility='default' filepath='../include/urcu/flavor.h' line='90' column='1' elf-symbol-id='urcu_qsbr_flavor'/>
+    <var-decl name='urcu_qsbr_flavor' type-id='type-id-34' mangled-name='urcu_qsbr_flavor' visibility='default' filepath='../include/urcu/flavor.h' line='81' column='1' elf-symbol-id='urcu_qsbr_flavor'/>
     <!-- void urcu_qsbr_defer_exit() -->
-    <function-decl name='urcu_qsbr_defer_exit' mangled-name='urcu_qsbr_defer_exit' filepath='src/urcu-defer-impl.h' line='476' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_exit'>
+    <function-decl name='urcu_qsbr_defer_exit' mangled-name='urcu_qsbr_defer_exit' filepath='src/urcu-defer-impl.h' line='467' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_exit'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_defer_unregister_thread() -->
-    <function-decl name='urcu_qsbr_defer_unregister_thread' mangled-name='urcu_qsbr_defer_unregister_thread' filepath='src/urcu-defer-impl.h' line='456' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_unregister_thread'>
+    <function-decl name='urcu_qsbr_defer_unregister_thread' mangled-name='urcu_qsbr_defer_unregister_thread' filepath='src/urcu-defer-impl.h' line='449' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_unregister_thread'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- int urcu_qsbr_defer_register_thread() -->
-    <function-decl name='urcu_qsbr_defer_register_thread' mangled-name='urcu_qsbr_defer_register_thread' filepath='src/urcu-defer-impl.h' line='432' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_register_thread'>
+    <function-decl name='urcu_qsbr_defer_register_thread' mangled-name='urcu_qsbr_defer_register_thread' filepath='src/urcu-defer-impl.h' line='427' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_register_thread'>
       <!-- int -->
       <return type-id='type-id-4'/>
     </function-decl>
     <!-- void urcu_qsbr_defer_rcu(void (void*)*, void*) -->
-    <function-decl name='urcu_qsbr_defer_rcu' mangled-name='defer_rcu_qsbr' filepath='src/urcu-defer-impl.h' line='400' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='defer_rcu_qsbr'>
+    <function-decl name='urcu_qsbr_defer_rcu' mangled-name='urcu_qsbr_defer_rcu' filepath='src/urcu-defer-impl.h' line='396' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_rcu'>
       <!-- parameter of type 'void (void*)*' -->
-      <parameter type-id='type-id-29' name='fct' filepath='src/urcu-defer-impl.h' line='400' column='1'/>
+      <parameter type-id='type-id-29' name='fct' filepath='src/urcu-defer-impl.h' line='396' column='1'/>
       <!-- parameter of type 'void*' -->
-      <parameter type-id='type-id-27' name='p' filepath='src/urcu-defer-impl.h' line='400' column='1'/>
+      <parameter type-id='type-id-27' name='p' filepath='src/urcu-defer-impl.h' line='396' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_defer_barrier() -->
-    <function-decl name='urcu_qsbr_defer_barrier' mangled-name='rcu_defer_barrier_qsbr' filepath='src/urcu-defer-impl.h' line='284' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcu_defer_barrier_qsbr'>
+    <function-decl name='urcu_qsbr_defer_barrier' mangled-name='urcu_qsbr_defer_barrier' filepath='src/urcu-defer-impl.h' line='282' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_barrier'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_defer_barrier_thread() -->
-    <function-decl name='urcu_qsbr_defer_barrier_thread' mangled-name='rcu_defer_barrier_thread_qsbr' filepath='src/urcu-defer-impl.h' line='262' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcu_defer_barrier_thread_qsbr'>
+    <function-decl name='urcu_qsbr_defer_barrier_thread' mangled-name='urcu_qsbr_defer_barrier_thread' filepath='src/urcu-defer-impl.h' line='262' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_defer_barrier_thread'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_unregister_rculfhash_atfork(urcu_atfork*) -->
-    <function-decl name='urcu_qsbr_unregister_rculfhash_atfork' mangled-name='urcu_unregister_rculfhash_atfork_qsbr' filepath='src/urcu-call-rcu-impl.h' line='1056' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_unregister_rculfhash_atfork_qsbr'>
+    <function-decl name='urcu_qsbr_unregister_rculfhash_atfork' mangled-name='urcu_qsbr_unregister_rculfhash_atfork' filepath='src/urcu-call-rcu-impl.h' line='1012' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_unregister_rculfhash_atfork'>
       <!-- parameter of type 'urcu_atfork*' -->
-      <parameter type-id='type-id-32' name='atfork' filepath='src/urcu-call-rcu-impl.h' line='1056' column='1'/>
+      <parameter type-id='type-id-32' name='atfork' filepath='src/urcu-call-rcu-impl.h' line='1012' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_register_rculfhash_atfork(urcu_atfork*) -->
-    <function-decl name='urcu_qsbr_register_rculfhash_atfork' mangled-name='urcu_register_rculfhash_atfork_qsbr' filepath='src/urcu-call-rcu-impl.h' line='1044' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_register_rculfhash_atfork_qsbr'>
+    <function-decl name='urcu_qsbr_register_rculfhash_atfork' mangled-name='urcu_qsbr_register_rculfhash_atfork' filepath='src/urcu-call-rcu-impl.h' line='1002' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_register_rculfhash_atfork'>
       <!-- parameter of type 'urcu_atfork*' -->
-      <parameter type-id='type-id-32' name='atfork' filepath='src/urcu-call-rcu-impl.h' line='1056' column='1'/>
+      <parameter type-id='type-id-32' name='atfork' filepath='src/urcu-call-rcu-impl.h' line='1012' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_call_rcu_after_fork_child() -->
-    <function-decl name='urcu_qsbr_call_rcu_after_fork_child' mangled-name='call_rcu_after_fork_child_qsbr' filepath='src/urcu-call-rcu-impl.h' line='1000' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='call_rcu_after_fork_child_qsbr'>
+    <function-decl name='urcu_qsbr_call_rcu_after_fork_child' mangled-name='urcu_qsbr_call_rcu_after_fork_child' filepath='src/urcu-call-rcu-impl.h' line='960' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_after_fork_child'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_call_rcu_after_fork_parent() -->
-    <function-decl name='urcu_qsbr_call_rcu_after_fork_parent' mangled-name='urcu_qsbr_call_rcu_after_fork_parent' filepath='src/urcu-call-rcu-impl.h' line='976' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_after_fork_parent'>
+    <function-decl name='urcu_qsbr_call_rcu_after_fork_parent' mangled-name='urcu_qsbr_call_rcu_after_fork_parent' filepath='src/urcu-call-rcu-impl.h' line='938' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_after_fork_parent'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_call_rcu_before_fork() -->
-    <function-decl name='urcu_qsbr_call_rcu_before_fork' mangled-name='call_rcu_before_fork_qsbr' filepath='src/urcu-call-rcu-impl.h' line='947' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='call_rcu_before_fork_qsbr'>
+    <function-decl name='urcu_qsbr_call_rcu_before_fork' mangled-name='urcu_qsbr_call_rcu_before_fork' filepath='src/urcu-call-rcu-impl.h' line='911' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_before_fork'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_barrier() -->
-    <function-decl name='urcu_qsbr_barrier' mangled-name='urcu_qsbr_barrier' filepath='src/urcu-call-rcu-impl.h' line='874' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_barrier'>
+    <function-decl name='urcu_qsbr_barrier' mangled-name='urcu_qsbr_barrier' filepath='src/urcu-call-rcu-impl.h' line='840' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_barrier'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_free_all_cpu_call_rcu_data() -->
-    <function-decl name='urcu_qsbr_free_all_cpu_call_rcu_data' mangled-name='free_all_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='801' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='free_all_cpu_call_rcu_data'>
+    <function-decl name='urcu_qsbr_free_all_cpu_call_rcu_data' mangled-name='urcu_qsbr_free_all_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='777' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_free_all_cpu_call_rcu_data'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
@@ -477,21 +403,21 @@
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_tail -->
-    <class-decl name='cds_wfcq_tail' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='127' column='1' id='type-id-36'>
+    <class-decl name='cds_wfcq_tail' size-in-bits='64' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='140' column='1' id='type-id-36'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node* cds_wfcq_tail::p -->
-        <var-decl name='p' type-id='type-id-23' visibility='default' filepath='../include/urcu/wfcqueue.h' line='128' column='1'/>
+        <var-decl name='p' type-id='type-id-23' visibility='default' filepath='../include/urcu/wfcqueue.h' line='141' column='1'/>
       </data-member>
     </class-decl>
     <!-- struct cds_wfcq_head -->
-    <class-decl name='cds_wfcq_head' size-in-bits='384' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='72' column='1' id='type-id-37'>
+    <class-decl name='cds_wfcq_head' size-in-bits='384' is-struct='yes' visibility='default' filepath='../include/urcu/wfcqueue.h' line='71' column='1' id='type-id-37'>
       <data-member access='public' layout-offset-in-bits='0'>
         <!-- cds_wfcq_node cds_wfcq_head::node -->
-        <var-decl name='node' type-id='type-id-21' visibility='default' filepath='../include/urcu/wfcqueue.h' line='73' column='1'/>
+        <var-decl name='node' type-id='type-id-21' visibility='default' filepath='../include/urcu/wfcqueue.h' line='72' column='1'/>
       </data-member>
       <data-member access='public' layout-offset-in-bits='64'>
         <!-- pthread_mutex_t cds_wfcq_head::lock -->
-        <var-decl name='lock' type-id='type-id-38' visibility='default' filepath='../include/urcu/wfcqueue.h' line='74' column='1'/>
+        <var-decl name='lock' type-id='type-id-38' visibility='default' filepath='../include/urcu/wfcqueue.h' line='73' column='1'/>
       </data-member>
     </class-decl>
     <!-- union __anonymous_union__ -->
@@ -577,129 +503,129 @@
     <!-- call_rcu_data* -->
     <pointer-type-def type-id='type-id-35' size-in-bits='64' id='type-id-49'/>
     <!-- void urcu_qsbr_call_rcu_data_free(call_rcu_data*) -->
-    <function-decl name='urcu_qsbr_call_rcu_data_free' mangled-name='urcu_qsbr_call_rcu_data_free' filepath='src/urcu-call-rcu-impl.h' line='764' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_data_free'>
+    <function-decl name='urcu_qsbr_call_rcu_data_free' mangled-name='urcu_qsbr_call_rcu_data_free' filepath='src/urcu-call-rcu-impl.h' line='742' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu_data_free'>
       <!-- parameter of type 'call_rcu_data*' -->
-      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='764' column='1'/>
+      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='742' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_call_rcu(rcu_head*, void (rcu_head*)*) -->
-    <function-decl name='urcu_qsbr_call_rcu' mangled-name='urcu_qsbr_call_rcu' filepath='src/urcu-call-rcu-impl.h' line='725' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu'>
+    <function-decl name='urcu_qsbr_call_rcu' mangled-name='urcu_qsbr_call_rcu' filepath='src/urcu-call-rcu-impl.h' line='704' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_call_rcu'>
       <!-- parameter of type 'rcu_head*' -->
-      <parameter type-id='type-id-24' name='head' filepath='src/urcu-call-rcu-impl.h' line='725' column='1'/>
+      <parameter type-id='type-id-24' name='head' filepath='src/urcu-call-rcu-impl.h' line='704' column='1'/>
       <!-- parameter of type 'void (rcu_head*)*' -->
-      <parameter type-id='type-id-22' name='func' filepath='src/urcu-call-rcu-impl.h' line='726' column='1'/>
+      <parameter type-id='type-id-22' name='func' filepath='src/urcu-call-rcu-impl.h' line='705' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- int urcu_qsbr_create_all_cpu_call_rcu_data(unsigned long int) -->
-    <function-decl name='urcu_qsbr_create_all_cpu_call_rcu_data' mangled-name='urcu_qsbr_create_all_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='645' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_create_all_cpu_call_rcu_data'>
+    <function-decl name='urcu_qsbr_create_all_cpu_call_rcu_data' mangled-name='urcu_qsbr_create_all_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='626' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_create_all_cpu_call_rcu_data'>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-2' name='flags' filepath='src/urcu-call-rcu-impl.h' line='645' column='1'/>
+      <parameter type-id='type-id-2' name='flags' filepath='src/urcu-call-rcu-impl.h' line='626' column='1'/>
       <!-- int -->
       <return type-id='type-id-4'/>
     </function-decl>
     <!-- void urcu_qsbr_set_thread_call_rcu_data(call_rcu_data*) -->
-    <function-decl name='urcu_qsbr_set_thread_call_rcu_data' mangled-name='set_thread_call_rcu_data_qsbr' filepath='src/urcu-call-rcu-impl.h' line='630' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='set_thread_call_rcu_data_qsbr'>
+    <function-decl name='urcu_qsbr_set_thread_call_rcu_data' mangled-name='urcu_qsbr_set_thread_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='613' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_set_thread_call_rcu_data'>
       <!-- parameter of type 'call_rcu_data*' -->
-      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='630' column='1'/>
+      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='613' column='1'/>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- call_rcu_data* urcu_qsbr_get_thread_call_rcu_data() -->
-    <function-decl name='urcu_qsbr_get_thread_call_rcu_data' mangled-name='urcu_qsbr_get_thread_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='612' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_thread_call_rcu_data'>
+    <function-decl name='urcu_qsbr_get_thread_call_rcu_data' mangled-name='urcu_qsbr_get_thread_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='597' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_thread_call_rcu_data'>
       <!-- call_rcu_data* -->
       <return type-id='type-id-49'/>
     </function-decl>
     <!-- call_rcu_data* urcu_qsbr_get_call_rcu_data() -->
-    <function-decl name='urcu_qsbr_get_call_rcu_data' mangled-name='get_call_rcu_data_qsbr' filepath='src/urcu-call-rcu-impl.h' line='590' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_call_rcu_data_qsbr'>
+    <function-decl name='urcu_qsbr_get_call_rcu_data' mangled-name='urcu_qsbr_get_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='577' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_call_rcu_data'>
       <!-- call_rcu_data* -->
       <return type-id='type-id-49'/>
     </function-decl>
     <!-- call_rcu_data* urcu_qsbr_get_default_call_rcu_data() -->
-    <function-decl name='urcu_qsbr_get_default_call_rcu_data' mangled-name='urcu_qsbr_get_default_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='563' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_default_call_rcu_data'>
+    <function-decl name='urcu_qsbr_get_default_call_rcu_data' mangled-name='urcu_qsbr_get_default_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='552' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_default_call_rcu_data'>
       <!-- call_rcu_data* -->
       <return type-id='type-id-49'/>
     </function-decl>
     <!-- int urcu_qsbr_set_cpu_call_rcu_data(int, call_rcu_data*) -->
-    <function-decl name='urcu_qsbr_set_cpu_call_rcu_data' mangled-name='set_cpu_call_rcu_data_qsbr' filepath='src/urcu-call-rcu-impl.h' line='522' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='set_cpu_call_rcu_data_qsbr'>
+    <function-decl name='urcu_qsbr_set_cpu_call_rcu_data' mangled-name='urcu_qsbr_set_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='513' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_set_cpu_call_rcu_data'>
       <!-- parameter of type 'int' -->
-      <parameter type-id='type-id-4' name='cpu' filepath='src/urcu-call-rcu-impl.h' line='522' column='1'/>
+      <parameter type-id='type-id-4' name='cpu' filepath='src/urcu-call-rcu-impl.h' line='513' column='1'/>
       <!-- parameter of type 'call_rcu_data*' -->
-      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='522' column='1'/>
+      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='513' column='1'/>
       <!-- int -->
       <return type-id='type-id-4'/>
     </function-decl>
     <!-- call_rcu_data* urcu_qsbr_create_call_rcu_data(unsigned long int, int) -->
-    <function-decl name='urcu_qsbr_create_call_rcu_data' mangled-name='urcu_qsbr_create_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='498' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_create_call_rcu_data'>
+    <function-decl name='urcu_qsbr_create_call_rcu_data' mangled-name='urcu_qsbr_create_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='489' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_create_call_rcu_data'>
       <!-- parameter of type 'unsigned long int' -->
-      <parameter type-id='type-id-2' name='flags' filepath='src/urcu-call-rcu-impl.h' line='498' column='1'/>
+      <parameter type-id='type-id-2' name='flags' filepath='src/urcu-call-rcu-impl.h' line='489' column='1'/>
       <!-- parameter of type 'int' -->
-      <parameter type-id='type-id-4' name='cpu_affinity' filepath='src/urcu-call-rcu-impl.h' line='499' column='1'/>
+      <parameter type-id='type-id-4' name='cpu_affinity' filepath='src/urcu-call-rcu-impl.h' line='490' column='1'/>
       <!-- call_rcu_data* -->
       <return type-id='type-id-49'/>
     </function-decl>
     <!-- pthread_t urcu_qsbr_get_call_rcu_thread(call_rcu_data*) -->
-    <function-decl name='urcu_qsbr_get_call_rcu_thread' mangled-name='urcu_qsbr_get_call_rcu_thread' filepath='src/urcu-call-rcu-impl.h' line='476' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_call_rcu_thread'>
+    <function-decl name='urcu_qsbr_get_call_rcu_thread' mangled-name='urcu_qsbr_get_call_rcu_thread' filepath='src/urcu-call-rcu-impl.h' line='471' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_call_rcu_thread'>
       <!-- parameter of type 'call_rcu_data*' -->
-      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='476' column='1'/>
+      <parameter type-id='type-id-49' name='crdp' filepath='src/urcu-call-rcu-impl.h' line='471' column='1'/>
       <!-- typedef pthread_t -->
       <return type-id='type-id-8'/>
     </function-decl>
     <!-- call_rcu_data* urcu_qsbr_get_cpu_call_rcu_data(int) -->
-    <function-decl name='urcu_qsbr_get_cpu_call_rcu_data' mangled-name='get_cpu_call_rcu_data_qsbr' filepath='src/urcu-call-rcu-impl.h' line='452' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='get_cpu_call_rcu_data_qsbr'>
+    <function-decl name='urcu_qsbr_get_cpu_call_rcu_data' mangled-name='urcu_qsbr_get_cpu_call_rcu_data' filepath='src/urcu-call-rcu-impl.h' line='449' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_get_cpu_call_rcu_data'>
       <!-- parameter of type 'int' -->
-      <parameter type-id='type-id-4' name='cpu' filepath='src/urcu-call-rcu-impl.h' line='452' column='1'/>
+      <parameter type-id='type-id-4' name='cpu' filepath='src/urcu-call-rcu-impl.h' line='449' column='1'/>
       <!-- call_rcu_data* -->
       <return type-id='type-id-49'/>
     </function-decl>
     <!-- void urcu_qsbr_exit() -->
-    <function-decl name='urcu_qsbr_exit' mangled-name='urcu_qsbr_exit' filepath='src/urcu-qsbr.c' line='512' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_exit'>
+    <function-decl name='urcu_qsbr_exit' mangled-name='urcu_qsbr_exit' filepath='src/urcu-qsbr.c' line='497' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_exit'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_unregister_thread() -->
-    <function-decl name='urcu_qsbr_unregister_thread' mangled-name='urcu_qsbr_unregister_thread' filepath='src/urcu-qsbr.c' line='496' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_unregister_thread'>
+    <function-decl name='urcu_qsbr_unregister_thread' mangled-name='urcu_qsbr_unregister_thread' filepath='src/urcu-qsbr.c' line='483' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_unregister_thread'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_register_thread() -->
-    <function-decl name='urcu_qsbr_register_thread' mangled-name='urcu_qsbr_register_thread' filepath='src/urcu-qsbr.c' line='481' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_register_thread'>
+    <function-decl name='urcu_qsbr_register_thread' mangled-name='urcu_qsbr_register_thread' filepath='src/urcu-qsbr.c' line='470' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_register_thread'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_thread_online() -->
-    <function-decl name='urcu_qsbr_thread_online' mangled-name='urcu_qsbr_thread_online' filepath='src/urcu-qsbr.c' line='474' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_thread_online'>
+    <function-decl name='urcu_qsbr_thread_online' mangled-name='urcu_qsbr_thread_online' filepath='src/urcu-qsbr.c' line='465' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_thread_online'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_thread_offline() -->
-    <function-decl name='urcu_qsbr_thread_offline' mangled-name='urcu_qsbr_thread_offline' filepath='src/urcu-qsbr.c' line='467' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_thread_offline'>
+    <function-decl name='urcu_qsbr_thread_offline' mangled-name='urcu_qsbr_thread_offline' filepath='src/urcu-qsbr.c' line='459' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_thread_offline'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_quiescent_state() -->
-    <function-decl name='urcu_qsbr_quiescent_state' mangled-name='urcu_qsbr_quiescent_state' filepath='src/urcu-qsbr.c' line='460' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_quiescent_state'>
+    <function-decl name='urcu_qsbr_quiescent_state' mangled-name='urcu_qsbr_quiescent_state' filepath='src/urcu-qsbr.c' line='453' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_quiescent_state'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- int urcu_qsbr_read_ongoing() -->
-    <function-decl name='urcu_qsbr_read_ongoing' mangled-name='rcu_read_ongoing_qsbr' filepath='src/urcu-qsbr.c' line='453' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcu_read_ongoing_qsbr'>
+    <function-decl name='urcu_qsbr_read_ongoing' mangled-name='urcu_qsbr_read_ongoing' filepath='src/urcu-qsbr.c' line='447' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_read_ongoing'>
       <!-- int -->
       <return type-id='type-id-4'/>
     </function-decl>
     <!-- void urcu_qsbr_read_unlock() -->
-    <function-decl name='urcu_qsbr_read_unlock' mangled-name='urcu_qsbr_read_unlock' filepath='src/urcu-qsbr.c' line='447' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_read_unlock'>
+    <function-decl name='urcu_qsbr_read_unlock' mangled-name='urcu_qsbr_read_unlock' filepath='src/urcu-qsbr.c' line='442' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_read_unlock'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_read_lock() -->
-    <function-decl name='urcu_qsbr_read_lock' mangled-name='rcu_read_lock_qsbr' filepath='src/urcu-qsbr.c' line='441' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='rcu_read_lock_qsbr'>
+    <function-decl name='urcu_qsbr_read_lock' mangled-name='urcu_qsbr_read_lock' filepath='src/urcu-qsbr.c' line='437' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_read_lock'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
     <!-- void urcu_qsbr_synchronize_rcu() -->
-    <function-decl name='urcu_qsbr_synchronize_rcu' mangled-name='urcu_qsbr_synchronize_rcu' filepath='src/urcu-qsbr.c' line='349' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_synchronize_rcu'>
+    <function-decl name='urcu_qsbr_synchronize_rcu' mangled-name='urcu_qsbr_synchronize_rcu' filepath='src/urcu-qsbr.c' line='347' column='1' visibility='default' binding='global' size-in-bits='64' elf-symbol-id='urcu_qsbr_synchronize_rcu'>
       <!-- void -->
       <return type-id='type-id-17'/>
     </function-decl>
