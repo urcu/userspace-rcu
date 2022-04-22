@@ -14,9 +14,9 @@ m4_define([urcu_version], urcu_version_major[.]urcu_version_minor[.]urcu_version
 # Library version information of "liburcu"
 # Following the numbering scheme proposed by libtool for the library version
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-m4_define([urcu_lib_version_current], [8])
+m4_define([urcu_lib_version_current], [9])
 m4_define([urcu_lib_version_revision], [0])
-m4_define([urcu_lib_version_age], [0])
+m4_define([urcu_lib_version_age], [1])
 m4_define([urcu_lib_version], urcu_lib_version_current[:]urcu_lib_version_revision[:]urcu_lib_version_age)
 
 
