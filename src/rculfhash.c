@@ -763,7 +763,7 @@ void ht_count_del(struct cds_lfht *ht, unsigned long size, unsigned long hash)
 
 	if ((count >> CHAIN_LEN_RESIZE_THRESHOLD) >= size)
 		return;
-	dbg_printf("del set global %ld\n", count);
+	dbg_printf("del set global %lu\n", count);
 	/*
 	 * Don't shrink table if the number of nodes is below a
 	 * certain threshold.
