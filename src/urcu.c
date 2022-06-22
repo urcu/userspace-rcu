@@ -259,17 +259,25 @@ static void wait_gp(void)
 	smp_mb_master();
 	/* Temporarily unlock the registry lock. */
 	mutex_unlock(&rcu_registry_lock);
-	if (uatomic_read(&rcu_gp.futex) != -1)
-		goto end;
-	while (futex_async(&rcu_gp.futex, FUTEX_WAIT, -1,
-			NULL, NULL, 0)) {
+	while (uatomic_read(&rcu_gp.futex) == -1) {
+		if (!futex_async(&rcu_gp.futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
+			/*
+			 * Prior queued wakeups queued by unrelated code
+			 * using the same address can cause futex wait to
+			 * return 0 even through the futex value is still
+			 * -1 (spurious wakeups). Check the value again
+			 * in user-space to validate whether it really
+			 * differs from -1.
+			 */
+			continue;
+		}
 		switch (errno) {
-		case EWOULDBLOCK:
+		case EAGAIN:
 			/* Value already changed. */
 			goto end;
 		case EINTR:
 			/* Retry if interrupted by signal. */
-			break;	/* Get out of switch. */
+			break;	/* Get out of switch. Check again. */
 		default:
 			/* Unexpected error. */
 			urcu_die(errno);
