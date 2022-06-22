@@ -194,17 +194,25 @@ static void wait_defer(void)
 		uatomic_set(&defer_thread_futex, 0);
 	} else {
 		cmm_smp_rmb();	/* Read queue before read futex */
-		if (uatomic_read(&defer_thread_futex) != -1)
-			return;
-		while (futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1,
-				NULL, NULL, 0)) {
+		while (uatomic_read(&defer_thread_futex) == -1) {
+			if (!futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
+				/*
+				 * Prior queued wakeups queued by unrelated code
+				 * using the same address can cause futex wait to
+				 * return 0 even through the futex value is still
+				 * -1 (spurious wakeups). Check the value again
+				 * in user-space to validate whether it really
+				 * differs from -1.
+				 */
+				continue;
+			}
 			switch (errno) {
-			case EWOULDBLOCK:
+			case EAGAIN:
 				/* Value already changed. */
 				return;
 			case EINTR:
 				/* Retry if interrupted by signal. */
-				break;	/* Get out of switch. */
+				break;	/* Get out of switch. Check again. */
 			default:
 				/* Unexpected error. */
 				urcu_die(errno);
