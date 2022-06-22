@@ -153,15 +153,26 @@ void urcu_adaptative_busy_wait(struct urcu_wait_node *wait)
 			goto skip_futex_wait;
 		caa_cpu_relax();
 	}
-	while (futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING,
-			NULL, NULL, 0)) {
+	while (uatomic_read(&wait->state) == URCU_WAIT_WAITING) {
+		if (!futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING, NULL, NULL, 0)) {
+			/*
+			 * Prior queued wakeups queued by unrelated code
+			 * using the same address can cause futex wait to
+			 * return 0 even through the futex value is still
+			 * URCU_WAIT_WAITING (spurious wakeups). Check
+			 * the value again in user-space to validate
+			 * whether it really differs from
+			 * URCU_WAIT_WAITING.
+			 */
+			continue;
+		}
 		switch (errno) {
-		case EWOULDBLOCK:
+		case EAGAIN:
 			/* Value already changed. */
 			goto skip_futex_wait;
 		case EINTR:
 			/* Retry if interrupted by signal. */
-			break;	/* Get out of switch. */
+			break;	/* Get out of switch. Check again. */
 		default:
 			/* Unexpected error. */
 			urcu_die(errno);
