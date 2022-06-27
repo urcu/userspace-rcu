@@ -129,8 +129,6 @@ static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue __attribute_
 
 static void futex_wait(int32_t *futex)
 {
-	int ret;
-
 	/* Read condition before read futex */
 	cmm_smp_mb();
 	while (uatomic_read(futex) == -1) {
