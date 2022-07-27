@@ -8,7 +8,7 @@ AM_LDFLAGS+=-no-undefined
 endif
 
 dist_noinst_HEADERS = urcu-die.h urcu-wait.h compat-getcpu.h \
-	compat-rand.h urcu-utils.h
+	compat-rand.h urcu-utils.h compat-smp.h
 
 if COMPAT_ARCH
 COMPAT=compat_arch_@ARCHTYPE@.c
