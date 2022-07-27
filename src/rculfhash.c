@@ -281,6 +281,7 @@
 #include "workqueue.h"
 #include "urcu-die.h"
 #include "urcu-utils.h"
+#include "compat-smp.h"
 
 /*
  * Split-counters lazily update the global counter each 1024
@@ -645,12 +646,11 @@ static long nr_cpus_mask = -1;
 static long split_count_mask = -1;
 static int split_count_order = -1;
 
-#if defined(HAVE_SYSCONF)
 static void ht_init_nr_cpus_mask(void)
 {
 	long maxcpus;
 
-	maxcpus = sysconf(_SC_NPROCESSORS_CONF);
+	maxcpus = get_possible_cpus_array_len();
 	if (maxcpus <= 0) {
 		nr_cpus_mask = -2;
 		return;
@@ -662,12 +662,6 @@ static void ht_init_nr_cpus_mask(void)
 	maxcpus = 1UL << cds_lfht_get_count_order_ulong(maxcpus);
 	nr_cpus_mask = maxcpus - 1;
 }
-#else /* #if defined(HAVE_SYSCONF) */
-static void ht_init_nr_cpus_mask(void)
-{
-	nr_cpus_mask = -2;
-}
-#endif /* #else #if defined(HAVE_SYSCONF) */
 
 static
 void alloc_split_items_count(struct cds_lfht *ht)
