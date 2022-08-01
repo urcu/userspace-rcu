@@ -7,8 +7,16 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' \
 	$(SHELL) $(top_srcdir)/tests/utils/tap-driver.sh
 
 noinst_PROGRAMS = \
+	get_cpu_mask_from_sysfs \
+	get_cpu_mask_from_sysfs_cxx \
+	get_max_cpuid_from_sysfs \
+	get_max_cpuid_from_sysfs_cxx \
 	test_arch \
 	test_arch_cxx \
+	test_get_max_cpuid_from_mask \
+	test_get_max_cpuid_from_mask_cxx \
+	test_get_possible_cpus_array_len \
+	test_get_possible_cpus_array_len_cxx \
 	test_uatomic \
 	test_uatomic_cxx \
 	test_urcu_multiflavor \
@@ -24,7 +32,37 @@ noinst_PROGRAMS = \
 	test_build_dynlink \
 	test_build_dynlink_cxx
 
-TESTS = $(noinst_PROGRAMS)
+dist_noinst_SCRIPTS = \
+	test_get_cpu_mask_from_sysfs \
+	test_get_cpu_mask_from_sysfs_cxx \
+	test_get_max_cpuid_from_sysfs \
+	test_get_max_cpuid_from_sysfs_cxx
+
+TESTS = \
+	test_arch \
+	test_arch_cxx \
+	test_get_cpu_mask_from_sysfs \
+	test_get_cpu_mask_from_sysfs_cxx \
+	test_get_max_cpuid_from_mask \
+	test_get_max_cpuid_from_mask_cxx \
+	test_get_max_cpuid_from_sysfs \
+	test_get_max_cpuid_from_sysfs_cxx \
+	test_get_possible_cpus_array_len \
+	test_get_possible_cpus_array_len_cxx \
+	test_uatomic \
+	test_uatomic_cxx \
+	test_urcu_multiflavor \
+	test_urcu_multiflavor_cxx \
+	test_urcu_multiflavor_dynlink \
+	test_urcu_multiflavor_dynlink_cxx \
+	test_urcu_multiflavor_single_unit \
+	test_urcu_multiflavor_single_unit_cxx \
+	test_urcu_multiflavor_single_unit_dynlink \
+	test_urcu_multiflavor_single_unit_dynlink_cxx \
+	test_build \
+	test_build_cxx \
+	test_build_dynlink \
+	test_build_dynlink_cxx
 
 noinst_HEADERS = test_urcu_multiflavor.h
 
@@ -37,11 +75,28 @@ URCU_BP_LIB=$(top_builddir)/src/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/src/liburcu-cds.la
 TAP_LIB=$(top_builddir)/tests/utils/libtap.a
 
+get_cpu_mask_from_sysfs_cxx_SOURCES = get_cpu_mask_from_sysfs_cxx.cpp
+get_cpu_mask_from_sysfs_SOURCES = get_cpu_mask_from_sysfs.c
+get_max_cpuid_from_sysfs_cxx_SOURCES = get_max_cpuid_from_sysfs_cxx.cpp
+get_max_cpuid_from_sysfs_SOURCES = get_max_cpuid_from_sysfs.c
+
 test_arch_SOURCES = test_arch.c
 test_arch_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)
 
 test_arch_cxx_SOURCES = test_arch_cxx.cpp
 test_arch_cxx_LDADD = $(URCU_COMMO_LIB) $(TAP_LIB)
+
+test_get_max_cpuid_from_mask_SOURCES = test_get_max_cpuid_from_mask.c
+test_get_max_cpuid_from_mask_LDADD = $(TAP_LIB)
+
+test_get_max_cpuid_from_mask_cxx_SOURCES = test_get_max_cpuid_from_mask_cxx.cpp
+test_get_max_cpuid_from_mask_cxx_LDADD = $(TAP_LIB)
+
+test_get_possible_cpus_array_len_SOURCES = test_get_possible_cpus_array_len.c
+test_get_possible_cpus_array_len_LDADD = $(TAP_LIB)
+
+test_get_possible_cpus_array_len_cxx_SOURCES = test_get_possible_cpus_array_len_cxx.cpp
+test_get_possible_cpus_array_len_cxx_LDADD = $(TAP_LIB)
 
 test_uatomic_SOURCES = test_uatomic.c
 test_uatomic_LDADD = $(URCU_COMMON_LIB) $(TAP_LIB)

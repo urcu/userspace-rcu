@@ -18,6 +18,14 @@ tests/unit/test_urcu_multiflavor_single_unit
 tests/unit/test_urcu_multiflavor_single_unit_cxx
 tests/unit/test_urcu_multiflavor_single_unit_dynlink
 tests/unit/test_urcu_multiflavor_single_unit_dynlink_cxx
+tests/unit/get_cpu_mask_from_sysfs
+tests/unit/get_cpu_mask_from_sysfs_cxx
+tests/unit/get_max_cpuid_from_sysfs
+tests/unit/get_max_cpuid_from_sysfs_cxx
+tests/unit/test_get_max_cpuid_from_mask
+tests/unit/test_get_max_cpuid_from_mask_cxx
+tests/unit/test_get_possible_cpus_array_len
+tests/unit/test_get_possible_cpus_array_len_cxx
 
 tests/utils/libtap.a
 tests/utils/env.sh
