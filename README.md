@@ -423,14 +423,15 @@ Make targets
 ------------
 
 In addition to the usual `make check` target, Userspace RCU features
-`make regtest` and `make bench` targets:
+`make regtest`, `make short_bench` and `make long_bench` targets:
 
   - `make check`: short tests, meant to be run when rebuilding or
     porting Userspace RCU.
   - `make regtest`: long (many hours) test, meant to be run when
     modifying Userspace RCU or porting it to a new architecture or
     operating system.
-  - `make bench`: long (many hours) benchmarks.
+  - `make short_bench`: short benchmarks, 3 seconds per test.
+  - `make long_bench`: long (many hours) benchmarks, 30 seconds per test.
 
 
 Known issues
