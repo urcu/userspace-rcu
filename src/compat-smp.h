@@ -36,6 +36,7 @@ static inline int get_num_possible_cpus_sysconf(void)
 }
 #endif
 
+#ifdef __linux__
 /*
  * Get the highest CPU id from sysfs.
  *
@@ -235,7 +236,6 @@ error:
 	return -1;
 }
 
-#ifdef __linux__
 /*
  * On Linux try sysfs first and fallback to sysconf.
  */
