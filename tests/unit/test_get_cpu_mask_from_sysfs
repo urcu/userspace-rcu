@@ -43,9 +43,13 @@ test_test_get_cpu_mask_from_sysfs() {
 	ok $? "test_get_cpu_mask_from_sysfs - with '\n' expected: '$cpumask', result: '$result'"
 }
 
-plan_tests $NUM_TESTS
+if [ "$URCU_TESTS_OS_TYPE" == "linux" ]; then
+	plan_tests $NUM_TESTS
 
-test_test_get_cpu_mask_from_sysfs ""
-test_test_get_cpu_mask_from_sysfs "0"
-test_test_get_cpu_mask_from_sysfs "0-3"
-test_test_get_cpu_mask_from_sysfs "0,3-7,9"
+	test_test_get_cpu_mask_from_sysfs ""
+	test_test_get_cpu_mask_from_sysfs "0"
+	test_test_get_cpu_mask_from_sysfs "0-3"
+	test_test_get_cpu_mask_from_sysfs "0,3-7,9"
+else
+	plan_skip_all "Linux specific tests."
+fi

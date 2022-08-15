@@ -44,46 +44,50 @@ test_get_max_cpuid_from_sysfs() {
 	rm -rf "$TESTDIR"
 }
 
-plan_tests $NUM_TESTS
+if [ "$URCU_TESTS_OS_TYPE" == "linux" ]; then
+	plan_tests $NUM_TESTS
 
-diag "get_max_cpuid_from_sysfs"
+	diag "get_max_cpuid_from_sysfs"
 
-test_data=(0 "cpu0")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(0 "cpu0")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(1 "cpu0" "cpu1")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(1 "cpu0" "cpu1")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(1 "cpu1" "cpu0")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(1 "cpu1" "cpu0")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(3 "cpu3")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(3 "cpu3")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(99 "cpu99")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(99 "cpu99")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(3 "cpu0" "cpu3")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(3 "cpu0" "cpu3")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(3 "cpufreq" "cpuidle" "cpu0" "cpu1" "cpu2" "cpu3")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(3 "cpufreq" "cpuidle" "cpu0" "cpu1" "cpu2" "cpu3")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(0 "cpu" "cpu0")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(0 "cpu" "cpu0")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(5 "cpu" "cpu5")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(5 "cpu" "cpu5")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
 
-test_data=(-1 "toto")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(-1 "toto")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(-1 "cpu")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(-1 "cpu")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(-1 "cpua" "cpud")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(-1 "cpua" "cpud")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
 
-test_data=(-1 "cpufreq" "cpuidle")
-test_get_max_cpuid_from_sysfs "${test_data[@]}"
+	test_data=(-1 "cpufreq" "cpuidle")
+	test_get_max_cpuid_from_sysfs "${test_data[@]}"
+else
+	plan_skip_all "Linux specific tests."
+fi

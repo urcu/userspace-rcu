@@ -10,6 +10,7 @@
 
 #include "compat-smp.h"
 
+#ifdef __linux__
 struct parse_test_data {
 	const char *buf;
 	int expected;
@@ -75,3 +76,13 @@ int main(void)
 
 	return exit_status();
 }
+
+#else
+
+int main(void)
+{
+	plan_skip_all("Linux specific tests.");
+
+	return exit_status();
+}
+#endif

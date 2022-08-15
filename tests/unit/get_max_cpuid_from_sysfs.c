@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __linux__
+
 #include "compat-smp.h"
 
 int main(int argc, char *argv[])
@@ -27,3 +29,11 @@ int main(int argc, char *argv[])
 	else
 		return EXIT_FAILURE;
 }
+
+#else
+
+int main(void)
+{
+	return EXIT_SUCCESS;
+}
+#endif
