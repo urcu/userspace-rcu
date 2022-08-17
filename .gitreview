@@ -2,6 +2,6 @@
 host=review.lttng.org
 port=29418
 project=userspace-rcu.git
-defaultbranch=master
+defaultbranch=stable-0.13
 defaultremote=review
 defaultrebase=0
