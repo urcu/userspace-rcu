@@ -115,6 +115,26 @@ void test_urcu_tls(void)
 	URCU_TLS(my_tls_struct).void1 = NULL;
 }
 
+struct an_opaque_struct;
+struct a_clear_struct
+{
+	int x;
+};
+
+static
+void test_build_rcu_dereference(void)
+{
+	static struct an_opaque_struct *opaque = NULL;
+	static struct an_opaque_struct *const opaque_const = NULL;
+	static struct a_clear_struct *clear = NULL;
+	static struct a_clear_struct *const clear_const = NULL;
+
+	rcu_dereference(opaque);
+	rcu_dereference(opaque_const);
+	rcu_dereference(clear);
+	rcu_dereference(clear_const);
+}
+
 int main(void)
 {
 	plan_tests(3);
@@ -124,6 +144,7 @@ int main(void)
 	test_wfcqueue();
 	test_build_cds_list_head_init();
 	test_urcu_tls();
+	test_build_rcu_dereference();
 
 	return exit_status();
 }
