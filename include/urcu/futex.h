@@ -28,6 +28,20 @@
 #include <stdint.h>
 #include <time.h>
 
+#ifdef CONFIG_RCU_HAVE_FUTEX
+
+#include <unistd.h>
+#include <errno.h>
+#include <urcu/compiler.h>
+#include <urcu/arch.h>
+
+#elif defined(__FreeBSD__)
+
+#include <sys/types.h>
+#include <sys/umtx.h>
+
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,11 +69,6 @@ extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3);
 
 #ifdef CONFIG_RCU_HAVE_FUTEX
-
-#include <unistd.h>
-#include <errno.h>
-#include <urcu/compiler.h>
-#include <urcu/arch.h>
 
 static inline int futex(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
@@ -105,9 +114,6 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 }
 
 #elif defined(__FreeBSD__)
-
-#include <sys/types.h>
-#include <sys/umtx.h>
 
 static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout,
