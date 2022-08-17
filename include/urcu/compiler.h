@@ -21,6 +21,10 @@
 
 #include <stddef.h>	/* for offsetof */
 
+#if defined __cplusplus
+# include <type_traits>	/* for std::remove_cv */
+#endif
+
 #define caa_likely(x)	__builtin_expect(!!(x), 1)
 #define caa_unlikely(x)	__builtin_expect(!!(x), 0)
 
@@ -82,7 +86,7 @@
 #define __rcu
 
 #ifdef __cplusplus
-#define URCU_FORCE_CAST(type, arg)	(reinterpret_cast<type>(arg))
+#define URCU_FORCE_CAST(_type, arg)	(reinterpret_cast<std::remove_cv<_type>::type>(arg))
 #else
 #define URCU_FORCE_CAST(type, arg)	((type) (arg))
 #endif
