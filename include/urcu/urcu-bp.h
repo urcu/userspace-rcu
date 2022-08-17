@@ -37,10 +37,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <urcu/map/urcu-bp.h>
 
 /*
@@ -56,6 +52,10 @@ extern "C" {
  * publication headers.
  */
 #include <urcu/pointer.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef _LGPL_SOURCE
 
