@@ -7,7 +7,7 @@ dnl Process this file with autoconf to produce a configure script.
 # Project version information
 m4_define([urcu_version_major], [0])
 m4_define([urcu_version_minor], [13])
-m4_define([urcu_version_patch], [1])
+m4_define([urcu_version_patch], [2])
 m4_define([urcu_version_dev_stage], [])
 m4_define([urcu_version], urcu_version_major[.]urcu_version_minor[.]urcu_version_patch[]urcu_version_dev_stage)
 

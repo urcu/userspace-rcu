@@ -1,3 +1,23 @@
+2022-08-18 Userspace RCU 0.13.2
+	* Revert "Fix: remove type constness in URCU_FORCE_CAST's C++ version"
+	* Fix: futex.h: include headers outside extern C
+	* Fix: add missing unused attribute to _rcu_dereference
+	* Fix: change method used by _rcu_dereference to strip type constness
+	* Fix: remove type constness in URCU_FORCE_CAST's C++ version
+	* Move extern "C" down in include/urcu/urcu-bp.h
+	* fix: ifdef linux specific cpu count compat
+	* Set git-review branch to stable-0.13
+	* fix: sysconf(_SC_NPROCESSORS_CONF) can be less than max cpu id
+	* Fix: revise obsolete command in README.md
+	* Fix: workqueue: remove unused variable "ret"
+	* Fix: urcu-qsbr: futex wait: handle spurious futex wakeups
+	* Fix: urcu: futex wait: handle spurious futex wakeups
+	* Fix: urcu-wait: futex wait: handle spurious futex wakeups
+	* Fix: defer_rcu: futex wait: handle spurious futex wakeups
+	* Fix: call_rcu: futex wait: handle spurious futex wakeups
+	* Fix: workqueue: futex wait: handle spurious futex wakeups
+	* Fix: Use %lu rather than %ld to print count
+
 2022-01-05 Userspace RCU 0.13.1
 	* fix: properly detect 'cmpxchg' on x86-32
 	* fix: use urcu-tls compat with c++ compiler
