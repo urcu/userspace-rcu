@@ -34,7 +34,7 @@ static inline void urcu_ref_init(struct urcu_ref *ref)
 	urcu_ref_set(ref, 1);
 }
 
-static inline bool  __attribute__((warn_unused_result))
+static inline bool  __attribute__((__warn_unused_result__))
 		urcu_ref_get_safe(struct urcu_ref *ref)
 {
 	long old, _new, res;

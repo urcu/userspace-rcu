@@ -99,7 +99,7 @@ extern "C" {
 #ifdef __URCU_DEREFERENCE_USE_ATOMIC_CONSUME
 # define _rcu_dereference(p) __extension__ ({						\
 				__typeof__(__extension__ ({				\
-					__typeof__(p) __attribute__((unused)) _________p0 = { 0 }; \
+					__typeof__(p) __attribute__((__unused__)) _________p0 = { 0 }; \
 					_________p0;					\
 				})) _________p1;					\
 				__atomic_load(&(p), &_________p1, __ATOMIC_CONSUME);	\

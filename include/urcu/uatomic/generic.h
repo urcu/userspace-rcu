@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR
-static inline __attribute__((always_inline, noreturn))
+static inline __attribute__((__always_inline__, __noreturn__))
 void _uatomic_link_error(void)
 {
 #ifdef ILLEGAL_INSTR
@@ -59,7 +59,7 @@ extern void _uatomic_link_error(void);
 /* cmpxchg */
 
 #ifndef uatomic_cmpxchg
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
@@ -98,7 +98,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 /* uatomic_and */
 
 #ifndef uatomic_and
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void _uatomic_and(void *addr, unsigned long val,
 		  int len)
 {
@@ -137,7 +137,7 @@ void _uatomic_and(void *addr, unsigned long val,
 /* uatomic_or */
 
 #ifndef uatomic_or
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void _uatomic_or(void *addr, unsigned long val,
 		 int len)
 {
@@ -178,7 +178,7 @@ void _uatomic_or(void *addr, unsigned long val,
 /* uatomic_add_return */
 
 #ifndef uatomic_add_return
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
@@ -212,7 +212,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 #ifndef uatomic_xchg
 /* xchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -282,7 +282,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 #ifndef uatomic_and
 /* uatomic_and */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void _uatomic_and(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -354,7 +354,7 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 #ifndef uatomic_or
 /* uatomic_or */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void _uatomic_or(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -428,7 +428,7 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 #ifndef uatomic_add_return
 /* uatomic_add_return */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -504,7 +504,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 #ifndef uatomic_xchg
 /* xchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
