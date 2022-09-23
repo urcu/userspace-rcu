@@ -1251,6 +1251,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 	struct partition_resize_work *work;
 	int ret;
 	unsigned long thread, nr_threads;
+	sigset_t newmask, oldmask;
 
 	urcu_posix_assert(nr_cpus_mask != -1);
 	if (nr_cpus_mask < 0 || len < 2 * MIN_PARTITION_PER_THREAD)
@@ -1273,6 +1274,12 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		dbg_printf("error allocating for resize, single-threading\n");
 		goto fallback;
 	}
+
+	ret = sigfillset(&newmask);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
+	urcu_posix_assert(!ret);
+
 	for (thread = 0; thread < nr_threads; thread++) {
 		work[thread].ht = ht;
 		work[thread].i = i;
@@ -1294,6 +1301,10 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		}
 		urcu_posix_assert(!ret);
 	}
+
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	urcu_posix_assert(!ret);
+
 	for (thread = 0; thread < nr_threads; thread++) {
 		ret = pthread_join(work[thread].thread_id, NULL);
 		urcu_posix_assert(!ret);
@@ -2163,29 +2174,6 @@ static struct urcu_atfork cds_lfht_atfork = {
 	.after_fork_child = cds_lfht_after_fork_child,
 };
 
-/*
- * Block all signals for the workqueue worker thread to ensure we don't
- * disturb the application. The SIGRCU signal needs to be unblocked for
- * the urcu-signal flavor.
- */
-static void cds_lfht_worker_init(
-		struct urcu_workqueue *workqueue __attribute__((unused)),
-		void *priv __attribute__((unused)))
-{
-	int ret;
-	sigset_t mask;
-
-	ret = sigfillset(&mask);
-	if (ret)
-		urcu_die(errno);
-	ret = sigdelset(&mask, SIGRCU);
-	if (ret)
-		urcu_die(errno);
-	ret = pthread_sigmask(SIG_SETMASK, &mask, NULL);
-	if (ret)
-		urcu_die(ret);
-}
-
 static void cds_lfht_init_worker(const struct rcu_flavor_struct *flavor)
 {
 	flavor->register_rculfhash_atfork(&cds_lfht_atfork);
@@ -2194,7 +2182,7 @@ static void cds_lfht_init_worker(const struct rcu_flavor_struct *flavor)
 	if (cds_lfht_workqueue_user_count++)
 		goto end;
 	cds_lfht_workqueue = urcu_workqueue_create(0, -1, NULL,
-		NULL, cds_lfht_worker_init, NULL, NULL, NULL, NULL, NULL);
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 end:
 	mutex_unlock(&cds_lfht_fork_mutex);
 }

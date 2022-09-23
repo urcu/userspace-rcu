@@ -110,6 +110,8 @@ static int init_done;
 
 void __attribute__((constructor)) rcu_init(void);
 void __attribute__((destructor)) rcu_exit(void);
+
+static DEFINE_URCU_TLS(int, rcu_signal_was_blocked);
 #endif
 
 /*
@@ -537,8 +539,52 @@ int rcu_read_ongoing(void)
 	return _rcu_read_ongoing();
 }
 
+#ifdef RCU_SIGNAL
+/*
+ * Make sure the signal used by the urcu-signal flavor is unblocked
+ * while the thread is registered.
+ */
+static
+void urcu_signal_unblock(void)
+{
+	sigset_t mask, oldmask;
+	int ret;
+
+	ret = sigemptyset(&mask);
+	urcu_posix_assert(!ret);
+	ret = sigaddset(&mask, SIGRCU);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_UNBLOCK, &mask, &oldmask);
+	urcu_posix_assert(!ret);
+	URCU_TLS(rcu_signal_was_blocked) = sigismember(&oldmask, SIGRCU);
+}
+
+static
+void urcu_signal_restore(void)
+{
+	sigset_t mask;
+	int ret;
+
+	if (!URCU_TLS(rcu_signal_was_blocked))
+		return;
+	ret = sigemptyset(&mask);
+	urcu_posix_assert(!ret);
+	ret = sigaddset(&mask, SIGRCU);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_BLOCK, &mask, NULL);
+	urcu_posix_assert(!ret);
+}
+#else
+static
+void urcu_signal_unblock(void) { }
+static
+void urcu_signal_restore(void) { }
+#endif
+
 void rcu_register_thread(void)
 {
+	urcu_signal_unblock();
+
 	URCU_TLS(rcu_reader).tid = pthread_self();
 	urcu_posix_assert(URCU_TLS(rcu_reader).need_mb == 0);
 	urcu_posix_assert(!(URCU_TLS(rcu_reader).ctr & URCU_GP_CTR_NEST_MASK));
@@ -558,6 +604,8 @@ void rcu_unregister_thread(void)
 	URCU_TLS(rcu_reader).registered = 0;
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
+
+	urcu_signal_restore();
 }
 
 #ifdef RCU_MEMBARRIER

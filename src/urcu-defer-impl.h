@@ -409,8 +409,17 @@ void defer_rcu(void (*fct)(void *p), void *p)
 static void start_defer_thread(void)
 {
 	int ret;
+	sigset_t newmask, oldmask;
+
+	ret = sigfillset(&newmask);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
+	urcu_posix_assert(!ret);
 
 	ret = pthread_create(&tid_defer, NULL, thr_defer, NULL);
+	urcu_posix_assert(!ret);
+
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	urcu_posix_assert(!ret);
 }
 

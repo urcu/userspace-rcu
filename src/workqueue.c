@@ -284,6 +284,7 @@ struct urcu_workqueue *urcu_workqueue_create(unsigned long flags,
 {
 	struct urcu_workqueue *workqueue;
 	int ret;
+	sigset_t newmask, oldmask;
 
 	workqueue = malloc(sizeof(*workqueue));
 	if (workqueue == NULL)
@@ -304,10 +305,20 @@ struct urcu_workqueue *urcu_workqueue_create(unsigned long flags,
 	workqueue->cpu_affinity = cpu_affinity;
 	workqueue->loop_count = 0;
 	cmm_smp_mb();  /* Structure initialized before pointer is planted. */
+
+	ret = sigfillset(&newmask);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
+	urcu_posix_assert(!ret);
+
 	ret = pthread_create(&workqueue->tid, NULL, workqueue_thread, workqueue);
 	if (ret) {
 		urcu_die(ret);
 	}
+
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	urcu_posix_assert(!ret);
+
 	return workqueue;
 }
 
@@ -464,13 +475,23 @@ void urcu_workqueue_resume_worker(struct urcu_workqueue *workqueue)
 void urcu_workqueue_create_worker(struct urcu_workqueue *workqueue)
 {
 	int ret;
+	sigset_t newmask, oldmask;
 
 	/* Clear workqueue state from parent. */
 	workqueue->flags &= ~URCU_WORKQUEUE_PAUSED;
 	workqueue->flags &= ~URCU_WORKQUEUE_PAUSE;
 	workqueue->tid = 0;
+
+	ret = sigfillset(&newmask);
+	urcu_posix_assert(!ret);
+	ret = pthread_sigmask(SIG_BLOCK, &newmask, &oldmask);
+	urcu_posix_assert(!ret);
+
 	ret = pthread_create(&workqueue->tid, NULL, workqueue_thread, workqueue);
 	if (ret) {
 		urcu_die(ret);
 	}
+
+	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+	urcu_posix_assert(!ret);
 }
