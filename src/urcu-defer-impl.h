@@ -411,7 +411,8 @@ static void start_defer_thread(void)
 	int ret;
 
 	ret = pthread_create(&tid_defer, NULL, thr_defer, NULL);
-	assert(!ret);
+	if (ret)
+		urcu_die(ret);
 }
 
 static void stop_defer_thread(void)
