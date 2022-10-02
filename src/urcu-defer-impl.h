@@ -417,7 +417,8 @@ static void start_defer_thread(void)
 	urcu_posix_assert(!ret);
 
 	ret = pthread_create(&tid_defer, NULL, thr_defer, NULL);
-	urcu_posix_assert(!ret);
+	if (ret)
+		urcu_die(ret);
 
 	ret = pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
 	urcu_posix_assert(!ret);
