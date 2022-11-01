@@ -382,7 +382,8 @@ By default the library is configured with internal debugging
 self-checks disabled.
 
 For always-on debugging self-checks:
-	./configure --enable-rcu-debug
+
+    ./configure --enable-rcu-debug
 
 For fine grained enabling of debugging self-checks, build
 userspace-rcu with `DEBUG_RCU` defined and compile dependent
