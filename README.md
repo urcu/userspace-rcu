@@ -38,7 +38,7 @@ Architectures supported
 Currently, the following architectures are supported:
 
   - x86 (i386, i486, i586, i686)
-  - amd64 / x86_64
+  - amd64 / x86\_64
   - PowerPC 32/64
   - S390, S390x
   - ARM 32/64
@@ -83,12 +83,12 @@ supported, with the following exceptions:
     therefore not compatible with `liburcu` on x86 32-bit
     (i386, i486, i586, i686).
     The problem has been reported to the GCC community:
-    http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
+    <http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html>
   - GCC 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
-    See http://kerneltrap.org/node/7507
+    See <http://kerneltrap.org/node/7507>
   - Alpha, ia64 and ARM architectures depend on GCC 4.x with atomic builtins
     support. For ARM this was introduced with GCC 4.4:
-    http://gcc.gnu.org/gcc-4.4/changes.html.
+    <http://gcc.gnu.org/gcc-4.4/changes.html>.
   - Linux aarch64 depends on GCC 5.1 or better because prior versions
     perform unsafe access to deallocated stack.
 
@@ -106,7 +106,7 @@ compile the git repository tree :
   - GNU autotools (automake >=1.12, autoconf >=2.69)
     (make sure your system wide `automake` points to a recent version!)
   - GNU Libtool >=2.2
-    (for more information, go to http://www.gnu.org/software/autoconf/)
+    (for more information, go to <http://www.gnu.org/software/autoconf/>)
 
 If you get the tree from the repository, you will need to use the `bootstrap`
 script in the root of the tree. It calls all the GNU tools needed to prepare
@@ -163,8 +163,8 @@ There are multiple flavors of liburcu available:
   - `signal`,
   - `bp`.
 
-The API members start with the prefix "urcu_<flavor>_", where
-<flavor> is the chosen flavor name.
+The API members start with the prefix `urcu_<flavor>_`, where
+`<flavor>` is the chosen flavor name.
 
 
 ### Usage of `liburcu-memb`
@@ -176,7 +176,7 @@ This is the preferred version of the library, in terms of
 grace-period detection speed, read-side speed and flexibility.
 Dynamically detects kernel support for `sys_membarrier()`. Falls back
 on `urcu-mb` scheme if support is not present, which has slower
-read-side. Use the --disable-sys-membarrier-fallback configure option
+read-side. Use the `--disable-sys-membarrier-fallback` configure option
 to disable the fall back, thus requiring `sys_membarrier()` to be
 available. This gives a small speedup when `sys_membarrier()` is
 supported by the kernel, and aborts in the library constructor if not
@@ -382,11 +382,12 @@ By default the library is configured with internal debugging
 self-checks disabled.
 
 For always-on debugging self-checks:
-	./configure --enable-rcu-debug
+
+    ./configure --enable-rcu-debug
 
 For fine grained enabling of debugging self-checks, build
-userspace-rcu with DEBUG_RCU defined and compile dependent
-applications with DEBUG_RCU defined when necessary.
+userspace-rcu with `DEBUG_RCU` defined and compile dependent
+applications with `DEBUG_RCU` defined when necessary.
 
 Warning: Enabling this feature result in a performance penalty.
 
@@ -413,7 +414,7 @@ theoretically yielding slightly better performance.
 By default the library is configured with extra debugging checks for
 lock-free hash table iterator traversal disabled.
 
-Building liburcu with --enable-cds-lfht-iter-debug and rebuilding
+Building liburcu with `--enable-cds-lfht-iter-debug` and rebuilding
 application to match the ABI change allows finding cases where the hash
 table iterator is re-purposed to be used on a different hash table while
 still being used to iterate on a hash table.
@@ -445,9 +446,9 @@ applications built using Userspace RCU 0.10 headers linked against
 Userspace RCU 0.11 or 0.12 shared objects. The problem occurs as
 follows:
 
-  - An application executable is built with _LGPL_SOURCE defined, includes
+  - An application executable is built with `_LGPL_SOURCE` defined, includes
     any of the Userspace RCU 0.10 urcu flavor headers, and is built
-    without the -fpic compiler option.
+    without the `-fpic` compiler option.
 
   - The Userspace RCU 0.10 library shared objects are updated to 0.11
     or 0.12 without rebuilding the application.
@@ -459,7 +460,7 @@ Some possible work-arounds for this are:
 
   - Rebuild the application against Userspace RCU 0.11+.
 
-  - Rebuild the application with -fpic.
+  - Rebuild the application with `-fpic`.
 
   - Upgrade Userspace RCU to 0.13+ without installing 0.11 nor 0.12.
 

@@ -33,12 +33,12 @@ Downside over `list.h`: lookup of tail in O(n).
 
 Doubly-linked list, with single pointer list head.
 Requires mutual exclusion on updates, allows RCU read traversals. Useful
-for implementing hash tables. Downside over rculist.h: lookup of tail in O(n).
+for implementing hash tables. Downside over `rculist.h`: lookup of tail in O(n).
 
 
 ### `urcu/wfstack.h`
 
-Stack with wait-free push and wait-free pop_all. Both
+Stack with wait-free push and wait-free pop\_all. Both
 blocking and non-blocking pop and traversal operations are provided. This
 stack does _not_ specifically rely on RCU. Various synchronization techniques
 can be used to deal with pop ABA. Those are detailed in the API.
@@ -59,7 +59,7 @@ traversal (see API for details).
 
 ### `urcu/lfstack.h`
 
-Stack with lock-free push, lock-free pop, wait-free pop_all,
+Stack with lock-free push, lock-free pop, wait-free pop\_all,
 wait-free traversal. Various synchronization techniques can be
 used to deal with pop ABA. Those are detailed in the API.
 This stack does _not_ specifically rely on RCU.

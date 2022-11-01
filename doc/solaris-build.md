@@ -20,7 +20,7 @@ And the following OpenCSW packages are required :
 * gsed
 * gmake
 * pkgconfig
-* libglib2_dev
+* libglib2\_dev
 * gcc4core
 
 ### Build
