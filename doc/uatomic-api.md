@@ -27,7 +27,7 @@ API
 ---
 
 ```c
-void uatomic_set(type *addr, type v)
+void uatomic_set(type *addr, type v);
 ```
 
 Atomically write `v` into `addr`. By "atomically", we mean that no
@@ -36,7 +36,7 @@ effects of `uatomic_set()`.
 
 
 ```c
-type uatomic_read(type *addr)
+type uatomic_read(type *addr);
 ```
 
 Atomically read `v` from `addr`. By "atomically", we mean that
@@ -45,7 +45,7 @@ uatomic update.
 
 
 ```c
-type uatomic_cmpxchg(type *addr, type old, type new)
+type uatomic_cmpxchg(type *addr, type old, type new);
 ```
 
 An atomic read-modify-write operation that performs this
@@ -56,7 +56,7 @@ memory barrier before and after the atomic operation.
 
 
 ```c
-type uatomic_xchg(type *addr, type new)
+type uatomic_xchg(type *addr, type new);
 ```
 
 An atomic read-modify-write operation that performs this sequence
@@ -67,8 +67,8 @@ operation.
 
 
 ```c
-type uatomic_add_return(type *addr, type v)
-type uatomic_sub_return(type *addr, type v)
+type uatomic_add_return(type *addr, type v);
+type uatomic_sub_return(type *addr, type v);
 ```
 
 An atomic read-modify-write operation that performs this
@@ -79,8 +79,8 @@ operation.
 
 
 ```c
-void uatomic_and(type *addr, type mask)
-void uatomic_or(type *addr, type mask)
+void uatomic_and(type *addr, type mask);
+void uatomic_or(type *addr, type mask);
 ```
 
 Atomically write the result of bitwise "and"/"or" between the
@@ -95,8 +95,8 @@ atomic instructions implicitly supply the needed memory barriers.
 
 
 ```c
-void uatomic_add(type *addr, type v)
-void uatomic_sub(type *addr, type v)
+void uatomic_add(type *addr, type v);
+void uatomic_sub(type *addr, type v);
 ```
 
 Atomically increment/decrement the content of `addr` by `v`.
@@ -110,8 +110,8 @@ instructions implicitly supply the needed memory barriers.
 
 
 ```c
-void uatomic_inc(type *addr)
-void uatomic_dec(type *addr)
+void uatomic_inc(type *addr);
+void uatomic_dec(type *addr);
 ```
 
 Atomically increment/decrement the content of `addr` by 1.
