@@ -83,12 +83,12 @@ supported, with the following exceptions:
     therefore not compatible with `liburcu` on x86 32-bit
     (i386, i486, i586, i686).
     The problem has been reported to the GCC community:
-    http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html
+    <http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg281255.html>
   - GCC 3.3 cannot match the "xchg" instruction on 32-bit x86 build.
-    See http://kerneltrap.org/node/7507
+    See <http://kerneltrap.org/node/7507>
   - Alpha, ia64 and ARM architectures depend on GCC 4.x with atomic builtins
     support. For ARM this was introduced with GCC 4.4:
-    http://gcc.gnu.org/gcc-4.4/changes.html.
+    <http://gcc.gnu.org/gcc-4.4/changes.html>.
   - Linux aarch64 depends on GCC 5.1 or better because prior versions
     perform unsafe access to deallocated stack.
 
@@ -106,7 +106,7 @@ compile the git repository tree :
   - GNU autotools (automake >=1.12, autoconf >=2.69)
     (make sure your system wide `automake` points to a recent version!)
   - GNU Libtool >=2.2
-    (for more information, go to http://www.gnu.org/software/autoconf/)
+    (for more information, go to <http://www.gnu.org/software/autoconf/>)
 
 If you get the tree from the repository, you will need to use the `bootstrap`
 script in the root of the tree. It calls all the GNU tools needed to prepare
