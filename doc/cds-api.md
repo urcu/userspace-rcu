@@ -33,7 +33,7 @@ Downside over `list.h`: lookup of tail in O(n).
 
 Doubly-linked list, with single pointer list head.
 Requires mutual exclusion on updates, allows RCU read traversals. Useful
-for implementing hash tables. Downside over rculist.h: lookup of tail in O(n).
+for implementing hash tables. Downside over `rculist.h`: lookup of tail in O(n).
 
 
 ### `urcu/wfstack.h`
