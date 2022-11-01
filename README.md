@@ -38,7 +38,7 @@ Architectures supported
 Currently, the following architectures are supported:
 
   - x86 (i386, i486, i586, i686)
-  - amd64 / x86_64
+  - amd64 / x86\_64
   - PowerPC 32/64
   - S390, S390x
   - ARM 32/64
@@ -163,8 +163,8 @@ There are multiple flavors of liburcu available:
   - `signal`,
   - `bp`.
 
-The API members start with the prefix "urcu_<flavor>_", where
-<flavor> is the chosen flavor name.
+The API members start with the prefix `urcu_<flavor>_`, where
+`<flavor>` is the chosen flavor name.
 
 
 ### Usage of `liburcu-memb`
@@ -385,8 +385,8 @@ For always-on debugging self-checks:
 	./configure --enable-rcu-debug
 
 For fine grained enabling of debugging self-checks, build
-userspace-rcu with DEBUG_RCU defined and compile dependent
-applications with DEBUG_RCU defined when necessary.
+userspace-rcu with `DEBUG_RCU` defined and compile dependent
+applications with `DEBUG_RCU` defined when necessary.
 
 Warning: Enabling this feature result in a performance penalty.
 
@@ -445,7 +445,7 @@ applications built using Userspace RCU 0.10 headers linked against
 Userspace RCU 0.11 or 0.12 shared objects. The problem occurs as
 follows:
 
-  - An application executable is built with _LGPL_SOURCE defined, includes
+  - An application executable is built with `_LGPL_SOURCE` defined, includes
     any of the Userspace RCU 0.10 urcu flavor headers, and is built
     without the -fpic compiler option.
 
