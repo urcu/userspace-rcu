@@ -176,7 +176,7 @@ This is the preferred version of the library, in terms of
 grace-period detection speed, read-side speed and flexibility.
 Dynamically detects kernel support for `sys_membarrier()`. Falls back
 on `urcu-mb` scheme if support is not present, which has slower
-read-side. Use the --disable-sys-membarrier-fallback configure option
+read-side. Use the `--disable-sys-membarrier-fallback` configure option
 to disable the fall back, thus requiring `sys_membarrier()` to be
 available. This gives a small speedup when `sys_membarrier()` is
 supported by the kernel, and aborts in the library constructor if not
@@ -414,7 +414,7 @@ theoretically yielding slightly better performance.
 By default the library is configured with extra debugging checks for
 lock-free hash table iterator traversal disabled.
 
-Building liburcu with --enable-cds-lfht-iter-debug and rebuilding
+Building liburcu with `--enable-cds-lfht-iter-debug` and rebuilding
 application to match the ABI change allows finding cases where the hash
 table iterator is re-purposed to be used on a different hash table while
 still being used to iterate on a hash table.
@@ -448,7 +448,7 @@ follows:
 
   - An application executable is built with `_LGPL_SOURCE` defined, includes
     any of the Userspace RCU 0.10 urcu flavor headers, and is built
-    without the -fpic compiler option.
+    without the `-fpic` compiler option.
 
   - The Userspace RCU 0.10 library shared objects are updated to 0.11
     or 0.12 without rebuilding the application.
@@ -460,7 +460,7 @@ Some possible work-arounds for this are:
 
   - Rebuild the application against Userspace RCU 0.11+.
 
-  - Rebuild the application with -fpic.
+  - Rebuild the application with `-fpic`.
 
   - Upgrade Userspace RCU to 0.13+ without installing 0.11 nor 0.12.
 
