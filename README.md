@@ -65,7 +65,6 @@ Should also work on:
   - Android
   - NetBSD 5
   - OpenBSD
-  - Darwin
 
 (more testing needed before claiming support for these OS).
 
