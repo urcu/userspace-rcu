@@ -21,7 +21,6 @@
  */
 
 #include <stddef.h>
-#include <urcu/assert.h>
 
 #include "rculfhash-internal.h"
 
