@@ -274,10 +274,10 @@
 #include <urcu/compiler.h>
 #include <urcu/rculfhash.h>
 #include <urcu/static/urcu-signal-nr.h>
-#include <rculfhash-internal.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
+#include "rculfhash-internal.h"
 #include "workqueue.h"
 #include "urcu-die.h"
 #include "urcu-utils.h"
