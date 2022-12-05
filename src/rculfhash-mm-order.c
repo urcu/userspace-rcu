@@ -22,7 +22,7 @@
  */
 
 #include <urcu/assert.h>
-#include <rculfhash-internal.h>
+#include "rculfhash-internal.h"
 
 static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
