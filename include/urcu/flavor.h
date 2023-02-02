@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <urcu/urcu-poll.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +60,9 @@ struct rcu_flavor_struct {
 
 	void (*register_rculfhash_atfork)(struct urcu_atfork *atfork);
 	void (*unregister_rculfhash_atfork)(struct urcu_atfork *atfork);
+
+	struct urcu_gp_poll_state (*update_start_poll_synchronize_rcu)(void);
+	bool (*update_poll_state_synchronize_rcu)(struct urcu_gp_poll_state state);
 };
 
 #define DEFINE_RCU_FLAVOR(x)				\
@@ -76,6 +81,8 @@ const struct rcu_flavor_struct x = {			\
 	.barrier		= rcu_barrier,		\
 	.register_rculfhash_atfork = urcu_register_rculfhash_atfork,	\
 	.unregister_rculfhash_atfork = urcu_unregister_rculfhash_atfork,\
+	.update_start_poll_synchronize_rcu = start_poll_synchronize_rcu,\
+	.update_poll_state_synchronize_rcu = poll_state_synchronize_rcu,\
 }
 
 extern const struct rcu_flavor_struct rcu_flavor;

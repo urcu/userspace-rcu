@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include <urcu/config.h>
 
@@ -38,6 +39,7 @@
  * publication headers.
  */
 #include <urcu/pointer.h>
+#include <urcu/urcu-poll.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -124,6 +126,12 @@ extern void urcu_qsbr_thread_online(void);
 #endif /* !_LGPL_SOURCE */
 
 extern void urcu_qsbr_synchronize_rcu(void);
+
+/*
+ * RCU grace period polling API.
+ */
+extern struct urcu_gp_poll_state urcu_qsbr_start_poll_synchronize_rcu(void);
+extern bool urcu_qsbr_poll_state_synchronize_rcu(struct urcu_gp_poll_state state);
 
 /*
  * Reader thread registration.

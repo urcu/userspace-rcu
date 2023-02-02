@@ -76,3 +76,6 @@
 
 #undef urcu_register_rculfhash_atfork
 #undef urcu_unregister_rculfhash_atfork
+
+#undef start_poll_synchronize_rcu
+#undef poll_state_synchronize_rcu

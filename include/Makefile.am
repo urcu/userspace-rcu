@@ -87,7 +87,8 @@ nobase_include_HEADERS = \
 	urcu/urcu-signal.h \
 	urcu/wfcqueue.h \
 	urcu/wfqueue.h \
-	urcu/wfstack.h
+	urcu/wfstack.h \
+	urcu/urcu-poll.h
 
 # Don't distribute generated headers
 nobase_nodist_include_HEADERS = urcu/config.h

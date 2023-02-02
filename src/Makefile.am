@@ -57,4 +57,5 @@ pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
 EXTRA_DIST = \
 	urcu-call-rcu-impl.h \
 	urcu-defer-impl.h \
+	urcu-poll-impl.h \
 	rculfhash-internal.h

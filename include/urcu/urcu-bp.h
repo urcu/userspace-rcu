@@ -36,6 +36,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include <urcu/map/urcu-bp.h>
 
@@ -52,6 +53,7 @@
  * publication headers.
  */
 #include <urcu/pointer.h>
+#include <urcu/urcu-poll.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,6 +141,12 @@ extern void *urcu_bp_set_pointer_sym(void **p, void *v);
 #endif /* !_LGPL_SOURCE */
 
 extern void urcu_bp_synchronize_rcu(void);
+
+/*
+ * RCU grace period polling API.
+ */
+extern struct urcu_gp_poll_state urcu_bp_start_poll_synchronize_rcu(void);
+extern bool urcu_bp_poll_state_synchronize_rcu(struct urcu_gp_poll_state state);
 
 /*
  * urcu_bp_before_fork, urcu_bp_after_fork_parent and urcu_bp_after_fork_child

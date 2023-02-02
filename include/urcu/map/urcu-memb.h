@@ -78,6 +78,9 @@
 #define urcu_unregister_rculfhash_atfork	\
 		urcu_memb_unregister_rculfhash_atfork
 
+#define start_poll_synchronize_rcu	urcu_memb_start_poll_synchronize_rcu
+#define poll_state_synchronize_rcu	urcu_memb_poll_state_synchronize_rcu
+
 
 /* Compat identifiers for prior undocumented multiflavor usage */
 #ifndef URCU_NO_COMPAT_IDENTIFIERS

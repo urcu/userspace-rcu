@@ -250,6 +250,14 @@ protected pointer.
 After, `urcu_<flavor>_synchronize_rcu()` must be called. When it
 returns, the old values are not in usage anymore.
 
+As an alternative to `urcu_<flavor>_synchronize_rcu()`,
+it is also possible to use the urcu polling mechanism to wait for a
+grace period to elapse. This can be done by using
+`urcu_<flavor>_start_poll_synchronize_rcu()`
+to start the grace period polling, and then invoke
+`urcu_<flavor>_poll_state_synchronize_rcu()`, which returns true if
+the grace period has completed, false otherwise.
+
 
 ### Usage of `liburcu-defer`
 

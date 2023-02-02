@@ -769,3 +769,4 @@ DEFINE_RCU_FLAVOR(rcu_flavor);
 
 #include "urcu-call-rcu-impl.h"
 #include "urcu-defer-impl.h"
+#include "urcu-poll-impl.h"
