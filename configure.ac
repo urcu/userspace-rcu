@@ -51,7 +51,7 @@ AM_SILENT_RULES([yes])
 ##                               ##
 
 AS_CASE([$host],
-  [*-cygwin*], [LT_NO_UNDEFINED="-no-undefined"]
+  [*-cygwin* | *-msys*], [LT_NO_UNDEFINED="-no-undefined"]
 )
 
 
