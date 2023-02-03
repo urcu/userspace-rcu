@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "workqueue.h"
+
 #ifdef DEBUG
 #define dbg_printf(fmt, args...)     printf("[debug rculfhash] " fmt, ## args)
 #else
@@ -82,11 +84,13 @@ struct cds_lfht {
 	 * therefore cause grace-period deadlock if we hold off RCU G.P.
 	 * completion.
 	 */
-	pthread_mutex_t resize_mutex;	/* resize mutex: add/del mutex */
-	pthread_attr_t *resize_attr;	/* Resize threads attributes */
+	pthread_mutex_t resize_mutex;		/* resize mutex: add/del mutex */
+	pthread_attr_t *caller_resize_attr;	/* resize threads attributes from lfht_new caller */
+	pthread_attr_t resize_attr;
 	unsigned int in_progress_destroy;
 	unsigned long resize_target;
 	int resize_initiated;
+	struct urcu_work destroy_work;
 
 	/*
 	 * Variables needed for add and remove fast-paths.
