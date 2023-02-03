@@ -102,7 +102,6 @@ static pthread_mutex_t call_rcu_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct call_rcu_data *default_call_rcu_data;
 
 static struct urcu_atfork *registered_rculfhash_atfork;
-static unsigned long registered_rculfhash_atfork_refcount;
 
 /*
  * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
@@ -1028,20 +1027,20 @@ void call_rcu_after_fork_child(void)
 
 void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
 {
+	if (CMM_LOAD_SHARED(registered_rculfhash_atfork))
+		return;
 	call_rcu_lock(&call_rcu_mutex);
-	if (registered_rculfhash_atfork_refcount++)
-		goto end;
-	registered_rculfhash_atfork = atfork;
-end:
+	if (!registered_rculfhash_atfork)
+		registered_rculfhash_atfork = atfork;
 	call_rcu_unlock(&call_rcu_mutex);
 }
 
+/*
+ * This unregistration function is deprecated, meant only for internal
+ * use by rculfhash.
+ */
+__attribute__((noreturn))
 void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((unused)))
 {
-	call_rcu_lock(&call_rcu_mutex);
-	if (--registered_rculfhash_atfork_refcount)
-		goto end;
-	registered_rculfhash_atfork = NULL;
-end:
-	call_rcu_unlock(&call_rcu_mutex);
+	urcu_die(EPERM);
 }
