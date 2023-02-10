@@ -81,6 +81,10 @@ struct call_rcu_completion_work {
 	struct call_rcu_completion *completion;
 };
 
+enum crdf_flags {
+	CRDF_FLAG_JOIN_THREAD = (1 << 0),
+};
+
 /*
  * List of all call_rcu_data structures to keep valgrind happy.
  * Protected by call_rcu_mutex.
@@ -777,7 +781,8 @@ URCU_ATTR_ALIAS(urcu_stringify(call_rcu)) void alias_call_rcu();
  * a list corruption bug in the 0.7.x series. The equivalent fix
  * appeared in 0.6.8 for the stable-0.6 branch.
  */
-void call_rcu_data_free(struct call_rcu_data *crdp)
+static
+void _call_rcu_data_free(struct call_rcu_data *crdp, unsigned int flags)
 {
 	if (crdp == NULL || crdp == default_call_rcu_data) {
 		return;
@@ -806,10 +811,22 @@ void call_rcu_data_free(struct call_rcu_data *crdp)
 	cds_list_del(&crdp->list);
 	call_rcu_unlock(&call_rcu_mutex);
 
+	if (flags & CRDF_FLAG_JOIN_THREAD) {
+		int ret;
+
+		ret = pthread_join(get_call_rcu_thread(crdp), NULL);
+		if (ret)
+			urcu_die(ret);
+	}
 	free(crdp);
 }
 URCU_ATTR_ALIAS(urcu_stringify(call_rcu_data_free))
 void alias_call_rcu_data_free();
+
+void call_rcu_data_free(struct call_rcu_data *crdp)
+{
+	_call_rcu_data_free(crdp, CRDF_FLAG_JOIN_THREAD);
+}
 
 /*
  * Clean up all the per-CPU call_rcu threads.
@@ -1051,7 +1068,11 @@ void call_rcu_after_fork_child(void)
 		if (crdp == default_call_rcu_data)
 			continue;
 		uatomic_set(&crdp->flags, URCU_CALL_RCU_STOPPED);
-		call_rcu_data_free(crdp);
+		/*
+		 * Do not join the thread because it does not exist in
+		 * the child.
+		 */
+		_call_rcu_data_free(crdp, 0);
 	}
 }
 URCU_ATTR_ALIAS(urcu_stringify(call_rcu_after_fork_child))
