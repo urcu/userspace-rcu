@@ -79,6 +79,12 @@ enum callrcu_type {
 	CALLRCU_PERTHREAD,
 };
 
+enum writer_state {
+	WRITER_STATE_SYNC_RCU,
+	WRITER_STATE_CALL_RCU,
+	WRITER_STATE_POLL_RCU,
+};
+
 static enum callrcu_type callrcu_type = CALLRCU_GLOBAL;
 
 long long n_reads = 0LL;
@@ -372,11 +378,28 @@ void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((unused)))
 }
 
 static
+void advance_writer_state(enum writer_state *state)
+{
+	switch (*state) {
+	case WRITER_STATE_SYNC_RCU:
+		*state = WRITER_STATE_CALL_RCU;
+		break;
+	case WRITER_STATE_CALL_RCU:
+		*state = WRITER_STATE_POLL_RCU;
+		break;
+	case WRITER_STATE_POLL_RCU:
+		*state = WRITER_STATE_SYNC_RCU;
+		break;
+	}
+}
+
+static
 void *rcu_update_stress_test(void *arg __attribute__((unused)))
 {
 	int i;
 	struct rcu_stress *p;
 	struct rcu_head rh;
+	enum writer_state writer_state = WRITER_STATE_SYNC_RCU;
 
 	while (goflag == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
@@ -394,9 +417,12 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 		for (i = 0; i < RCU_STRESS_PIPE_LEN; i++)
 			if (i != rcu_stress_idx)
 				rcu_stress_array[i].pipe_count++;
-		if (n_updates & 0x1)
+		switch (writer_state) {
+		case WRITER_STATE_SYNC_RCU:
 			synchronize_rcu();
-		else {
+			break;
+		case WRITER_STATE_CALL_RCU:
+		{
 			int ret;
 
 			ret = pthread_mutex_lock(&call_rcu_test_mutex);
@@ -438,8 +464,22 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 					strerror(errno));
 				abort();
 			}
+			break;
+		}
+		case WRITER_STATE_POLL_RCU:
+		{
+			struct urcu_gp_poll_state poll_state;
+
+			rcu_register_thread();
+			poll_state = start_poll_synchronize_rcu();
+			rcu_unregister_thread();
+			while (!poll_state_synchronize_rcu(poll_state))
+				(void) poll(NULL, 0, 1);	/* Wait for 1ms */
+			break;
+		}
 		}
 		n_updates++;
+		advance_writer_state(&writer_state);
 	}
 
 	return NULL;
