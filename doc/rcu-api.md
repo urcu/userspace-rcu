@@ -64,20 +64,25 @@ actually waited is called an RCU grace period.
 struct urcu_gp_poll_state start_poll_synchronize_rcu(void);
 ```
 
-Start polling on grace period. The returned poll state should be
-queried using `poll_state_synchronize_rcu` to check whether the
-grace period has completed.
+Provides a handle for checking if a new grace period has started
+and completed since the handle was obtained. It returns a
+`struct urcu_gp_poll_state` handle that can be used with
+`poll_state_synchronize_rcu` to check, by polling, if the
+associated grace period has completed.
 
-`start_poll_synchronize_rcu` should be called from registered RCU
-read-side threads.  For the QSBR flavor, the caller should be online.
+`start_poll_synchronize_rcu` must only be called from
+registered RCU read-side threads. For the QSBR flavor, the
+caller must be online.
 
 
 ```c
 bool poll_state_synchronize_rcu(struct urcu_gp_poll_state state);
 ```
 
-Poll the grace period state. Return true if quiescence was reached since
-the grace period was started, return false otherwise.
+Checks if the grace period associated with the
+`struct urcu_gp_poll_state` handle has completed. If the grace
+period has completed, the function returns true. Otherwise,
+it returns false.
 
 
 ```c
