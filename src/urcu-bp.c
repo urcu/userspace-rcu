@@ -121,6 +121,7 @@ static
 void __attribute__((constructor)) _urcu_bp_init(void);
 static
 void __attribute__((destructor)) urcu_bp_exit(void);
+static void urcu_call_rcu_exit(void);
 
 #ifndef CONFIG_RCU_FORCE_SYS_MEMBARRIER
 int urcu_bp_has_sys_membarrier;
@@ -655,6 +656,8 @@ void _urcu_bp_init(void)
 static
 void urcu_bp_exit(void)
 {
+	urcu_call_rcu_exit();
+
 	mutex_lock(&init_lock);
 	if (!--urcu_bp_refcount) {
 		struct registry_chunk *chunk, *tmp;
