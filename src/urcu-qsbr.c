@@ -53,6 +53,7 @@
 #define _LGPL_SOURCE
 
 void __attribute__((destructor)) urcu_qsbr_exit(void);
+static void urcu_call_rcu_exit(void);
 
 /*
  * rcu_gp_lock ensures mutual exclusion between threads calling
@@ -524,6 +525,7 @@ void urcu_qsbr_exit(void)
 	 * readers, and left running at exit.
 	 * assert(cds_list_empty(&registry));
 	 */
+	urcu_call_rcu_exit();
 }
 URCU_ATTR_ALIAS("urcu_qsbr_exit") void rcu_exit_qsbr();
 

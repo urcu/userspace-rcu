@@ -113,8 +113,10 @@ void alias_rcu_init(void);
 static int init_done;
 
 void __attribute__((constructor)) rcu_init(void);
-void __attribute__((destructor)) rcu_exit(void);
 #endif
+
+void __attribute__((destructor)) rcu_exit(void);
+static void urcu_call_rcu_exit(void);
 
 /*
  * rcu_gp_lock ensures mutual exclusion between threads calling
@@ -671,21 +673,23 @@ void rcu_init(void)
 URCU_ATTR_ALIAS(urcu_stringify(rcu_init))
 void alias_rcu_init(void);
 
+/*
+ * Don't unregister the SIGRCU signal handler anymore, because
+ * call_rcu threads could still be using it shortly before the
+ * application exits.
+ * Assertion disabled because call_rcu threads are now rcu
+ * readers, and left running at exit.
+ * assert(cds_list_empty(&registry));
+ */
+
+#endif /* #ifdef RCU_SIGNAL */
+
 void rcu_exit(void)
 {
-	/*
-	 * Don't unregister the SIGRCU signal handler anymore, because
-	 * call_rcu threads could still be using it shortly before the
-	 * application exits.
-	 * Assertion disabled because call_rcu threads are now rcu
-	 * readers, and left running at exit.
-	 * assert(cds_list_empty(&registry));
-	 */
+	urcu_call_rcu_exit();
 }
 URCU_ATTR_ALIAS(urcu_stringify(rcu_exit))
 void alias_rcu_exit(void);
-
-#endif /* #ifdef RCU_SIGNAL */
 
 DEFINE_RCU_FLAVOR(rcu_flavor);
 DEFINE_RCU_FLAVOR_ALIAS(rcu_flavor, alias_rcu_flavor);
