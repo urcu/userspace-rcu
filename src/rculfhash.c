@@ -1931,7 +1931,7 @@ void do_auto_resize_destroy_cb(struct urcu_work *work)
 	ht->flavor->register_thread();
 	ret = cds_lfht_delete_bucket(ht);
 	if (ret)
-		urcu_die(ret);
+		urcu_die(-ret);
 	free_split_items_count(ht);
 	ret = pthread_mutex_destroy(&ht->resize_mutex);
 	if (ret)
