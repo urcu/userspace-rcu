@@ -90,6 +90,7 @@
 #define alias_rcu_register_thread	rcu_register_thread_mb
 #define alias_rcu_unregister_thread	rcu_unregister_thread_mb
 #define alias_rcu_init			rcu_init_mb
+#define alias_rcu_exit			rcu_exit_mb
 #define alias_synchronize_rcu		synchronize_rcu_mb
 #define alias_rcu_reader		rcu_reader_mb
 #define alias_rcu_gp			rcu_gp_mb
