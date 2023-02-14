@@ -1,3 +1,14 @@
+2023-02-14 Userspace RCU 0.13.3
+	* Fix: urcu-bp: only teardown call-rcu worker in destructor
+	* Fix: rculfhash: urcu_die() takes positive error value
+	* Fix: call_rcu: teardown default call_rcu worker on application exit
+	* Fix: join worker thread in call_rcu_data_free
+	* Fix: auto-resize hash table destroy deadlock
+	* Fix building on MSYS2
+	* Fix: Remove include urcu/assert.h
+	* rculfhash: Include rculfhash-internal.h from local directory
+	* Fix: Always check pthread_create for failures
+
 2022-08-18 Userspace RCU 0.13.2
 	* Revert "Fix: remove type constness in URCU_FORCE_CAST's C++ version"
 	* Fix: futex.h: include headers outside extern C
