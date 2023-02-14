@@ -1,3 +1,85 @@
+2023-02-14 Userspace RCU 0.14.0
+	* Fix: urcu-bp: only teardown call-rcu worker in destructor
+	* Fix: rculfhash: urcu_die() takes positive error value
+	* Fix: call_rcu: teardown default call_rcu worker on application exit
+	* Fix: join worker thread in call_rcu_data_free
+	* Docs: clarify grace period polling API
+	* Document grace period polling in rcu-api.md
+	* Implement poll rcu stress test in rcutorture
+	* urcu-memb,mb,signal: Implement grace period polling
+	* Fix: auto-resize hash table destroy deadlock
+	* Fix building on MSYS2
+	* rculfhash: Include rculfhash-internal.h from local directory
+	* Remove "Darwin" from "should also work on list"
+	* Merge branch 'adah1972-improve-md'
+	* Add semicolons at the end of function prototypes
+	* Wrap a file name in backticks
+	* Wrap command-line options in backticks
+	* Fix a wrong format
+	* Wrap URLs in angle brackets
+	* Fix Markdown issues
+	* Fix: Always check pthread_create for failures
+	* Disable signals in URCU background threads
+	* Fix: futex.h: include headers outside extern C
+	* Fix: add missing unused attribute to _rcu_dereference
+	* Fix: change method used by _rcu_dereference to strip type constness
+	* Fix: remove type constness in URCU_FORCE_CAST's C++ version
+	* Move extern "C" down in include/urcu/urcu-bp.h
+	* fix: ifdef linux specific cpu count compat
+	* Add unit tests for possible_cpus_array_len
+	* fix: sysconf(_SC_NPROCESSORS_CONF) can be less than max cpu id
+	* Fix: revise obsolete command in README.md
+	* Fix: workqueue: remove unused variable "ret"
+	* Fix: urcu-qsbr: futex wait: handle spurious futex wakeups
+	* Fix: urcu: futex wait: handle spurious futex wakeups
+	* Fix: urcu-wait: futex wait: handle spurious futex wakeups
+	* Fix: defer_rcu: futex wait: handle spurious futex wakeups
+	* Fix: call_rcu: futex wait: handle spurious futex wakeups
+	* Fix: workqueue: futex wait: handle spurious futex wakeups
+	* Fix: Use %lu rather than %ld to print count
+	* Update ABI definition files
+	* Bump version current and age
+	* alpha: allocate membarrier system call number
+	* Bump version to 0.14.0-pre
+	* Improved test framework
+	* rculfhash: introduce cds_lfht_node_init_deleted
+	* Fix: changelog: v0.13.0 was released in 2021
+	* cleanup: i386 arch detection
+	* fix: properly detect 'cmpxchg' on x86-32
+	* fix: use urcu-tls compat with c++ compiler
+	* Fix typo
+	* fix: remove autoconf features default value in help message
+	* fix: add missing pkgconfig file for memb flavour lib
+	* Cleanup: Tests: Remove useless pre-C99 compatibility code from tap.h
+	* Document C99 and C++11 requirement in README.md
+	* Always use '__thread' for Thread local storage except on MSVC
+	* Fix: powerpc32: transparent unions alter calling convention
+	* fix: don't use C++ thread_local on MacOs
+	* wfcqueue API: implement overloaded wrappers with templates
+	* wfcqueue: combine C++ API cds_wfcq_head_cast with overloading
+	* wfstack C++ API: implement overloaded wrappers with templates
+	* lfstack C++ API: implement overloaded wrappers with templates
+	* wfstack: combine C++ API cds_wfs_stack_cast with overloading
+	* lfstack: combine C++ API cds_lfs_stack_cast with overloading
+	* fix: test_build tap plan
+	* Test C++ build of list head init
+	* Fix order of initializers in CDS_LIST_HEAD_INIT
+	* unit tests: test wfcqueue, wfstack, lfstack empty check functions in C++
+	* wfcqueue: implement C++ API based on function overloading
+	* wfstack: implement C++ API based on function overloading
+	* lfstack: implement C++ API based on function overloading
+	* Fix tap.h: remove extra semicolon in pass/fail macros
+	* Add C++ build tests
+	* Build and run regression and unit tests as C++ programs
+	* Add --enable-Werror configure switch
+	* Add `urcu_posix_assert()` as `assert()` replacement
+	* Rename `urcu_assert()` to `urcu_assert_debug()`
+	* cleanup: spelling fixes in comments
+	* Make temporary variable in _rcu_dereference non-const
+	* (tls-ie2) Fix: x86 and s390: uatomic __hp() macro C++ support
+	* Fix: x86 and s390: uatomic __hp() macro clang support
+	* Fix: x86 and s390 uatomic: __hp() macro warning with gcc 11
+
 2021-06-03 Userspace RCU 0.13.0
 	* Document known ABI issue in README.md
 	* Add serialized ABI definition files
