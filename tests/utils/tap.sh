@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2010 Patrick LeBoutillier <patrick.leboutillier@gmail.com>
 #
@@ -65,7 +65,7 @@ OTHER:
   diag MSG
 
 EXAMPLE:
-  #!/bin/bash
+  #!/usr/bin/env bash
 
   . tap-functions
 
