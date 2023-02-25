@@ -68,7 +68,14 @@ unsigned long urcu_get_thread_id(void)
 	pthread_t thr = pthread_self();
 	return pthread_getsequence_np(&thr);
 }
+#elif defined(__OpenBSD__)
+#include <unistd.h>
 
+static inline
+unsigned long urcu_get_thread_id(void)
+{
+	return (unsigned long) getthrid();
+}
 #else
 # warning "use pid as thread ID"
 static inline
