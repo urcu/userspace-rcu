@@ -33,7 +33,8 @@
 #include <syscall.h>
 
 #elif defined(__CYGWIN__) || defined(__APPLE__) || \
-	defined(__FreeBSD__) || defined(__DragonFly__)
+	defined(__FreeBSD__) || defined(__DragonFly__) || \
+	defined(__OpenBSD__)
 /* Don't include anything on these platforms. */
 
 #else
