@@ -108,8 +108,8 @@ static struct call_rcu_data *default_call_rcu_data;
 static struct urcu_atfork *registered_rculfhash_atfork;
 
 /*
- * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_CONF) calls are
- * available, then we can have call_rcu threads assigned to individual
+ * If the sched_getcpu() and sysconf(_SC_NPROCESSORS_ONLN / _SC_NPROCESSORS_CONF)
+ * calls are available, then we can have call_rcu threads assigned to individual
  * CPUs rather than only to specific threads.
  */
 

@@ -24,7 +24,11 @@
 #if defined(HAVE_SYSCONF)
 static inline int get_num_possible_cpus_sysconf(void)
 {
+#ifdef _SC_NPROCESSORS_ONLN
+	return sysconf(_SC_NPROCESSORS_ONLN);
+#else
 	return sysconf(_SC_NPROCESSORS_CONF);
+#endif
 }
 #else
 /*
@@ -104,8 +108,8 @@ static inline int get_max_cpuid_from_sysfs(void)
  * "cpu" followed by an integer, keep the highest CPU id encountered during
  * this iteration and add 1 to get a number of CPUs.
  *
- * Then get the value from sysconf(_SC_NPROCESSORS_CONF) as a fallback and
- * return the highest one.
+ * Then get the value from sysconf(_SC_NPROCESSORS_ONLN / _SC_NPROCESSORS_CONF)
+ * as a fallback and return the highest one.
  *
  * On Linux, using the value from sysconf can be unreliable since the way it
  * counts CPUs varies between C libraries and even between versions of the same
