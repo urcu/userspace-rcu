@@ -91,7 +91,7 @@ struct urcu_bp_reader {
 	/* Data used by both reader and urcu_bp_synchronize_rcu() */
 	unsigned long ctr;
 	/* Data used for registry */
-	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+	struct cds_list_head node __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
 	int alloc;	/* registry entry allocated */
 };

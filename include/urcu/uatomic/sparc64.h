@@ -29,7 +29,7 @@ extern "C" {
 
 /* cmpxchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
