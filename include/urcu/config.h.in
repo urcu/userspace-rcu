@@ -23,6 +23,9 @@
    Introduces a performance penalty. */
 #undef CONFIG_RCU_DEBUG
 
+/* Uatomic API uses atomic builtins. */
+#undef CONFIG_RCU_USE_ATOMIC_BUILTINS
+
 /* Expose multi-flavor support */
 #define CONFIG_RCU_HAVE_MULTIFLAVOR 1
 

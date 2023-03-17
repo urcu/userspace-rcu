@@ -71,6 +71,10 @@ AS_IF([test "$ac_cv_prog_cc_c99" = "no"], [AC_MSG_ERROR([The compiler does not s
 AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
 
+# Check if the selected C compiler supports atomic builtins
+AE_CC_ATOMIC_BUILTINS
+
+
 ##                     ##
 ## C++ compiler checks ##
 ##                     ##
@@ -230,6 +234,11 @@ AE_FEATURE([rcu-debug], [Enable internal debugging self-checks. Introduces a per
 AE_FEATURE_DEFAULT_DISABLE
 AE_FEATURE([cds-lfht-iter-debug], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
 
+# Use compiler atomic builtins, when disabled use our legacy uatomic implementation.
+# Disabled by default
+AE_FEATURE_DEFAULT_DISABLE
+AE_FEATURE([compiler-atomic-builtins], [Enable the use of compiler atomic builtins.])
+
 # When given, add -Werror to WARN_CFLAGS and WARN_CXXFLAGS.
 # Disabled by default
 AE_FEATURE_DEFAULT_DISABLE
@@ -259,6 +268,9 @@ AE_IF_FEATURE_ENABLED([cds-lfht-iter-debug], [
   AC_DEFINE([CONFIG_CDS_LFHT_ITER_DEBUG], [1], [Enable extra debugging checks for lock-free hash table iterator traversal. Alters the rculfhash ABI. Make sure to compile both library and application with matching configuration.])
 ])
 
+AE_IF_FEATURE_ENABLED([compiler-atomic-builtins], [
+  AC_DEFINE([CONFIG_RCU_USE_ATOMIC_BUILTINS], [1], [Use compiler atomic builtins.])
+])
 
 ##                                                                          ##
 ## Set automake variables for optional feature conditionnals in Makefile.am ##
@@ -267,6 +279,17 @@ AE_IF_FEATURE_ENABLED([cds-lfht-iter-debug], [
 # Building the examples requires the shared libraries to be enabled
 AM_CONDITIONAL([ENABLE_EXAMPLES], AE_IS_FEATURE_ENABLED([shared]))
 
+
+##                                          ##
+## Check for optional features dependencies ##
+##                                          ##
+
+
+AE_IF_FEATURE_ENABLED([compiler-atomic-builtins], [
+  AS_IF([test "x$ae_cv_cc_atomic_builtins" != xyes], [
+     AC_MSG_ERROR([The compiler does not support atomic builtins.])
+  ])
+])
 
 ##                                             ##
 ## Substitute variables for use in Makefile.am ##
@@ -362,6 +385,10 @@ AE_IS_FEATURE_ENABLED([cds-lfht-iter-debug]) && value=1 || value=0
 AE_PPRINT_PROP_BOOL([Lock-free HT iterator debugging], $value)
 
 AE_PPRINT_PROP_BOOL([Multi-flavor support], 1)
+
+# atomic builtins enabled/disabled
+AE_IS_FEATURE_ENABLED([compiler-atomic-builtins]) && value=1 || value=0
+AE_PPRINT_PROP_BOOL([Use compiler atomic builtins], $value)
 
 report_bindir="`eval eval echo $bindir`"
 report_libdir="`eval eval echo $libdir`"

@@ -440,6 +440,10 @@ still being used to iterate on a hash table.
 This option alters the rculfhash ABI. Make sure to compile both library
 and application with matching configuration.
 
+### Usage of `--enable-compiler-atomic-builtins`
+
+Building liburcu with `--enable-compiler-atomic-builtins` implements the uatomic
+API with the compiler atomic builtins if supported.
 
 Make targets
 ------------
