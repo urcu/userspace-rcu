@@ -1055,7 +1055,7 @@ void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
  * This unregistration function is deprecated, meant only for internal
  * use by rculfhash.
  */
-__attribute__((noreturn))
+__attribute__((__noreturn__))
 void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((unused)))
 {
 	urcu_die(EPERM);

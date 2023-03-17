@@ -532,7 +532,7 @@ int stresstest(int nreaders)
  */
 
 static
-void usage(char *argv[]) __attribute__((noreturn));
+void usage(char *argv[]) __attribute__((__noreturn__));
 
 static
 void usage(char *argv[])
