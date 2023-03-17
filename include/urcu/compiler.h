@@ -15,10 +15,16 @@
 # include <type_traits>	/* for std::remove_cv */
 #endif
 
+#include <urcu/config.h>
+
 #define caa_likely(x)	__builtin_expect(!!(x), 1)
 #define caa_unlikely(x)	__builtin_expect(!!(x), 0)
 
-#define	cmm_barrier()	__asm__ __volatile__ ("" : : : "memory")
+#ifdef CONFIG_RCU_USE_ATOMIC_BUILTINS
+#  define cmm_barrier() __atomic_signal_fence(__ATOMIC_SEQ_CST)
+#else
+#  define cmm_barrier() __asm__ __volatile__ ("" : : : "memory")
+#endif
 
 /*
  * Instruct the compiler to perform only a single access to a variable
