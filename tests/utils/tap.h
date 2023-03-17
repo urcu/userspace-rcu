@@ -41,7 +41,7 @@ __attribute__((format(TAP_PRINTF_FORMAT, 5, 6)))
 unsigned int _gen_result(int, const char *, const char *, unsigned int, const char *, ...);
 
 int plan_no_plan(void);
-__attribute__((noreturn))
+__attribute__((__noreturn__))
 int plan_skip_all(const char *);
 int plan_tests(unsigned int);
 
