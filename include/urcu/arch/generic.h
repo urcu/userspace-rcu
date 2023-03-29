@@ -31,6 +31,28 @@ extern "C" {
  * GCC builtins) as well as cmm_rmb and cmm_wmb (defaulting to cmm_mb).
  */
 
+#ifdef CONFIG_RCU_USE_ATOMIC_BUILTINS
+
+# ifndef cmm_smp_mb
+#  define cmm_smp_mb() __atomic_thread_fence(__ATOMIC_SEQ_CST)
+# endif
+
+#endif	/* CONFIG_RCU_USE_ATOMIC_BUILTINS */
+
+
+/*
+ * cmm_mb() expands to __sync_synchronize() instead of __atomic_thread_fence
+ * with SEQ_CST because the former "issues a full memory barrier" while the
+ * latter "acts as a synchronization fence between threads" which is too weak
+ * for what we want, for example with I/O devices.
+ *
+ * Even though sync_synchronize seems to be an alias for a sequential consistent
+ * atomic thread fence on every architecture on GCC and Clang, this assumption
+ * might be untrue in future.  Therefore, the definitions above are used to
+ * ensure correct behavior in the future.
+ *
+ * The above defintions are quoted from the GCC manual.
+ */
 #ifndef cmm_mb
 #define cmm_mb()    __sync_synchronize()
 #endif
