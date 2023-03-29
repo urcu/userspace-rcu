@@ -24,19 +24,16 @@ void *rcu_dereference_sym(void *p)
 
 void *rcu_set_pointer_sym(void **p, void *v)
 {
-	cmm_wmb();
-	uatomic_set(p, v);
+	uatomic_store(p, v, CMM_RELEASE);
 	return v;
 }
 
 void *rcu_xchg_pointer_sym(void **p, void *v)
 {
-	cmm_wmb();
-	return uatomic_xchg(p, v);
+	return uatomic_xchg_mo(p, v, CMM_SEQ_CST);
 }
 
 void *rcu_cmpxchg_pointer_sym(void **p, void *old, void *_new)
 {
-	cmm_wmb();
-	return uatomic_cmpxchg(p, old, _new);
+	return uatomic_cmpxchg_mo(p, old, _new, CMM_SEQ_CST, CMM_RELAXED);
 }

@@ -136,4 +136,61 @@
 				+ __GNUC_PATCHLEVEL__)
 #endif
 
+#ifdef __cplusplus
+#define caa_unqual_scalar_typeof(x)					\
+	std::remove_cv<std::remove_reference<decltype(x)>::type>::type
+#else
+#define caa_scalar_type_to_expr(type)					\
+	unsigned type: (unsigned type)0,				\
+	signed type: (signed type)0
+
+/*
+ * Use C11 _Generic to express unqualified type from expression. This removes
+ * volatile qualifier from expression type.
+ */
+#define caa_unqual_scalar_typeof(x)					\
+	__typeof__(							\
+		_Generic((x),						\
+			char: (char)0,					\
+			caa_scalar_type_to_expr(char),			\
+			caa_scalar_type_to_expr(short),		\
+			caa_scalar_type_to_expr(int),			\
+			caa_scalar_type_to_expr(long),			\
+			caa_scalar_type_to_expr(long long),		\
+			default: (x)					\
+		)							\
+	)
+#endif
+
+/*
+ * Allow user to manually define CMM_SANITIZE_THREAD if their toolchain is not
+ * supported by this check.
+ */
+#ifndef CMM_SANITIZE_THREAD
+# if defined(__GNUC__) && defined(__SANITIZE_THREAD__)
+#  define CMM_SANITIZE_THREAD
+# elif defined(__clang__) && defined(__has_feature)
+#  if __has_feature(thread_sanitizer)
+#   define CMM_SANITIZE_THREAD
+#  endif
+# endif
+#endif	/* !CMM_SANITIZE_THREAD */
+
+/*
+ * Helper to add the volatile qualifier to a pointer.
+ */
+#if defined __cplusplus
+template <typename T>
+volatile T cmm_cast_volatile(T t)
+{
+    return static_cast<volatile T>(t);
+}
+#else
+#  define cmm_cast_volatile(ptr)			\
+	__extension__					\
+	({						\
+		(volatile __typeof__(ptr))(ptr);	\
+	})
+#endif
+
 #endif /* _URCU_COMPILER_H */

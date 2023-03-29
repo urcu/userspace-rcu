@@ -67,6 +67,8 @@ nobase_include_HEADERS = \
 	urcu/uatomic/alpha.h \
 	urcu/uatomic_arch.h \
 	urcu/uatomic/arm.h \
+	urcu/uatomic/builtins.h \
+	urcu/uatomic/builtins-generic.h \
 	urcu/uatomic/gcc.h \
 	urcu/uatomic/generic.h \
 	urcu/uatomic.h \

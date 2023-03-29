@@ -26,9 +26,243 @@ extern "C" {
 #define uatomic_set(addr, v)	((void) CMM_STORE_SHARED(*(addr), (v)))
 #endif
 
+extern void abort(void);
+
+#define uatomic_load_store_return_op(op, addr, v, mo)			\
+	__extension__							\
+	({								\
+									\
+		switch (mo) {						\
+		case CMM_ACQUIRE:					\
+		case CMM_CONSUME:					\
+		case CMM_RELAXED:					\
+			break;						\
+		case CMM_RELEASE:					\
+		case CMM_ACQ_REL:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+									\
+		__typeof__((*addr)) _value = op(addr, v);		\
+									\
+		switch (mo) {						\
+		case CMM_CONSUME:					\
+			cmm_smp_read_barrier_depends();			\
+			break;						\
+		case CMM_ACQUIRE:					\
+		case CMM_ACQ_REL:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		case CMM_RELAXED:					\
+		case CMM_RELEASE:					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+		_value;							\
+	})
+
+#define uatomic_load_store_op(op, addr, v, mo)				\
+	do {								\
+		switch (mo) {						\
+		case CMM_ACQUIRE:					\
+		case CMM_CONSUME:					\
+		case CMM_RELAXED:					\
+			break;						\
+		case CMM_RELEASE:					\
+		case CMM_ACQ_REL:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+									\
+		op(addr, v);						\
+									\
+		switch (mo) {						\
+		case CMM_CONSUME:					\
+			cmm_smp_read_barrier_depends();			\
+			break;						\
+		case CMM_ACQUIRE:					\
+		case CMM_ACQ_REL:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		case CMM_RELAXED:					\
+		case CMM_RELEASE:					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+	} while (0)
+
+#define uatomic_store(addr, v, mo)			\
+	do {						\
+		switch (mo) {				\
+		case CMM_RELAXED:			\
+			break;				\
+		case CMM_RELEASE:			\
+		case CMM_SEQ_CST:			\
+		case CMM_SEQ_CST_FENCE:			\
+			cmm_smp_mb();			\
+			break;				\
+		default:				\
+			abort();			\
+		}					\
+							\
+		uatomic_set(addr, v);			\
+							\
+		switch (mo) {				\
+		case CMM_RELAXED:			\
+		case CMM_RELEASE:			\
+			break;				\
+		case CMM_SEQ_CST:			\
+		case CMM_SEQ_CST_FENCE:			\
+			cmm_smp_mb();			\
+			break;				\
+		default:				\
+			abort();			\
+		}					\
+	} while (0)
+
+#define uatomic_and_mo(addr, v, mo)				\
+	uatomic_load_store_op(uatomic_and, addr, v, mo)
+
+#define uatomic_or_mo(addr, v, mo)				\
+	uatomic_load_store_op(uatomic_or, addr, v, mo)
+
+#define uatomic_add_mo(addr, v, mo)				\
+	uatomic_load_store_op(uatomic_add, addr, v, mo)
+
+#define uatomic_sub_mo(addr, v, mo)				\
+	uatomic_load_store_op(uatomic_sub, addr, v, mo)
+
+#define uatomic_inc_mo(addr, mo)				\
+	uatomic_load_store_op(uatomic_add, addr, 1, mo)
+
+#define uatomic_dec_mo(addr, mo)				\
+	uatomic_load_store_op(uatomic_add, addr, -1, mo)
+/*
+ * NOTE: We can not just do switch (_value == (old) ? mos : mof) otherwise the
+ * compiler emit a -Wduplicated-cond warning.
+ */
+#define uatomic_cmpxchg_mo(addr, old, new, mos, mof)			\
+	__extension__							\
+	({								\
+		switch (mos) {						\
+		case CMM_ACQUIRE:					\
+		case CMM_CONSUME:					\
+		case CMM_RELAXED:					\
+			break;						\
+		case CMM_RELEASE:					\
+		case CMM_ACQ_REL:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+									\
+		__typeof__(*(addr)) _value = uatomic_cmpxchg(addr, old,	\
+							new);		\
+									\
+		if (_value == (old)) {					\
+			switch (mos) {					\
+			case CMM_CONSUME:				\
+				cmm_smp_read_barrier_depends();		\
+				break;					\
+			case CMM_ACQUIRE:				\
+			case CMM_ACQ_REL:				\
+			case CMM_SEQ_CST:				\
+			case CMM_SEQ_CST_FENCE:				\
+				cmm_smp_mb();				\
+				break;					\
+			case CMM_RELAXED:				\
+			case CMM_RELEASE:				\
+				break;					\
+			default:					\
+				abort();				\
+			}						\
+		} else {						\
+			switch (mof) {					\
+			case CMM_CONSUME:				\
+				cmm_smp_read_barrier_depends();		\
+				break;					\
+			case CMM_ACQUIRE:				\
+			case CMM_ACQ_REL:				\
+			case CMM_SEQ_CST:				\
+			case CMM_SEQ_CST_FENCE:				\
+				cmm_smp_mb();				\
+				break;					\
+			case CMM_RELAXED:				\
+			case CMM_RELEASE:				\
+				break;					\
+			default:					\
+				abort();				\
+			}						\
+		}							\
+		_value;							\
+	})
+
+#define uatomic_xchg_mo(addr, v, mo)				\
+	uatomic_load_store_return_op(uatomic_xchg, addr, v, mo)
+
+#define uatomic_add_return_mo(addr, v, mo)				\
+	uatomic_load_store_return_op(uatomic_add_return, addr, v)
+
+#define uatomic_sub_return_mo(addr, v, mo)				\
+	uatomic_load_store_return_op(uatomic_sub_return, addr, v)
+
+
 #ifndef uatomic_read
 #define uatomic_read(addr)	CMM_LOAD_SHARED(*(addr))
 #endif
+
+#define uatomic_load(addr, mo)						\
+	__extension__							\
+	({								\
+		switch (mo) {						\
+		case CMM_ACQUIRE:					\
+		case CMM_CONSUME:					\
+		case CMM_RELAXED:					\
+			break;						\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+									\
+		__typeof__(*(addr)) _rcu_value = uatomic_read(addr);	\
+									\
+		switch (mo) {						\
+		case CMM_RELAXED:					\
+			break;						\
+		case CMM_CONSUME:					\
+			cmm_smp_read_barrier_depends();			\
+			break;						\
+		case CMM_ACQUIRE:					\
+		case CMM_SEQ_CST:					\
+		case CMM_SEQ_CST_FENCE:					\
+			cmm_smp_mb();					\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+									\
+		_rcu_value;						\
+	})
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR
 #ifdef ILLEGAL_INSTR

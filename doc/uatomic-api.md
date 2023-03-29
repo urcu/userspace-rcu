@@ -58,7 +58,8 @@ An atomic read-modify-write operation that performs this
 sequence of operations atomically: check if `addr` contains `old`.
 If true, then replace the content of `addr` by `new`. Return the
 value previously contained by `addr`. This function implies a full
-memory barrier before and after the atomic operation.
+memory barrier before and after the atomic operation on success.
+On failure, no memory order is guaranteed.
 
 
 ```c

@@ -82,23 +82,8 @@ extern "C" {
  * -Wincompatible-pointer-types errors.  Using the statement expression
  * makes it an rvalue and gets rid of the const-ness.
  */
-#ifdef __URCU_DEREFERENCE_USE_ATOMIC_CONSUME
-# define _rcu_dereference(p) __extension__ ({						\
-				__typeof__(__extension__ ({				\
-					__typeof__(p) __attribute__((unused)) _________p0 = { 0 }; \
-					_________p0;					\
-				})) _________p1;					\
-				__atomic_load(&(p), &_________p1, __ATOMIC_CONSUME);	\
-				(_________p1);						\
-			})
-#else
-# define _rcu_dereference(p) __extension__ ({						\
-				__typeof__(p) _________p1 = CMM_LOAD_SHARED(p);		\
-				cmm_smp_read_barrier_depends();				\
-				(_________p1);						\
-			})
-#endif
-
+# define _rcu_dereference(p)			\
+	uatomic_load(&(p), CMM_CONSUME)
 /**
  * _rcu_cmpxchg_pointer - same as rcu_assign_pointer, but tests if the pointer
  * is as expected by "old". If succeeds, returns the previous pointer to the
@@ -106,7 +91,7 @@ extern "C" {
  * using synchronize_rcu(). If fails (unexpected value), returns old (which
  * should not be freed !).
  *
- * uatomic_cmpxchg() acts as both release and acquire barriers.
+ * uatomic_cmpxchg() acts as both release and acquire barriers on success.
  *
  * This macro is less than 10 lines long.  The intent is that this macro
  * meets the 10-line criterion in LGPL, allowing this function to be
@@ -117,8 +102,9 @@ extern "C" {
 	({								\
 		__typeof__(*p) _________pold = (old);			\
 		__typeof__(*p) _________pnew = (_new);			\
-		uatomic_cmpxchg(p, _________pold, _________pnew);	\
-	})
+		uatomic_cmpxchg_mo(p, _________pold, _________pnew,	\
+				   CMM_SEQ_CST, CMM_RELAXED);		\
+	});
 
 /**
  * _rcu_xchg_pointer - same as rcu_assign_pointer, but returns the previous
@@ -135,17 +121,17 @@ extern "C" {
 	__extension__					\
 	({						\
 		__typeof__(*p) _________pv = (v);	\
-		uatomic_xchg(p, _________pv);		\
+		uatomic_xchg_mo(p, _________pv,		\
+				CMM_SEQ_CST);		\
 	})
 
 
-#define _rcu_set_pointer(p, v)				\
-	do {						\
-		__typeof__(*p) _________pv = (v);	\
-		if (!__builtin_constant_p(v) || 	\
-		    ((v) != NULL))			\
-			cmm_wmb();				\
-		uatomic_set(p, _________pv);		\
+#define _rcu_set_pointer(p, v)						\
+	do {								\
+		__typeof__(*p) _________pv = (v);			\
+		uatomic_store(p, _________pv,				\
+			__builtin_constant_p(v) && (v) == NULL ?	\
+			CMM_RELAXED : CMM_RELEASE);			\
 	} while (0)
 
 /**
