@@ -14,6 +14,7 @@
 
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/uatomic.h>
 
 /*
  * Machine parameters.
@@ -102,7 +103,7 @@ static int __smp_thread_id(void)
 	thread_id_t tid = pthread_self();
 
 	for (i = 0; i < NR_THREADS; i++) {
-		if (__thread_id_map[i] == tid) {
+		if (uatomic_read(&__thread_id_map[i]) == tid) {
 			long v = i + 1;  /* must be non-NULL. */
 
 			if (pthread_setspecific(thread_id_key, (void *)v) != 0) {
@@ -151,12 +152,13 @@ static thread_id_t create_thread(void *(*func)(void *), void *arg)
 		exit(-1);
 	}
 	__thread_id_map[i] = __THREAD_ID_MAP_WAITING;
-	spin_unlock(&__thread_id_map_mutex);
+
 	if (pthread_create(&tid, NULL, func, arg) != 0) {
 		perror("create_thread:pthread_create");
 		exit(-1);
 	}
-	__thread_id_map[i] = tid;
+	uatomic_set(&__thread_id_map[i], tid);
+	spin_unlock(&__thread_id_map_mutex);
 	return tid;
 }
 
@@ -166,7 +168,7 @@ static void *wait_thread(thread_id_t tid)
 	void *vp;
 
 	for (i = 0; i < NR_THREADS; i++) {
-		if (__thread_id_map[i] == tid)
+		if (uatomic_read(&__thread_id_map[i]) == tid)
 			break;
 	}
 	if (i >= NR_THREADS){
@@ -178,7 +180,7 @@ static void *wait_thread(thread_id_t tid)
 		perror("wait_thread:pthread_join");
 		exit(-1);
 	}
-	__thread_id_map[i] = __THREAD_ID_MAP_EMPTY;
+	uatomic_set(&__thread_id_map[i], __THREAD_ID_MAP_EMPTY);
 	return vp;
 }
 

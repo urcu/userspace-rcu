@@ -47,6 +47,30 @@
  * line lists the number of readers observing progressively more stale
  * data.  A correct RCU implementation will have all but the first two
  * numbers non-zero.
+ *
+ * rcu_stress_count: Histogram of "ages" of structures seen by readers.  If any
+ * entries past the first two are non-zero, RCU is broken. The age of a newly
+ * allocated structure is zero, it becomes one when removed from reader
+ * visibility, and is incremented once per grace period subsequently -- and is
+ * freed after passing through (RCU_STRESS_PIPE_LEN-2) grace periods.  Since
+ * this tests only has one true writer (there are fake writers), only buckets at
+ * indexes 0 and 1 should be none-zero.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Copyright (c) 2008 Paul E. McKenney, IBM Corporation.
  */
 
 /*
@@ -55,6 +79,8 @@
 
 #include <stdlib.h>
 #include "tap.h"
+
+#include <urcu/uatomic.h>
 
 #include "urcu-wait.h"
 
@@ -135,10 +161,10 @@ void *rcu_read_perf_test(void *arg)
 	run_on(me);
 	uatomic_inc(&nthreadsrunning);
 	put_thread_offline();
-	while (goflag == GOFLAG_INIT)
+	while (uatomic_read(&goflag) == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
 	put_thread_online();
-	while (goflag == GOFLAG_RUN) {
+	while (uatomic_read(&goflag) == GOFLAG_RUN) {
 		for (i = 0; i < RCU_READ_RUN; i++) {
 			rcu_read_lock();
 			/* rcu_read_lock_nest(); */
@@ -170,9 +196,9 @@ void *rcu_update_perf_test(void *arg __attribute__((unused)))
 		}
 	}
 	uatomic_inc(&nthreadsrunning);
-	while (goflag == GOFLAG_INIT)
+	while (uatomic_read(&goflag) == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
-	while (goflag == GOFLAG_RUN) {
+	while (uatomic_read(&goflag) == GOFLAG_RUN) {
 		synchronize_rcu();
 		n_updates_local++;
 	}
@@ -201,15 +227,11 @@ int perftestrun(int nthreads, int nreaders, int nupdaters)
 	int t;
 	int duration = 1;
 
-	cmm_smp_mb();
 	while (uatomic_read(&nthreadsrunning) < nthreads)
 		(void) poll(NULL, 0, 1);
-	goflag = GOFLAG_RUN;
-	cmm_smp_mb();
+	uatomic_set(&goflag, GOFLAG_RUN);
 	sleep(duration);
-	cmm_smp_mb();
-	goflag = GOFLAG_STOP;
-	cmm_smp_mb();
+	uatomic_set(&goflag, GOFLAG_STOP);
 	wait_all_threads();
 	for_each_thread(t) {
 		n_reads += per_thread(n_reads_pt, t);
@@ -290,6 +312,13 @@ struct rcu_stress rcu_stress_array[RCU_STRESS_PIPE_LEN] = { { 0, 0 } };
 struct rcu_stress *rcu_stress_current;
 int rcu_stress_idx = 0;
 
+/*
+ * How many time a reader has seen something that should not be visible. It is
+ * an error if this value is different than zero at the end of the stress test.
+ *
+ * Here, the something that should not be visibile is an old pipe that has been
+ * freed (mbtest = 0).
+ */
 int n_mberror = 0;
 DEFINE_PER_THREAD(long long [RCU_STRESS_PIPE_LEN + 1], rcu_stress_count);
 
@@ -305,19 +334,25 @@ void *rcu_read_stress_test(void *arg __attribute__((unused)))
 
 	rcu_register_thread();
 	put_thread_offline();
-	while (goflag == GOFLAG_INIT)
+	while (uatomic_read(&goflag) == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
 	put_thread_online();
-	while (goflag == GOFLAG_RUN) {
+	while (uatomic_read(&goflag) == GOFLAG_RUN) {
 		rcu_read_lock();
 		p = rcu_dereference(rcu_stress_current);
 		if (p->mbtest == 0)
-			n_mberror++;
+			uatomic_inc_mo(&n_mberror, CMM_RELAXED);
 		rcu_read_lock_nest();
+		/*
+		 * The value of garbage is nothing important. This is
+		 * essentially a busy loop. The atomic operation -- while not
+		 * important here -- helps tools such as TSAN to not flag this
+		 * as a race condition.
+		 */
 		for (i = 0; i < 100; i++)
-			garbage++;
+			uatomic_inc(&garbage);
 		rcu_read_unlock_nest();
-		pc = p->pipe_count;
+		pc = uatomic_read(&p->pipe_count);
 		rcu_read_unlock();
 		if ((pc > RCU_STRESS_PIPE_LEN) || (pc < 0))
 			pc = RCU_STRESS_PIPE_LEN;
@@ -367,7 +402,7 @@ static
 void *rcu_update_stress_test(void *arg __attribute__((unused)))
 {
 	int i;
-	struct rcu_stress *p;
+	struct rcu_stress *p, *old_p;
 	struct rcu_head rh;
 	enum writer_state writer_state = WRITER_STATE_SYNC_RCU;
 
@@ -375,24 +410,39 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 
 	/* Offline for poll. */
 	put_thread_offline();
-	while (goflag == GOFLAG_INIT)
+	while (uatomic_read(&goflag) == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
 	put_thread_online();
 
-	while (goflag == GOFLAG_RUN) {
+	old_p = NULL;
+	while (uatomic_read(&goflag) == GOFLAG_RUN) {
 		i = rcu_stress_idx + 1;
 		if (i >= RCU_STRESS_PIPE_LEN)
 			i = 0;
+
+		rcu_read_lock();
+		old_p = rcu_dereference(rcu_stress_current);
+		rcu_read_unlock();
+
+		/*
+		 * Allocate a new pipe.
+		 */
 		p = &rcu_stress_array[i];
-		p->mbtest = 0;
-		cmm_smp_mb();
 		p->pipe_count = 0;
 		p->mbtest = 1;
+
 		rcu_assign_pointer(rcu_stress_current, p);
 		rcu_stress_idx = i;
+
+		/*
+		 * Increment every pipe except the freshly allocated one. A
+		 * reader should only see either the old pipe or the new
+		 * pipe. This is reflected in the rcu_stress_count histogram.
+		 */
 		for (i = 0; i < RCU_STRESS_PIPE_LEN; i++)
 			if (i != rcu_stress_idx)
-				rcu_stress_array[i].pipe_count++;
+				uatomic_inc(&rcu_stress_array[i].pipe_count);
+
 		switch (writer_state) {
 		case WRITER_STATE_SYNC_RCU:
 			synchronize_rcu();
@@ -425,6 +475,14 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 			break;
 		}
 		}
+		/*
+		 * No readers should see that old pipe now. Setting mbtest to 0
+		 * to mark it as "freed".
+		 */
+		if (old_p) {
+			old_p->mbtest = 0;
+		}
+		old_p = p;
 		n_updates++;
 		advance_writer_state(&writer_state);
 	}
@@ -446,9 +504,9 @@ void *rcu_fake_update_stress_test(void *arg __attribute__((unused)))
 			set_thread_call_rcu_data(crdp);
 		}
 	}
-	while (goflag == GOFLAG_INIT)
+	while (uatomic_read(&goflag) == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
-	while (goflag == GOFLAG_RUN) {
+	while (uatomic_read(&goflag) == GOFLAG_RUN) {
 		synchronize_rcu();
 		(void) poll(NULL, 0, 1);
 	}
@@ -484,13 +542,9 @@ int stresstest(int nreaders)
 	create_thread(rcu_update_stress_test, NULL);
 	for (i = 0; i < 5; i++)
 		create_thread(rcu_fake_update_stress_test, NULL);
-	cmm_smp_mb();
-	goflag = GOFLAG_RUN;
-	cmm_smp_mb();
+	uatomic_set(&goflag, GOFLAG_RUN);
 	sleep(10);
-	cmm_smp_mb();
-	goflag = GOFLAG_STOP;
-	cmm_smp_mb();
+	uatomic_set(&goflag, GOFLAG_STOP);
 	wait_all_threads();
 	for_each_thread(t)
 		n_reads += per_thread(n_reads_pt, t);
