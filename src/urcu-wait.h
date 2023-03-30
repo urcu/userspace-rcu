@@ -122,7 +122,7 @@ void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 			urcu_die(errno);
 	}
 	/* Allow teardown of struct urcu_wait memory. */
-	uatomic_or(&wait->state, URCU_WAIT_TEARDOWN);
+	uatomic_or_mo(&wait->state, URCU_WAIT_TEARDOWN, CMM_RELEASE);
 }
 
 /*
@@ -180,7 +180,7 @@ skip_futex_wait:
 			break;
 		caa_cpu_relax();
 	}
-	while (!(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN))
+	while (!(uatomic_load(&wait->state, CMM_ACQUIRE) & URCU_WAIT_TEARDOWN))
 		poll(NULL, 0, 10);
 	urcu_posix_assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
 }
@@ -196,7 +196,7 @@ void urcu_wake_all_waiters(struct urcu_waiters *waiters)
 			caa_container_of(iter, struct urcu_wait_node, node);
 
 		/* Don't wake already running threads */
-		if (wait_node->state & URCU_WAIT_RUNNING)
+		if (uatomic_load(&wait_node->state, CMM_RELAXED) & URCU_WAIT_RUNNING)
 			continue;
 		urcu_adaptative_wake_up(wait_node);
 	}
