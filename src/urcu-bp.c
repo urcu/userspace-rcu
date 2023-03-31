@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 
+#include <urcu/annotate.h>
 #include <urcu/assert.h>
 #include <urcu/config.h>
 #include <urcu/arch.h>
@@ -206,7 +207,8 @@ static void smp_mb_master(void)
  */
 static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
-			struct cds_list_head *qsreaders)
+			struct cds_list_head *qsreaders,
+			cmm_annotate_t *group)
 {
 	unsigned int wait_loops = 0;
 	struct urcu_bp_reader *index, *tmp;
@@ -221,7 +223,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			wait_loops++;
 
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
-			switch (urcu_bp_reader_state(&index->ctr)) {
+			switch (urcu_bp_reader_state(&index->ctr, group)) {
 			case URCU_BP_READER_ACTIVE_CURRENT:
 				if (cur_snap_readers) {
 					cds_list_move(&index->node,
@@ -260,6 +262,8 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 
 void urcu_bp_synchronize_rcu(void)
 {
+	cmm_annotate_define(acquire_group);
+	cmm_annotate_define(release_group);
 	CDS_LIST_HEAD(cur_snap_readers);
 	CDS_LIST_HEAD(qsreaders);
 	sigset_t newmask, oldmask;
@@ -281,13 +285,14 @@ void urcu_bp_synchronize_rcu(void)
 	 * where new ptr points to. */
 	/* Write new ptr before changing the qparity */
 	smp_mb_master();
+	cmm_annotate_group_mb_release(&release_group);
 
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
+	wait_for_readers(&registry, &cur_snap_readers, &qsreaders, &acquire_group);
 
 	/*
 	 * Adding a cmm_smp_mb() which is _not_ formally required, but makes the
@@ -297,7 +302,8 @@ void urcu_bp_synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp.ctr, rcu_gp.ctr ^ URCU_BP_GP_CTR_PHASE);
+	cmm_annotate_group_mem_release(&release_group, &rcu_gp.ctr);
+	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_BP_GP_CTR_PHASE, CMM_RELAXED);
 
 	/*
 	 * Must commit qparity update to memory before waiting for other parity
@@ -318,7 +324,7 @@ void urcu_bp_synchronize_rcu(void)
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
+	wait_for_readers(&cur_snap_readers, NULL, &qsreaders, &acquire_group);
 
 	/*
 	 * Put quiescent reader list back into registry.
@@ -330,6 +336,7 @@ void urcu_bp_synchronize_rcu(void)
 	 * freed.
 	 */
 	smp_mb_master();
+	cmm_annotate_group_mb_acquire(&acquire_group);
 out:
 	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);

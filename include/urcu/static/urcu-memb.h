@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/annotate.h>
 #include <urcu/debug.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
@@ -79,11 +80,20 @@ extern DECLARE_URCU_TLS(struct urcu_reader, urcu_memb_reader);
  */
 static inline void _urcu_memb_read_lock_update(unsigned long tmp)
 {
+	unsigned long *ctr = &URCU_TLS(urcu_memb_reader).ctr;
+
 	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(urcu_memb_reader).ctr, _CMM_LOAD_SHARED(urcu_memb_gp.ctr));
+		unsigned long *pgctr = &urcu_memb_gp.ctr;
+		unsigned long gctr = uatomic_load(pgctr, CMM_RELAXED);
+
+		/* Paired with following mb slave. */
+		cmm_annotate_mem_acquire(pgctr);
+		uatomic_store(ctr, gctr, CMM_RELAXED);
+
 		urcu_memb_smp_mb_slave();
-	} else
-		_CMM_STORE_SHARED(URCU_TLS(urcu_memb_reader).ctr, tmp + URCU_GP_COUNT);
+	} else {
+		uatomic_store(ctr, tmp + URCU_GP_COUNT, CMM_RELAXED);
+	}
 }
 
 /*
@@ -117,13 +127,17 @@ static inline void _urcu_memb_read_lock(void)
  */
 static inline void _urcu_memb_read_unlock_update_and_wakeup(unsigned long tmp)
 {
+	unsigned long *ctr = &URCU_TLS(urcu_memb_reader).ctr;
+
 	if (caa_likely((tmp & URCU_GP_CTR_NEST_MASK) == URCU_GP_COUNT)) {
 		urcu_memb_smp_mb_slave();
-		_CMM_STORE_SHARED(URCU_TLS(urcu_memb_reader).ctr, tmp - URCU_GP_COUNT);
+		cmm_annotate_mem_release(ctr);
+		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
 		urcu_memb_smp_mb_slave();
 		urcu_common_wake_up_gp(&urcu_memb_gp);
-	} else
-		_CMM_STORE_SHARED(URCU_TLS(urcu_memb_reader).ctr, tmp - URCU_GP_COUNT);
+	} else {
+		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
+	}
 }
 
 /*

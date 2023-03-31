@@ -33,9 +33,38 @@ extern "C" {
 
 #ifdef CONFIG_RCU_USE_ATOMIC_BUILTINS
 
+# ifdef CMM_SANITIZE_THREAD
+/*
+ * This makes TSAN quiet about unsupported thread fence.
+ */
+static inline void _cmm_thread_fence_wrapper(void)
+{
+#   if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wpragmas"
+#    pragma clang diagnostic ignored "-Wunknown-warning-option"
+#    pragma clang diagnostic ignored "-Wtsan"
+#   elif defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wpragmas"
+#    pragma GCC diagnostic ignored "-Wtsan"
+#   endif
+	__atomic_thread_fence(__ATOMIC_SEQ_CST);
+#   if defined(__clang__)
+#    pragma clang diagnostic pop
+#   elif defined(__GNUC__)
+#    pragma GCC diagnostic pop
+#   endif
+}
+# endif	 /* CMM_SANITIZE_THREAD */
+
 # ifndef cmm_smp_mb
-#  define cmm_smp_mb() __atomic_thread_fence(__ATOMIC_SEQ_CST)
-# endif
+#  ifdef CMM_SANITIZE_THREAD
+#   define cmm_smp_mb() _cmm_thread_fence_wrapper()
+#  else
+#   define cmm_smp_mb() __atomic_thread_fence(__ATOMIC_SEQ_CST)
+#  endif /* CMM_SANITIZE_THREAD */
+# endif /* !cmm_smp_mb */
 
 #endif	/* CONFIG_RCU_USE_ATOMIC_BUILTINS */
 

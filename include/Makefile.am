@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 nobase_include_HEADERS = \
+	urcu/annotate.h \
 	urcu/arch/aarch64.h \
 	urcu/arch/alpha.h \
 	urcu/arch/arm.h \

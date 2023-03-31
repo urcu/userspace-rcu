@@ -24,6 +24,7 @@
 #include <poll.h>
 
 #include <urcu/config.h>
+#include <urcu/annotate.h>
 #include <urcu/assert.h>
 #include <urcu/arch.h>
 #include <urcu/wfcqueue.h>
@@ -286,7 +287,8 @@ end:
  */
 static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
-			struct cds_list_head *qsreaders)
+			struct cds_list_head *qsreaders,
+			cmm_annotate_t *group)
 {
 	unsigned int wait_loops = 0;
 	struct urcu_reader *index, *tmp;
@@ -309,7 +311,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 		}
 
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
-			switch (urcu_common_reader_state(&rcu_gp, &index->ctr)) {
+			switch (urcu_common_reader_state(&rcu_gp, &index->ctr, group)) {
 			case URCU_READER_ACTIVE_CURRENT:
 				if (cur_snap_readers) {
 					cds_list_move(&index->node,
@@ -393,6 +395,8 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 
 void synchronize_rcu(void)
 {
+	cmm_annotate_define(acquire_group);
+	cmm_annotate_define(release_group);
 	CDS_LIST_HEAD(cur_snap_readers);
 	CDS_LIST_HEAD(qsreaders);
 	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
@@ -407,10 +411,11 @@ void synchronize_rcu(void)
 	 * queue before their insertion into the wait queue.
 	 */
 	if (urcu_wait_add(&gp_waiters, &wait) != 0) {
-		/* Not first in queue: will be awakened by another thread. */
+		/*
+		 * Not first in queue: will be awakened by another thread.
+		 * Implies a memory barrier after grace period.
+		 */
 		urcu_adaptative_busy_wait(&wait);
-		/* Order following memory accesses after grace period. */
-		cmm_smp_mb();
 		return;
 	}
 	/* We won't need to wake ourself up */
@@ -435,13 +440,14 @@ void synchronize_rcu(void)
 	 */
 	/* Write new ptr before changing the qparity */
 	smp_mb_master();
+	cmm_annotate_group_mb_release(&release_group);
 
 	/*
 	 * Wait for readers to observe original parity or be quiescent.
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
+	wait_for_readers(&registry, &cur_snap_readers, &qsreaders, &acquire_group);
 
 	/*
 	 * Must finish waiting for quiescent state for original parity before
@@ -460,7 +466,8 @@ void synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(rcu_gp.ctr, rcu_gp.ctr ^ URCU_GP_CTR_PHASE);
+	cmm_annotate_group_mem_release(&release_group, &rcu_gp.ctr);
+	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_GP_CTR_PHASE, CMM_RELAXED);
 
 	/*
 	 * Must commit rcu_gp.ctr update to memory before waiting for quiescent
@@ -483,7 +490,7 @@ void synchronize_rcu(void)
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
+	wait_for_readers(&cur_snap_readers, NULL, &qsreaders, &acquire_group);
 
 	/*
 	 * Put quiescent reader list back into registry.
@@ -496,6 +503,7 @@ void synchronize_rcu(void)
 	 * iterates on reader threads.
 	 */
 	smp_mb_master();
+	cmm_annotate_group_mb_acquire(&acquire_group);
 out:
 	mutex_unlock(&rcu_registry_lock);
 	mutex_unlock(&rcu_gp_lock);

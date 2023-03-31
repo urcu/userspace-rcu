@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <poll.h>
 
+#include <urcu/annotate.h>
 #include <urcu/assert.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/map/urcu-qsbr.h>
@@ -142,7 +143,8 @@ static void wait_gp(void)
  */
 static void wait_for_readers(struct cds_list_head *input_readers,
 			struct cds_list_head *cur_snap_readers,
-			struct cds_list_head *qsreaders)
+			struct cds_list_head *qsreaders,
+			cmm_annotate_t *group)
 {
 	unsigned int wait_loops = 0;
 	struct urcu_qsbr_reader *index, *tmp;
@@ -169,7 +171,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			cmm_smp_mb();
 		}
 		cds_list_for_each_entry_safe(index, tmp, input_readers, node) {
-			switch (urcu_qsbr_reader_state(&index->ctr)) {
+			switch (urcu_qsbr_reader_state(&index->ctr, group)) {
 			case URCU_READER_ACTIVE_CURRENT:
 				if (cur_snap_readers) {
 					cds_list_move(&index->node,
@@ -194,8 +196,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 		if (cds_list_empty(input_readers)) {
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
-				cmm_smp_mb();
-				uatomic_set(&urcu_qsbr_gp.futex, 0);
+				uatomic_store(&urcu_qsbr_gp.futex, 0, CMM_RELEASE);
 			}
 			break;
 		} else {
@@ -224,6 +225,8 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 #if (CAA_BITS_PER_LONG < 64)
 void urcu_qsbr_synchronize_rcu(void)
 {
+	cmm_annotate_define(acquire_group);
+	cmm_annotate_define(release_group);
 	CDS_LIST_HEAD(cur_snap_readers);
 	CDS_LIST_HEAD(qsreaders);
 	unsigned long was_online;
@@ -244,6 +247,7 @@ void urcu_qsbr_synchronize_rcu(void)
 		urcu_qsbr_thread_offline();
 	else
 		cmm_smp_mb();
+	cmm_annotate_group_mb_release(&release_group);
 
 	/*
 	 * Add ourself to gp_waiters queue of threads awaiting to wait
@@ -275,7 +279,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&registry, &cur_snap_readers, &qsreaders);
+	wait_for_readers(&registry, &cur_snap_readers, &qsreaders, &acquire_group);
 
 	/*
 	 * Must finish waiting for quiescent state for original parity
@@ -295,7 +299,8 @@ void urcu_qsbr_synchronize_rcu(void)
 	cmm_smp_mb();
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
-	CMM_STORE_SHARED(urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr ^ URCU_QSBR_GP_CTR);
+	cmm_annotate_group_mem_release(&release_group, &urcu_qsbr_gp.ctr);
+	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr ^ URCU_QSBR_GP_CTR, CMM_RELAXED);
 
 	/*
 	 * Must commit urcu_qsbr_gp.ctr update to memory before waiting for
@@ -318,7 +323,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&cur_snap_readers, NULL, &qsreaders);
+	wait_for_readers(&cur_snap_readers, NULL, &qsreaders, &acquire_group);
 
 	/*
 	 * Put quiescent reader list back into registry.
@@ -333,6 +338,8 @@ gp_end:
 	 * Finish waiting for reader threads before letting the old ptr being
 	 * freed.
 	 */
+	cmm_annotate_group_mb_acquire(&acquire_group);
+
 	if (was_online)
 		urcu_qsbr_thread_online();
 	else
@@ -341,6 +348,8 @@ gp_end:
 #else /* !(CAA_BITS_PER_LONG < 64) */
 void urcu_qsbr_synchronize_rcu(void)
 {
+	cmm_annotate_define(acquire_group);
+	cmm_annotate_define(release_group);
 	CDS_LIST_HEAD(qsreaders);
 	unsigned long was_online;
 	DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
@@ -357,6 +366,7 @@ void urcu_qsbr_synchronize_rcu(void)
 		urcu_qsbr_thread_offline();
 	else
 		cmm_smp_mb();
+	cmm_annotate_group_mb_release(&release_group);
 
 	/*
 	 * Add ourself to gp_waiters queue of threads awaiting to wait
@@ -384,7 +394,8 @@ void urcu_qsbr_synchronize_rcu(void)
 		goto out;
 
 	/* Increment current G.P. */
-	CMM_STORE_SHARED(urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr + URCU_QSBR_GP_CTR);
+	cmm_annotate_group_mem_release(&release_group, &urcu_qsbr_gp.ctr);
+	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr + URCU_QSBR_GP_CTR, CMM_RELAXED);
 
 	/*
 	 * Must commit urcu_qsbr_gp.ctr update to memory before waiting for
@@ -407,7 +418,7 @@ void urcu_qsbr_synchronize_rcu(void)
 	 * wait_for_readers() can release and grab again rcu_registry_lock
 	 * internally.
 	 */
-	wait_for_readers(&registry, NULL, &qsreaders);
+	wait_for_readers(&registry, NULL, &qsreaders, &acquire_group);
 
 	/*
 	 * Put quiescent reader list back into registry.
@@ -422,6 +433,8 @@ gp_end:
 		urcu_qsbr_thread_online();
 	else
 		cmm_smp_mb();
+
+	cmm_annotate_group_mb_acquire(&acquire_group);
 }
 #endif  /* !(CAA_BITS_PER_LONG < 64) */
 

@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/annotate.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
@@ -91,7 +92,8 @@ static inline void urcu_common_wake_up_gp(struct urcu_gp *gp)
 }
 
 static inline enum urcu_state urcu_common_reader_state(struct urcu_gp *gp,
-		unsigned long *ctr)
+						unsigned long *ctr,
+						cmm_annotate_t *group)
 {
 	unsigned long v;
 
@@ -99,7 +101,9 @@ static inline enum urcu_state urcu_common_reader_state(struct urcu_gp *gp,
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = CMM_LOAD_SHARED(*ctr);
+	v = uatomic_load(ctr, CMM_RELAXED);
+	cmm_annotate_group_mem_acquire(group, ctr);
+
 	if (!(v & URCU_GP_CTR_NEST_MASK))
 		return URCU_READER_INACTIVE;
 	if (!((v ^ gp->ctr) & URCU_GP_CTR_PHASE))

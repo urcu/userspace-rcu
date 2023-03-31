@@ -113,9 +113,8 @@ void urcu_wait_node_init(struct urcu_wait_node *node,
 static inline
 void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
-	cmm_smp_mb();
 	urcu_posix_assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
-	uatomic_set(&wait->state, URCU_WAIT_WAKEUP);
+	uatomic_store(&wait->state, URCU_WAIT_WAKEUP, CMM_RELEASE);
 	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
 		if (futex_noasync(&wait->state, FUTEX_WAKE, 1,
 				NULL, NULL, 0) < 0)
@@ -137,11 +136,11 @@ void urcu_adaptative_busy_wait(struct urcu_wait_node *wait)
 	/* Load and test condition before read state */
 	cmm_smp_rmb();
 	for (i = 0; i < URCU_WAIT_ATTEMPTS; i++) {
-		if (uatomic_read(&wait->state) != URCU_WAIT_WAITING)
+		if (uatomic_load(&wait->state, CMM_ACQUIRE) != URCU_WAIT_WAITING)
 			goto skip_futex_wait;
 		caa_cpu_relax();
 	}
-	while (uatomic_read(&wait->state) == URCU_WAIT_WAITING) {
+	while (uatomic_load(&wait->state, CMM_ACQUIRE) == URCU_WAIT_WAITING) {
 		if (!futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING, NULL, NULL, 0)) {
 			/*
 			 * Prior queued wakeups queued by unrelated code
@@ -176,7 +175,7 @@ skip_futex_wait:
 	 * memory allocated for struct urcu_wait.
 	 */
 	for (i = 0; i < URCU_WAIT_ATTEMPTS; i++) {
-		if (uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN)
+		if (uatomic_load(&wait->state, CMM_RELAXED) & URCU_WAIT_TEARDOWN)
 			break;
 		caa_cpu_relax();
 	}

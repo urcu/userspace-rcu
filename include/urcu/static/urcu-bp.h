@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <urcu/annotate.h>
 #include <urcu/debug.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
@@ -103,7 +104,8 @@ static inline void urcu_bp_smp_mb_slave(void)
 		cmm_smp_mb();
 }
 
-static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr)
+static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr,
+						cmm_annotate_t *group)
 {
 	unsigned long v;
 
@@ -113,7 +115,9 @@ static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr)
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = CMM_LOAD_SHARED(*ctr);
+	v = uatomic_load(ctr, CMM_RELAXED);
+	cmm_annotate_group_mem_acquire(group, ctr);
+
 	if (!(v & URCU_BP_GP_CTR_NEST_MASK))
 		return URCU_BP_READER_INACTIVE;
 	if (!((v ^ urcu_bp_gp.ctr) & URCU_BP_GP_CTR_PHASE))
@@ -167,12 +171,14 @@ static inline void _urcu_bp_read_lock(void)
 static inline void _urcu_bp_read_unlock(void)
 {
 	unsigned long tmp;
+	unsigned long *ctr = &URCU_TLS(urcu_bp_reader)->ctr;
 
 	tmp = URCU_TLS(urcu_bp_reader)->ctr;
 	urcu_assert_debug(tmp & URCU_BP_GP_CTR_NEST_MASK);
 	/* Finish using rcu before decrementing the pointer. */
 	urcu_bp_smp_mb_slave();
-	_CMM_STORE_SHARED(URCU_TLS(urcu_bp_reader)->ctr, tmp - URCU_BP_GP_COUNT);
+	cmm_annotate_mem_release(ctr);
+	uatomic_store(ctr, tmp - URCU_BP_GP_COUNT, CMM_RELAXED);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 

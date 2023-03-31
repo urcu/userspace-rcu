@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/annotate.h>
 #include <urcu/debug.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
@@ -82,11 +83,14 @@ static inline void urcu_qsbr_wake_up_gp(void)
 	}
 }
 
-static inline enum urcu_state urcu_qsbr_reader_state(unsigned long *ctr)
+static inline enum urcu_state urcu_qsbr_reader_state(unsigned long *ctr,
+						cmm_annotate_t *group)
 {
 	unsigned long v;
 
-	v = CMM_LOAD_SHARED(*ctr);
+	v = uatomic_load(ctr, CMM_RELAXED);
+	cmm_annotate_group_mem_acquire(group, ctr);
+
 	if (!v)
 		return URCU_READER_INACTIVE;
 	if (v == urcu_qsbr_gp.ctr)
@@ -141,9 +145,9 @@ static inline int _urcu_qsbr_read_ongoing(void)
  */
 static inline void _urcu_qsbr_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
 {
-	cmm_smp_mb();
-	_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, gp_ctr);
-	cmm_smp_mb();	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
+	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, gp_ctr, CMM_SEQ_CST);
+
+	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
 	urcu_qsbr_wake_up_gp();
 	cmm_smp_mb();
 }
@@ -165,7 +169,8 @@ static inline void _urcu_qsbr_quiescent_state(void)
 	unsigned long gp_ctr;
 
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
-	if ((gp_ctr = CMM_LOAD_SHARED(urcu_qsbr_gp.ctr)) == URCU_TLS(urcu_qsbr_reader).ctr)
+	gp_ctr = uatomic_load(&urcu_qsbr_gp.ctr, CMM_RELAXED);
+	if (gp_ctr == URCU_TLS(urcu_qsbr_reader).ctr)
 		return;
 	_urcu_qsbr_quiescent_state_update_and_wakeup(gp_ctr);
 }
@@ -181,9 +186,8 @@ static inline void _urcu_qsbr_quiescent_state(void)
 static inline void _urcu_qsbr_thread_offline(void)
 {
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
-	cmm_smp_mb();
-	CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, 0);
-	cmm_smp_mb();	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
+	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, 0, CMM_SEQ_CST);
+	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
 	urcu_qsbr_wake_up_gp();
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
@@ -198,9 +202,14 @@ static inline void _urcu_qsbr_thread_offline(void)
  */
 static inline void _urcu_qsbr_thread_online(void)
 {
+	unsigned long *pctr = &URCU_TLS(urcu_qsbr_reader).ctr;
+	unsigned long ctr;
+
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).ctr, CMM_LOAD_SHARED(urcu_qsbr_gp.ctr));
+	ctr = uatomic_load(&urcu_qsbr_gp.ctr, CMM_RELAXED);
+	cmm_annotate_mem_acquire(&urcu_qsbr_gp.ctr);
+	uatomic_store(pctr, ctr, CMM_RELAXED);
 	cmm_smp_mb();
 }
 
