@@ -57,10 +57,7 @@ void *test_hash_unique_thr_reader(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		struct lfht_test_node *node;
@@ -122,10 +119,7 @@ void *test_hash_unique_thr_writer(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		/*

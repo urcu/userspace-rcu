@@ -19,6 +19,7 @@
 #include <urcu/arch.h>
 #include <urcu/assert.h>
 #include <urcu/tls-compat.h>
+#include <urcu/uatomic.h>
 #include "thread-id.h"
 #include "../common/debug-yield.h"
 
@@ -33,8 +34,6 @@
 struct test_array {
 	int a;
 };
-
-static volatile int test_go, test_stop;
 
 static unsigned long wdelay;
 
@@ -106,19 +105,6 @@ static void set_affinity(void)
 #endif /* HAVE_SCHED_SETAFFINITY */
 }
 
-/*
- * returns 0 if test should end.
- */
-static int test_duration_write(void)
-{
-	return !test_stop;
-}
-
-static int test_duration_read(void)
-{
-	return !test_stop;
-}
-
 static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
@@ -143,10 +129,7 @@ void *thr_reader(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		rcu_read_lock();
@@ -217,10 +200,7 @@ void *thr_writer(void *data)
 
 	set_affinity();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 #ifndef TEST_LOCAL_GC
@@ -385,13 +365,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	cmm_smp_mb();
-
-	test_go = 1;
-
-	sleep(duration);
-
-	test_stop = 1;
+	test_for(duration);
 
 	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
 		err = pthread_join(tid_reader[i_thr], &tret);

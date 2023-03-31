@@ -111,8 +111,6 @@ cds_lfht_iter_get_test_node(struct cds_lfht_iter *iter)
 	return to_test_node(cds_lfht_iter_get_node(iter));
 }
 
-extern volatile int test_go, test_stop;
-
 extern unsigned long wdelay;
 
 extern unsigned long duration;
@@ -159,19 +157,6 @@ extern int use_affinity;
 extern pthread_mutex_t affinity_mutex;
 
 void set_affinity(void);
-
-/*
- * returns 0 if test should end.
- */
-static inline int test_duration_write(void)
-{
-	return !test_stop;
-}
-
-static inline int test_duration_read(void)
-{
-	return !test_stop;
-}
 
 extern DECLARE_URCU_TLS(unsigned long long, nr_writes);
 extern DECLARE_URCU_TLS(unsigned long long, nr_reads);

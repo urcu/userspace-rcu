@@ -45,8 +45,6 @@ enum test_sync {
 
 static enum test_sync test_sync;
 
-static volatile int test_go, test_stop;
-
 static unsigned long rduration;
 
 static unsigned long duration;
@@ -110,12 +108,12 @@ static void set_affinity(void)
  */
 static int test_duration_dequeue(void)
 {
-	return !test_stop;
+	return test_duration_read();
 }
 
 static int test_duration_enqueue(void)
 {
-	return !test_stop;
+	return test_duration_write();
 }
 
 static DEFINE_URCU_TLS(unsigned long long, nr_dequeues);
@@ -145,10 +143,7 @@ static void *thr_enqueuer(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		struct test *node = malloc(sizeof(*node));
@@ -247,10 +242,7 @@ static void *thr_dequeuer(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	urcu_posix_assert(test_pop || test_pop_all);
 
@@ -445,7 +437,7 @@ int main(int argc, char **argv)
 
 	cmm_smp_mb();
 
-	test_go = 1;
+	begin_test();
 
 	for (i_thr = 0; i_thr < duration; i_thr++) {
 		sleep(1);
@@ -455,7 +447,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	test_stop = 1;
+	end_test();
 
 	for (i_thr = 0; i_thr < nr_enqueuers; i_thr++) {
 		err = pthread_join(tid_enqueuer[i_thr], &tret);

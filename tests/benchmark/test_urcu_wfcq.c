@@ -42,7 +42,7 @@ static enum test_sync test_sync;
 
 static int test_force_sync;
 
-static volatile int test_go, test_stop_enqueue, test_stop_dequeue;
+static volatile int test_stop_enqueue, test_stop_dequeue;
 
 static unsigned long rduration;
 
@@ -108,12 +108,12 @@ static void set_affinity(void)
  */
 static int test_duration_dequeue(void)
 {
-	return !test_stop_dequeue;
+	return !uatomic_load(&test_stop_dequeue, CMM_RELAXED);
 }
 
 static int test_duration_enqueue(void)
 {
-	return !test_stop_enqueue;
+	return !uatomic_load(&test_stop_enqueue, CMM_RELAXED);
 }
 
 static DEFINE_URCU_TLS(unsigned long long, nr_dequeues);
@@ -141,10 +141,7 @@ static void *thr_enqueuer(void *_count)
 
 	set_affinity();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		struct cds_wfcq_node *node = malloc(sizeof(*node));
@@ -252,10 +249,7 @@ static void *thr_dequeuer(void *_count)
 
 	set_affinity();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		if (test_dequeue && test_splice) {
@@ -468,7 +462,7 @@ int main(int argc, char **argv)
 
 	cmm_smp_mb();
 
-	test_go = 1;
+	begin_test();
 
 	for (i_thr = 0; i_thr < duration; i_thr++) {
 		sleep(1);
@@ -478,7 +472,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	test_stop_enqueue = 1;
+	uatomic_store(&test_stop_enqueue, 1, CMM_RELEASE);
 
 	if (test_wait_empty) {
 		while (nr_enqueuers != uatomic_read(&test_enqueue_stopped)) {
@@ -489,7 +483,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	test_stop_dequeue = 1;
+	uatomic_store(&test_stop_dequeue, 1, CMM_RELAXED);
 
 	for (i_thr = 0; i_thr < nr_enqueuers; i_thr++) {
 		err = pthread_join(tid_enqueuer[i_thr], &tret);

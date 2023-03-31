@@ -82,8 +82,6 @@ DEFINE_URCU_TLS(unsigned long, lookup_ok);
 
 struct cds_lfht *test_ht;
 
-volatile int test_go, test_stop;
-
 unsigned long wdelay;
 
 unsigned long duration;
@@ -635,14 +633,14 @@ int main(int argc, char **argv)
 
 	cmm_smp_mb();
 
-	test_go = 1;
+	begin_test();
 
 	remain = duration;
 	do {
 		remain = sleep(remain);
 	} while (remain > 0);
 
-	test_stop = 1;
+	end_test();
 
 end_pthread_join:
 	for (i_thr = 0; i_thr < nr_readers_created; i_thr++) {

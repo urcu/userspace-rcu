@@ -59,10 +59,7 @@ void *test_hash_rw_thr_reader(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		rcu_read_lock();
@@ -119,10 +116,7 @@ void *test_hash_rw_thr_writer(void *_count)
 
 	rcu_register_thread();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		struct cds_lfht_node *ret_node = NULL;

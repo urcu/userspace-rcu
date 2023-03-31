@@ -39,8 +39,6 @@ struct per_thread_lock {
 
 static struct per_thread_lock *per_thread_lock;
 
-static volatile int test_go, test_stop;
-
 static unsigned long wdelay;
 
 static volatile struct test_array test_array = { 8 };
@@ -103,19 +101,6 @@ static void set_affinity(void)
 #endif /* HAVE_SCHED_SETAFFINITY */
 }
 
-/*
- * returns 0 if test should end.
- */
-static int test_duration_write(void)
-{
-	return !test_stop;
-}
-
-static int test_duration_read(void)
-{
-	return !test_stop;
-}
-
 static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
@@ -161,9 +146,7 @@ void *thr_reader(void *data)
 
 	set_affinity();
 
-	while (!test_go)
-	{
-	}
+	wait_until_go();
 
 	for (;;) {
 		int v;
@@ -197,10 +180,7 @@ void *thr_writer(void *data)
 
 	set_affinity();
 
-	while (!test_go)
-	{
-	}
-	cmm_smp_mb();
+	wait_until_go();
 
 	for (;;) {
 		for (tidx = 0; tidx < (long)nr_readers; tidx++) {
@@ -345,13 +325,7 @@ int main(int argc, char **argv)
 			exit(1);
 	}
 
-	cmm_smp_mb();
-
-	test_go = 1;
-
-	sleep(duration);
-
-	test_stop = 1;
+	test_for(duration);
 
 	for (i_thr = 0; i_thr < nr_readers; i_thr++) {
 		err = pthread_join(tid_reader[i_thr], &tret);
