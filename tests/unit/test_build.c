@@ -115,10 +115,10 @@ void test_build_rcu_dereference(void)
 	static struct a_clear_struct *clear = NULL;
 	static struct a_clear_struct *const clear_const = NULL;
 
-	rcu_dereference(opaque);
-	rcu_dereference(opaque_const);
-	rcu_dereference(clear);
-	rcu_dereference(clear_const);
+	(void) rcu_dereference(opaque);
+	(void) rcu_dereference(opaque_const);
+	(void) rcu_dereference(clear);
+	(void) rcu_dereference(clear_const);
 }
 
 int main(void)
