@@ -77,6 +77,11 @@ static inline void _cds_wfcq_node_init(struct cds_wfcq_node *node)
 	node->next = NULL;
 }
 
+static inline void _cds_wfcq_node_init_atomic(struct cds_wfcq_node *node)
+{
+	uatomic_store(&node->next, NULL, CMM_RELAXED);
+}
+
 /*
  * cds_wfcq_init: initialize wait-free queue (with lock). Pair with
  * cds_wfcq_destroy().
@@ -139,8 +144,8 @@ static inline bool _cds_wfcq_empty(cds_wfcq_head_ptr_t u_head,
 	 * common case to ensure that dequeuers do not frequently access
 	 * enqueuer's tail->p cache line.
 	 */
-	return CMM_LOAD_SHARED(head->node.next) == NULL
-		&& CMM_LOAD_SHARED(tail->p) == &head->node;
+	return uatomic_load(&head->node.next, CMM_CONSUME) == NULL
+		&& uatomic_load(&tail->p, CMM_CONSUME) == &head->node;
 }
 
 static inline void _cds_wfcq_dequeue_lock(struct cds_wfcq_head *head,
@@ -174,7 +179,7 @@ static inline bool ___cds_wfcq_append(cds_wfcq_head_ptr_t u_head,
 	 * stores to data structure containing node and setting
 	 * node->next to NULL before publication.
 	 */
-	old_tail = uatomic_xchg(&tail->p, new_tail);
+	old_tail = uatomic_xchg_mo(&tail->p, new_tail, CMM_SEQ_CST);
 
 	/*
 	 * Implicit memory barrier after uatomic_xchg() orders store to
@@ -185,7 +190,8 @@ static inline bool ___cds_wfcq_append(cds_wfcq_head_ptr_t u_head,
 	 * store will append "node" to the queue from a dequeuer
 	 * perspective.
 	 */
-	CMM_STORE_SHARED(old_tail->next, new_head);
+	uatomic_store(&old_tail->next, new_head, CMM_RELEASE);
+
 	/*
 	 * Return false if queue was empty prior to adding the node,
 	 * else return true.
@@ -196,8 +202,8 @@ static inline bool ___cds_wfcq_append(cds_wfcq_head_ptr_t u_head,
 /*
  * cds_wfcq_enqueue: enqueue a node into a wait-free queue.
  *
- * Issues a full memory barrier before enqueue. No mutual exclusion is
- * required.
+ * Operations prior to enqueue are consistant with respect to dequeuing or
+ * splicing and iterating.
  *
  * Returns false if the queue was empty prior to adding the node.
  * Returns true otherwise.
@@ -206,6 +212,8 @@ static inline bool _cds_wfcq_enqueue(cds_wfcq_head_ptr_t head,
 		struct cds_wfcq_tail *tail,
 		struct cds_wfcq_node *new_tail)
 {
+	cmm_emit_legacy_smp_mb();
+
 	return ___cds_wfcq_append(head, tail, new_tail, new_tail);
 }
 
@@ -256,8 +264,10 @@ ___cds_wfcq_node_sync_next(struct cds_wfcq_node *node, int blocking)
 
 	/*
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
+	 *
+	 * Load node.next before loading node's content
 	 */
-	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+	while ((next = uatomic_load(&node->next, CMM_CONSUME)) == NULL) {
 		if (___cds_wfcq_busy_wait(&attempt, blocking))
 			return CDS_WFCQ_WOULDBLOCK;
 	}
@@ -276,8 +286,7 @@ ___cds_wfcq_first(cds_wfcq_head_ptr_t u_head,
 	if (_cds_wfcq_empty(__cds_wfcq_head_cast(head), tail))
 		return NULL;
 	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
-	/* Load head->node.next before loading node's content */
-	cmm_smp_read_barrier_depends();
+
 	return node;
 }
 
@@ -329,16 +338,15 @@ ___cds_wfcq_next(cds_wfcq_head_ptr_t head __attribute__((unused)),
 	 * out if we reached the end of the queue, we first check
 	 * node->next as a common case to ensure that iteration on nodes
 	 * do not frequently access enqueuer's tail->p cache line.
+	 *
+	 * Load node->next before loading next's content
 	 */
-	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
-		/* Load node->next before tail->p */
-		cmm_smp_rmb();
-		if (CMM_LOAD_SHARED(tail->p) == node)
+	if ((next = uatomic_load(&node->next, CMM_CONSUME)) == NULL) {
+		if (uatomic_load(&tail->p, CMM_RELAXED) == node)
 			return NULL;
 		next = ___cds_wfcq_node_sync_next(node, blocking);
 	}
-	/* Load node->next before loading next's content */
-	cmm_smp_read_barrier_depends();
+
 	return next;
 }
 
@@ -400,7 +408,7 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		return CDS_WFCQ_WOULDBLOCK;
 	}
 
-	if ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+	if ((next = uatomic_load(&node->next, CMM_CONSUME)) == NULL) {
 		/*
 		 * @node is probably the only node in the queue.
 		 * Try to move the tail to &q->head.
@@ -408,17 +416,13 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		 * NULL if the cmpxchg succeeds. Should the
 		 * cmpxchg fail due to a concurrent enqueue, the
 		 * q->head.next will be set to the next node.
-		 * The implicit memory barrier before
-		 * uatomic_cmpxchg() orders load node->next
-		 * before loading q->tail.
-		 * The implicit memory barrier before uatomic_cmpxchg
-		 * orders load q->head.next before loading node's
-		 * content.
 		 */
-		_cds_wfcq_node_init(&head->node);
-		if (uatomic_cmpxchg(&tail->p, node, &head->node) == node) {
+		_cds_wfcq_node_init_atomic(&head->node);
+		if (uatomic_cmpxchg_mo(&tail->p, node, &head->node,
+					CMM_SEQ_CST, CMM_SEQ_CST) == node) {
 			if (state)
 				*state |= CDS_WFCQ_STATE_LAST;
+			cmm_emit_legacy_smp_mb();
 			return node;
 		}
 		next = ___cds_wfcq_node_sync_next(node, blocking);
@@ -428,7 +432,7 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 		 * (currently NULL) back to its original value.
 		 */
 		if (!blocking && next == CDS_WFCQ_WOULDBLOCK) {
-			head->node.next = node;
+			uatomic_store(&head->node.next, node, CMM_RELAXED);
 			return CDS_WFCQ_WOULDBLOCK;
 		}
 	}
@@ -436,10 +440,9 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 	/*
 	 * Move queue head forward.
 	 */
-	head->node.next = next;
+	uatomic_store(&head->node.next, next, CMM_RELAXED);
+	cmm_emit_legacy_smp_mb();
 
-	/* Load q->head.next before loading node's content */
-	cmm_smp_read_barrier_depends();
 	return node;
 }
 
@@ -501,6 +504,8 @@ ___cds_wfcq_dequeue_nonblocking(cds_wfcq_head_ptr_t head,
 /*
  * __cds_wfcq_splice: enqueue all src_q nodes at the end of dest_q.
  *
+ * Operations after splice are consistant with respect to enqueue.
+ *
  * Dequeue all nodes from src_q.
  * dest_q must be already initialized.
  * Mutual exclusion for src_q should be ensured by the caller as
@@ -534,10 +539,10 @@ ___cds_wfcq_splice(
 		 * uatomic_xchg, as well as tail pointer vs head node
 		 * address.
 		 */
-		head = uatomic_xchg(&src_q_head->node.next, NULL);
+		head = uatomic_xchg_mo(&src_q_head->node.next, NULL, CMM_SEQ_CST);
 		if (head)
 			break;	/* non-empty */
-		if (CMM_LOAD_SHARED(src_q_tail->p) == &src_q_head->node)
+		if (uatomic_load(&src_q_tail->p, CMM_CONSUME) == &src_q_head->node)
 			return CDS_WFCQ_RET_SRC_EMPTY;
 		if (___cds_wfcq_busy_wait(&attempt, blocking))
 			return CDS_WFCQ_RET_WOULDBLOCK;
@@ -549,7 +554,8 @@ ___cds_wfcq_splice(
 	 * concurrent enqueue on src_q, which exchanges the tail before
 	 * updating the previous tail's next pointer.
 	 */
-	tail = uatomic_xchg(&src_q_tail->p, &src_q_head->node);
+	cmm_emit_legacy_smp_mb();
+	tail = uatomic_xchg_mo(&src_q_tail->p, &src_q_head->node, CMM_SEQ_CST);
 
 	/*
 	 * Append the spliced content of src_q into dest_q. Does not

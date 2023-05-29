@@ -239,6 +239,11 @@ AE_FEATURE([cds-lfht-iter-debug], [Enable extra debugging checks for lock-free h
 AE_FEATURE_DEFAULT_DISABLE
 AE_FEATURE([compiler-atomic-builtins], [Enable the use of compiler atomic builtins.])
 
+# emit legacy memory barriers
+# Enable by default
+AE_FEATURE_DEFAULT_ENABLE
+AE_FEATURE([legacy-mb], [Disable legacy memory barriers.])
+
 # When given, add -Werror to WARN_CFLAGS and WARN_CXXFLAGS.
 # Disabled by default
 AE_FEATURE_DEFAULT_DISABLE
@@ -270,6 +275,10 @@ AE_IF_FEATURE_ENABLED([cds-lfht-iter-debug], [
 
 AE_IF_FEATURE_ENABLED([compiler-atomic-builtins], [
   AC_DEFINE([CONFIG_RCU_USE_ATOMIC_BUILTINS], [1], [Use compiler atomic builtins.])
+])
+
+AE_IF_FEATURE_ENABLED([legacy-mb], [
+  AC_DEFINE([CONFIG_RCU_EMIT_LEGACY_MB], [1], [Emit legacy memory barriers that were documented in the APIs.])
 ])
 
 ##                                                                          ##
@@ -389,6 +398,10 @@ AE_PPRINT_PROP_BOOL([Multi-flavor support], 1)
 # atomic builtins enabled/disabled
 AE_IS_FEATURE_ENABLED([compiler-atomic-builtins]) && value=1 || value=0
 AE_PPRINT_PROP_BOOL([Use compiler atomic builtins], $value)
+
+# legacy memory barriers
+AE_IS_FEATURE_ENABLED([legacy-mb]) && value=1 || value=0
+AE_PPRINT_PROP_BOOL([Emit legacy memory barriers], $value)
 
 report_bindir="`eval eval echo $bindir`"
 report_libdir="`eval eval echo $libdir`"

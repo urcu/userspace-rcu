@@ -155,5 +155,11 @@
 #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
 #endif
 
+#ifdef CONFIG_RCU_EMIT_LEGACY_MB
+# define cmm_emit_legacy_smp_mb() cmm_smp_mb()
+#else
+# define cmm_emit_legacy_smp_mb() do { } while (0)
+#endif
+
 
 #endif /* _URCU_ARCH_H */

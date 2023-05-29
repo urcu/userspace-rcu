@@ -110,7 +110,7 @@ static inline bool _cds_wfs_empty(cds_wfs_stack_ptr_t u_stack)
 {
 	struct __cds_wfs_stack *s = u_stack._s;
 
-	return ___cds_wfs_end(CMM_LOAD_SHARED(s->head));
+	return ___cds_wfs_end(uatomic_load(&s->head, CMM_RELAXED));
 }
 
 /*
@@ -118,6 +118,8 @@ static inline bool _cds_wfs_empty(cds_wfs_stack_ptr_t u_stack)
  *
  * Issues a full memory barrier before push. No mutual exclusion is
  * required.
+ *
+ * Operations before push are consistent when observed after associated pop.
  *
  * Returns 0 if the stack was empty prior to adding the node.
  * Returns non-zero otherwise.
@@ -134,12 +136,13 @@ int _cds_wfs_push(cds_wfs_stack_ptr_t u_stack, struct cds_wfs_node *node)
 	 * uatomic_xchg() implicit memory barrier orders earlier stores
 	 * to node (setting it to NULL) before publication.
 	 */
-	old_head = uatomic_xchg(&s->head, new_head);
+	cmm_emit_legacy_smp_mb();
+	old_head = uatomic_xchg_mo(&s->head, new_head, CMM_SEQ_CST);
 	/*
 	 * At this point, dequeuers see a NULL node->next, they should
 	 * busy-wait until node->next is set to old_head.
 	 */
-	CMM_STORE_SHARED(node->next, &old_head->node);
+	uatomic_store(&node->next, &old_head->node, CMM_RELEASE);
 	return !___cds_wfs_end(old_head);
 }
 
@@ -155,7 +158,7 @@ ___cds_wfs_node_sync_next(struct cds_wfs_node *node, int blocking)
 	/*
 	 * Adaptative busy-looping waiting for push to complete.
 	 */
-	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+	while ((next = uatomic_load(&node->next, CMM_CONSUME)) == NULL) {
 		if (!blocking)
 			return CDS_WFS_WOULDBLOCK;
 		if (++attempt >= CDS_WFS_ADAPT_ATTEMPTS) {
@@ -180,7 +183,7 @@ ___cds_wfs_pop(cds_wfs_stack_ptr_t u_stack, int *state, int blocking)
 	if (state)
 		*state = 0;
 	for (;;) {
-		head = CMM_LOAD_SHARED(s->head);
+		head = uatomic_load(&s->head, CMM_CONSUME);
 		if (___cds_wfs_end(head)) {
 			return NULL;
 		}
@@ -189,9 +192,11 @@ ___cds_wfs_pop(cds_wfs_stack_ptr_t u_stack, int *state, int blocking)
 			return CDS_WFS_WOULDBLOCK;
 		}
 		new_head = caa_container_of(next, struct cds_wfs_head, node);
-		if (uatomic_cmpxchg(&s->head, head, new_head) == head) {
+		if (uatomic_cmpxchg_mo(&s->head, head, new_head,
+					CMM_SEQ_CST, CMM_SEQ_CST) == head) {
 			if (state && ___cds_wfs_end(new_head))
 				*state |= CDS_WFS_STATE_LAST;
+			cmm_emit_legacy_smp_mb();
 			return &head->node;
 		}
 		if (!blocking) {
@@ -205,6 +210,8 @@ ___cds_wfs_pop(cds_wfs_stack_ptr_t u_stack, int *state, int blocking)
  * __cds_wfs_pop_with_state_blocking: pop a node from the stack, with state.
  *
  * Returns NULL if stack is empty.
+ *
+ * Operations after pop push are consistent when observed before associated push.
  *
  * __cds_wfs_pop_blocking needs to be synchronized using one of the
  * following techniques:
@@ -264,6 +271,8 @@ ___cds_wfs_pop_nonblocking(cds_wfs_stack_ptr_t u_stack)
 /*
  * __cds_wfs_pop_all: pop all nodes from a stack.
  *
+ * Operations after pop push are consistent when observed before associated push.
+ *
  * __cds_wfs_pop_all does not require any synchronization with other
  * push, nor with other __cds_wfs_pop_all, but requires synchronization
  * matching the technique used to synchronize __cds_wfs_pop_blocking:
@@ -295,7 +304,8 @@ ___cds_wfs_pop_all(cds_wfs_stack_ptr_t u_stack)
 	 * taking care to order writes to each node prior to the full
 	 * memory barrier after this uatomic_xchg().
 	 */
-	head = uatomic_xchg(&s->head, CDS_WFS_END);
+	head = uatomic_xchg_mo(&s->head, CDS_WFS_END, CMM_SEQ_CST);
+	cmm_emit_legacy_smp_mb();
 	if (___cds_wfs_end(head))
 		return NULL;
 	return head;

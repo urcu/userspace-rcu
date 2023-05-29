@@ -26,6 +26,9 @@
 /* Uatomic API uses atomic builtins. */
 #undef CONFIG_RCU_USE_ATOMIC_BUILTINS
 
+/* Emit legacy memory barriers? */
+#undef CONFIG_RCU_EMIT_LEGACY_MB
+
 /* Expose multi-flavor support */
 #define CONFIG_RCU_HAVE_MULTIFLAVOR 1
 

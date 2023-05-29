@@ -69,7 +69,9 @@ int _cds_lfs_push_rcu(struct cds_lfs_stack_rcu *s,
 		 * uatomic_cmpxchg() implicit memory barrier orders earlier
 		 * stores to node before publication.
 		 */
-		head = uatomic_cmpxchg(&s->head, old_head, node);
+		cmm_emit_legacy_smp_mb();
+		head = uatomic_cmpxchg_mo(&s->head, old_head, node,
+					CMM_SEQ_CST, CMM_SEQ_CST);
 		if (old_head == head)
 			break;
 	}
@@ -94,7 +96,9 @@ _cds_lfs_pop_rcu(struct cds_lfs_stack_rcu *s)
 		if (head) {
 			struct cds_lfs_node_rcu *next = rcu_dereference(head->next);
 
-			if (uatomic_cmpxchg(&s->head, head, next) == head) {
+			if (uatomic_cmpxchg_mo(&s->head, head, next,
+						CMM_SEQ_CST, CMM_SEQ_CST) == head) {
+				cmm_emit_legacy_smp_mb();
 				return head;
 			} else {
 				/* Concurrent modification. Retry. */

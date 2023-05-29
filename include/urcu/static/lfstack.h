@@ -100,13 +100,15 @@ bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
 static inline
 bool _cds_lfs_empty(cds_lfs_stack_ptr_t s)
 {
-	return ___cds_lfs_empty_head(CMM_LOAD_SHARED(s._s->head));
+	return ___cds_lfs_empty_head(uatomic_load(&s._s->head, CMM_RELAXED));
 }
 
 /*
  * cds_lfs_push: push a node into the stack.
  *
  * Does not require any synchronization with other push nor pop.
+ *
+ * Operations before push are consistent when observed after associated pop.
  *
  * Lock-free stack push is not subject to ABA problem, so no need to
  * take the RCU read-side lock. Even if "head" changes between two
@@ -153,7 +155,9 @@ bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
 		 * uatomic_cmpxchg() implicit memory barrier orders earlier
 		 * stores to node before publication.
 		 */
-		head = uatomic_cmpxchg(&s->head, old_head, new_head);
+		cmm_emit_legacy_smp_mb();
+		head = uatomic_cmpxchg_mo(&s->head, old_head, new_head,
+					CMM_SEQ_CST, CMM_SEQ_CST);
 		if (old_head == head)
 			break;
 	}
@@ -164,6 +168,8 @@ bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
  * __cds_lfs_pop: pop a node from the stack.
  *
  * Returns NULL if stack is empty.
+ *
+ * Operations after pop are consistent when observed before associated push.
  *
  * __cds_lfs_pop needs to be synchronized using one of the following
  * techniques:
@@ -189,7 +195,7 @@ struct cds_lfs_node *___cds_lfs_pop(cds_lfs_stack_ptr_t u_s)
 		struct cds_lfs_head *head, *next_head;
 		struct cds_lfs_node *next;
 
-		head = _CMM_LOAD_SHARED(s->head);
+		head = uatomic_load(&s->head, CMM_CONSUME);
 		if (___cds_lfs_empty_head(head))
 			return NULL;	/* Empty stack */
 
@@ -198,12 +204,14 @@ struct cds_lfs_node *___cds_lfs_pop(cds_lfs_stack_ptr_t u_s)
 		 * memory barrier before uatomic_cmpxchg() in
 		 * cds_lfs_push.
 		 */
-		cmm_smp_read_barrier_depends();
-		next = _CMM_LOAD_SHARED(head->node.next);
+		next = uatomic_load(&head->node.next, CMM_RELAXED);
 		next_head = caa_container_of(next,
 				struct cds_lfs_head, node);
-		if (uatomic_cmpxchg(&s->head, head, next_head) == head)
+		if (uatomic_cmpxchg_mo(&s->head, head, next_head,
+					CMM_SEQ_CST, CMM_SEQ_CST) == head){
+			cmm_emit_legacy_smp_mb();
 			return &head->node;
+		}
 		/* busy-loop if head changed under us */
 	}
 }
@@ -231,6 +239,7 @@ static inline
 struct cds_lfs_head *___cds_lfs_pop_all(cds_lfs_stack_ptr_t u_s)
 {
 	struct __cds_lfs_stack *s = u_s._s;
+	struct cds_lfs_head *head;
 
 	/*
 	 * Implicit memory barrier after uatomic_xchg() matches implicit
@@ -242,7 +251,9 @@ struct cds_lfs_head *___cds_lfs_pop_all(cds_lfs_stack_ptr_t u_s)
 	 * taking care to order writes to each node prior to the full
 	 * memory barrier after this uatomic_xchg().
 	 */
-	return uatomic_xchg(&s->head, NULL);
+	head = uatomic_xchg_mo(&s->head, NULL, CMM_SEQ_CST);
+	cmm_emit_legacy_smp_mb();
+	return head;
 }
 
 /*

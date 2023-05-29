@@ -134,26 +134,29 @@ void _cds_lfq_enqueue_rcu(struct cds_lfq_queue_rcu *q,
 	 * uatomic_cmpxchg() implicit memory barrier orders earlier stores to
 	 * node before publication.
 	 */
-
 	for (;;) {
 		struct cds_lfq_node_rcu *tail, *next;
 
 		tail = rcu_dereference(q->tail);
-		next = uatomic_cmpxchg(&tail->next, NULL, node);
+		cmm_emit_legacy_smp_mb();
+		next = uatomic_cmpxchg_mo(&tail->next, NULL, node,
+					CMM_SEQ_CST, CMM_SEQ_CST);
 		if (next == NULL) {
 			/*
 			 * Tail was at the end of queue, we successfully
 			 * appended to it. Now move tail (another
 			 * enqueue might beat us to it, that's fine).
 			 */
-			(void) uatomic_cmpxchg(&q->tail, tail, node);
+			(void) uatomic_cmpxchg_mo(&q->tail, tail, node,
+						CMM_SEQ_CST, CMM_SEQ_CST);
 			return;
 		} else {
 			/*
 			 * Failure to append to current tail.
 			 * Help moving tail further and retry.
 			 */
-			(void) uatomic_cmpxchg(&q->tail, tail, next);
+			(void) uatomic_cmpxchg_mo(&q->tail, tail, next,
+						CMM_SEQ_CST, CMM_SEQ_CST);
 			continue;
 		}
 	}
@@ -197,7 +200,8 @@ struct cds_lfq_node_rcu *_cds_lfq_dequeue_rcu(struct cds_lfq_queue_rcu *q)
 			enqueue_dummy(q);
 			next = rcu_dereference(head->next);
 		}
-		if (uatomic_cmpxchg(&q->head, head, next) != head)
+		if (uatomic_cmpxchg_mo(&q->head, head, next,
+					CMM_SEQ_CST, CMM_SEQ_CST) != head)
 			continue;	/* Concurrently pushed. */
 		if (head->dummy) {
 			/* Free dummy after grace period. */

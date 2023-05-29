@@ -67,13 +67,14 @@ static inline void _cds_wfq_enqueue(struct cds_wfq_queue *q,
 	 * structure containing node and setting node->next to NULL before
 	 * publication.
 	 */
-	old_tail = uatomic_xchg(&q->tail, &node->next);
+	cmm_emit_legacy_smp_mb();
+	old_tail = uatomic_xchg_mo(&q->tail, &node->next, CMM_SEQ_CST);
 	/*
 	 * At this point, dequeuers see a NULL old_tail->next, which indicates
 	 * that the queue is being appended to. The following store will append
 	 * "node" to the queue from a dequeuer perspective.
 	 */
-	CMM_STORE_SHARED(*old_tail, node);
+	uatomic_store(old_tail, node, CMM_RELEASE);
 }
 
 /*
@@ -88,7 +89,7 @@ ___cds_wfq_node_sync_next(struct cds_wfq_node *node)
 	/*
 	 * Adaptative busy-looping waiting for enqueuer to complete enqueue.
 	 */
-	while ((next = CMM_LOAD_SHARED(node->next)) == NULL) {
+	while ((next = uatomic_load(&node->next, CMM_CONSUME)) == NULL) {
 		if (++attempt >= WFQ_ADAPT_ATTEMPTS) {
 			(void) poll(NULL, 0, WFQ_WAIT);	/* Wait for 10ms */
 			attempt = 0;
@@ -115,7 +116,7 @@ ___cds_wfq_dequeue_blocking(struct cds_wfq_queue *q)
 	/*
 	 * Queue is empty if it only contains the dummy node.
 	 */
-	if (q->head == &q->dummy && CMM_LOAD_SHARED(q->tail) == &q->dummy.next)
+	if (q->head == &q->dummy && uatomic_load(&q->tail, CMM_CONSUME) == &q->dummy.next)
 		return NULL;
 	node = q->head;
 
