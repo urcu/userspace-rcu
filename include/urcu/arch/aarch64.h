@@ -51,6 +51,8 @@ extern "C" {
 # endif
 #endif
 
+#define caa_cpu_relax()	__asm__ __volatile__ ("yield" : : : "memory")
+
 #ifdef __cplusplus
 }
 #endif
