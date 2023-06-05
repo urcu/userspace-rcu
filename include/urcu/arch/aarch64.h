@@ -44,9 +44,17 @@ extern "C" {
 
 /*
  * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63293
+ *
+ * Backported in RHEL7 gcc 4.8.5-11
  */
+#if defined(URCU_GCC_VERSION) && defined(__GNUC_RH_RELEASE__)
+# if (URCU_GCC_VERSION == 40805) && (__GNUC_RH_RELEASE__ >= 11)
+#  define URCU_GCC_PATCHED_63293
+# endif
+#endif
+
 #ifdef URCU_GCC_VERSION
-# if URCU_GCC_VERSION < 50100
+# if URCU_GCC_VERSION < 50100 && !defined(URCU_GCC_PATCHED_63293)
 #  error Your gcc version performs unsafe access to deallocated stack
 # endif
 #endif
