@@ -34,7 +34,7 @@ extern "C" {
  * instructions for cmpxchg and add_return family of atomic primitives.
  *
  * This is achieved with:
- *   lwsync (prior loads can be reordered after following load)
+ *   lwsync (prior stores can be reordered after following loads)
  *   lwarx
  *   stwcx.
  *   test if success (retry)
