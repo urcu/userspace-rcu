@@ -137,9 +137,9 @@ static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr)
 
 /*
  * Helper for _urcu_bp_read_lock().  The format of urcu_bp_gp.ctr (as well as
- * the per-thread rcu_reader.ctr) has the upper bits containing a count of
- * _urcu_bp_read_lock() nesting, and a lower-order bit that contains either zero
- * or URCU_BP_GP_CTR_PHASE.  The smp_mb_slave() ensures that the accesses in
+ * the per-thread rcu_reader.ctr) has the lower-order bits containing a count of
+ * _urcu_bp_read_lock() nesting, and a single high-order URCU_BP_GP_CTR_PHASE bit
+ * that contains either zero or one.  The smp_mb_slave() ensures that the accesses in
  * _urcu_bp_read_lock() happen before the subsequent read-side critical section.
  */
 static inline void _urcu_bp_read_lock_update(unsigned long tmp)

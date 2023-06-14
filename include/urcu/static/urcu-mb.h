@@ -63,9 +63,9 @@ extern DECLARE_URCU_TLS(struct urcu_reader, urcu_mb_reader);
 
 /*
  * Helper for _urcu_mb_read_lock().  The format of urcu_mb_gp.ctr (as well as
- * the per-thread rcu_reader.ctr) has the upper bits containing a count of
- * _urcu_mb_read_lock() nesting, and a lower-order bit that contains either zero
- * or URCU_GP_CTR_PHASE.  The cmm_smp_mb() ensures that the accesses in
+ * the per-thread rcu_reader.ctr) has the lower-order bits containing a count of
+ * _urcu_mb_read_lock() nesting, and a single high-order URCU_BP_GP_CTR_PHASE bit
+ * that contains either zero or one.  The cmm_smp_mb() ensures that the accesses in
  * _urcu_mb_read_lock() happen before the subsequent read-side critical section.
  */
 static inline void _urcu_mb_read_lock_update(unsigned long tmp)
