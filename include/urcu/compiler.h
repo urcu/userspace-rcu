@@ -123,4 +123,30 @@
 				+ __GNUC_PATCHLEVEL__)
 #endif
 
+#ifdef __cplusplus
+#define caa_unqual_scalar_typeof(x)					\
+	std::remove_cv<std::remove_reference<decltype(x)>::type>::type
+#else
+#define caa_scalar_type_to_expr(type)					\
+	unsigned type: (unsigned type)0,				\
+	signed type: (signed type)0
+
+/*
+ * Use C11 _Generic to express unqualified type from expression. This removes
+ * volatile qualifier from expression type.
+ */
+#define caa_unqual_scalar_typeof(x)					\
+	__typeof__(							\
+		_Generic((x),						\
+			char: (char)0,					\
+			caa_scalar_type_to_expr(char),			\
+			caa_scalar_type_to_expr(short),		\
+			caa_scalar_type_to_expr(int),			\
+			caa_scalar_type_to_expr(long),			\
+			caa_scalar_type_to_expr(long long),		\
+			default: (x)					\
+		)							\
+	)
+#endif
+
 #endif /* _URCU_COMPILER_H */
