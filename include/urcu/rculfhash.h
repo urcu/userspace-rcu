@@ -534,24 +534,30 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 		cds_lfht_next_duplicate(ht, match, key, iter),		\
 			node = cds_lfht_iter_get_node(iter))
 
+#define cds_lfht_entry(ptr, type, member)				\
+	({								\
+		caa_unqual_scalar_typeof(ptr) ___ptr = (ptr);		\
+		___ptr ? caa_container_of(___ptr, type, member) : NULL;	\
+	})
+
 #define cds_lfht_for_each_entry(ht, iter, pos, member)			\
 	for (cds_lfht_first(ht, iter),					\
-			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					__typeof__(*(pos)), member);	\
-		cds_lfht_iter_get_node(iter) != NULL;			\
+			pos = cds_lfht_entry(cds_lfht_iter_get_node(iter), \
+				__typeof__(*(pos)), member);		\
+		pos != NULL;						\
 		cds_lfht_next(ht, iter),				\
-			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					__typeof__(*(pos)), member))
+			pos = cds_lfht_entry(cds_lfht_iter_get_node(iter), \
+				__typeof__(*(pos)), member))
 
 #define cds_lfht_for_each_entry_duplicate(ht, hash, match, key,		\
 				iter, pos, member)			\
 	for (cds_lfht_lookup(ht, hash, match, key, iter),		\
-			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					__typeof__(*(pos)), member);	\
-		cds_lfht_iter_get_node(iter) != NULL;			\
+			pos = cds_lfht_entry(cds_lfht_iter_get_node(iter), \
+				__typeof__(*(pos)), member);		\
+		pos != NULL;						\
 		cds_lfht_next_duplicate(ht, match, key, iter),		\
-			pos = caa_container_of(cds_lfht_iter_get_node(iter), \
-					__typeof__(*(pos)), member))
+			pos = cds_lfht_entry(cds_lfht_iter_get_node(iter), \
+				__typeof__(*(pos)), member))
 
 #ifdef __cplusplus
 }
