@@ -68,14 +68,15 @@ Should also work on:
 
 (more testing needed before claiming support for these OS).
 
-Linux ARM depends on running a Linux kernel 2.6.15 or better, GCC 4.4 or
-better.
 
-The C compiler used needs to support at least C99. The C++ compiler used
-needs to support at least C++11.
+Toolchain support
+-----------------
 
-The GCC compiler versions 3.3, 3.4, 4.0, 4.1, 4.2, 4.3, 4.4 and 4.5 are
-supported, with the following exceptions:
+The C compiler used needs to support at least C99. The C++ compiler used needs
+to support at least C++11. The oldest GCC version officialy supported and
+tested is 4.8.
+
+Older GCC versions might still work with the following exceptions:
 
   - GCC 3.3 and 3.4 have a bug that prevents them from generating volatile
     accesses to offsets in a TLS structure on 32-bit x86. These versions are
@@ -95,6 +96,10 @@ Clang version 3.0 (based on LLVM 3.0) is supported.
 
 Glibc >= 2.4 should work but the older version we test against is
 currently 2.17.
+
+
+Build system
+------------
 
 For developers using the Git tree:
 
