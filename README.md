@@ -55,7 +55,7 @@ Currently, the following architectures are supported:
 Tested on:
 
   - Linux all architectures
-  - FreeBSD 8.2/8.3/9.0/9.1/10.0 i386/amd64
+  - FreeBSD 13 i386/amd64
   - Cygwin i386/amd64
   - MacOS amd64/arm64
 
