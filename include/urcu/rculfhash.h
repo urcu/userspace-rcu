@@ -535,10 +535,7 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size);
 			node = cds_lfht_iter_get_node(iter))
 
 #define cds_lfht_entry(ptr, type, member)				\
-	({								\
-		caa_unqual_scalar_typeof(ptr) ___ptr = (ptr);		\
-		___ptr ? caa_container_of(___ptr, type, member) : NULL;	\
-	})
+	caa_container_of_check_null(ptr, type, member)
 
 #define cds_lfht_for_each_entry(ht, iter, pos, member)			\
 	for (cds_lfht_first(ht, iter),					\
