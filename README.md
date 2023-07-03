@@ -56,7 +56,6 @@ Tested on:
 
   - Linux all architectures
   - FreeBSD 8.2/8.3/9.0/9.1/10.0 i386/amd64
-  - Solaris 10/11 i386
   - Cygwin i386/amd64
   - MacOS amd64/arm64
 
@@ -65,6 +64,7 @@ Should also work on:
   - Android
   - NetBSD 5
   - OpenBSD
+  - Solaris
 
 (more testing needed before claiming support for these OS).
 
