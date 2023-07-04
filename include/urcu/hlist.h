@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2009 Novell Inc.
+// SPDX-FileCopyrightText: 2010-2013 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 #ifndef _KCOMPAT_HLIST_H
 #define _KCOMPAT_HLIST_H
 
@@ -5,15 +10,7 @@
  * Kernel sourcecode compatible lightweight single pointer list head useful
  * for implementing hash tables
  *
- * Copyright (C) 2009 Novell Inc.
- *
  * Author: Jan Blunck <jblunck@suse.de>
- *
- * Copyright (C) 2010-2013 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License version 2.1 as
- * published by the Free  Software Foundation.
  */
 
 #include <stddef.h>

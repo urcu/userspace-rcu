@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 /* urcu/config.h.in. Manually generated for control over the contained defs. */
 
 /* Enable SMP support. With SMP support enabled, uniprocessors are also

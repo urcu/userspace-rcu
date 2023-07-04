@@ -1,17 +1,15 @@
+// SPDX-FileCopyrightText: 2009 Novell Inc.
+// SPDX-FileCopyrightText: 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 #ifndef _URCU_REF_H
 #define _URCU_REF_H
 
 /*
  * Userspace RCU - Reference counting
  *
- * Copyright (C) 2009 Novell Inc.
- * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- *
  * Author: Jan Blunck <jblunck@suse.de>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License version 2.1 as
- * published by the Free  Software Foundation.
  */
 
 #include <stdbool.h>
