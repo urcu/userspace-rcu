@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #first parameter: seconds per test
 DURATION=$1
