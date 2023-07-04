@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 AM_CPPFLAGS += -I$(top_srcdir)/src
 
 #Add the -version-info directly here since we are only building

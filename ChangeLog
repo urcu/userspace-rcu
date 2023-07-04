@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2011-2023 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 2023-02-14 Userspace RCU 0.14.0
 	* Fix: urcu-bp: only teardown call-rcu worker in destructor
 	* Fix: rculfhash: urcu_die() takes positive error value

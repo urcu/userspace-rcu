@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 Userspace RCU API
 =================
 

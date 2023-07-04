@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 AM_CPPFLAGS += -I$(top_srcdir)/src -I$(top_srcdir)/tests/utils -I$(top_srcdir)/tests/common
 
 LOG_DRIVER_FLAGS = --merge --comments

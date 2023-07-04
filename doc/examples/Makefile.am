@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 doc_examplesdir = ${docdir}/examples
 
 doc_examples_urcu_flavorsdir = ${doc_examplesdir}/urcu-flavors

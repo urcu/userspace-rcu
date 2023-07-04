@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2009-2022 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 tests/api.h
 
 

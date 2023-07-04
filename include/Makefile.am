@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 nobase_include_HEADERS = \
 	urcu/arch/aarch64.h \
 	urcu/arch/alpha.h \

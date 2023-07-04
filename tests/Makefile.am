@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 EfficiOS Inc.
+#
+# SPDX-License-Identifier: MIT
+
 SUBDIRS = utils common unit benchmark regression
 
 .PHONY: short_bench long_bench regtest check-loop

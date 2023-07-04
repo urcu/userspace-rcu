@@ -325,50 +325,50 @@ AC_OUTPUT
 # Mini-report on what will be built.
 #
 
-PPRINT_INIT
-PPRINT_SET_INDENT(1)
-PPRINT_SET_TS(38)
+AE_PPRINT_INIT
+AE_PPRINT_SET_INDENT(1)
+AE_PPRINT_SET_TS(38)
 
 AS_ECHO
-AS_ECHO("${PPRINT_COLOR_BLDBLU}Userspace-RCU $PACKAGE_VERSION${PPRINT_COLOR_RST}")
+AS_ECHO("${AE_PPRINT_COLOR_BLDBLU}Userspace-RCU $PACKAGE_VERSION${AE_PPRINT_COLOR_RST}")
 AS_ECHO
 
-PPRINT_SUBTITLE([Features])
+AE_PPRINT_SUBTITLE([Features])
 
-PPRINT_PROP_STRING([Target architecture], $host_cpu)
+AE_PPRINT_PROP_STRING([Target architecture], $host_cpu)
 
 # SMP support enabled/disabled
 AE_IS_FEATURE_ENABLED([smp-support]) && value=1 || value=0
-PPRINT_PROP_BOOL([SMP support], $value)
+AE_PPRINT_PROP_BOOL([SMP support], $value)
 
 # TLS
 AE_IS_FEATURE_ENABLED([compiler-tls]) && value="compiler TLS" || value="pthread_getspecific()"
-PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
+AE_PPRINT_PROP_STRING([Thread Local Storage (TLS)], [$value])
 
 # clock_gettime() available
 test "x$ac_cv_search_function_clock_gettime" != "xno" && value=1 || value=0
-PPRINT_PROP_BOOL([clock_gettime()], $value)
+AE_PPRINT_PROP_BOOL([clock_gettime()], $value)
 
 # Require membarrier
 AE_IS_FEATURE_ENABLED([sys-membarrier-fallback]) && value=0 || value=1
-PPRINT_PROP_BOOL([Require membarrier], $value)
+AE_PPRINT_PROP_BOOL([Require membarrier], $value)
 
 # RCU debug enabled/disabled
 AE_IS_FEATURE_ENABLED([rcu-debug]) && value=1 || value=0
-PPRINT_PROP_BOOL([Internal debugging], $value)
+AE_PPRINT_PROP_BOOL([Internal debugging], $value)
 
 # rculfhash iterator debug enabled/disabled
 AE_IS_FEATURE_ENABLED([cds-lfht-iter-debug]) && value=1 || value=0
-PPRINT_PROP_BOOL([Lock-free HT iterator debugging], $value)
+AE_PPRINT_PROP_BOOL([Lock-free HT iterator debugging], $value)
 
-PPRINT_PROP_BOOL([Multi-flavor support], 1)
+AE_PPRINT_PROP_BOOL([Multi-flavor support], 1)
 
 report_bindir="`eval eval echo $bindir`"
 report_libdir="`eval eval echo $libdir`"
 
 # Print the bindir and libdir this 'make install' will install into.
 AS_ECHO
-PPRINT_SUBTITLE([Install directories])
-PPRINT_PROP_STRING([Binaries], [$report_bindir])
-PPRINT_PROP_STRING([Libraries], [$report_libdir])
+AE_PPRINT_SUBTITLE([Install directories])
+AE_PPRINT_PROP_STRING([Binaries], [$report_bindir])
+AE_PPRINT_PROP_STRING([Libraries], [$report_libdir])
 

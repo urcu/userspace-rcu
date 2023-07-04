@@ -1,4 +1,10 @@
-Userspace RCU Coding Style
+<!--
+SPDX-FileCopyrightText: 2012 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
+# Userspace RCU Coding Style
 
 The coding style used for this project follows the Linux kernel
 guide lines. Please refer to:

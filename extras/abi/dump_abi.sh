@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# SPDX-FileCopyrightText: 2021 Michael Jeanson <mjeanson@efficios.com>
+#
 # SPDX-License-Identifier: GPL-2.0-only
 
 set -eu
