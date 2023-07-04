@@ -1,24 +1,12 @@
+// SPDX-FileCopyrightText: 2006 Paul E. McKenney, IBM.
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
 #ifndef _INCLUDE_API_H
 #define _INCLUDE_API_H
 
 /*
  * common.h: Common Linux kernel-isms.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; but version 2 of the License only due
- * to code included from the Linux kernel.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (c) 2006 Paul E. McKenney, IBM.
  *
  * Much code taken from the Linux kernel.  For such code, the option
  * to redistribute under later versions of GPL might not be available.
@@ -34,27 +22,6 @@
 #define ____cacheline_internodealigned_in_smp \
 	__attribute__((__aligned__(CAA_CACHE_LINE_SIZE)))
 
-/*
- * api_pthreads.h: API mapping to pthreads environment.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.  However, please note that much
- * of the code in this file derives from the Linux kernel, and that such
- * code may not be available except under GPLv2.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Copyright (c) 2006 Paul E. McKenney, IBM.
- */
 
 #include <stdio.h>
 #include <stdlib.h>

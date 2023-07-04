@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+//
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <string.h>
 #include <sys/time.h>
 #include <poll.h>

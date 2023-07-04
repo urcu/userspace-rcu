@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: 2009 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 #run all tests
 
 #set to number of active CPUS
