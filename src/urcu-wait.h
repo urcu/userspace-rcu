@@ -25,6 +25,7 @@
 
 #include <urcu/uatomic.h>
 #include <urcu/wfstack.h>
+#include <urcu/futex.h>
 #include "urcu-die.h"
 
 /*
