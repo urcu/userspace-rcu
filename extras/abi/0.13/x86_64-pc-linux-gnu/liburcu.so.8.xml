@@ -1,4 +1,9 @@
 <abi-corpus architecture='elf-amd-x86_64' soname='liburcu.so.8'>
+<!--
+SPDX-FileCopyrightText: 2021 EfficiOS Inc.
+
+SPDX-License-Identifier: CC0-1.0
+-->
   <elf-needed>
     <dependency name='libpthread.so.0'/>
     <dependency name='libc.so.6'/>
