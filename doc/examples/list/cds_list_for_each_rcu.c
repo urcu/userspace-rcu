@@ -1,15 +1,8 @@
+// SPDX-FileCopyrightText: 2013 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+//
+// SPDX-License-Identifier: MIT
+
 /*
- * Copyright (C) 2013  Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- *
- * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
- * OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
- *
- * Permission is hereby granted to use or copy this program for any
- * purpose,  provided the above notices are retained on all copies.
- * Permission to modify the code and to distribute modified code is
- * granted, provided the above notices are retained, and a notice that
- * the code was modified is included with the above copyright notice.
- *
  * This example shows how to do a RCU linked list traversal, safely
  * against concurrent RCU updates. cds_list_for_each_rcu() iterates on
  * struct cds_list_head, and thus, either caa_container_of() or
