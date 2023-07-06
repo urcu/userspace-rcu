@@ -6,8 +6,9 @@ ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = include src doc tests extras
 
-dist_doc_DATA = LICENSE \
-		README.md
+dist_doc_DATA = \
+	LICENSE.md \
+	README.md
 
 EXTRA_DIST = \
 	CodingStyle.md \
