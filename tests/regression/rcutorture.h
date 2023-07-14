@@ -342,6 +342,7 @@ void *rcu_read_stress_test(void *arg __attribute__((unused)))
 
 static pthread_mutex_t call_rcu_test_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t call_rcu_test_cond = PTHREAD_COND_INITIALIZER;
+static bool call_rcu_wait;
 
 static
 void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((unused)))
@@ -362,6 +363,7 @@ void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((unused)))
 			strerror(errno));
 		abort();
 	}
+	call_rcu_wait = false;
 	ret = pthread_mutex_unlock(&call_rcu_test_mutex);
 	if (ret) {
 		errno = ret;
@@ -423,8 +425,11 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 			 * immediately after call_rcu (call_rcu needs
 			 * us to be registered RCU readers).
 			 */
-			ret = pthread_cond_wait(&call_rcu_test_cond,
-					&call_rcu_test_mutex);
+			call_rcu_wait = true;
+			do {
+				ret = pthread_cond_wait(&call_rcu_test_cond,
+							&call_rcu_test_mutex);
+			} while (call_rcu_wait);
 			if (ret) {
 				errno = ret;
 				diag("pthread_cond_signal: %s",
