@@ -405,7 +405,10 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 
 			call_rcu(&rh, rcu_update_stress_test_rcu);
 
+			/* Offline for busy-wait. */
+			put_thread_offline();
 			urcu_adaptative_busy_wait(&wait);
+			put_thread_online();
 			break;
 		}
 		case WRITER_STATE_POLL_RCU:
