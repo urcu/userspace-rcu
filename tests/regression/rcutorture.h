@@ -391,8 +391,14 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 	struct rcu_head rh;
 	enum writer_state writer_state = WRITER_STATE_SYNC_RCU;
 
+	rcu_register_thread();
+
+	/* Offline for poll. */
+	put_thread_offline();
 	while (goflag == GOFLAG_INIT)
 		(void) poll(NULL, 0, 1);
+	put_thread_online();
+
 	while (goflag == GOFLAG_RUN) {
 		i = rcu_stress_idx + 1;
 		if (i >= RCU_STRESS_PIPE_LEN)
@@ -422,9 +428,8 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 					strerror(errno));
 				abort();
 			}
-			rcu_register_thread();
 			call_rcu(&rh, rcu_update_stress_test_rcu);
-			rcu_unregister_thread();
+
 			/*
 			 * Our MacOS X test machine with the following
 			 * config:
@@ -440,10 +445,13 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 			 * us to be registered RCU readers).
 			 */
 			call_rcu_wait = true;
+			/* Offline for pthread_cond_wait. */
+			put_thread_offline();
 			do {
 				ret = pthread_cond_wait(&call_rcu_test_cond,
 							&call_rcu_test_mutex);
 			} while (call_rcu_wait);
+			put_thread_online();
 			if (ret) {
 				errno = ret;
 				diag("pthread_cond_signal: %s",
@@ -463,17 +471,21 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 		{
 			struct urcu_gp_poll_state poll_state;
 
-			rcu_register_thread();
 			poll_state = start_poll_synchronize_rcu();
-			rcu_unregister_thread();
+
+			/* Offline for poll. */
+			put_thread_offline();
 			while (!poll_state_synchronize_rcu(poll_state))
 				(void) poll(NULL, 0, 1);	/* Wait for 1ms */
+			put_thread_online();
 			break;
 		}
 		}
 		n_updates++;
 		advance_writer_state(&writer_state);
 	}
+
+	rcu_unregister_thread();
 
 	return NULL;
 }
