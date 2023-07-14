@@ -50,7 +50,7 @@ struct urcu_wait_node {
 };
 
 #define URCU_WAIT_NODE_INIT(name, _state)		\
-	{ .state = _state }
+	{ .node = { .next = NULL }, .state = _state }
 
 #define DEFINE_URCU_WAIT_NODE(name, state)		\
 	struct urcu_wait_node name = URCU_WAIT_NODE_INIT(name, state)
