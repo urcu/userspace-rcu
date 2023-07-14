@@ -56,6 +56,8 @@
 #include <stdlib.h>
 #include "tap.h"
 
+#include "urcu-wait.h"
+
 #define NR_TESTS	1
 
 DEFINE_PER_THREAD(long long, n_reads_pt);
@@ -334,37 +336,15 @@ void *rcu_read_stress_test(void *arg __attribute__((unused)))
 	return (NULL);
 }
 
-static pthread_mutex_t call_rcu_test_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t call_rcu_test_cond = PTHREAD_COND_INITIALIZER;
-static bool call_rcu_wait;
+static DEFINE_URCU_WAIT_QUEUE(call_rcu_waiters);
 
 static
 void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((unused)))
 {
-	int ret;
+	struct urcu_waiters waiters;
 
-	ret = pthread_mutex_lock(&call_rcu_test_mutex);
-	if (ret) {
-		errno = ret;
-		diag("pthread_mutex_lock: %s",
-			strerror(errno));
-		abort();
-	}
-	ret = pthread_cond_signal(&call_rcu_test_cond);
-	if (ret) {
-		errno = ret;
-		diag("pthread_cond_signal: %s",
-			strerror(errno));
-		abort();
-	}
-	call_rcu_wait = false;
-	ret = pthread_mutex_unlock(&call_rcu_test_mutex);
-	if (ret) {
-		errno = ret;
-		diag("pthread_mutex_unlock: %s",
-			strerror(errno));
-		abort();
-	}
+	urcu_move_waiters(&waiters, &call_rcu_waiters);
+	urcu_wake_all_waiters(&waiters);
 }
 
 static
@@ -419,52 +399,13 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 			break;
 		case WRITER_STATE_CALL_RCU:
 		{
-			int ret;
+			DEFINE_URCU_WAIT_NODE(wait, URCU_WAIT_WAITING);
 
-			ret = pthread_mutex_lock(&call_rcu_test_mutex);
-			if (ret) {
-				errno = ret;
-				diag("pthread_mutex_lock: %s",
-					strerror(errno));
-				abort();
-			}
+			urcu_wait_add(&call_rcu_waiters, &wait);
+
 			call_rcu(&rh, rcu_update_stress_test_rcu);
 
-			/*
-			 * Our MacOS X test machine with the following
-			 * config:
-			 * 15.6.0 Darwin Kernel Version 15.6.0
-			 * root:xnu-3248.60.10~1/RELEASE_X86_64
-			 * appears to have issues with liburcu-signal
-			 * signal being delivered on top of
-			 * pthread_cond_wait. It seems to make the
-			 * thread continue, and therefore corrupt the
-			 * rcu_head. Work around this issue by
-			 * unregistering the RCU read-side thread
-			 * immediately after call_rcu (call_rcu needs
-			 * us to be registered RCU readers).
-			 */
-			call_rcu_wait = true;
-			/* Offline for pthread_cond_wait. */
-			put_thread_offline();
-			do {
-				ret = pthread_cond_wait(&call_rcu_test_cond,
-							&call_rcu_test_mutex);
-			} while (call_rcu_wait);
-			put_thread_online();
-			if (ret) {
-				errno = ret;
-				diag("pthread_cond_signal: %s",
-					strerror(errno));
-				abort();
-			}
-			ret = pthread_mutex_unlock(&call_rcu_test_mutex);
-			if (ret) {
-				errno = ret;
-				diag("pthread_mutex_unlock: %s",
-					strerror(errno));
-				abort();
-			}
+			urcu_adaptative_busy_wait(&wait);
 			break;
 		}
 		case WRITER_STATE_POLL_RCU:
