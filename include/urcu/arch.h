@@ -151,6 +151,11 @@
 #define URCU_ARCH_RISCV 1
 #include <urcu/arch/riscv.h>
 
+#elif defined(_LOONGARCH_ARCH)
+
+#define URCU_ARCH_LOONGARCH64 1
+#include <urcu/arch/loongarch64.h>
+
 #else
 #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
 #endif
