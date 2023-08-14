@@ -220,9 +220,10 @@ results in slower reads.
   1. `#include <urcu/urcu-signal.h>`
   2. Link the application with `-lurcu-signal`
 
-Version of the library that requires a signal, typically `SIGUSR1`. Can
-be overridden with `-DSIGRCU` by modifying `Makefile.build.inc`.
-
+NOTE: The `liburcu-signal` flavor is *deprecated* and will be removed in the
+future. It is now identical to `liburcu-mb` at the exception of the symbols and
+public header files. It is therefore slower than previous versions. Users are
+encouraged to migrate to the `liburcu-memb` flavor.
 
 ### Usage of `liburcu-bp`
 

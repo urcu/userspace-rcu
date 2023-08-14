@@ -86,18 +86,10 @@ int urcu_memb_has_sys_membarrier = 0;
 void __attribute__((constructor)) rcu_init(void);
 #endif
 
-#ifdef RCU_MB
+#if defined(RCU_MB) || defined(RCU_SIGNAL)
 void rcu_init(void)
 {
 }
-#endif
-
-#ifdef RCU_SIGNAL
-static int init_done;
-
-void __attribute__((constructor)) rcu_init(void);
-
-static DEFINE_URCU_TLS(int, rcu_signal_was_blocked);
 #endif
 
 void __attribute__((destructor)) rcu_exit(void);
@@ -179,61 +171,12 @@ static void smp_mb_master(void)
 }
 #endif
 
-#ifdef RCU_MB
+#if defined(RCU_MB) || defined(RCU_SIGNAL)
 static void smp_mb_master(void)
 {
 	cmm_smp_mb();
 }
 #endif
-
-#ifdef RCU_SIGNAL
-static void force_mb_all_readers(void)
-{
-	struct urcu_reader *index;
-
-	/*
-	 * Ask for each threads to execute a cmm_smp_mb() so we can consider the
-	 * compiler barriers around rcu read lock as real memory barriers.
-	 */
-	if (cds_list_empty(&registry))
-		return;
-	/*
-	 * pthread_kill has a cmm_smp_mb(). But beware, we assume it performs
-	 * a cache flush on architectures with non-coherent cache. Let's play
-	 * safe and don't assume anything : we use cmm_smp_mc() to make sure the
-	 * cache flush is enforced.
-	 */
-	cds_list_for_each_entry(index, &registry, node) {
-		CMM_STORE_SHARED(index->need_mb, 1);
-		pthread_kill(index->tid, SIGRCU);
-	}
-	/*
-	 * Wait for sighandler (and thus mb()) to execute on every thread.
-	 *
-	 * Note that the pthread_kill() will never be executed on systems
-	 * that correctly deliver signals in a timely manner.  However, it
-	 * is not uncommon for kernels to have bugs that can result in
-	 * lost or unduly delayed signals.
-	 *
-	 * If you are seeing the below pthread_kill() executing much at
-	 * all, we suggest testing the underlying kernel and filing the
-	 * relevant bug report.  For Linux kernels, we recommend getting
-	 * the Linux Test Project (LTP).
-	 */
-	cds_list_for_each_entry(index, &registry, node) {
-		while (CMM_LOAD_SHARED(index->need_mb)) {
-			pthread_kill(index->tid, SIGRCU);
-			(void) poll(NULL, 0, 1);
-		}
-	}
-	cmm_smp_mb();	/* read ->need_mb before ending the barrier */
-}
-
-static void smp_mb_master(void)
-{
-	force_mb_all_readers();
-}
-#endif /* #ifdef RCU_SIGNAL */
 
 /*
  * synchronize_rcu() waiting. Single thread.
@@ -243,9 +186,7 @@ static void smp_mb_master(void)
 static void wait_gp(void)
 {
 	/*
-	 * Read reader_gp before read futex. smp_mb_master() needs to
-	 * be called with the rcu registry lock held in RCU_SIGNAL
-	 * flavor.
+	 * Read reader_gp before read futex.
 	 */
 	smp_mb_master();
 	/* Temporarily unlock the registry lock. */
@@ -535,52 +476,8 @@ int rcu_read_ongoing(void)
 	return _rcu_read_ongoing();
 }
 
-#ifdef RCU_SIGNAL
-/*
- * Make sure the signal used by the urcu-signal flavor is unblocked
- * while the thread is registered.
- */
-static
-void urcu_signal_unblock(void)
-{
-	sigset_t mask, oldmask;
-	int ret;
-
-	ret = sigemptyset(&mask);
-	urcu_posix_assert(!ret);
-	ret = sigaddset(&mask, SIGRCU);
-	urcu_posix_assert(!ret);
-	ret = pthread_sigmask(SIG_UNBLOCK, &mask, &oldmask);
-	urcu_posix_assert(!ret);
-	URCU_TLS(rcu_signal_was_blocked) = sigismember(&oldmask, SIGRCU);
-}
-
-static
-void urcu_signal_restore(void)
-{
-	sigset_t mask;
-	int ret;
-
-	if (!URCU_TLS(rcu_signal_was_blocked))
-		return;
-	ret = sigemptyset(&mask);
-	urcu_posix_assert(!ret);
-	ret = sigaddset(&mask, SIGRCU);
-	urcu_posix_assert(!ret);
-	ret = pthread_sigmask(SIG_BLOCK, &mask, NULL);
-	urcu_posix_assert(!ret);
-}
-#else
-static
-void urcu_signal_unblock(void) { }
-static
-void urcu_signal_restore(void) { }
-#endif
-
 void rcu_register_thread(void)
 {
-	urcu_signal_unblock();
-
 	URCU_TLS(rcu_reader).tid = pthread_self();
 	urcu_posix_assert(URCU_TLS(rcu_reader).need_mb == 0);
 	urcu_posix_assert(!(URCU_TLS(rcu_reader).ctr & URCU_GP_CTR_NEST_MASK));
@@ -600,8 +497,6 @@ void rcu_unregister_thread(void)
 	URCU_TLS(rcu_reader).registered = 0;
 	cds_list_del(&URCU_TLS(rcu_reader).node);
 	mutex_unlock(&rcu_registry_lock);
-
-	urcu_signal_restore();
 }
 
 #ifdef RCU_MEMBARRIER
@@ -651,57 +546,6 @@ void rcu_init(void)
 	rcu_sys_membarrier_init();
 }
 #endif
-
-#ifdef RCU_SIGNAL
-static void sigrcu_handler(int signo __attribute__((unused)),
-		siginfo_t *siginfo __attribute__((unused)),
-		void *context __attribute__((unused)))
-{
-	/*
-	 * Executing this cmm_smp_mb() is the only purpose of this signal handler.
-	 * It punctually promotes cmm_barrier() into cmm_smp_mb() on every thread it is
-	 * executed on.
-	 */
-	cmm_smp_mb();
-	_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
-	cmm_smp_mb();
-}
-
-/*
- * rcu_init constructor. Called when the library is linked, but also when
- * reader threads are calling rcu_register_thread().
- * Should only be called by a single thread at a given time. This is ensured by
- * holing the rcu_registry_lock from rcu_register_thread() or by running
- * at library load time, which should not be executed by multiple
- * threads nor concurrently with rcu_register_thread() anyway.
- */
-void rcu_init(void)
-{
-	struct sigaction act;
-	int ret;
-
-	if (init_done)
-		return;
-	init_done = 1;
-
-	act.sa_sigaction = sigrcu_handler;
-	act.sa_flags = SA_SIGINFO | SA_RESTART;
-	sigemptyset(&act.sa_mask);
-	ret = sigaction(SIGRCU, &act, NULL);
-	if (ret)
-		urcu_die(errno);
-}
-
-/*
- * Don't unregister the SIGRCU signal handler anymore, because
- * call_rcu threads could still be using it shortly before the
- * application exits.
- * Assertion disabled because call_rcu threads are now rcu
- * readers, and left running at exit.
- * urcu_posix_assert(cds_list_empty(&registry));
- */
-
-#endif /* #ifdef RCU_SIGNAL */
 
 void rcu_exit(void)
 {

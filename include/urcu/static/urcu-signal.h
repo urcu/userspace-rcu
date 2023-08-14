@@ -95,13 +95,14 @@ static inline void _urcu_signal_read_lock(void)
  */
 static inline void _urcu_signal_read_unlock_update_and_wakeup(unsigned long tmp)
 {
+	unsigned long *ctr = &URCU_TLS(urcu_signal_reader).ctr;
+
 	if (caa_likely((tmp & URCU_GP_CTR_NEST_MASK) == URCU_GP_COUNT)) {
-		cmm_barrier();
-		_CMM_STORE_SHARED(URCU_TLS(urcu_signal_reader).ctr, tmp - URCU_GP_COUNT);
-		cmm_barrier();
+		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_SEQ_CST);
 		urcu_common_wake_up_gp(&urcu_signal_gp);
-	} else
-		_CMM_STORE_SHARED(URCU_TLS(urcu_signal_reader).ctr, tmp - URCU_GP_COUNT);
+	} else {
+		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
+	}
 }
 
 /*
