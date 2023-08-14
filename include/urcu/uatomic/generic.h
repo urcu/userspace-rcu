@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
@@ -25,8 +26,6 @@ extern "C" {
 #ifndef uatomic_set
 #define uatomic_set(addr, v)	((void) CMM_STORE_SHARED(*(addr), (v)))
 #endif
-
-extern void abort(void);
 
 #define uatomic_load_store_return_op(op, addr, v, mo)			\
 	__extension__							\
