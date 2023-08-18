@@ -5,9 +5,8 @@
 #ifndef _URCU_UATOMIC_H
 #define _URCU_UATOMIC_H
 
-#include <assert.h>
-
 #include <urcu/arch.h>
+#include <urcu/compiler.h>
 #include <urcu/config.h>
 
 enum cmm_memorder {
@@ -25,14 +24,12 @@ enum cmm_memorder {
 /*
  * Make sure that CMM_SEQ_CST_FENCE is not equivalent to other memory orders.
  */
-# ifdef static_assert
-static_assert(CMM_RELAXED == __ATOMIC_RELAXED, "");
-static_assert(CMM_CONSUME == __ATOMIC_CONSUME, "");
-static_assert(CMM_ACQUIRE == __ATOMIC_ACQUIRE, "");
-static_assert(CMM_RELEASE == __ATOMIC_RELEASE, "");
-static_assert(CMM_ACQ_REL == __ATOMIC_ACQ_REL, "");
-static_assert(CMM_SEQ_CST == __ATOMIC_SEQ_CST, "");
-# endif
+urcu_static_assert(CMM_RELAXED == __ATOMIC_RELAXED, "", cmm_relaxed);
+urcu_static_assert(CMM_CONSUME == __ATOMIC_CONSUME, "", cmm_consume);
+urcu_static_assert(CMM_ACQUIRE == __ATOMIC_ACQUIRE, "", cmm_acquire);
+urcu_static_assert(CMM_RELEASE == __ATOMIC_RELEASE, "", cmm_release);
+urcu_static_assert(CMM_ACQ_REL == __ATOMIC_ACQ_REL, "", cmm_acq_rel);
+urcu_static_assert(CMM_SEQ_CST == __ATOMIC_SEQ_CST, "", cmm_seq_cst);
 
 /*
  * This is not part of the public API. It it used internally to implement the

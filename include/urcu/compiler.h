@@ -193,4 +193,36 @@ volatile T cmm_cast_volatile(T t)
 	})
 #endif
 
+/*
+ * Compile time assertion.
+ * - predicate: boolean expression to evaluate,
+ * - msg: string to print to the user on failure when `static_assert()` is
+ *   supported,
+ * - c_identifier_msg: message to be included in the typedef to emulate a
+ *   static assertion. This parameter must be a valid C identifier as it will
+ *   be used as a typedef name.
+ */
+#ifdef __cplusplus
+#define urcu_static_assert(predicate, msg, c_identifier_msg)  \
+	static_assert(predicate, msg)
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define urcu_static_assert(predicate, msg, c_identifier_msg)  \
+	_Static_assert(predicate, msg)
+#else
+/*
+ * Evaluates the predicate and emit a compilation error on failure.
+ *
+ * If the predicate evaluates to true, this macro emits a function
+ * prototype with an argument type which is an array of size 0.
+ *
+ * If the predicate evaluates to false, this macro emits a function
+ * prototype with an argument type which is an array of negative size
+ * which is invalid in C and forces a compiler error. The
+ * c_identifier_msg parameter is used as the argument identifier so it
+ * is printed to the user when the error is reported.
+ */
+#define urcu_static_assert(predicate, msg, c_identifier_msg)  \
+	void urcu_static_assert_proto(char c_identifier_msg[2*!!(predicate)-1])
+#endif
+
 #endif /* _URCU_COMPILER_H */
