@@ -59,7 +59,7 @@ static inline void _urcu_signal_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK))) {
 		_CMM_STORE_SHARED(URCU_TLS(urcu_signal_reader).ctr, _CMM_LOAD_SHARED(urcu_signal_gp.ctr));
-		cmm_barrier();
+		cmm_smp_mb();
 	} else
 		_CMM_STORE_SHARED(URCU_TLS(urcu_signal_reader).ctr, tmp + URCU_GP_COUNT);
 }
