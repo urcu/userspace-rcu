@@ -22,15 +22,7 @@
 #define RCU_YIELD_READ 	(1 << 0)
 #define RCU_YIELD_WRITE	(1 << 1)
 
-/*
- * Updates with RCU_SIGNAL are much slower. Account this in the delay.
- */
-#ifdef RCU_SIGNAL
-/* maximum sleep delay, in us */
-#define MAX_SLEEP 30000
-#else
 #define MAX_SLEEP 50
-#endif
 
 extern unsigned int rcu_yield_active;
 extern DECLARE_URCU_TLS(unsigned int, rcu_rand_yield);
