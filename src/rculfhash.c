@@ -259,7 +259,6 @@
 #include <urcu/uatomic.h>
 #include <urcu/compiler.h>
 #include <urcu/rculfhash.h>
-#include <urcu/static/urcu-signal-nr.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>

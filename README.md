@@ -170,7 +170,6 @@ There are multiple flavors of liburcu available:
   - `memb`,
   - `qsbr`,
   - `mb`,
-  - `signal`,
   - `bp`.
 
 The API members start with the prefix `urcu_<flavor>_`, where
@@ -214,16 +213,6 @@ This version of the urcu library uses memory barriers on the writer
 and reader sides. This results in faster grace-period detection, but
 results in slower reads.
 
-
-### Usage of `liburcu-signal`
-
-  1. `#include <urcu/urcu-signal.h>`
-  2. Link the application with `-lurcu-signal`
-
-NOTE: The `liburcu-signal` flavor is *deprecated* and will be removed in the
-future. It is now identical to `liburcu-mb` at the exception of the symbols and
-public header files. It is therefore slower than previous versions. Users are
-encouraged to migrate to the `liburcu-memb` flavor.
 
 ### Usage of `liburcu-bp`
 
@@ -274,7 +263,7 @@ the grace period has completed, false otherwise.
 ### Usage of `liburcu-defer`
 
   - Follow instructions for either `liburcu-memb`, `liburcu-qsbr`,
-    `liburcu-mb`, `liburcu-signal`, or `liburcu-bp` above.
+    `liburcu-mb`, or `liburcu-bp` above.
     The `liburcu-defer` functionality is pulled into each of
     those library modules.
   - Provides `urcu_<flavor>_defer_rcu()` primitive to enqueue delayed
@@ -293,7 +282,7 @@ Its API is currently experimental. It may change in future library releases.
 ### Usage of `urcu-call-rcu`
 
   - Follow instructions for either `liburcu-memb`, `liburcu-qsbr`,
-    `liburcu-mb`, `liburcu-signal`, or `liburcu-bp` above.
+    `liburcu-mb`, or `liburcu-bp` above.
     The `urcu-call-rcu` functionality is pulled into each of
     those library modules.
   - Provides the `urcu_<flavor>_call_rcu()` primitive to enqueue delayed
@@ -310,13 +299,6 @@ Its API is currently experimental. It may change in future library releases.
 
 
 ### Being careful with signals
-
-The `liburcu-signal` library uses signals internally. The signal handler is
-registered with the `SA_RESTART` flag. However, these signals may cause
-some non-restartable system calls to fail with `errno = EINTR`. Care
-should be taken to restart system calls manually if they fail with this
-error. A list of non-restartable system calls may be found in
-`signal(7)`.
 
 Read-side critical sections are allowed in a signal handler,
 except those setup with `sigaltstack(2)`, with `liburcu-memb` and

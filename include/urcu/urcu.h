@@ -17,14 +17,12 @@
  * IBM's contributions to this file may be relicensed under LGPLv2 or later.
  */
 
-#if !defined(RCU_MEMBARRIER) && !defined(RCU_SIGNAL) && !defined(RCU_MB)
+#if !defined(RCU_MEMBARRIER) && !defined(RCU_MB)
 #define RCU_MEMBARRIER
 #endif
 
 #ifdef RCU_MEMBARRIER
 #include <urcu/urcu-memb.h>
-#elif defined(RCU_SIGNAL)
-#include <urcu/urcu-signal.h>
 #elif defined(RCU_MB)
 #include <urcu/urcu-mb.h>
 #else

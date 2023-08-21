@@ -345,7 +345,6 @@ AC_CONFIG_FILES([
 	src/liburcu-qsbr.pc
 	src/liburcu-mb.pc
 	src/liburcu-memb.pc
-	src/liburcu-signal.pc
 ])
 
 AC_CONFIG_FILES([tests/utils/env.sh],[chmod +x tests/utils/env.sh])

@@ -86,7 +86,7 @@ int urcu_memb_has_sys_membarrier = 0;
 void __attribute__((constructor)) rcu_init(void);
 #endif
 
-#if defined(RCU_MB) || defined(RCU_SIGNAL)
+#if defined(RCU_MB)
 void rcu_init(void)
 {
 }
@@ -171,7 +171,7 @@ static void smp_mb_master(void)
 }
 #endif
 
-#if defined(RCU_MB) || defined(RCU_SIGNAL)
+#if defined(RCU_MB)
 static void smp_mb_master(void)
 {
 	cmm_smp_mb();

@@ -16,7 +16,7 @@
  */
 
 /* Default is RCU_MEMBARRIER */
-#if !defined(RCU_MEMBARRIER) && !defined(RCU_MB) && !defined(RCU_SIGNAL)
+#if !defined(RCU_MEMBARRIER) && !defined(RCU_MB)
 #define RCU_MEMBARRIER
 #endif
 
@@ -26,10 +26,6 @@
 
 #ifdef RCU_MB
 #include <urcu/static/urcu-mb.h>
-#endif
-
-#ifdef RCU_SIGNAL
-#include <urcu/static/urcu-signal.h>
 #endif
 
 #endif /* _URCU_STATIC_H */

@@ -17,8 +17,6 @@
 
 #ifdef RCU_MEMBARRIER
 #include <urcu/map/urcu-memb.h>
-#elif defined(RCU_SIGNAL)
-#include <urcu/map/urcu-signal.h>
 #elif defined(RCU_MB)
 #include <urcu/map/urcu-mb.h>
 #else

@@ -38,7 +38,6 @@ nobase_include_HEADERS = \
 	urcu/map/urcu-mb.h \
 	urcu/map/urcu-memb.h \
 	urcu/map/urcu-qsbr.h \
-	urcu/map/urcu-signal.h \
 	urcu/pointer.h \
 	urcu/rcuhlist.h \
 	urcu/rculfhash.h \
@@ -56,8 +55,6 @@ nobase_include_HEADERS = \
 	urcu/static/urcu-mb.h \
 	urcu/static/urcu-memb.h \
 	urcu/static/urcu-qsbr.h \
-	urcu/static/urcu-signal.h \
-	urcu/static/urcu-signal-nr.h \
 	urcu/static/wfcqueue.h \
 	urcu/static/wfqueue.h \
 	urcu/static/wfstack.h \
@@ -91,7 +88,6 @@ nobase_include_HEADERS = \
 	urcu/urcu-memb.h \
 	urcu/urcu-qsbr.h \
 	urcu/urcu_ref.h \
-	urcu/urcu-signal.h \
 	urcu/wfcqueue.h \
 	urcu/wfqueue.h \
 	urcu/wfstack.h \

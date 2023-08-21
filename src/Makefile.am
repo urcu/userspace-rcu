@@ -18,7 +18,7 @@ RCULFHASH = rculfhash.c rculfhash-mm-order.c rculfhash-mm-chunk.c \
 
 lib_LTLIBRARIES = liburcu-common.la \
 		liburcu.la liburcu-qsbr.la \
-		liburcu-mb.la liburcu-signal.la liburcu-bp.la \
+		liburcu-mb.la liburcu-bp.la \
 		liburcu-memb.la liburcu-cds.la
 
 #
@@ -43,10 +43,6 @@ liburcu_mb_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
 liburcu_mb_la_CFLAGS = -DRCU_MB $(AM_CFLAGS)
 liburcu_mb_la_LIBADD = liburcu-common.la
 
-liburcu_signal_la_SOURCES = urcu.c urcu-pointer.c $(COMPAT)
-liburcu_signal_la_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
-liburcu_signal_la_LIBADD = liburcu-common.la
-
 liburcu_bp_la_SOURCES = urcu-bp.c urcu-pointer.c $(COMPAT)
 liburcu_bp_la_LIBADD = liburcu-common.la
 
@@ -56,7 +52,7 @@ liburcu_cds_la_LIBADD = liburcu-common.la
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = liburcu-cds.pc liburcu.pc liburcu-bp.pc liburcu-qsbr.pc \
-	liburcu-signal.pc liburcu-mb.pc liburcu-memb.pc
+	liburcu-mb.pc liburcu-memb.pc
 
 EXTRA_DIST = \
 	urcu-call-rcu-impl.h \
