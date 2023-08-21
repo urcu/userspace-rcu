@@ -11,12 +11,10 @@ dist_doc_examples_urcu_flavors_DATA = \
 	urcu-flavors/Makefile.qsbr \
 	urcu-flavors/Makefile.mb \
 	urcu-flavors/Makefile.membarrier \
-	urcu-flavors/Makefile.signal \
 	urcu-flavors/Makefile.bp \
 	urcu-flavors/qsbr.c \
 	urcu-flavors/mb.c \
 	urcu-flavors/membarrier.c \
-	urcu-flavors/signal.c \
 	urcu-flavors/bp.c
 
 dist_doc_examples_DATA = \
