@@ -39,10 +39,10 @@ if [[ ${NUM_CPUS} -lt 4 ]]; then
 fi
 
 # batch: 19 * 1 = 19
-# fraction: 15 * 29 =
-# scalabilit NUM_CPUS * 15
-# reader 15 * 23 =
-NUM_TESTS=$(( 19 + 435 + ( NUM_CPUS * 15 ) + 345 ))
+# fraction: 12 * 29 =
+# scalabilit NUM_CPUS * 12
+# reader 12 * 23 =
+NUM_TESTS=$(( 19 + 348 + ( NUM_CPUS * 12 ) + 276 ))
 
 plan_tests	${NUM_TESTS}
 
@@ -90,9 +90,9 @@ for BATCH_SIZE in ${BATCH_ARRAY}; do
 	done
 done
 
-TEST_ARRAY="test_urcu_gc test_urcu_signal_gc test_urcu_mb_gc test_urcu_qsbr_gc
-            test_urcu_lgc test_urcu_signal_lgc test_urcu_mb_lgc test_urcu_qsbr_lgc
-            test_urcu test_urcu_signal test_urcu_mb test_urcu_qsbr
+TEST_ARRAY="test_urcu_gc test_urcu_mb_gc test_urcu_qsbr_gc
+            test_urcu_lgc test_urcu_mb_lgc test_urcu_qsbr_lgc
+            test_urcu test_urcu_mb test_urcu_qsbr
             test_rwlock test_perthreadlock test_mutex"
 
 #setting gc each 32768. ** UPDATE FOR YOUR ARCHITECTURE BASED ON TEST ABOVE **
