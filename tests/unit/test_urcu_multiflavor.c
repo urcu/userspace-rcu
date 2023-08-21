@@ -13,12 +13,11 @@
 
 int main(void)
 {
-	plan_tests(5);
+	plan_tests(4);
 
 	ok1(!test_mf_memb());
 
 	ok1(!test_mf_mb());
-	ok1(!test_mf_signal());
 	ok1(!test_mf_qsbr());
 	ok1(!test_mf_bp());
 

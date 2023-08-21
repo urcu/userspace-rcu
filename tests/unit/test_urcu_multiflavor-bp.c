@@ -10,7 +10,6 @@
 #define _LGPL_SOURCE
 #endif
 
-#define RCU_SIGNAL
 #include <urcu-bp.h>
 #include "test_urcu_multiflavor.h"
 

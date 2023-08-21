@@ -9,7 +9,6 @@
 
 extern int test_mf_memb(void);
 extern int test_mf_mb(void);
-extern int test_mf_signal(void);
 extern int test_mf_qsbr(void);
 extern int test_mf_bp(void);
 

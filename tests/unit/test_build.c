@@ -38,7 +38,6 @@
 #include <urcu/urcu-mb.h>
 #include <urcu/urcu-memb.h>
 #include <urcu/urcu-qsbr.h>
-#include <urcu/urcu-signal.h>
 #include <urcu/wfcqueue.h>
 #include <urcu/wfqueue.h>
 #include <urcu/wfstack.h>

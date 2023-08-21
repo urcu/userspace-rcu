@@ -13,7 +13,6 @@
 #include <urcu/urcu-mb.h>
 #include <urcu/urcu-bp.h>
 #include <urcu/urcu-memb.h>
-#include <urcu/urcu-signal.h>
 #include <urcu/urcu-qsbr.h>
 
 #include <stdlib.h>
@@ -49,16 +48,6 @@ static int test_mf_memb(void)
 	return 0;
 }
 
-static int test_mf_signal(void)
-{
-	urcu_signal_register_thread();
-	urcu_signal_read_lock();
-	urcu_signal_read_unlock();
-	urcu_signal_synchronize_rcu();
-	urcu_signal_unregister_thread();
-	return 0;
-}
-
 static int test_mf_qsbr(void)
 {
 	urcu_qsbr_register_thread();
@@ -71,12 +60,11 @@ static int test_mf_qsbr(void)
 
 int main(void)
 {
-	plan_tests(5);
+	plan_tests(4);
 
 	ok1(!test_mf_mb());
 	ok1(!test_mf_bp());
 	ok1(!test_mf_memb());
-	ok1(!test_mf_signal());
 	ok1(!test_mf_qsbr());
 
 	return exit_status();
