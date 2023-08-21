@@ -16,8 +16,6 @@ noinst_PROGRAMS = \
 	test_urcu_fork_cxx.tap \
 	rcutorture_urcu_membarrier \
 	rcutorture_urcu_membarrier_cxx \
-	rcutorture_urcu_signal \
-	rcutorture_urcu_signal_cxx \
 	rcutorture_urcu_mb \
 	rcutorture_urcu_mb_cxx \
 	rcutorture_urcu_bp \
@@ -31,7 +29,6 @@ URCU_COMMON_LIB=$(top_builddir)/src/liburcu-common.la
 URCU_LIB=$(top_builddir)/src/liburcu.la
 URCU_QSBR_LIB=$(top_builddir)/src/liburcu-qsbr.la
 URCU_MB_LIB=$(top_builddir)/src/liburcu-mb.la
-URCU_SIGNAL_LIB=$(top_builddir)/src/liburcu-signal.la
 URCU_BP_LIB=$(top_builddir)/src/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/src/liburcu-cds.la
 TAP_LIB=$(top_builddir)/tests/utils/libtap.a
@@ -65,14 +62,6 @@ rcutorture_urcu_qsbr_LDADD = $(URCU_QSBR_LIB) $(TAP_LIB)
 rcutorture_urcu_qsbr_cxx_SOURCES = urcutorture_cxx.cpp
 rcutorture_urcu_qsbr_cxx_CXXFLAGS = -DTORTURE_QSBR -DRCU_QSBR $(AM_CXXFLAGS)
 rcutorture_urcu_qsbr_cxx_LDADD = $(URCU_QSBR_LIB) $(TAP_LIB)
-
-rcutorture_urcu_signal_SOURCES = urcutorture.c
-rcutorture_urcu_signal_CFLAGS = -DRCU_SIGNAL $(AM_CFLAGS)
-rcutorture_urcu_signal_LDADD = $(URCU_SIGNAL_LIB) $(TAP_LIB)
-
-rcutorture_urcu_signal_cxx_SOURCES = urcutorture_cxx.cpp
-rcutorture_urcu_signal_cxx_CXXFLAGS = -DRCU_SIGNAL $(AM_CXXFLAGS)
-rcutorture_urcu_signal_cxx_LDADD = $(URCU_SIGNAL_LIB) $(TAP_LIB)
 
 rcutorture_urcu_bp_SOURCES = urcutorture.c
 rcutorture_urcu_bp_CFLAGS = -DRCU_BP $(AM_CFLAGS)
@@ -180,31 +169,7 @@ dist_check_SCRIPTS = \
 	test_rcutorture_urcu_qsbr_uperf_percpu.tap \
 	test_rcutorture_urcu_qsbr_uperf_percpu_cxx.tap \
 	test_rcutorture_urcu_qsbr_uperf_perthread.tap \
-	test_rcutorture_urcu_qsbr_uperf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_perf_global.tap \
-	test_rcutorture_urcu_signal_perf_global_cxx.tap \
-	test_rcutorture_urcu_signal_perf_percpu.tap \
-	test_rcutorture_urcu_signal_perf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_perf_perthread.tap \
-	test_rcutorture_urcu_signal_perf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_global.tap \
-	test_rcutorture_urcu_signal_rperf_global_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_percpu.tap \
-	test_rcutorture_urcu_signal_rperf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_perthread.tap \
-	test_rcutorture_urcu_signal_rperf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_stress_global.tap \
-	test_rcutorture_urcu_signal_stress_global_cxx.tap \
-	test_rcutorture_urcu_signal_stress_percpu.tap \
-	test_rcutorture_urcu_signal_stress_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_stress_perthread.tap \
-	test_rcutorture_urcu_signal_stress_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_global.tap \
-	test_rcutorture_urcu_signal_uperf_global_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_percpu.tap \
-	test_rcutorture_urcu_signal_uperf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_perthread.tap \
-	test_rcutorture_urcu_signal_uperf_perthread_cxx.tap
+	test_rcutorture_urcu_qsbr_uperf_perthread_cxx.tap
 
 .PHONY: regtest
 
@@ -310,31 +275,7 @@ REGTEST_TESTS = \
 	test_rcutorture_urcu_qsbr_uperf_percpu.tap \
 	test_rcutorture_urcu_qsbr_uperf_percpu_cxx.tap \
 	test_rcutorture_urcu_qsbr_uperf_perthread.tap \
-	test_rcutorture_urcu_qsbr_uperf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_perf_global.tap \
-	test_rcutorture_urcu_signal_perf_global_cxx.tap \
-	test_rcutorture_urcu_signal_perf_percpu.tap \
-	test_rcutorture_urcu_signal_perf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_perf_perthread.tap \
-	test_rcutorture_urcu_signal_perf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_global.tap \
-	test_rcutorture_urcu_signal_rperf_global_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_percpu.tap \
-	test_rcutorture_urcu_signal_rperf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_rperf_perthread.tap \
-	test_rcutorture_urcu_signal_rperf_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_stress_global.tap \
-	test_rcutorture_urcu_signal_stress_global_cxx.tap \
-	test_rcutorture_urcu_signal_stress_percpu.tap \
-	test_rcutorture_urcu_signal_stress_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_stress_perthread.tap \
-	test_rcutorture_urcu_signal_stress_perthread_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_global.tap \
-	test_rcutorture_urcu_signal_uperf_global_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_percpu.tap \
-	test_rcutorture_urcu_signal_uperf_percpu_cxx.tap \
-	test_rcutorture_urcu_signal_uperf_perthread.tap \
-	test_rcutorture_urcu_signal_uperf_perthread_cxx.tap
+	test_rcutorture_urcu_qsbr_uperf_perthread_cxx.tap
 
 regtest:
 	$(MAKE) $(AM_MAKEFLAGS) check TESTS="$(REGTEST_TESTS)"
