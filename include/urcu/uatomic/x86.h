@@ -8,6 +8,8 @@
 #ifndef _URCU_ARCH_UATOMIC_X86_H
 #define _URCU_ARCH_UATOMIC_X86_H
 
+#include <stdlib.h>		/* For abort(3). */
+
 /*
  * Code inspired from libuatomic_ops-1.2, inherited in part from the
  * Boehm-Demers-Weiser conservative garbage collector.
@@ -629,6 +631,474 @@ extern unsigned long _compat_uatomic_add_return(void *addr,
 #define uatomic_dec(addr)	UATOMIC_COMPAT(dec(addr))
 #define cmm_smp_mb__before_uatomic_dec()	cmm_barrier()
 #define cmm_smp_mb__after_uatomic_dec()		cmm_barrier()
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_read_mo(enum cmm_memorder mo)
+{
+	/*
+	 * A SMP barrier is not necessary for CMM_SEQ_CST because, only a
+	 * previous store can be reordered with the load.  However, emitting the
+	 * memory barrier after the store is sufficient to prevent reordering
+	 * between the two.  This follows toolchains decision of emitting the
+	 * memory fence on the stores instead of the loads.
+	 *
+	 * A compiler barrier is necessary because the underlying operation does
+	 * not clobber the registers.
+	 */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		cmm_barrier();
+		break;
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	default:
+		abort();
+		break;
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_read_mo(enum cmm_memorder mo)
+{
+	/*
+	 * A SMP barrier is not necessary for CMM_SEQ_CST because following
+	 * loads and stores cannot be reordered with the load.
+	 *
+	 * A SMP barrier is however necessary for CMM_SEQ_CST_FENCE to respect
+	 * the memory model, since the underlying operation does not have a lock
+	 * prefix.
+	 *
+	 * A compiler barrier is necessary because the underlying operation does
+	 * not clobber the registers.
+	 */
+	switch (mo) {
+	case CMM_SEQ_CST_FENCE:
+		cmm_smp_mb();
+		break;
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_SEQ_CST:
+		cmm_barrier();
+		break;
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	default:
+		abort();
+		break;
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_set_mo(enum cmm_memorder mo)
+{
+	/*
+	 * A SMP barrier is not necessary for CMM_SEQ_CST because the store can
+	 * only be reodered with later loads
+	 *
+	 * A compiler barrier is necessary because the underlying operation does
+	 * not clobber the registers.
+	 */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		cmm_barrier();
+		break;
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	default:
+		abort();
+		break;
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_set_mo(enum cmm_memorder mo)
+{
+	/*
+	 * A SMP barrier is necessary for CMM_SEQ_CST because the store can be
+	 * reorded with later loads.  Since no memory barrier is being emitted
+	 * before loads, one has to be emitted after the store.  This follows
+	 * toolchains decision of emitting the memory fence on the stores instead
+	 * of the loads.
+	 *
+	 * A SMP barrier is necessary for CMM_SEQ_CST_FENCE to respect the
+	 * memory model, since the underlying store does not have a lock prefix.
+	 *
+	 * A compiler barrier is necessary because the underlying operation does
+	 * not clobber the registers.
+	 */
+	switch (mo) {
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		cmm_smp_mb();
+		break;
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_RELEASE:
+		cmm_barrier();
+		break;
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	default:
+		abort();
+		break;
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_xchg_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_xchg has implicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_xchg_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_xchg has implicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_cmpxchg_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_cmpxchg has implicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_cmpxchg_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_cmpxchg has implicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_and_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_and has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_and_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_and has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_or_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_or has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_or_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_or has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_add_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_add has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_add_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_add has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_sub_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_sub has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_sub_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_sub has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_inc_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_inc has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_inc_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_inc has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_dec_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_dec has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_dec_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_dec has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_add_return_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_add_return has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_add_return_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_add_return has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_sub_return_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_sub_return has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_sub_return_mo(enum cmm_memorder mo)
+{
+	/* NOP. uatomic_sub_return has explicit lock prefix. */
+	switch (mo) {
+	case CMM_RELAXED:	/* Fall-through */
+	case CMM_ACQUIRE:	/* Fall-through */
+	case CMM_CONSUME:	/* Fall-through */
+	case CMM_RELEASE:	/* Fall-through */
+	case CMM_ACQ_REL:	/* Fall-through */
+	case CMM_SEQ_CST:	/* Fall-through */
+	case CMM_SEQ_CST_FENCE:
+		break;
+	default:
+		abort();
+	}
+}
+
+#define _cmm_compat_c11_smp_mb__before_mo(operation, mo)			\
+	do {							\
+		_cmm_compat_c11_smp_mb__before_ ## operation ## _mo (mo);	\
+	} while (0)
+
+#define _cmm_compat_c11_smp_mb__after_mo(operation, mo)			\
+	do {							\
+		_cmm_compat_c11_smp_mb__after_ ## operation ## _mo (mo);	\
+	} while (0)
+
 
 #ifdef __cplusplus
 }
