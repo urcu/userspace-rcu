@@ -9,14 +9,18 @@
 
 #define NR_TESTS 17
 
+#define BYTE_PER_LONG	(sizeof(unsigned long) / sizeof(unsigned char))
+#define SHORT_PER_LONG	(sizeof(unsigned long) / sizeof(unsigned short))
+#define INT_PER_LONG	(sizeof(unsigned long) / sizeof(unsigned int))
+
 struct testvals {
 #ifdef UATOMIC_HAS_ATOMIC_BYTE
-	unsigned char c;
+	unsigned char c[BYTE_PER_LONG];
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
-	unsigned short s;
+	unsigned short s[SHORT_PER_LONG];
 #endif
-	unsigned int i;
+	unsigned int i[INT_PER_LONG];
 	unsigned long l;
 };
 
@@ -75,25 +79,36 @@ do {						\
 
 int main(void)
 {
-	int nr_run = 2;
+	int nr_run = INT_PER_LONG + 1;
+	unsigned long i;
+
 #ifdef UATOMIC_HAS_ATOMIC_BYTE
-	nr_run += 1;
+	nr_run += BYTE_PER_LONG;
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
-	nr_run += 1;
+	nr_run += SHORT_PER_LONG;
 #endif
 
 	plan_tests(nr_run * NR_TESTS);
 #ifdef UATOMIC_HAS_ATOMIC_BYTE
-	diag("Test atomic ops on byte");
-	do_test(&vals.c);
+	for (i = 0; i < BYTE_PER_LONG; i++) {
+		diag("Test atomic ops on byte with %lu byte offset from long alignment",
+			i);
+		do_test(&vals.c[i]);
+	}
 #endif
 #ifdef UATOMIC_HAS_ATOMIC_SHORT
-	diag("Test atomic ops on short");
-	do_test(&vals.s);
+	for (i = 0; i < SHORT_PER_LONG; i++) {
+		diag("Test atomic ops on short with %lu byte offset from long alignment",
+			i * sizeof(unsigned short));
+		do_test(&vals.s[i]);
+	}
 #endif
-	diag("Test atomic ops on int");
-	do_test(&vals.i);
+	for (i = 0; i < INT_PER_LONG; i++) {
+		diag("Test atomic ops on int with %lu byte offset from long alignment",
+			i * sizeof(unsigned int));
+		do_test(&vals.i[i]);
+	}
 	diag("Test atomic ops on long");
 	do_test(&vals.l);
 
