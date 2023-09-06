@@ -32,6 +32,11 @@
 extern "C" {
 #endif
 
+/*
+ * LoongArch implements byte and short atomics with LL/SC instructions,
+ * which retry if the cache line is modified concurrently between LL and
+ * SC.
+ */
 #define UATOMIC_HAS_ATOMIC_BYTE
 #define UATOMIC_HAS_ATOMIC_SHORT
 
