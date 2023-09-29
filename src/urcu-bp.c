@@ -88,10 +88,7 @@ void *mremap_wrapper(void *old_address __attribute__((unused)),
 
 /* Sleep delay in ms */
 #define RCU_SLEEP_DELAY_MS	10
-#define INIT_NR_THREADS		8
-#define ARENA_INIT_ALLOC		\
-	sizeof(struct registry_chunk)	\
-	+ INIT_NR_THREADS * sizeof(struct urcu_bp_reader)
+#define INIT_READER_COUNT	8
 
 /*
  * Active attempts to check for reader Q.S. before calling sleep().
@@ -161,10 +158,10 @@ DEFINE_URCU_TLS(struct urcu_bp_reader *, urcu_bp_reader);
 static CDS_LIST_HEAD(registry);
 
 struct registry_chunk {
-	size_t data_len;		/* data length */
-	size_t used;			/* amount of data used */
+	size_t capacity;		/* capacity of this chunk (in elements) */
+	size_t used;			/* count of elements used */
 	struct cds_list_head node;	/* chunk_list node */
-	char data[];
+	struct urcu_bp_reader readers[];
 };
 
 struct registry_arena {
@@ -212,6 +209,13 @@ static void smp_mb_master(void)
 	} else {
 		cmm_smp_mb();
 	}
+}
+
+/* Get the size of a chunk's allocation from its capacity (an element count). */
+static size_t chunk_allocation_size(size_t capacity)
+{
+	return (capacity * sizeof(struct urcu_bp_reader)) +
+		sizeof(struct registry_chunk);
 }
 
 /*
@@ -382,24 +386,20 @@ static
 void expand_arena(struct registry_arena *arena)
 {
 	struct registry_chunk *new_chunk, *last_chunk;
-	size_t old_chunk_len, new_chunk_len;
+	size_t old_chunk_size_bytes, new_chunk_size_bytes, new_capacity;
 
 	/* No chunk. */
 	if (cds_list_empty(&arena->chunk_list)) {
-		urcu_posix_assert(ARENA_INIT_ALLOC >=
-			sizeof(struct registry_chunk)
-			+ sizeof(struct rcu_reader));
-		new_chunk_len = ARENA_INIT_ALLOC;
+		new_chunk_size_bytes = chunk_allocation_size(INIT_READER_COUNT);
 		new_chunk = (struct registry_chunk *) mmap(NULL,
-			new_chunk_len,
+			new_chunk_size_bytes,
 			PROT_READ | PROT_WRITE,
 			MAP_ANONYMOUS | MAP_PRIVATE,
 			-1, 0);
 		if (new_chunk == MAP_FAILED)
 			abort();
-		memset(new_chunk, 0, new_chunk_len);
-		new_chunk->data_len =
-			new_chunk_len - sizeof(struct registry_chunk);
+		memset(new_chunk, 0, new_chunk_size_bytes);
+		new_chunk->capacity = INIT_READER_COUNT;
 		cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
 		return;		/* We're done. */
 	}
@@ -407,34 +407,32 @@ void expand_arena(struct registry_arena *arena)
 	/* Try expanding last chunk. */
 	last_chunk = cds_list_entry(arena->chunk_list.prev,
 		struct registry_chunk, node);
-	old_chunk_len =
-		last_chunk->data_len + sizeof(struct registry_chunk);
-	new_chunk_len = old_chunk_len << 1;
+	old_chunk_size_bytes = chunk_allocation_size(last_chunk->capacity);
+	new_capacity = last_chunk->capacity << 1;
+	new_chunk_size_bytes = chunk_allocation_size(new_capacity);
 
 	/* Don't allow memory mapping to move, just expand. */
-	new_chunk = mremap_wrapper(last_chunk, old_chunk_len,
-		new_chunk_len, 0);
+	new_chunk = mremap_wrapper(last_chunk, old_chunk_size_bytes,
+		new_chunk_size_bytes, 0);
 	if (new_chunk != MAP_FAILED) {
 		/* Should not have moved. */
-		urcu_posix_assert(new_chunk == last_chunk);
-		memset((char *) last_chunk + old_chunk_len, 0,
-			new_chunk_len - old_chunk_len);
-		last_chunk->data_len =
-			new_chunk_len - sizeof(struct registry_chunk);
+		assert(new_chunk == last_chunk);
+		memset((char *) last_chunk + old_chunk_size_bytes, 0,
+			new_chunk_size_bytes - old_chunk_size_bytes);
+		last_chunk->capacity = new_capacity;
 		return;		/* We're done. */
 	}
 
 	/* Remap did not succeed, we need to add a new chunk. */
 	new_chunk = (struct registry_chunk *) mmap(NULL,
-		new_chunk_len,
+		new_chunk_size_bytes,
 		PROT_READ | PROT_WRITE,
 		MAP_ANONYMOUS | MAP_PRIVATE,
 		-1, 0);
 	if (new_chunk == MAP_FAILED)
 		abort();
-	memset(new_chunk, 0, new_chunk_len);
-	new_chunk->data_len =
-		new_chunk_len - sizeof(struct registry_chunk);
+	memset(new_chunk, 0, new_chunk_size_bytes);
+	new_chunk->capacity = new_capacity;
 	cds_list_add_tail(&new_chunk->node, &arena->chunk_list);
 }
 
@@ -442,22 +440,23 @@ static
 struct rcu_reader *arena_alloc(struct registry_arena *arena)
 {
 	struct registry_chunk *chunk;
-	struct rcu_reader *rcu_reader_reg;
 	int expand_done = 0;	/* Only allow to expand once per alloc */
-	size_t len = sizeof(struct rcu_reader);
 
 retry:
 	cds_list_for_each_entry(chunk, &arena->chunk_list, node) {
-		if (chunk->data_len - chunk->used < len)
+		size_t spot_idx;
+
+		/* Skip fully used chunks. */
+		if (chunk->used == chunk->capacity) {
 			continue;
-		/* Find spot */
-		for (rcu_reader_reg = (struct rcu_reader *) &chunk->data[0];
-				rcu_reader_reg < (struct rcu_reader *) &chunk->data[chunk->data_len];
-				rcu_reader_reg++) {
-			if (!rcu_reader_reg->alloc) {
-				rcu_reader_reg->alloc = 1;
-				chunk->used += len;
-				return rcu_reader_reg;
+		}
+
+		/* Find a spot. */
+		for (spot_idx = 0; spot_idx < chunk->capacity; spot_idx++) {
+			if (!chunk->readers[spot_idx].alloc) {
+				chunk->readers[spot_idx].alloc = 1;
+				chunk->used++;
+				return &chunk->readers[spot_idx];
 			}
 		}
 	}
@@ -505,7 +504,7 @@ void cleanup_thread(struct registry_chunk *chunk,
 	cds_list_del(&rcu_reader_reg->node);
 	rcu_reader_reg->tid = 0;
 	rcu_reader_reg->alloc = 0;
-	chunk->used -= sizeof(struct rcu_reader);
+	chunk->used--;
 }
 
 static
@@ -514,9 +513,9 @@ struct registry_chunk *find_chunk(struct rcu_reader *rcu_reader_reg)
 	struct registry_chunk *chunk;
 
 	cds_list_for_each_entry(chunk, &registry_arena.chunk_list, node) {
-		if (rcu_reader_reg < (struct rcu_reader *) &chunk->data[0])
+		if (rcu_reader_reg < (struct urcu_bp_reader *) &chunk->readers[0])
 			continue;
-		if (rcu_reader_reg >= (struct rcu_reader *) &chunk->data[chunk->data_len])
+		if (rcu_reader_reg >= (struct urcu_bp_reader *) &chunk->readers[chunk->capacity])
 			continue;
 		return chunk;
 	}
@@ -665,8 +664,7 @@ void urcu_bp_exit(void)
 
 		cds_list_for_each_entry_safe(chunk, tmp,
 				&registry_arena.chunk_list, node) {
-			munmap((void *) chunk, chunk->data_len
-					+ sizeof(struct registry_chunk));
+			munmap((void *) chunk, chunk_allocation_size(chunk->capacity));
 		}
 		CDS_INIT_LIST_HEAD(&registry_arena.chunk_list);
 		ret = pthread_key_delete(urcu_bp_key);
@@ -723,17 +721,18 @@ static
 void urcu_bp_prune_registry(void)
 {
 	struct registry_chunk *chunk;
-	struct urcu_bp_reader *rcu_reader_reg;
 
 	cds_list_for_each_entry(chunk, &registry_arena.chunk_list, node) {
-		for (rcu_reader_reg = (struct urcu_bp_reader *) &chunk->data[0];
-				rcu_reader_reg < (struct urcu_bp_reader *) &chunk->data[chunk->data_len];
-				rcu_reader_reg++) {
-			if (!rcu_reader_reg->alloc)
+		size_t spot_idx;
+
+		for (spot_idx = 0; spot_idx < chunk->capacity; spot_idx++) {
+			struct urcu_bp_reader *reader = &chunk->readers[spot_idx];
+
+			if (!reader->alloc)
 				continue;
-			if (rcu_reader_reg->tid == pthread_self())
+			if (reader->tid == pthread_self())
 				continue;
-			cleanup_thread(chunk, rcu_reader_reg);
+			cleanup_thread(chunk, reader);
 		}
 	}
 }
