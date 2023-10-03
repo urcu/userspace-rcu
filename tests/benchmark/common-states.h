@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 Olivier Dion <odion@efficios.com>
+//
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /* Common states for benchmarks. */
 
 #include <unistd.h>
