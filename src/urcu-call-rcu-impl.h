@@ -895,7 +895,7 @@ void rcu_barrier(void)
 		goto online;
 	}
 
-	completion = calloc(sizeof(*completion), 1);
+	completion = calloc(1, sizeof(*completion));
 	if (!completion)
 		urcu_die(errno);
 
@@ -910,7 +910,7 @@ void rcu_barrier(void)
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
 		struct call_rcu_completion_work *work;
 
-		work = calloc(sizeof(*work), 1);
+		work = calloc(1, sizeof(*work));
 		if (!work)
 			urcu_die(errno);
 		work->completion = completion;
