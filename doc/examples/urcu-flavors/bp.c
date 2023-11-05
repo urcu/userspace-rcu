@@ -46,7 +46,7 @@ int add_node(uint64_t v)
 {
 	struct mynode *node;
 
-	node = calloc(sizeof(*node), 1);
+	node = calloc(1, sizeof(*node));
 	if (!node)
 		return -1;
 	node->value = v;
