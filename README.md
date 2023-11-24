@@ -476,3 +476,18 @@ Contacts
 
 You can contact the maintainers on the following mailing list:
 `lttng-dev@lists.lttng.org`.
+
+IRC channel: [#lttng](irc://irc.oftc.net/lttng) on the OFTC network
+
+Bug tracker: [Userspace RCU bug tracker](https://bugs.lttng.org/projects/urcu)
+
+Code review: [_userspace-rcu_ project](https://review.lttng.org/q/project:userspace-rcu) on LTTng Review
+
+Continuous integration: [Userspace RCU](https://ci.lttng.org/view/Liburcu/) on LTTng's CI
+
+GitHub mirror: [urcu/userspace-rcu](https://github.com/urcu/userspace-rcu)
+
+Patches are principally submitted and reviewed on [LTTng Review](https://review.lttng.org),
+but may also be submitted to the [mailing list](mailto:lttng-dev@lists.lttng.org)
+with the subject prefix `PATCH urcu` or by pull request on the
+[GitHub mirror](https://github.com/urcu/userspace-rcu).
