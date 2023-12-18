@@ -8,6 +8,12 @@
  * Let the compiler do it.
  */
 
+#ifndef _URCU_ARCH_UATOMIC_RISCV_H
+#define _URCU_ARCH_UATOMIC_RISCV_H
+
+#include <urcu/compiler.h>
+#include <urcu/system.h>
+
 /*
  * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104831> for details.
  *
@@ -18,18 +24,9 @@
  *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=4990cf84c460f064d6281d0813f20b0ef20c7448>
  *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=d199d2e56da2379004e7e0457150409c0c99d3e6>
  */
-#if defined(__GNUC__)
-#  error "Implementations of some atomic operations of GCC for RISC-V \
-          are insufficient for sequential consistency. For this reason \
-          Userspace RCU is currently marked as 'broken' for RISC-V with \
-          GCC. However, it is still possible to use other toolchains."
+#ifdef URCU_GCC_VERSION
+# error "Implementations of some atomic operations of GCC for RISC-V are insufficient for sequential consistency. For this reason Userspace RCU is currently marked as 'broken' for RISC-V with GCC. However, it is still possible to use other toolchains."
 #endif
-
-#ifndef _URCU_ARCH_UATOMIC_RISCV_H
-#define _URCU_ARCH_UATOMIC_RISCV_H
-
-#include <urcu/compiler.h>
-#include <urcu/system.h>
 
 #ifdef __cplusplus
 extern "C" {
