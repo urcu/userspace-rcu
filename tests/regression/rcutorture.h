@@ -527,6 +527,7 @@ int stresstest(int nreaders)
 	int t;
 	long long *p;
 	long long sum;
+	int ret;
 
 	init_per_thread(n_reads_pt, 0LL);
 	for_each_thread(t) {
@@ -552,10 +553,18 @@ int stresstest(int nreaders)
 	       n_reads, n_updates, n_mberror);
 	rdiag_start();
 	rdiag("rcu_stress_count:");
+	ret = 0;
 	for (i = 0; i <= RCU_STRESS_PIPE_LEN; i++) {
 		sum = 0LL;
 		for_each_thread(t) {
 			sum += per_thread(rcu_stress_count, t)[i];
+		}
+		/*
+		 * If any entries past the first two are non-zero, RCU is
+		 * broken. See details above about rcu_stress_count.
+		 */
+		if (i > 1 && sum != 0) {
+			ret = -1;
 		}
 		rdiag(" %lld", sum);
 	}
@@ -564,10 +573,9 @@ int stresstest(int nreaders)
 		diag("Deallocating per-CPU call_rcu threads.");
 		free_all_cpu_call_rcu_data();
 	}
-	if (!n_mberror)
-		return 0;
-	else
-		return -1;
+	if (n_mberror)
+		ret = -1;
+	return ret;
 }
 
 /*
