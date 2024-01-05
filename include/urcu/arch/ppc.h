@@ -63,7 +63,7 @@ extern "C" {
 	__extension__					\
 	({ 						\
 		unsigned long rval;			\
-		__asm__ __volatile__ ("mftbl %0" : "=r" (rval));	\
+		__asm__ __volatile__ ("mftb %0" : "=r" (rval));	\
 		rval;					\
 	})
 
