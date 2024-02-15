@@ -14,12 +14,12 @@ static
 void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
-		ht->tbl_order[0] = calloc(ht->min_nr_alloc_buckets,
-			sizeof(struct cds_lfht_node));
+		ht->tbl_order[0] = ht->alloc->calloc(ht->alloc->state,
+			ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
 		urcu_posix_assert(ht->tbl_order[0]);
 	} else if (order > ht->min_alloc_buckets_order) {
-		ht->tbl_order[order] = calloc(1UL << (order -1),
-			sizeof(struct cds_lfht_node));
+		ht->tbl_order[order] = ht->alloc->calloc(ht->alloc->state,
+			1UL << (order -1), sizeof(struct cds_lfht_node));
 		urcu_posix_assert(ht->tbl_order[order]);
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
@@ -34,9 +34,9 @@ static
 void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0)
-		poison_free(ht->tbl_order[0]);
+		poison_free(ht->alloc, ht->tbl_order[0]);
 	else if (order > ht->min_alloc_buckets_order)
-		poison_free(ht->tbl_order[order]);
+		poison_free(ht->alloc, ht->tbl_order[order]);
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
 }
 
@@ -62,10 +62,10 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 
 static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
-		unsigned long max_nr_buckets)
+		unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc)
 {
 	return __default_alloc_cds_lfht(
-			&cds_lfht_mm_order, sizeof(struct cds_lfht),
+			&cds_lfht_mm_order, alloc, sizeof(struct cds_lfht),
 			min_nr_alloc_buckets, max_nr_buckets);
 }
 

@@ -118,8 +118,8 @@ void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 	if (order == 0) {
 		if (ht->min_nr_alloc_buckets == ht->max_nr_buckets) {
 			/* small table */
-			ht->tbl_mmap = calloc(ht->max_nr_buckets,
-					sizeof(*ht->tbl_mmap));
+			ht->tbl_mmap = ht->alloc->calloc(ht->alloc->state,
+					ht->max_nr_buckets, sizeof(*ht->tbl_mmap));
 			urcu_posix_assert(ht->tbl_mmap);
 			return;
 		}
@@ -150,7 +150,7 @@ void cds_lfht_free_bucket_table(struct cds_lfht *ht, unsigned long order)
 	if (order == 0) {
 		if (ht->min_nr_alloc_buckets == ht->max_nr_buckets) {
 			/* small table */
-			poison_free(ht->tbl_mmap);
+			poison_free(ht->alloc, ht->tbl_mmap);
 			return;
 		}
 		/* large table */
@@ -174,7 +174,7 @@ struct cds_lfht_node *bucket_at(struct cds_lfht *ht, unsigned long index)
 
 static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
-		unsigned long max_nr_buckets)
+		unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc)
 {
 	unsigned long page_bucket_size;
 
@@ -189,7 +189,7 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 	}
 
 	return __default_alloc_cds_lfht(
-			&cds_lfht_mm_mmap, sizeof(struct cds_lfht),
+			&cds_lfht_mm_mmap, alloc, sizeof(struct cds_lfht),
 			min_nr_alloc_buckets, max_nr_buckets);
 }
 

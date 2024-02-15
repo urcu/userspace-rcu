@@ -249,6 +249,7 @@
 #include <string.h>
 #include <sched.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "compat-getcpu.h"
 #include <urcu/assert.h>
@@ -568,6 +569,50 @@ unsigned int cds_lfht_fls_ulong(unsigned long x)
 #endif
 }
 
+static void *cds_lfht_malloc(void *state __attribute__((unused)),
+		size_t size)
+{
+	return malloc(size);
+}
+
+static void *cds_lfht_calloc(void *state __attribute__((unused)),
+		size_t nmemb, size_t size)
+{
+	return calloc(nmemb, size);
+}
+
+static void *cds_lfht_realloc(void *state __attribute__((unused)),
+		void *ptr, size_t size)
+{
+	return realloc(ptr, size);
+}
+
+static void *cds_lfht_aligned_alloc(void *state __attribute__((unused)),
+		size_t alignment, size_t size)
+{
+	void *ptr;
+
+	if (posix_memalign(&ptr, alignment, size))
+		return NULL;
+	return ptr;
+}
+
+static void cds_lfht_free(void *state __attribute__((unused)), void *ptr)
+{
+	free(ptr);
+}
+
+
+/* Default memory allocator */
+static struct cds_lfht_alloc cds_lfht_default_alloc = {
+	.malloc = cds_lfht_malloc,
+	.calloc = cds_lfht_calloc,
+	.realloc = cds_lfht_realloc,
+	.aligned_alloc = cds_lfht_aligned_alloc,
+	.free = cds_lfht_free,
+	.state = NULL,
+};
+
 /*
  * Return the minimum order for which x <= (1UL << order).
  * Return -1 if x is 0.
@@ -666,7 +711,7 @@ void alloc_split_items_count(struct cds_lfht *ht)
 	urcu_posix_assert(split_count_mask >= 0);
 
 	if (ht->flags & CDS_LFHT_ACCOUNTING) {
-		ht->split_count = calloc(split_count_mask + 1,
+		ht->split_count = ht->alloc->calloc(ht->alloc->state, split_count_mask + 1,
 					sizeof(struct ht_items_count));
 		urcu_posix_assert(ht->split_count);
 	} else {
@@ -677,7 +722,7 @@ void alloc_split_items_count(struct cds_lfht *ht)
 static
 void free_split_items_count(struct cds_lfht *ht)
 {
-	poison_free(ht->split_count);
+	poison_free(ht->alloc, ht->split_count);
 }
 
 static
@@ -1262,7 +1307,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		nr_threads = 1;
 	}
 	partition_len = len >> cds_lfht_get_count_order_ulong(nr_threads);
-	work = calloc(nr_threads, sizeof(*work));
+	work = ht->alloc->calloc(ht->alloc->state, nr_threads, sizeof(*work));
 	if (!work) {
 		dbg_printf("error allocating for resize, single-threading\n");
 		goto fallback;
@@ -1303,7 +1348,7 @@ void partition_resize_helper(struct cds_lfht *ht, unsigned long i,
 		ret = pthread_join(work[thread].thread_id, NULL);
 		urcu_posix_assert(!ret);
 	}
-	free(work);
+	ht->alloc->free(ht->alloc->state, work);
 
 	/*
 	 * A pthread_create failure above will either lead in us having
@@ -1596,11 +1641,12 @@ void cds_lfht_node_init_deleted(struct cds_lfht_node *node)
 	node->next = flag_removed(NULL);
 }
 
-struct cds_lfht *_cds_lfht_new(unsigned long init_size,
+struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 			unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets,
 			int flags,
 			const struct cds_lfht_mm_type *mm,
+			const struct cds_lfht_alloc *alloc,
 			const struct rcu_flavor_struct *flavor,
 			pthread_attr_t *attr)
 {
@@ -1637,7 +1683,8 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	max_nr_buckets = max(max_nr_buckets, min_nr_alloc_buckets);
 	init_size = min(init_size, max_nr_buckets);
 
-	ht = mm->alloc_cds_lfht(min_nr_alloc_buckets, max_nr_buckets);
+	ht = mm->alloc_cds_lfht(min_nr_alloc_buckets, max_nr_buckets, alloc ? : &cds_lfht_default_alloc);
+	
 	urcu_posix_assert(ht);
 	urcu_posix_assert(ht->mm == mm);
 	urcu_posix_assert(ht->bucket_at == mm->bucket_at);
@@ -1655,6 +1702,19 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 	cds_lfht_create_bucket(ht, 1UL << order);
 	ht->size = 1UL << order;
 	return ht;
+}
+
+struct cds_lfht *_cds_lfht_new(unsigned long init_size,
+			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
+			int flags,
+			const struct cds_lfht_mm_type *mm,
+			const struct rcu_flavor_struct *flavor,
+			pthread_attr_t *attr)
+{
+	return _cds_lfht_new_with_alloc(init_size,
+			min_nr_alloc_buckets, max_nr_buckets,
+			flags, mm, NULL, flavor, attr);
 }
 
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
@@ -1945,7 +2005,7 @@ void do_auto_resize_destroy_cb(struct urcu_work *work)
 	if (ret)
 		urcu_die(ret);
 	ht->flavor->unregister_thread();
-	poison_free(ht);
+	poison_free(ht->alloc, ht);
 }
 
 /*
@@ -1989,7 +2049,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 	ret = pthread_mutex_destroy(&ht->resize_mutex);
 	if (ret)
 		ret = -EBUSY;
-	poison_free(ht);
+	poison_free(ht->alloc, ht);
 	return ret;
 }
 
@@ -2144,7 +2204,7 @@ void do_resize_cb(struct urcu_work *work)
 	_do_cds_lfht_resize(ht);
 	mutex_unlock(&ht->resize_mutex);
 	ht->flavor->unregister_thread();
-	poison_free(work);
+	poison_free(ht->alloc, work);
 }
 
 static
@@ -2160,7 +2220,7 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 		if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED)) {
 			return;
 		}
-		work = malloc(sizeof(*work));
+		work = ht->alloc->malloc(ht->alloc->state, sizeof(*work));
 		if (work == NULL) {
 			dbg_printf("error allocating resize work, bailing out\n");
 			return;

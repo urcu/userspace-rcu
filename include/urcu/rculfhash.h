@@ -68,6 +68,18 @@ struct cds_lfht_iter {
 #endif
 };
 
+/*
+ * cds_lfht_alloc: Callbacks if we want to use custom memory allocator.
+ */
+struct cds_lfht_alloc {
+	void *(*malloc)(void *state, size_t size);
+	void *(*calloc)(void *state, size_t nmemb, size_t size);
+	void *(*realloc)(void *state, void *ptr, size_t size);
+	void *(*aligned_alloc)(void *state, size_t alignment, size_t size);
+	void  (*free)(void *state, void *ptr);
+	void  *state;
+};
+
 static inline
 struct cds_lfht_node *cds_lfht_iter_get_node(struct cds_lfht_iter *iter)
 {
@@ -115,7 +127,7 @@ enum {
 
 struct cds_lfht_mm_type {
 	struct cds_lfht *(*alloc_cds_lfht)(unsigned long min_nr_alloc_buckets,
-			unsigned long max_nr_buckets);
+			unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc);
 	void (*alloc_bucket_table)(struct cds_lfht *ht, unsigned long order);
 	void (*free_bucket_table)(struct cds_lfht *ht, unsigned long order);
 	struct cds_lfht_node *(*bucket_at)(struct cds_lfht *ht,
@@ -135,6 +147,19 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 			unsigned long max_nr_buckets,
 			int flags,
 			const struct cds_lfht_mm_type *mm,
+			const struct rcu_flavor_struct *flavor,
+			pthread_attr_t *attr);
+
+/*
+ * _cds_lfht_new_with_alloc - API used by cds_lfht_new_with_flavor_alloc.
+ */
+extern
+struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
+			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
+			int flags,
+			const struct cds_lfht_mm_type *mm,
+			const struct cds_lfht_alloc *alloc,
 			const struct rcu_flavor_struct *flavor,
 			pthread_attr_t *attr);
 
@@ -178,6 +203,52 @@ struct cds_lfht *cds_lfht_new_flavor(unsigned long init_size,
 {
 	return _cds_lfht_new(init_size, min_nr_alloc_buckets, max_nr_buckets,
 			flags, NULL, flavor, attr);
+}
+
+/*
+ * cds_lfht_new_with_flavor_alloc - allocate a hash table tied to a RCU flavor.
+ * @init_size: number of buckets to allocate initially. Must be power of two.
+ * @min_nr_alloc_buckets: the minimum number of allocated buckets.
+ *                        (must be power of two)
+ * @max_nr_buckets: the maximum number of hash table buckets allowed.
+ *                  (must be power of two, 0 is accepted, means
+ *                  "infinite")
+ * @flavor: flavor of liburcu to use to synchronize the hash table
+ * @alloc: Custom memory allocator for hash table memory management.
+ *         NULL for default. If a custom allocator is used, then
+ *         the whole interface of struct cds_lfht_alloc must be implemented.
+ * @flags: hash table creation flags (can be combined with bitwise or: '|').
+ *           0: no flags.
+ *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
+ *           CDS_LFHT_ACCOUNTING: count the number of node addition
+ *                                and removal in the table
+ * @attr: optional resize worker thread attributes. NULL for default.
+ *
+ * Return NULL on error.
+ * Note: the RCU flavor must be already included before the hash table header.
+ *
+ * The programmer is responsible for ensuring that resize operation has a
+ * priority equal to hash table updater threads. It should be performed by
+ * specifying the appropriate priority in the pthread "attr" argument, and,
+ * for CDS_LFHT_AUTO_RESIZE, by ensuring that call_rcu worker threads also have
+ * this priority level. Having lower priority for call_rcu and resize threads
+ * does not pose any correctness issue, but the resize operations could be
+ * starved by updates, thus leading to long hash table bucket chains.
+ * Threads calling cds_lfht_new are NOT required to be registered RCU
+ * read-side threads. It can be called very early. (e.g. before RCU is
+ * initialized)
+ */
+static inline
+struct cds_lfht *cds_lfht_new_with_flavor_alloc(unsigned long init_size,
+			unsigned long min_nr_alloc_buckets,
+			unsigned long max_nr_buckets,
+			int flags,
+			const struct rcu_flavor_struct *flavor,
+			const struct cds_lfht_alloc *alloc,
+			pthread_attr_t *attr)
+{
+	return _cds_lfht_new_with_alloc(init_size, min_nr_alloc_buckets, max_nr_buckets,
+			flags, NULL, alloc, flavor, attr);
 }
 
 
