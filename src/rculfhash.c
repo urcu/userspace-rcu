@@ -1646,8 +1646,8 @@ struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 			unsigned long max_nr_buckets,
 			int flags,
 			const struct cds_lfht_mm_type *mm,
-			const struct cds_lfht_alloc *alloc,
 			const struct rcu_flavor_struct *flavor,
+			const struct cds_lfht_alloc *alloc,
 			pthread_attr_t *attr)
 {
 	struct cds_lfht *ht;
@@ -1714,7 +1714,7 @@ struct cds_lfht *_cds_lfht_new(unsigned long init_size,
 {
 	return _cds_lfht_new_with_alloc(init_size,
 			min_nr_alloc_buckets, max_nr_buckets,
-			flags, mm, NULL, flavor, attr);
+			flags, mm, flavor, NULL, attr);
 }
 
 void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,

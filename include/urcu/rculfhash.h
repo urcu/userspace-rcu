@@ -159,8 +159,8 @@ struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 			unsigned long max_nr_buckets,
 			int flags,
 			const struct cds_lfht_mm_type *mm,
-			const struct cds_lfht_alloc *alloc,
 			const struct rcu_flavor_struct *flavor,
+			const struct cds_lfht_alloc *alloc,
 			pthread_attr_t *attr);
 
 /*
@@ -248,7 +248,7 @@ struct cds_lfht *cds_lfht_new_with_flavor_alloc(unsigned long init_size,
 			pthread_attr_t *attr)
 {
 	return _cds_lfht_new_with_alloc(init_size, min_nr_alloc_buckets, max_nr_buckets,
-			flags, NULL, alloc, flavor, attr);
+			flags, NULL, flavor, alloc, attr);
 }
 
 
