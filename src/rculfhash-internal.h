@@ -59,6 +59,7 @@ struct cds_lfht {
 	/* Initial configuration items */
 	unsigned long max_nr_buckets;
 	const struct cds_lfht_mm_type *mm;	/* memory management plugin */
+	const struct cds_lfht_alloc *alloc;	/* memory allocator for mm */
 	const struct rcu_flavor_struct *flavor;	/* RCU flavor */
 
 	long count;			/* global approximate item count */
@@ -139,30 +140,32 @@ extern unsigned int cds_lfht_fls_ulong(unsigned long x);
 extern int cds_lfht_get_count_order_ulong(unsigned long x);
 
 #ifdef POISON_FREE
-#define poison_free(ptr)					\
+#define poison_free(alloc, ptr)					\
 	do {							\
 		if (ptr) {					\
 			memset(ptr, 0x42, sizeof(*(ptr)));	\
-			free(ptr);				\
+			alloc->free(alloc->state, ptr);				\
 		}						\
 	} while (0)
 #else
-#define poison_free(ptr)	free(ptr)
+#define poison_free(alloc, ptr)	alloc->free(alloc->state, ptr)
 #endif
 
 static inline
 struct cds_lfht *__default_alloc_cds_lfht(
 		const struct cds_lfht_mm_type *mm,
+		const struct cds_lfht_alloc *alloc,
 		unsigned long cds_lfht_size,
 		unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets)
 {
 	struct cds_lfht *ht;
 
-	ht = calloc(1, cds_lfht_size);
+	ht = alloc->calloc(alloc->state, 1, cds_lfht_size);
 	urcu_posix_assert(ht);
 
 	ht->mm = mm;
+	ht->alloc = alloc;
 	ht->bucket_at = mm->bucket_at;
 	ht->min_nr_alloc_buckets = min_nr_alloc_buckets;
 	ht->min_alloc_buckets_order =
