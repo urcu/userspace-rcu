@@ -19,8 +19,12 @@
 extern "C" {
 #endif
 
+#ifdef __APPLE__
+#define CAA_CACHE_LINE_SIZE	128
+#else
 /* Include size of POWER5+ L3 cache lines: 256 bytes */
 #define CAA_CACHE_LINE_SIZE	256
+#endif
 
 #ifdef __NO_LWSYNC__
 #define LWSYNC_OPCODE	"sync\n"
