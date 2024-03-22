@@ -159,4 +159,4 @@
 #define cmm_smp_mb__before_uatomic_dec() cmm_smp_mb()
 #define cmm_smp_mb__after_uatomic_dec() cmm_smp_mb()
 
-#endif /* _URCU_UATOMIC_BUILTINS_X86_H */
+#endif /* _URCU_UATOMIC_BUILTINS_GENERIC_H */
