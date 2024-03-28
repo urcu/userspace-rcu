@@ -19,7 +19,30 @@
 extern "C" {
 #endif
 
-/* Include size of POWER5+ L3 cache lines: 256 bytes */
+/*
+ * Most powerpc machines have 128 bytes cache lines, but to make sure
+ * there is no false sharing on all known Power hardware, use the
+ * largest known cache line size, which is the physical size of POWER5
+ * L3 cache lines (256 bytes).
+ *
+ * "Each slice [of the L3] is 12-way set-associative, with 4,096
+ * congruence classes of 256-byte lines managed as two 128-byte sectors
+ * to match the L2 line size."
+ *
+ * From: "POWER5 system microarchitecture",
+ *       IBM Journal of Research & Development,
+ *       vol. 49, no. 4/5, July/September 2005
+ *       https://www.eecg.utoronto.ca/~moshovos/ACA08/readings/power5.pdf
+ *
+ * This value is a compile-time constant, which prevents us from
+ * querying the processor for the cache line size at runtime. We
+ * therefore need to be pessimistic and assume the largest known cache
+ * line size.
+ *
+ * This value is exposed through public headers, so tuning it for
+ * specific environments is a concern for ABI compatibility between
+ * applications and liburcu.
+ */
 #define CAA_CACHE_LINE_SIZE	256
 
 #ifdef __NO_LWSYNC__
