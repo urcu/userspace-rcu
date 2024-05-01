@@ -164,7 +164,7 @@ static inline int get_cpu_mask_from_sysfs(char *buf, size_t max_bytes, const cha
 
 		total_bytes_read += bytes_read;
 		assert(total_bytes_read <= max_bytes);
-	} while (max_bytes > total_bytes_read && bytes_read > 0);
+	} while (max_bytes > total_bytes_read && bytes_read != 0);
 
 	/*
 	 * Make sure the mask read is a null terminated string.
