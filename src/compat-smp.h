@@ -1,5 +1,5 @@
 /*
- * SPDX-License-Identifier: LGPL-2.1-only
+ * SPDX-License-Identifier: MIT
  *
  * Copyright (C) 2011-2012 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
  * Copyright (C) 2019 Michael Jeanson <mjeanson@efficios.com>
