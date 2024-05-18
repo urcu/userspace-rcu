@@ -31,14 +31,21 @@
 #include <sys/types.h>
 #include <sys/umtx.h>
 
+#elif defined(__OpenBSD__)
+
+#include <sys/time.h>
+#include <sys/futex.h>
+
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifndef __OpenBSD__
 #define FUTEX_WAIT		0
 #define FUTEX_WAKE		1
+#endif
 
 /*
  * sys_futex compatibility header.
@@ -144,6 +151,36 @@ static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
 	return futex_async(uaddr, op, val, timeout, uaddr2, val3);
+}
+
+#elif defined(__OpenBSD__)
+
+static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	int ret;
+
+	ret = futex((volatile uint32_t *) uaddr, op, val, timeout,
+		(volatile uint32_t *) uaddr2);
+	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
+		return compat_futex_noasync(uaddr, op, val, timeout,
+				uaddr2, val3);
+	}
+	return ret;
+}
+
+static inline int futex_async(int32_t *uaddr, int op, int32_t val,
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
+{
+	int ret;
+
+	ret = futex((volatile uint32_t *) uaddr, op, val, timeout,
+		(volatile uint32_t *) uaddr2);
+	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
+		return compat_futex_async(uaddr, op, val, timeout,
+				uaddr2, val3);
+	}
+	return ret;
 }
 
 #elif defined(__CYGWIN__)
