@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
+#include <urcu/assert.h>
 
 #elif defined(__FreeBSD__)
 
@@ -71,8 +72,7 @@ extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 static inline int futex(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	return syscall(__NR_futex, uaddr, op, val, timeout,
-			uaddr2, val3);
+	return syscall(__NR_futex, uaddr, op, val, timeout, uaddr2, val3);
 }
 
 static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
@@ -114,9 +114,7 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 #elif defined(__FreeBSD__)
 
 static inline int futex_async(int32_t *uaddr, int op, int32_t val,
-		const struct timespec *timeout,
-		int32_t *uaddr2 __attribute__((unused)),
-		int32_t val3 __attribute__((unused)))
+		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
 	int umtx_op;
 	void *umtx_uaddr = NULL, *umtx_uaddr2 = NULL;
@@ -124,6 +122,13 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 		._flags = UMTX_ABSTIME,
 		._clockid = CLOCK_MONOTONIC,
 	};
+
+	/*
+	 * Check if NULL or zero. Don't let users expect that they are
+	 * taken into account.
+	 */
+	urcu_posix_assert(!uaddr2);
+	urcu_posix_assert(!val3);
 
 	switch (op) {
 	case FUTEX_WAIT:
@@ -160,6 +165,12 @@ static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
 {
 	int ret;
 
+	/*
+	 * Check that val3 is zero. Don't let users expect that it is
+	 * taken into account.
+	 */
+	urcu_posix_assert(!val3);
+
 	ret = futex((volatile uint32_t *) uaddr, op, val, timeout,
 		(volatile uint32_t *) uaddr2);
 	if (caa_unlikely(ret < 0 && errno == ENOSYS)) {
@@ -173,6 +184,12 @@ static inline int futex_async(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
 	int ret;
+
+	/*
+	 * Check that val3 is zero. Don't let users expect that it is
+	 * taken into account.
+	 */
+	urcu_posix_assert(!val3);
 
 	ret = futex((volatile uint32_t *) uaddr, op, val, timeout,
 		(volatile uint32_t *) uaddr2);
