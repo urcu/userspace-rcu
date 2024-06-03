@@ -19,23 +19,23 @@
 #if (defined(__linux__) && defined(__NR_futex))
 
 /* For backwards compat */
-#define CONFIG_RCU_HAVE_FUTEX 1
+# define CONFIG_RCU_HAVE_FUTEX 1
 
-#include <unistd.h>
-#include <errno.h>
-#include <urcu/compiler.h>
-#include <urcu/arch.h>
-#include <urcu/assert.h>
+# include <unistd.h>
+# include <errno.h>
+# include <urcu/compiler.h>
+# include <urcu/arch.h>
+# include <urcu/assert.h>
 
 #elif defined(__FreeBSD__)
 
-#include <sys/types.h>
-#include <sys/umtx.h>
+# include <sys/types.h>
+# include <sys/umtx.h>
 
 #elif defined(__OpenBSD__)
 
-#include <sys/time.h>
-#include <sys/futex.h>
+# include <sys/time.h>
+# include <sys/futex.h>
 
 #endif
 
@@ -44,8 +44,8 @@ extern "C" {
 #endif
 
 #ifndef __OpenBSD__
-#define FUTEX_WAIT		0
-#define FUTEX_WAKE		1
+# define FUTEX_WAIT		0
+# define FUTEX_WAKE		1
 #endif
 
 /*
