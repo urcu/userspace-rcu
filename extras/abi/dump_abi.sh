@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # SPDX-FileCopyrightText: 2021 Michael Jeanson <mjeanson@efficios.com>
 #
