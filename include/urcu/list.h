@@ -88,7 +88,7 @@ void cds_list_move(struct cds_list_head *elem, struct cds_list_head *head)
 
 /* Replace an old entry. */
 static inline
-void cds_list_replace(struct cds_list_head *old, struct cds_list_head *_new)
+void cds_list_replace(const struct cds_list_head *old, struct cds_list_head *_new)
 {
 	_new->next = old->next;
 	_new->prev = old->prev;
