@@ -78,6 +78,11 @@ typedef union {
 	struct __cds_wfcq_head *_h;
 	struct cds_wfcq_head *h;
 } __attribute__((__transparent_union__)) cds_wfcq_head_ptr_t;
+
+typedef union {
+	const struct __cds_wfcq_head *_h;
+	const struct cds_wfcq_head *h;
+} __attribute__((__transparent_union__)) cds_wfcq_head_const_ptr_t;
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -100,6 +105,25 @@ static inline struct cds_wfcq_head *cds_wfcq_head_cast(struct cds_wfcq_head *hea
 {
 	return head;
 }
+
+/*
+ * This static inline is only present for compatibility with C++. It is
+ * effect-less in C.
+ */
+static inline const struct __cds_wfcq_head *__cds_wfcq_head_const_cast(const struct __cds_wfcq_head *head)
+{
+	return head;
+}
+
+/*
+ * This static inline is only present for compatibility with C++. It is
+ * effect-less in C.
+ */
+static inline const struct cds_wfcq_head *cds_wfcq_head_const_cast(const struct cds_wfcq_head *head)
+{
+	return head;
+}
+
 #else /* #ifndef __cplusplus */
 
 /*
@@ -121,6 +145,27 @@ static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast(struct cds_wfcq_head *head)
 	cds_wfcq_head_ptr_t ret = { .h = head };
 	return ret;
 }
+
+/*
+ * This static inline is used by internally in the static inline
+ * implementation of the API.
+ */
+static inline cds_wfcq_head_const_ptr_t __cds_wfcq_head_const_cast(const struct __cds_wfcq_head *head)
+{
+	cds_wfcq_head_const_ptr_t ret = { ._h = head };
+	return ret;
+}
+
+/*
+ * This static inline is used by internally in the static inline
+ * implementation of the API.
+ */
+static inline cds_wfcq_head_const_ptr_t cds_wfcq_head_const_cast(const struct cds_wfcq_head *head)
+{
+	cds_wfcq_head_const_ptr_t ret = { .h = head };
+	return ret;
+}
+
 #endif /* #else #ifndef __cplusplus */
 
 struct cds_wfcq_tail {
@@ -238,8 +283,8 @@ extern void __cds_wfcq_init(struct __cds_wfcq_head *head,
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-extern bool cds_wfcq_empty(cds_wfcq_head_ptr_t head,
-		struct cds_wfcq_tail *tail);
+extern bool cds_wfcq_empty(cds_wfcq_head_const_ptr_t head,
+		const struct cds_wfcq_tail *tail);
 
 /*
  * cds_wfcq_dequeue_lock: take the dequeue mutual exclusion lock.
@@ -500,10 +545,22 @@ static inline cds_wfcq_head_ptr_t cds_wfcq_head_cast_cpp(struct cds_wfcq_head *h
 	return ret;
 }
 
-template<typename T> static inline bool cds_wfcq_empty(T head,
-		struct cds_wfcq_tail *tail)
+static inline cds_wfcq_head_const_ptr_t cds_wfcq_head_const_cast_cpp(const struct __cds_wfcq_head *head)
 {
-	return cds_wfcq_empty(cds_wfcq_head_cast_cpp(head), tail);
+	cds_wfcq_head_const_ptr_t ret = { ._h = head };
+	return ret;
+}
+
+static inline cds_wfcq_head_const_ptr_t cds_wfcq_head_const_cast_cpp(const struct cds_wfcq_head *head)
+{
+	cds_wfcq_head_const_ptr_t ret = { .h = head };
+	return ret;
+}
+
+template<typename T> static inline bool cds_wfcq_empty(T head,
+		const struct cds_wfcq_tail *tail)
+{
+	return cds_wfcq_empty(cds_wfcq_head_const_cast_cpp(head), tail);
 }
 
 template<typename T> static inline bool cds_wfcq_enqueue(T head,

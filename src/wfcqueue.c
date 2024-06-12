@@ -38,8 +38,8 @@ void __cds_wfcq_init(struct __cds_wfcq_head *head,
 	___cds_wfcq_init(head, tail);
 }
 
-bool cds_wfcq_empty(cds_wfcq_head_ptr_t head,
-		struct cds_wfcq_tail *tail)
+bool cds_wfcq_empty(cds_wfcq_head_const_ptr_t head,
+		const struct cds_wfcq_tail *tail)
 
 {
 	return _cds_wfcq_empty(head, tail);

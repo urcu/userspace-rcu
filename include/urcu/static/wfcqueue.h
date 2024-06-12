@@ -133,10 +133,10 @@ static inline void ___cds_wfcq_init(struct __cds_wfcq_head *head,
  * make a queue appear empty if an enqueuer is preempted for a long time
  * between xchg() and setting the previous node's next pointer.
  */
-static inline bool _cds_wfcq_empty(cds_wfcq_head_ptr_t u_head,
-		struct cds_wfcq_tail *tail)
+static inline bool _cds_wfcq_empty(cds_wfcq_head_const_ptr_t u_head,
+		const struct cds_wfcq_tail *tail)
 {
-	struct __cds_wfcq_head *head = u_head._h;
+	const struct __cds_wfcq_head *head = u_head._h;
 	/*
 	 * Queue is empty if no node is pointed by head->node.next nor
 	 * tail->p. Even though the tail->p check is sufficient to find
@@ -283,7 +283,7 @@ ___cds_wfcq_first(cds_wfcq_head_ptr_t u_head,
 	struct __cds_wfcq_head *head = u_head._h;
 	struct cds_wfcq_node *node;
 
-	if (_cds_wfcq_empty(__cds_wfcq_head_cast(head), tail))
+	if (_cds_wfcq_empty(__cds_wfcq_head_const_cast(head), tail))
 		return NULL;
 	node = ___cds_wfcq_node_sync_next(&head->node, blocking);
 
@@ -399,7 +399,7 @@ ___cds_wfcq_dequeue_with_state(cds_wfcq_head_ptr_t u_head,
 	if (state)
 		*state = 0;
 
-	if (_cds_wfcq_empty(__cds_wfcq_head_cast(head), tail)) {
+	if (_cds_wfcq_empty(__cds_wfcq_head_const_cast(head), tail)) {
 		return NULL;
 	}
 
@@ -530,7 +530,7 @@ ___cds_wfcq_splice(
 	 * Initial emptiness check to speed up cases where queue is
 	 * empty: only require loads to check if queue is empty.
 	 */
-	if (_cds_wfcq_empty(__cds_wfcq_head_cast(src_q_head), src_q_tail))
+	if (_cds_wfcq_empty(__cds_wfcq_head_const_cast(src_q_head), src_q_tail))
 		return CDS_WFCQ_RET_SRC_EMPTY;
 
 	for (;;) {
