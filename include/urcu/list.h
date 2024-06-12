@@ -169,7 +169,7 @@ void cds_list_splice(struct cds_list_head *add, struct cds_list_head *head)
                 pos = (p), p = cds_list_entry((pos)->member.next, __typeof__(*(pos)), member))
 
 static inline
-int cds_list_empty(struct cds_list_head *head)
+int cds_list_empty(const struct cds_list_head *head)
 {
 	return head == head->next;
 }
