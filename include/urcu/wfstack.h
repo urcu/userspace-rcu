@@ -96,6 +96,11 @@ typedef union {
 	struct __cds_wfs_stack *_s;
 	struct cds_wfs_stack *s;
 } __attribute__((__transparent_union__)) cds_wfs_stack_ptr_t;
+
+typedef union {
+	const struct __cds_wfs_stack *_s;
+	const struct cds_wfs_stack *s;
+} __attribute__((__transparent_union__)) cds_wfs_stack_const_ptr_t;
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -167,7 +172,7 @@ extern void __cds_wfs_init(struct __cds_wfs_stack *s);
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-extern bool cds_wfs_empty(cds_wfs_stack_ptr_t u_stack);
+extern bool cds_wfs_empty(cds_wfs_stack_const_ptr_t u_stack);
 
 /*
  * cds_wfs_push: push a node into the stack.
@@ -372,9 +377,25 @@ static inline cds_wfs_stack_ptr_t cds_wfs_stack_cast(struct cds_wfs_stack *s)
 	return ret;
 }
 
+static inline cds_wfs_stack_const_ptr_t cds_wfs_stack_const_cast(const struct __cds_wfs_stack *s)
+{
+	cds_wfs_stack_const_ptr_t ret = {
+		._s = s,
+	};
+	return ret;
+}
+
+static inline cds_wfs_stack_const_ptr_t cds_wfs_stack_const_cast(const struct cds_wfs_stack *s)
+{
+	cds_wfs_stack_const_ptr_t ret = {
+		.s = s,
+	};
+	return ret;
+}
+
 template<typename T> static inline bool cds_wfs_empty(T s)
 {
-	return cds_wfs_empty(cds_wfs_stack_cast(s));
+	return cds_wfs_empty(cds_wfs_stack_const_cast(s));
 }
 
 template<typename T> static inline int cds_wfs_push(T s, struct cds_wfs_node *node)

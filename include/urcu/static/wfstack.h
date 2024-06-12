@@ -106,9 +106,9 @@ static inline bool ___cds_wfs_end(void *node)
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-static inline bool _cds_wfs_empty(cds_wfs_stack_ptr_t u_stack)
+static inline bool _cds_wfs_empty(cds_wfs_stack_const_ptr_t u_stack)
 {
-	struct __cds_wfs_stack *s = u_stack._s;
+	const struct __cds_wfs_stack *s = u_stack._s;
 
 	return ___cds_wfs_end(uatomic_load(&s->head, CMM_RELAXED));
 }

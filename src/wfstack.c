@@ -34,7 +34,7 @@ void __cds_wfs_init(struct __cds_wfs_stack *s)
 	___cds_wfs_init(s);
 }
 
-bool cds_wfs_empty(cds_wfs_stack_ptr_t u_stack)
+bool cds_wfs_empty(cds_wfs_stack_const_ptr_t u_stack)
 {
 	return _cds_wfs_empty(u_stack);
 }
