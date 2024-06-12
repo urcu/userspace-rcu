@@ -87,7 +87,7 @@ void ___cds_lfs_init(struct __cds_lfs_stack *s)
 }
 
 static inline
-bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
+bool ___cds_lfs_empty_head(const struct cds_lfs_head *head)
 {
 	return head == NULL;
 }
@@ -98,7 +98,7 @@ bool ___cds_lfs_empty_head(struct cds_lfs_head *head)
  * No memory barrier is issued. No mutual exclusion is required.
  */
 static inline
-bool _cds_lfs_empty(cds_lfs_stack_ptr_t s)
+bool _cds_lfs_empty(cds_lfs_stack_const_ptr_t s)
 {
 	return ___cds_lfs_empty_head(uatomic_load(&s._s->head, CMM_RELAXED));
 }

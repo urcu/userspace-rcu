@@ -84,6 +84,11 @@ typedef union {
 	struct __cds_lfs_stack *_s;
 	struct cds_lfs_stack *s;
 } __attribute__((__transparent_union__)) cds_lfs_stack_ptr_t;
+
+typedef union {
+	const struct __cds_lfs_stack *_s;
+	const struct cds_lfs_stack *s;
+} __attribute__((__transparent_union__)) cds_lfs_stack_const_ptr_t;
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
@@ -141,7 +146,7 @@ extern void __cds_lfs_init(struct __cds_lfs_stack *s);
  *
  * No memory barrier is issued. No mutual exclusion is required.
  */
-extern bool cds_lfs_empty(cds_lfs_stack_ptr_t s);
+extern bool cds_lfs_empty(cds_lfs_stack_const_ptr_t s);
 
 /*
  * cds_lfs_push: push a node into the stack.
@@ -276,9 +281,25 @@ static inline cds_lfs_stack_ptr_t cds_lfs_stack_cast(struct cds_lfs_stack *s)
 	return ret;
 }
 
+static inline cds_lfs_stack_const_ptr_t cds_lfs_stack_const_cast(const struct __cds_lfs_stack *s)
+{
+	cds_lfs_stack_const_ptr_t ret = {
+		._s = s,
+	};
+	return ret;
+}
+
+static inline cds_lfs_stack_const_ptr_t cds_lfs_stack_const_cast(const struct cds_lfs_stack *s)
+{
+	cds_lfs_stack_const_ptr_t ret = {
+		.s = s,
+	};
+	return ret;
+}
+
 template<typename T> static inline bool cds_lfs_empty(T s)
 {
-	return cds_lfs_empty(cds_lfs_stack_cast(s));
+	return cds_lfs_empty(cds_lfs_stack_const_cast(s));
 }
 
 template<typename T> static inline bool cds_lfs_push(T s,

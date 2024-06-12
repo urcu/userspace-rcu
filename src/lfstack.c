@@ -36,7 +36,7 @@ void __cds_lfs_init(struct __cds_lfs_stack *s)
 	___cds_lfs_init(s);
 }
 
-bool cds_lfs_empty(cds_lfs_stack_ptr_t s)
+bool cds_lfs_empty(cds_lfs_stack_const_ptr_t s)
 {
 	return _cds_lfs_empty(s);
 }
