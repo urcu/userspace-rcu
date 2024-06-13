@@ -81,7 +81,7 @@ struct cds_lfht_alloc {
 };
 
 static inline
-struct cds_lfht_node *cds_lfht_iter_get_node(struct cds_lfht_iter *iter)
+struct cds_lfht_node *cds_lfht_iter_get_node(const struct cds_lfht_iter *iter)
 {
 	return iter->node;
 }
