@@ -47,7 +47,7 @@ extern "C" {
 #define rcu_dereference		_rcu_dereference
 
 /*
- * type *rcu_cmpxchg_pointer(type **ptr, type *new, type *old)
+ * type *rcu_cmpxchg_pointer(type **ptr, type *old, type *new)
  * type *rcu_xchg_pointer(type **ptr, type *new)
  * void rcu_set_pointer(type **ptr, type *new)
  *
