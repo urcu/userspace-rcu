@@ -17,15 +17,18 @@
 /*
  * See <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104831> for details.
  *
- * Until the following patches are backported, Userspace RCU is broken for the
- * RISC-V architecture when compiled with GCC.
+ * The following GCC patches are required to have a working Userspace RCU on
+ * the RISC-V architecture. The were introduced in GCC 14 and backported to
+ * 13.3.0.
  *
- *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=4990cf84c460f064d6281d0813f20b0ef20c7448>
+ *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=dcd7b2f5f7233a04c8b14b362d0befa76e9654c0>
  *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=4990cf84c460f064d6281d0813f20b0ef20c7448>
  *  - <https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=d199d2e56da2379004e7e0457150409c0c99d3e6>
  */
 #ifdef URCU_GCC_VERSION
-# error "Implementations of some atomic operations of GCC for RISC-V are insufficient for sequential consistency. For this reason Userspace RCU is currently marked as 'broken' for RISC-V with GCC. However, it is still possible to use other toolchains."
+# if (URCU_GCC_VERSION < 130300)
+#  error "Implementations of some atomic operations of GCC < 13.3.0 for RISC-V are insufficient for sequential consistency. For this reason Userspace RCU is currently marked as 'broken' for RISC-V on these GCC versions."
+# endif
 #endif
 
 #ifdef __cplusplus
