@@ -99,7 +99,7 @@
 #define __rcu
 
 #ifdef __cplusplus
-#define URCU_FORCE_CAST(_type, arg)	(reinterpret_cast<std::remove_cv<_type>::type>(arg))
+#define URCU_FORCE_CAST(_type, arg)	(reinterpret_cast<typename std::remove_cv<_type>::type>(arg))
 #else
 #define URCU_FORCE_CAST(type, arg)	((type) (arg))
 #endif
