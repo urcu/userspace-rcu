@@ -1,3 +1,33 @@
+2024-08-28 Userspace RCU 0.14.1
+	* Fix: missing typename in URCU_FORCE_CAST
+	* Allow building with GCC >= 13.3 on RISC-V
+	* pointer.h: Fix the rcu_cmpxchg_pointer documentation
+	* Adjust shell script to allow Bash in other locations
+	* fix: handle EINTR correctly in get_cpu_mask_from_sysfs
+	* Relicense src/compat-smp.h to MIT
+	* ppc.h: use mftb on ppc
+	* Fix: allow clang to build liburcu on RISC-V
+	* Fix -Walloc-size
+	* urcu/uatomic/riscv: Mark RISC-V as broken
+	* Fix: urcu-bp: misaligned reader accesses
+	* LoongArch: Document that byte and short atomics are implemented with LL/SC
+	* Add LoongArch support
+	* tests/regression/rcutorture: Add wait state
+	* urcu-wait: Initialize node in URCU_WAIT_NODE_INIT
+	* Fix: urcu-wait: add missing futex.h include
+	* Adjust shell scripts to allow Bash in other locations
+	* Add support for OpenBSD
+	* Revert "compiler.h: Introduce caa_unqual_scalar_typeof"
+	* rculfhash: Use caa_container_of_check_null in cds_lfht_entry
+	* compiler.h: Introduce caa_container_of_check_null
+	* compiler.h: Introduce caa_unqual_scalar_typeof
+	* Avoid calling caa_container_of on NULL pointer in cds_lfht macros
+	* Fix: revise urcu_read_lock_update() comment
+	* Fix: uatomic powerpc comment about lwsync
+	* fix: aarch64: allow RHEL7 gcc 4.8.5-11
+	* fix: warning 'noreturn' function does return on ppc
+	* Fix: use __noreturn__ for C11-compatibility
+
 2023-02-14 Userspace RCU 0.14.0
 	* Fix: urcu-bp: only teardown call-rcu worker in destructor
 	* Fix: rculfhash: urcu_die() takes positive error value
