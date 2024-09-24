@@ -11,22 +11,31 @@
 #include "rculfhash-internal.h"
 
 static
-void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
+int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
 		ht->tbl_chunk[0] = ht->alloc->calloc(ht->alloc->state,
 			ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
-		urcu_posix_assert(ht->tbl_chunk[0]);
+		if (ht->tbl_chunk[0] == NULL)
+			return -1;
+
 	} else if (order > ht->min_alloc_buckets_order) {
 		unsigned long i, len = 1UL << (order - 1 - ht->min_alloc_buckets_order);
 
 		for (i = len; i < 2 * len; i++) {
 			ht->tbl_chunk[i] = ht->alloc->calloc(ht->alloc->state,
 				ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
-			urcu_posix_assert(ht->tbl_chunk[i]);
+			if (ht->tbl_chunk[i] == NULL) {
+				while (i != len) {
+					--i;
+					poison_free(ht->alloc, ht->tbl_chunk[i]);
+				}
+				return -1;
+			}
 		}
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
+	return 0;
 }
 
 /*

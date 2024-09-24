@@ -696,7 +696,7 @@ static void ht_init_nr_cpus_mask(void)
 }
 
 static
-void alloc_split_items_count(struct cds_lfht *ht)
+int alloc_split_items_count(struct cds_lfht *ht)
 {
 	if (nr_cpus_mask == NR_CPUS_MASK_UNINITIALIZED)	{
 		ht_init_nr_cpus_mask();
@@ -713,10 +713,12 @@ void alloc_split_items_count(struct cds_lfht *ht)
 	if (ht->flags & CDS_LFHT_ACCOUNTING) {
 		ht->split_count = ht->alloc->calloc(ht->alloc->state, split_count_mask + 1,
 					sizeof(struct ht_items_count));
-		urcu_posix_assert(ht->split_count);
+		if (ht->split_count == NULL)
+			return -1;
 	} else {
 		ht->split_count = NULL;
 	}
+	return 0;
 }
 
 static
@@ -925,7 +927,7 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 }
 
 static
-void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
+int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	return ht->mm->alloc_bucket_table(ht, order);
 }
@@ -1418,7 +1420,9 @@ void init_table(struct cds_lfht *ht,
 		if (CMM_LOAD_SHARED(ht->resize_target) < (1UL << i))
 			break;
 
-		cds_lfht_alloc_bucket_table(ht, i);
+		/* Also stop if out of memory */
+		if (cds_lfht_alloc_bucket_table(ht, i))
+			break;
 
 		/*
 		 * Set all bucket nodes reverse hash values for a level and
@@ -1561,13 +1565,14 @@ void fini_table(struct cds_lfht *ht,
  * Never called with size < 1.
  */
 static
-void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
+int cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 {
 	struct cds_lfht_node *prev, *node;
 	unsigned long order, len, i;
 	int bucket_order;
 
-	cds_lfht_alloc_bucket_table(ht, 0);
+	if (cds_lfht_alloc_bucket_table(ht, 0))
+		return -1;
 
 	dbg_printf("create bucket: order 0 index 0 hash 0\n");
 	node = bucket_at(ht, 0);
@@ -1579,7 +1584,15 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 
 	for (order = 1; order < (unsigned long) bucket_order + 1; order++) {
 		len = 1UL << (order - 1);
-		cds_lfht_alloc_bucket_table(ht, order);
+
+		if (cds_lfht_alloc_bucket_table(ht, order)) {
+			/* destroy down to 0 */
+			do {
+				--order;
+				cds_lfht_free_bucket_table(ht, order);
+			} while (order);
+			return -1;
+		}
 
 		for (i = 0; i < len; i++) {
 			/*
@@ -1606,6 +1619,7 @@ void cds_lfht_create_bucket(struct cds_lfht *ht, unsigned long size)
 			prev->next = flag_bucket(node);
 		}
 	}
+	return 0;
 }
 
 #if (CAA_BITS_PER_LONG > 32)
@@ -1684,8 +1698,9 @@ struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 	init_size = min(init_size, max_nr_buckets);
 
 	ht = mm->alloc_cds_lfht(min_nr_alloc_buckets, max_nr_buckets, alloc ? : &cds_lfht_default_alloc);
+	if (ht == NULL)
+		return NULL;
 
-	urcu_posix_assert(ht);
 	urcu_posix_assert(ht->mm == mm);
 	urcu_posix_assert(ht->bucket_at == mm->bucket_at);
 
@@ -1694,14 +1709,25 @@ struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 	ht->caller_resize_attr = attr;
 	if (attr)
 		ht->resize_attr = *attr;
-	alloc_split_items_count(ht);
 	/* this mutex should not nest in read-side C.S. */
-	pthread_mutex_init(&ht->resize_mutex, NULL);
+	if (pthread_mutex_init(&ht->resize_mutex, NULL))
+		goto fail;
+	if (alloc_split_items_count(ht))
+		goto fail1;
 	order = cds_lfht_get_count_order_ulong(init_size);
 	ht->resize_target = 1UL << order;
-	cds_lfht_create_bucket(ht, 1UL << order);
+	if (cds_lfht_create_bucket(ht, 1UL << order))
+		goto fail2;
 	ht->size = 1UL << order;
 	return ht;
+
+fail2:
+	free_split_items_count(ht);
+fail1:
+	pthread_mutex_destroy(&ht->resize_mutex);
+fail:
+	poison_free(ht->alloc, ht);
+	return NULL;
 }
 
 struct cds_lfht *_cds_lfht_new(unsigned long init_size,
@@ -1724,6 +1750,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 	struct cds_lfht_node *node, *next, *bucket;
 	unsigned long reverse_hash, size;
 
+	urcu_posix_assert(ht);
 	cds_lfht_iter_debug_set_ht(ht, iter);
 
 	reverse_hash = bit_reverse_ulong(hash);
@@ -1825,6 +1852,7 @@ void cds_lfht_next(struct cds_lfht *ht __attribute__((unused)),
 
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 {
+	urcu_posix_assert(ht);
 	cds_lfht_iter_debug_set_ht(ht, iter);
 	/*
 	 * Get next after first bucket node. The first bucket node is the
@@ -1839,6 +1867,7 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 {
 	unsigned long size;
 
+	urcu_posix_assert(ht);
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = uatomic_load(&ht->size, CMM_ACQUIRE);
 	_cds_lfht_add(ht, hash, NULL, NULL, size, node, NULL, 0);
@@ -1854,6 +1883,7 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
+	urcu_posix_assert(ht);
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = uatomic_load(&ht->size, CMM_ACQUIRE);
 	_cds_lfht_add(ht, hash, match, key, size, node, &iter, 0);
@@ -1871,6 +1901,7 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 	unsigned long size;
 	struct cds_lfht_iter iter;
 
+	urcu_posix_assert(ht);
 	node->reverse_hash = bit_reverse_ulong(hash);
 	size = uatomic_load(&ht->size, CMM_ACQUIRE);
 	for (;;) {
@@ -1894,6 +1925,7 @@ int cds_lfht_replace(struct cds_lfht *ht,
 {
 	unsigned long size;
 
+	urcu_posix_assert(ht);
 	new_node->reverse_hash = bit_reverse_ulong(hash);
 	if (!old_iter->node)
 		return -ENOENT;
@@ -1911,6 +1943,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 	unsigned long size;
 	int ret;
 
+	urcu_posix_assert(ht);
 	size = uatomic_load(&ht->size, CMM_ACQUIRE);
 	ret = _cds_lfht_del(ht, size, node);
 	if (!ret) {
@@ -2016,6 +2049,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 {
 	int ret;
 
+	urcu_posix_assert(ht);
 	if (ht->flags & CDS_LFHT_AUTO_RESIZE) {
 		/*
 		 * Perform error-checking for emptiness before queuing
@@ -2061,6 +2095,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 	struct cds_lfht_node *node, *next;
 	unsigned long nr_bucket = 0, nr_removed = 0;
 
+	urcu_posix_assert(ht);
 	*approx_before = 0;
 	if (ht->split_count) {
 		int i;
@@ -2180,6 +2215,7 @@ void resize_target_update_count(struct cds_lfht *ht,
 
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
+	urcu_posix_assert(ht);
 	resize_target_update_count(ht, new_size);
 
 	/*
