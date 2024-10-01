@@ -1402,7 +1402,7 @@ void init_table_populate(struct cds_lfht *ht, unsigned long i,
 }
 
 static
-void init_table(struct cds_lfht *ht,
+int init_table(struct cds_lfht *ht,
 		unsigned long first_order, unsigned long last_order)
 {
 	unsigned long i;
@@ -1421,8 +1421,11 @@ void init_table(struct cds_lfht *ht,
 			break;
 
 		/* Also stop if out of memory */
-		if (cds_lfht_alloc_bucket_table(ht, i))
-			break;
+		if (cds_lfht_alloc_bucket_table(ht, i)) {
+			dbg_printf("cannot grow %ld to %ld\n",
+					first_order, last_order);
+			return -1;
+		}
 
 		/*
 		 * Set all bucket nodes reverse hash values for a level and
@@ -1441,6 +1444,7 @@ void init_table(struct cds_lfht *ht,
 		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
 			break;
 	}
+	return 0;
 }
 
 /*
@@ -2138,7 +2142,7 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 
 /* called with resize mutex held */
 static
-void _do_cds_lfht_grow(struct cds_lfht *ht,
+int _do_cds_lfht_grow(struct cds_lfht *ht,
 		unsigned long old_size, unsigned long new_size)
 {
 	unsigned long old_order, new_order;
@@ -2148,7 +2152,7 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
 	urcu_posix_assert(new_size > old_size);
-	init_table(ht, old_order + 1, new_order);
+	return init_table(ht, old_order + 1, new_order);
 }
 
 /* called with resize mutex held */
@@ -2169,15 +2173,19 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	fini_table(ht, new_order + 1, old_order);
 }
 
-
-/* called with resize mutex held */
+/* takes the resize mutex */
 static
-void _do_cds_lfht_resize(struct cds_lfht *ht)
+void do_cds_lfht_resize(struct cds_lfht *ht)
 {
 	unsigned long new_size, old_size;
+	int ret = 0;
 
+	mutex_lock(&ht->resize_mutex);
 	/*
 	 * Resize table, re-do if the target size has changed under us.
+	 * If cannot grow, leave the loop at whatever size we've got
+	 * but tweak resize_target because unless it tracks ht->size
+	 * automatic resizes will be blocked!
 	 */
 	do {
 		if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED))
@@ -2188,14 +2196,20 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 		old_size = ht->size;
 		new_size = uatomic_load(&ht->resize_target, CMM_RELAXED);
 		if (old_size < new_size)
-			_do_cds_lfht_grow(ht, old_size, new_size);
+			ret = _do_cds_lfht_grow(ht, old_size, new_size);
 		else if (old_size > new_size)
 			_do_cds_lfht_shrink(ht, old_size, new_size);
 
 		uatomic_store(&ht->resize_initiated, 0, CMM_RELAXED);
+		if (ret) {
+			uatomic_store(&ht->resize_target, ht->size, CMM_RELAXED);
+			break;
+		}
 		/* write resize_initiated before read resize_target */
 		cmm_smp_mb();
 	} while (ht->size != uatomic_load(&ht->resize_target, CMM_RELAXED));
+
+	mutex_unlock(&ht->resize_mutex);
 }
 
 static
@@ -2217,15 +2231,15 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 {
 	urcu_posix_assert(ht);
 	resize_target_update_count(ht, new_size);
-
 	/*
-	 * Set flags has early as possible even in contention case.
+	 * In case someone tries to mix manual and automatic resizes
+	 * set the flag early to avoid queuing an automatic one.
+	 * Set it once again after the resize mutex is taken.
+	 * Clear it before the mutex is released.
 	 */
 	uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
 
-	mutex_lock(&ht->resize_mutex);
-	_do_cds_lfht_resize(ht);
-	mutex_unlock(&ht->resize_mutex);
+	do_cds_lfht_resize(ht);
 }
 
 static
@@ -2235,12 +2249,12 @@ void do_resize_cb(struct urcu_work *work)
 		caa_container_of(work, struct resize_work, work);
 	struct cds_lfht *ht = resize_work->ht;
 
-	ht->flavor->register_thread();
-	mutex_lock(&ht->resize_mutex);
-	_do_cds_lfht_resize(ht);
-	mutex_unlock(&ht->resize_mutex);
-	ht->flavor->unregister_thread();
 	poison_free(ht->alloc, work);
+	ht->flavor->register_thread();
+
+	do_cds_lfht_resize(ht);
+
+	ht->flavor->unregister_thread();
 }
 
 static
@@ -2251,21 +2265,31 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 	/*
 	 * Store to resize_target is before read resize_initiated as guaranteed
 	 * by either cmpxchg or _uatomic_xchg_monotonic_increase.
+	 * The thread doing the resize clears resize_initiated briefly before
+	 * checking if resize_target has changed.
 	 */
-	if (!uatomic_load(&ht->resize_initiated, CMM_RELAXED)) {
-		if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED)) {
-			return;
-		}
-		work = ht->alloc->malloc(ht->alloc->state, sizeof(*work));
-		if (work == NULL) {
-			dbg_printf("error allocating resize work, bailing out\n");
-			return;
-		}
-		work->ht = ht;
-		urcu_workqueue_queue_work(cds_lfht_workqueue,
-			&work->work, do_resize_cb);
-		uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
+	if (uatomic_load(&ht->resize_initiated, CMM_RELAXED))
+		return;
+	if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED))
+		return;
+
+	work = ht->alloc->malloc(ht->alloc->state, sizeof(*work));
+	if (work == NULL) {
+		dbg_printf("error allocating resize work, bailing out\n");
+		return;
 	}
+	work->ht = ht;
+	/*
+	 * Set the flag early to hinder other threads from queuing a resize.
+	 * Remember that the automatic resize is only checked for when
+	 * ht->count is a power of 2. We don't want to miss a resize because
+	 * of races, so we prefer to err on the side of queuing an extra
+	 * work item sometimes.
+	 */
+	uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
+
+	urcu_workqueue_queue_work(cds_lfht_workqueue,
+		&work->work, do_resize_cb);
 }
 
 static
@@ -2281,6 +2305,7 @@ void cds_lfht_resize_lazy_grow(struct cds_lfht *ht, unsigned long size, int grow
 }
 
 /*
+ * Called periodically when accounting is on. Count = desired size.
  * We favor grow operations over shrink. A shrink operation never occurs
  * if a grow operation is queued for lazy execution. A grow operation
  * cancels any pending shrink lazy execution.
@@ -2291,6 +2316,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 {
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
+
 	count = max(count, MIN_TABLE_SIZE);
 	count = min(count, ht->max_nr_buckets);
 	if (count == size)
@@ -2304,7 +2330,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 
 			s = uatomic_cmpxchg(&ht->resize_target, size, count);
 			if (s == size)
-				break;	/* no resize needed */
+				break;	/* set resize_target = count */
 			if (s > size)
 				return;	/* growing is/(was just) in progress */
 			if (s <= count)
