@@ -23,6 +23,7 @@ int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 		unsigned long i, len = 1UL << (order - 1 - ht->min_alloc_buckets_order);
 
 		for (i = len; i < 2 * len; i++) {
+			urcu_posix_assert(i <  ht->max_nr_buckets / ht->min_nr_alloc_buckets);
 			ht->tbl_chunk[i] = ht->alloc->calloc(ht->alloc->state,
 				ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
 			if (ht->tbl_chunk[i] == NULL) {
@@ -78,7 +79,6 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 	nr_chunks = max_nr_buckets / min_nr_alloc_buckets;
 	cds_lfht_size = offsetof(struct cds_lfht, tbl_chunk) +
 			sizeof(struct cds_lfht_node *) * nr_chunks;
-	cds_lfht_size = max(cds_lfht_size, sizeof(struct cds_lfht));
 
 	return __default_alloc_cds_lfht(
 			&cds_lfht_mm_chunk, alloc, cds_lfht_size,

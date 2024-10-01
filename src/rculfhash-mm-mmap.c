@@ -187,7 +187,7 @@ static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc)
 {
-	unsigned long page_bucket_size;
+	unsigned long page_bucket_size, cds_lfht_size;
 
 	page_bucket_size = getpagesize() / sizeof(struct cds_lfht_node);
 	if (max_nr_buckets <= page_bucket_size) {
@@ -198,9 +198,11 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		min_nr_alloc_buckets = max(min_nr_alloc_buckets,
 					page_bucket_size);
 	}
+	cds_lfht_size = offsetof(struct cds_lfht, tbl_mmap) +
+			sizeof(struct cds_lfht_node *);
 
 	return __default_alloc_cds_lfht(
-			&cds_lfht_mm_mmap, alloc, sizeof(struct cds_lfht),
+			&cds_lfht_mm_mmap, alloc, cds_lfht_size,
 			min_nr_alloc_buckets, max_nr_buckets);
 }
 

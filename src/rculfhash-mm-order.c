@@ -13,6 +13,8 @@
 static
 int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
+	urcu_posix_assert(order <=
+		(unsigned)cds_lfht_get_count_order_ulong(ht->max_nr_buckets));
 	if (order == 0) {
 		ht->tbl_order[0] = ht->alloc->calloc(ht->alloc->state,
 			ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
@@ -68,8 +70,14 @@ static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc)
 {
+	unsigned long max_order, cds_lfht_size;
+
+	max_order = cds_lfht_get_count_order_ulong(max_nr_buckets);
+	cds_lfht_size = offsetof(struct cds_lfht, tbl_order) +
+			sizeof(struct cds_lfht_node *) * (max_order + 1);
+
 	return __default_alloc_cds_lfht(
-			&cds_lfht_mm_order, alloc, sizeof(struct cds_lfht),
+			&cds_lfht_mm_order, alloc, cds_lfht_size,
 			min_nr_alloc_buckets, max_nr_buckets);
 }
 
