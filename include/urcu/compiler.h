@@ -51,6 +51,10 @@
 #  error "URCU was configured to use atomic builtins, but this toolchain does not support them."
 #endif
 
+/* Make the optimizer believe the variable can be manipulated arbitrarily. */
+#define _CMM_OPTIMIZER_HIDE_VAR(var)		\
+	__asm__ ("" : "+r" (var))
+
 #ifndef caa_max
 #define caa_max(a,b) ((a)>(b)?(a):(b))
 #endif
