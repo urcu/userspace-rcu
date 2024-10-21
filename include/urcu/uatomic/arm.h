@@ -25,6 +25,23 @@ extern "C" {
 #endif
 
 /* xchg */
+static inline void _cmm_compat_c11_smp_mb__before_xchg_mo(enum cmm_memorder mo)
+{
+	switch (mo) {
+	case CMM_SEQ_CST_FENCE:
+	case CMM_SEQ_CST:
+	case CMM_ACQ_REL:
+	case CMM_RELEASE:
+		cmm_smp_mb();
+		break;
+	case CMM_ACQUIRE:
+	case CMM_CONSUME:
+	case CMM_RELAXED:
+		break;
+	default:
+		abort();
+	}
+}
 
 /*
  * Based on [1], __sync_lock_test_and_set() is not a full barrier, but
@@ -34,10 +51,10 @@ extern "C" {
  *
  * [1] https://gcc.gnu.org/onlinedocs/gcc-4.1.0/gcc/Atomic-Builtins.html
  */
-#define uatomic_xchg(addr, v)				\
-	({						\
-		cmm_smp_mb();				\
-		__sync_lock_test_and_set(addr, v);	\
+#define uatomic_xchg_mo(addr, v, mo)				\
+	({							\
+		_cmm_compat_c11_smp_mb__before_xchg_mo(mo);	\
+		__sync_lock_test_and_set(addr, v);		\
 	})
 
 #ifdef __cplusplus

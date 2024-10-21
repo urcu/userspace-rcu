@@ -99,7 +99,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 	return 0;
 }
 
-#define uatomic_xchg(addr, v)						    \
+#define uatomic_xchg_mo(addr, v, mo)					\
 	(__typeof__(*(addr))) _uatomic_exchange((addr),			    \
 						caa_cast_long_keep_sign(v), \
 						sizeof(*(addr)))
@@ -140,7 +140,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	return 0;
 }
 
-#define uatomic_cmpxchg(addr, old, _new)				     \
+#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)			\
 	(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			     \
 					       caa_cast_long_keep_sign(old), \
 					       caa_cast_long_keep_sign(_new),\

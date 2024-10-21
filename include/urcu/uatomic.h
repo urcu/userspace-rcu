@@ -63,6 +63,8 @@ static inline int cmm_to_c11(int mo)
 	return mo;
 }
 
+#include <urcu/uatomic/api.h>
+
 #if defined(CONFIG_RCU_USE_ATOMIC_BUILTINS)
 #include <urcu/uatomic/builtins.h>
 #elif defined(URCU_ARCH_X86)

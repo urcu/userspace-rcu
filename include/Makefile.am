@@ -64,6 +64,7 @@ nobase_include_HEADERS = \
 	urcu/tls-compat.h \
 	urcu/uatomic/aarch64.h \
 	urcu/uatomic/alpha.h \
+	urcu/uatomic/api.h \
 	urcu/uatomic_arch.h \
 	urcu/uatomic/arm.h \
 	urcu/uatomic/builtins.h \
