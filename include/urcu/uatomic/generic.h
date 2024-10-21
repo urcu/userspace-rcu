@@ -77,21 +77,39 @@ extern "C" {
 	} while(0)
 #endif /* _cmm_compat_c11_smp_mb__after_mo */
 
+/*
+ * If the toolchain supports the C11 memory model, then it is safe to implement
+ * `uatomic_store_mo()' in term of __atomic builtins.  This has the effect of
+ * reducing the number of emitted memory barriers except for the
+ * CMM_SEQ_CST_FENCE memory order.
+ */
+#ifndef uatomic_store_mo
+#  ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
+#    define uatomic_store_mo(addr, v, mo)			\
 	do {							\
-		_cmm_compat_c11_smp_mb__before_mo(op, mo);	\
-		op(addr, v);					\
-		_cmm_compat_c11_smp_mb__after_mo(op, mo);	\
+		__atomic_store_n(cmm_cast_volatile(addr), v,	\
+				cmm_to_c11(mo));		\
+		cmm_seq_cst_fence_after_atomic(mo);		\
 	} while (0)
-
-#define uatomic_store_mo(addr, v, mo)					\
+#  else
+#    define uatomic_store_mo(addr, v, mo)				\
 	do {								\
-		_cmm_compat_c11_smp_mb__before_mo(uatomic_set, mo);	\
-		uatomic_set(addr, v);					\
-		_cmm_compat_c11_smp_mb__after_mo(uatomic_set, mo);	\
+		_cmm_compat_c11_smp_mb__before_mo(uatomic_store, mo);	\
+		(void) CMM_STORE_SHARED(addr, v);			\
+		_cmm_compat_c11_smp_mb__after_mo(uatomic_store, mo);	\
 	} while (0)
+#  endif  /* _CMM_TOOLCHAIN_SUPPORT_C11_MM */
+#endif	/* !uatomic_store */
 
 /*
+ * If the toolchain supports the C11 memory model, then it is safe to implement
+ * `uatomic_load_mo()' in term of __atomic builtins.  This has the effect of
+ * reducing the number of emitted memory barriers except for the
+ * CMM_SEQ_CST_FENCE memory order.
  */
+#ifndef uatomic_load_mo
+#  ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
+#    define uatomic_load_mo(addr, mo)					\
 	__extension__							\
 	({								\
 		__typeof__(*(addr)) _value =				\
@@ -101,17 +119,18 @@ extern "C" {
 									\
 		_value;							\
 	})
-
-
-#define uatomic_load_mo(addr, mo)						\
+#  else
+#    define uatomic_load_mo(addr, mo)					\
 	__extension__							\
 	({								\
-		_cmm_compat_c11_smp_mb__before_mo(uatomic_read, mo);	\
-		__typeof__(*(addr)) _rcu_value = uatomic_read(addr);	\
-		_cmm_compat_c11_smp_mb__after_mo(uatomic_read, mo);	\
+		_cmm_compat_c11_smp_mb__before_mo(uatomic_load, mo);	\
+		__typeof__(*(addr)) _rcu_value = CMM_LOAD_SHARED(addr);	\
+		_cmm_compat_c11_smp_mb__after_mo(uatomic_load, mo);	\
 									\
 		_rcu_value;						\
 	})
+#  endif  /* _CMM_TOOLCHAIN_SUPPORT_C11_MM */
+#endif	/* !uatomic_load */
 
 #if !defined __OPTIMIZE__  || defined UATOMIC_NO_LINK_ERROR
 #ifdef ILLEGAL_INSTR

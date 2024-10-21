@@ -40,6 +40,17 @@
  */
 #define CMM_ACCESS_ONCE(x)	(*(__volatile__  __typeof__(x) *)&(x))
 
+/*
+ * If the toolchain support the C11 memory model, define the private macro
+ * _CMM_TOOLCHAIN_SUPPORT_C11_MM.
+ */
+#if ((defined (__cplusplus) && __cplusplus >= 201103L) ||		\
+	(defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L))
+# define _CMM_TOOLCHAIN_SUPPORT_C11_MM
+#elif defined(CONFIG_RCU_USE_ATOMIC_BUILTINS)
+#  error "URCU was configured to use atomic builtins, but this toolchain does not support them."
+#endif
+
 #ifndef caa_max
 #define caa_max(a,b) ((a)>(b)?(a):(b))
 #endif
