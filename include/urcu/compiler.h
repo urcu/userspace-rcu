@@ -193,6 +193,13 @@
 
 /*
  * Helper to add the volatile qualifier to a pointer.
+ *
+ * This is used to enforce volatile accesses even when using atomic
+ * builtins. Indeed, C11 atomic operations all work on volatile memory
+ * accesses, but this is not documented for compiler atomic builtins.
+ *
+ * This could prevent certain classes of optimization from the compiler such
+ * as load/store fusing.
  */
 #if defined __cplusplus
 template <typename T>
