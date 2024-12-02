@@ -693,7 +693,7 @@ static inline void _cmm_compat_c11_smp_mb__after_uatomic_load_mo(enum cmm_memord
 	}
 }
 
-static inline void _cmm_compat_c11_smp_mb__before_uatomic_set_mo(enum cmm_memorder mo)
+static inline void _cmm_compat_c11_smp_mb__before_uatomic_store_mo(enum cmm_memorder mo)
 {
 	/*
 	 * A SMP barrier is not necessary for CMM_SEQ_CST because the store can
@@ -718,7 +718,7 @@ static inline void _cmm_compat_c11_smp_mb__before_uatomic_set_mo(enum cmm_memord
 	}
 }
 
-static inline void _cmm_compat_c11_smp_mb__after_uatomic_set_mo(enum cmm_memorder mo)
+static inline void _cmm_compat_c11_smp_mb__after_uatomic_store_mo(enum cmm_memorder mo)
 {
 	/*
 	 * A SMP barrier is necessary for CMM_SEQ_CST because the store can be

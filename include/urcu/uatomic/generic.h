@@ -95,7 +95,7 @@ extern "C" {
 #    define uatomic_store_mo(addr, v, mo)				\
 	do {								\
 		_cmm_compat_c11_smp_mb__before_mo(uatomic_store, mo);	\
-		(void) CMM_STORE_SHARED(addr, v);			\
+		(void) CMM_STORE_SHARED(*(addr), v);			\
 		_cmm_compat_c11_smp_mb__after_mo(uatomic_store, mo);	\
 	} while (0)
 #  endif  /* _CMM_TOOLCHAIN_SUPPORT_C11_MM */
@@ -124,7 +124,7 @@ extern "C" {
 	__extension__							\
 	({								\
 		_cmm_compat_c11_smp_mb__before_mo(uatomic_load, mo);	\
-		__typeof__(*(addr)) _rcu_value = CMM_LOAD_SHARED(addr);	\
+		__typeof__(*(addr)) _rcu_value = CMM_LOAD_SHARED(*(addr)); \
 		_cmm_compat_c11_smp_mb__after_mo(uatomic_load, mo);	\
 									\
 		_rcu_value;						\
