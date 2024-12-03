@@ -162,7 +162,8 @@ struct cds_lfht *__default_alloc_cds_lfht(
 	struct cds_lfht *ht;
 
 	ht = alloc->calloc(alloc->state, 1, cds_lfht_size);
-	urcu_posix_assert(ht);
+	if (ht == NULL)
+		return NULL;
 
 	ht->mm = mm;
 	ht->alloc = alloc;
