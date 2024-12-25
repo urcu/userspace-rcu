@@ -40,6 +40,21 @@
  */
 #define CMM_ACCESS_ONCE(x)	(*(__volatile__  __typeof__(x) *)&(x))
 
+/*
+ * If the toolchain support the C11 memory model, define the private macro
+ * _CMM_TOOLCHAIN_SUPPORT_C11_MM.
+ */
+#if ((defined (__cplusplus) && __cplusplus >= 201103L) ||		\
+	(defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L))
+# define _CMM_TOOLCHAIN_SUPPORT_C11_MM
+#elif defined(CONFIG_RCU_USE_ATOMIC_BUILTINS)
+#  error "URCU was configured to use atomic builtins, but this toolchain does not support them."
+#endif
+
+/* Make the optimizer believe the variable can be manipulated arbitrarily. */
+#define _CMM_OPTIMIZER_HIDE_VAR(var)		\
+	__asm__ ("" : "+r" (var))
+
 #ifndef caa_max
 #define caa_max(a,b) ((a)>(b)?(a):(b))
 #endif
@@ -178,6 +193,13 @@
 
 /*
  * Helper to add the volatile qualifier to a pointer.
+ *
+ * This is used to enforce volatile accesses even when using atomic
+ * builtins. Indeed, C11 atomic operations all work on volatile memory
+ * accesses, but this is not documented for compiler atomic builtins.
+ *
+ * This could prevent certain classes of optimization from the compiler such
+ * as load/store fusing.
  */
 #if defined __cplusplus
 template <typename T>

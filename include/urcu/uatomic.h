@@ -19,7 +19,7 @@ enum cmm_memorder {
 	CMM_SEQ_CST_FENCE = 6,
 };
 
-#ifdef CONFIG_RCU_USE_ATOMIC_BUILTINS
+#if defined(_CMM_TOOLCHAIN_SUPPORT_C11_MM)
 
 /*
  * Make sure that CMM_SEQ_CST_FENCE is not equivalent to other memory orders.
@@ -62,6 +62,8 @@ static inline int cmm_to_c11(int mo)
 	}
 	return mo;
 }
+
+#include <urcu/uatomic/api.h>
 
 #if defined(CONFIG_RCU_USE_ATOMIC_BUILTINS)
 #include <urcu/uatomic/builtins.h>
