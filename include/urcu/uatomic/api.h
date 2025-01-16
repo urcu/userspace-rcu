@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Olivier Dion <odion@efficios.com>
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #ifndef _URCU_UATOMIC_API_H
 #define _URCU_UATOMIC_API_H
 
