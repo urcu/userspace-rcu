@@ -118,6 +118,7 @@ compile the git repository tree :
     (make sure your system wide `automake` points to a recent version!)
   - GNU Libtool >=2.2
     (for more information, go to <http://www.gnu.org/software/autoconf/>)
+  - **[GNU Make](https://www.gnu.org/software/make/)**
 
 If you get the tree from the repository, you will need to use the `bootstrap`
 script in the root of the tree. It calls all the GNU tools needed to prepare
