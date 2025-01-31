@@ -46,10 +46,6 @@ void *memory_map(size_t length)
 	void *ret;
 
 	ret = mmap(NULL, length, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (ret == MAP_FAILED) {
-		perror("mmap");
-		abort();
-	}
 	return ret;
 }
 
@@ -65,12 +61,12 @@ void memory_unmap(void *ptr, size_t length)
 #ifdef __CYGWIN__
 /* Set protection to read/write to allocate a memory chunk */
 static
-void memory_populate(void *ptr, size_t length)
+int memory_populate(void *ptr, size_t length)
 {
 	if (mprotect(ptr, length, PROT_READ | PROT_WRITE)) {
-		perror("mprotect");
-		abort();
+		return -1;
 	}
+	return 0;
 }
 
 /* Set protection to none to deallocate a memory chunk */
@@ -86,14 +82,16 @@ void memory_discard(void *ptr, size_t length)
 #else /* __CYGWIN__ */
 
 static
-void memory_populate(void *ptr, size_t length)
+int memory_populate(void *ptr, size_t length)
 {
 	if (mmap(ptr, length, PROT_READ | PROT_WRITE,
 			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS,
 			-1, 0) != ptr) {
-		perror("mmap");
-		abort();
+		/* ENOMEM on freebsd */
+		urcu_posix_assert(errno != EINVAL);
+		return -1;
 	}
+	return 0;
 }
 
 /*
@@ -106,37 +104,50 @@ void memory_discard(void *ptr, size_t length)
 	if (mmap(ptr, length, PROT_NONE,
 			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS,
 			-1, 0) != ptr) {
-		perror("mmap");
+		/* ENOMEM on freebsd */
+		urcu_posix_assert(errno != EINVAL);
+#if 0
+		perror("mmap discard");
 		abort();
+#endif
 	}
 }
 #endif /* __CYGWIN__ */
 
 static
-void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
+int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
 		if (ht->min_nr_alloc_buckets == ht->max_nr_buckets) {
 			/* small table */
 			ht->tbl_mmap = ht->alloc->calloc(ht->alloc->state,
 					ht->max_nr_buckets, sizeof(*ht->tbl_mmap));
-			urcu_posix_assert(ht->tbl_mmap);
-			return;
+			if (ht->tbl_mmap == NULL)
+				return -1;
+			return 0;
 		}
 		/* large table */
 		ht->tbl_mmap = memory_map(ht->max_nr_buckets
 			* sizeof(*ht->tbl_mmap));
-		memory_populate(ht->tbl_mmap,
-			ht->min_nr_alloc_buckets * sizeof(*ht->tbl_mmap));
+		if (ht->tbl_mmap == MAP_FAILED)
+			return -1;
+		if (memory_populate(ht->tbl_mmap, ht->min_nr_alloc_buckets
+					* sizeof(*ht->tbl_mmap))) {
+			memory_unmap(ht->tbl_mmap,
+				ht->max_nr_buckets * sizeof(*ht->tbl_mmap));
+			return -1;
+		}
 	} else if (order > ht->min_alloc_buckets_order) {
 		/* large table */
 		unsigned long len = 1UL << (order - 1);
 
 		urcu_posix_assert(ht->min_nr_alloc_buckets < ht->max_nr_buckets);
-		memory_populate(ht->tbl_mmap + len,
-				len * sizeof(*ht->tbl_mmap));
+		if (memory_populate(ht->tbl_mmap + len,
+				len * sizeof(*ht->tbl_mmap)))
+			return -1;
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
+	return 0;
 }
 
 /*
@@ -176,7 +187,7 @@ static
 struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc)
 {
-	unsigned long page_bucket_size;
+	unsigned long page_bucket_size, cds_lfht_size;
 
 	page_bucket_size = getpagesize() / sizeof(struct cds_lfht_node);
 	if (max_nr_buckets <= page_bucket_size) {
@@ -187,9 +198,11 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 		min_nr_alloc_buckets = max(min_nr_alloc_buckets,
 					page_bucket_size);
 	}
+	cds_lfht_size = offsetof(struct cds_lfht, tbl_mmap) +
+			sizeof(struct cds_lfht_node *);
 
 	return __default_alloc_cds_lfht(
-			&cds_lfht_mm_mmap, alloc, sizeof(struct cds_lfht),
+			&cds_lfht_mm_mmap, alloc, cds_lfht_size,
 			min_nr_alloc_buckets, max_nr_buckets);
 }
 

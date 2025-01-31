@@ -128,7 +128,7 @@ enum {
 struct cds_lfht_mm_type {
 	struct cds_lfht *(*alloc_cds_lfht)(unsigned long min_nr_alloc_buckets,
 			unsigned long max_nr_buckets, const struct cds_lfht_alloc *alloc);
-	void (*alloc_bucket_table)(struct cds_lfht *ht, unsigned long order);
+	int (*alloc_bucket_table)(struct cds_lfht *ht, unsigned long order);
 	void (*free_bucket_table)(struct cds_lfht *ht, unsigned long order);
 	struct cds_lfht_node *(*bucket_at)(struct cds_lfht *ht,
 			unsigned long index);
