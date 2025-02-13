@@ -15,6 +15,8 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
+
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
