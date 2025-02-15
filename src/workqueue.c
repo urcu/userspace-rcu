@@ -86,7 +86,7 @@ static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
 
 	if (workqueue->cpu_affinity < 0)
 		return 0;
-	if (++workqueue->loop_count & SET_AFFINITY_CHECK_PERIOD_MASK)
+	if (workqueue->loop_count++ & SET_AFFINITY_CHECK_PERIOD_MASK)
 		return 0;
 	if (urcu_sched_getcpu() == workqueue->cpu_affinity)
 		return 0;
@@ -163,6 +163,7 @@ static void *workqueue_thread(void *arg)
 	struct urcu_workqueue *workqueue = (struct urcu_workqueue *) arg;
 	int rt = !!(uatomic_read(&workqueue->flags) & URCU_WORKQUEUE_RT);
 
+	/* XXX needed? */
 	if (set_thread_cpu_affinity(workqueue))
 		urcu_die(errno);
 
@@ -175,7 +176,7 @@ static void *workqueue_thread(void *arg)
 		cmm_smp_mb();
 	}
 	for (;;) {
-		struct cds_wfcq_head cbs_tmp_head;
+		struct __cds_wfcq_head cbs_tmp_head;
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
@@ -202,7 +203,7 @@ static void *workqueue_thread(void *arg)
 				workqueue->worker_after_resume_fct(workqueue, workqueue->priv);
 		}
 
-		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
+		__cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &workqueue->cbs_head, &workqueue->cbs_tail);
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
@@ -222,8 +223,11 @@ static void *workqueue_thread(void *arg)
 			}
 			uatomic_sub(&workqueue->qlen, cbcount);
 		}
+		/*cds_wfcq_destroy(&cbs_tmp_head, &cbs_tmp_tail);*/
+
 		if (uatomic_read(&workqueue->flags) & URCU_WORKQUEUE_STOP)
 			break;
+
 		if (workqueue->worker_before_wait_fct)
 			workqueue->worker_before_wait_fct(workqueue, workqueue->priv);
 		if (!rt) {
@@ -272,10 +276,10 @@ struct urcu_workqueue *urcu_workqueue_create(unsigned long flags,
 	int ret;
 	sigset_t newmask, oldmask;
 
-	workqueue = malloc(sizeof(*workqueue));
+	workqueue = calloc(1, sizeof(*workqueue));
 	if (workqueue == NULL)
 		urcu_die(errno);
-	memset(workqueue, '\0', sizeof(*workqueue));
+
 	cds_wfcq_init(&workqueue->cbs_head, &workqueue->cbs_tail);
 	workqueue->qlen = 0;
 	workqueue->futex = 0;
