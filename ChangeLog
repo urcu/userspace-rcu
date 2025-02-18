@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: CC-BY-4.0
 
+2025-01-18 Userspace RCU 0.15.1
+	* uatomic/generic: Add missing #include <stdlib.h>
+	* docs: Clarify that make is required to build the project
+	* fix: add missing SPDX headers to urcu/uatomic/api.h
+	* compiler.h: Remove caa_unqual_scalar_typeof
+
 2024-12-20 Userspace RCU 0.15.0
 	* Fix compilation errors
 	* Document cmm_cast_volatile
