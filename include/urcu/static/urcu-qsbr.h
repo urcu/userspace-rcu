@@ -53,7 +53,7 @@ struct urcu_qsbr_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	unsigned long ctr;
 	/* Data used for registry */
-	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+	struct cds_list_head node __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 	int waiting;
 	pthread_t tid;
 	/* Reader registered flag, for internal checks. */

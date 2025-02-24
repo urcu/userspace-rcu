@@ -49,7 +49,7 @@ typedef struct { char v[8]; } __hp_8;
 
 /* cmpxchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
@@ -117,7 +117,7 @@ unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 
 /* xchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	/* Note: the "xchg" instruction does not need a "lock" prefix. */
@@ -180,7 +180,7 @@ unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 
 /* uatomic_add_return */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long __uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
@@ -247,7 +247,7 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 
 /* uatomic_and */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void __uatomic_and(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -303,7 +303,7 @@ void __uatomic_and(void *addr, unsigned long val, int len)
 
 /* uatomic_or */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void __uatomic_or(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -359,7 +359,7 @@ void __uatomic_or(void *addr, unsigned long val, int len)
 
 /* uatomic_add */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void __uatomic_add(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -416,7 +416,7 @@ void __uatomic_add(void *addr, unsigned long val, int len)
 
 /* uatomic_inc */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void __uatomic_inc(void *addr, int len)
 {
 	switch (len) {
@@ -469,7 +469,7 @@ void __uatomic_inc(void *addr, int len)
 
 /* uatomic_dec */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 void __uatomic_dec(void *addr, int len)
 {
 	switch (len) {

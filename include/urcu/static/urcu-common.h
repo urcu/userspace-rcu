@@ -61,14 +61,14 @@ struct urcu_gp {
 	unsigned long ctr;
 
 	int32_t futex;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 
 struct urcu_reader {
 	/* Data used by both reader and synchronize_rcu() */
 	unsigned long ctr;
 	char need_mb;
 	/* Data used for registry */
-	struct cds_list_head node __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+	struct cds_list_head node __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 	pthread_t tid;
 	/* Reader registered flag, for internal checks. */
 	unsigned int registered:1;

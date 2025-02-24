@@ -47,7 +47,7 @@ extern "C" {
 
 /* xchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 {
 	switch (len) {
@@ -100,7 +100,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 						sizeof(*(addr))))
 /* cmpxchg */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			      unsigned long _new, int len)
 {
@@ -165,7 +165,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 
 /* uatomic_add_return */
 
-static inline __attribute__((always_inline))
+static inline __attribute__((__always_inline__))
 unsigned long _uatomic_add_return(void *addr, unsigned long val,
 				 int len)
 {
