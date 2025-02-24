@@ -49,7 +49,7 @@ struct cds_lfht;
 struct cds_lfht_node {
 	struct cds_lfht_node *next;	/* ptr | REMOVAL_OWNER_FLAG | BUCKET_FLAG | REMOVED_FLAG */
 	unsigned long reverse_hash;
-} __attribute__((aligned(8)));
+} __attribute__((__aligned__(8)));
 
 /* cds_lfht_iter: Used to track state while traversing a hash chain. */
 struct cds_lfht_iter {
@@ -103,7 +103,7 @@ typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, const void *key);
  * (detection of memory corruption).
  */
 static inline
-void cds_lfht_node_init(struct cds_lfht_node *node __attribute__((unused)))
+void cds_lfht_node_init(struct cds_lfht_node *node __attribute__((__unused__)))
 {
 }
 

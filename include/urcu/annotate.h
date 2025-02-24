@@ -32,7 +32,7 @@ enum cmm_annotate {
 	CMM_ANNOTATE_MB,
 };
 
-typedef enum cmm_annotate cmm_annotate_t __attribute__((unused));
+typedef enum cmm_annotate cmm_annotate_t __attribute__((__unused__));
 
 #define cmm_annotate_define(name)		\
 	cmm_annotate_t name = CMM_ANNOTATE_VOID
