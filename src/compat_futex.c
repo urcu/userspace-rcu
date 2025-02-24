@@ -26,9 +26,9 @@
  * (executable and all shared objects).
  */
 
-__attribute__((weak))
+__attribute__((__weak__))
 pthread_mutex_t __urcu_compat_futex_lock = PTHREAD_MUTEX_INITIALIZER;
-__attribute__((weak))
+__attribute__((__weak__))
 pthread_cond_t __urcu_compat_futex_cond = PTHREAD_COND_INITIALIZER;
 
 /*

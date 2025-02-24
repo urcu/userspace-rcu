@@ -182,7 +182,7 @@ void *rcu_read_perf_test(void *arg)
 }
 
 static
-void *rcu_update_perf_test(void *arg __attribute__((unused)))
+void *rcu_update_perf_test(void *arg __attribute__((__unused__)))
 {
 	long long n_updates_local = 0;
 
@@ -325,7 +325,7 @@ DEFINE_PER_THREAD(long long [RCU_STRESS_PIPE_LEN + 1], rcu_stress_count);
 int garbage = 0;
 
 static
-void *rcu_read_stress_test(void *arg __attribute__((unused)))
+void *rcu_read_stress_test(void *arg __attribute__((__unused__)))
 {
 	int i;
 	int itercnt = 0;
@@ -374,7 +374,7 @@ void *rcu_read_stress_test(void *arg __attribute__((unused)))
 static DEFINE_URCU_WAIT_QUEUE(call_rcu_waiters);
 
 static
-void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((unused)))
+void rcu_update_stress_test_rcu(struct rcu_head *head __attribute__((__unused__)))
 {
 	struct urcu_waiters waiters;
 
@@ -399,7 +399,7 @@ void advance_writer_state(enum writer_state *state)
 }
 
 static
-void *rcu_update_stress_test(void *arg __attribute__((unused)))
+void *rcu_update_stress_test(void *arg __attribute__((__unused__)))
 {
 	int i;
 	struct rcu_stress *p, *old_p;
@@ -493,7 +493,7 @@ void *rcu_update_stress_test(void *arg __attribute__((unused)))
 }
 
 static
-void *rcu_fake_update_stress_test(void *arg __attribute__((unused)))
+void *rcu_fake_update_stress_test(void *arg __attribute__((__unused__)))
 {
 	if (callrcu_type == CALLRCU_PERTHREAD) {
 		struct call_rcu_data *crdp;

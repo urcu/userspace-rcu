@@ -32,7 +32,7 @@ static struct test_array test_array = { 8 };
 
 struct per_thread_lock {
 	pthread_mutex_t lock;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
 
 static struct per_thread_lock *per_thread_lock;
 
@@ -50,8 +50,8 @@ static int num_write;
 #define NR_READ num_read
 #define NR_WRITE num_write
 
-static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *reader_time;
-static caa_cycles_t __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *writer_time;
+static caa_cycles_t __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *reader_time;
+static caa_cycles_t __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *writer_time;
 
 static
 void *thr_reader(void *arg)

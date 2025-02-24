@@ -54,7 +54,7 @@ struct call_rcu_data {
 	int cpu_affinity;
 	unsigned long gp_count;
 	struct cds_list_head list;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 
 struct call_rcu_completion {
 	int barrier_count;
@@ -220,7 +220,7 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 }
 #else
 static
-int set_thread_cpu_affinity(struct call_rcu_data *crdp __attribute__((unused)))
+int set_thread_cpu_affinity(struct call_rcu_data *crdp __attribute__((__unused__)))
 {
 	return 0;
 }
@@ -1051,7 +1051,7 @@ void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
  * use by rculfhash.
  */
 __attribute__((__noreturn__))
-void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((unused)))
+void urcu_unregister_rculfhash_atfork(struct urcu_atfork *atfork __attribute__((__unused__)))
 {
 	urcu_die(EPERM);
 }

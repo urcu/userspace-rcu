@@ -29,17 +29,17 @@
  * the library, as long as the caller checks if __rcu_cas_avail < 0 and calls
  * compat_arch_init() explicitly if needed.
  */
-int __attribute__((constructor)) __rcu_cas_init(void);
+int __attribute__((__constructor__)) __rcu_cas_init(void);
 
 /*
  * -1: unknown
  *  1: available
  *  0: unavailable
  */
-__attribute__((weak))
+__attribute__((__weak__))
 int __rcu_cas_avail = -1;
 
-__attribute__((weak))
+__attribute__((__weak__))
 pthread_mutex_t __urcu_x86_compat_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*

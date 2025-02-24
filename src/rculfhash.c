@@ -324,7 +324,7 @@
  */
 struct ht_items_count {
 	unsigned long add, del;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 
 /*
  * resize_work: Contains arguments passed to worker thread
@@ -370,7 +370,7 @@ static struct urcu_atfork cds_lfht_atfork;
  */
 static int cds_lfht_workqueue_atfork_nesting;
 
-static void __attribute__((destructor)) cds_lfht_exit(void);
+static void __attribute__((__destructor__)) cds_lfht_exit(void);
 static void cds_lfht_init_worker(const struct rcu_flavor_struct *flavor);
 
 #ifdef CONFIG_CDS_LFHT_ITER_DEBUG
@@ -386,8 +386,8 @@ void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht, struct cds_lfht_iter *iter)
 #else
 
 static
-void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht __attribute__((unused)),
-		struct cds_lfht_iter *iter __attribute__((unused)))
+void cds_lfht_iter_debug_set_ht(struct cds_lfht *ht __attribute__((__unused__)),
+		struct cds_lfht_iter *iter __attribute__((__unused__)))
 {
 }
 
@@ -492,7 +492,7 @@ unsigned int fls_u64(uint64_t x)
 #endif
 
 #ifndef HAS_FLS_U64
-static __attribute__((unused))
+static __attribute__((__unused__))
 unsigned int fls_u64(uint64_t x)
 {
 	unsigned int r = 64;
@@ -529,7 +529,7 @@ unsigned int fls_u64(uint64_t x)
 #endif
 
 #ifndef HAS_FLS_U32
-static __attribute__((unused))
+static __attribute__((__unused__))
 unsigned int fls_u32(uint32_t x)
 {
 	unsigned int r = 32;
@@ -569,25 +569,25 @@ unsigned int cds_lfht_fls_ulong(unsigned long x)
 #endif
 }
 
-static void *cds_lfht_malloc(void *state __attribute__((unused)),
+static void *cds_lfht_malloc(void *state __attribute__((__unused__)),
 		size_t size)
 {
 	return malloc(size);
 }
 
-static void *cds_lfht_calloc(void *state __attribute__((unused)),
+static void *cds_lfht_calloc(void *state __attribute__((__unused__)),
 		size_t nmemb, size_t size)
 {
 	return calloc(nmemb, size);
 }
 
-static void *cds_lfht_realloc(void *state __attribute__((unused)),
+static void *cds_lfht_realloc(void *state __attribute__((__unused__)),
 		void *ptr, size_t size)
 {
 	return realloc(ptr, size);
 }
 
-static void *cds_lfht_aligned_alloc(void *state __attribute__((unused)),
+static void *cds_lfht_aligned_alloc(void *state __attribute__((__unused__)),
 		size_t alignment, size_t size)
 {
 	void *ptr;
@@ -597,7 +597,7 @@ static void *cds_lfht_aligned_alloc(void *state __attribute__((unused)),
 	return ptr;
 }
 
-static void cds_lfht_free(void *state __attribute__((unused)), void *ptr)
+static void cds_lfht_free(void *state __attribute__((__unused__)), void *ptr)
 {
 	free(ptr);
 }
@@ -1629,7 +1629,7 @@ const struct cds_lfht_mm_type *get_mm_type(unsigned long max_nr_buckets)
  */
 static
 const struct cds_lfht_mm_type *get_mm_type(
-		unsigned long max_nr_buckets __attribute__((unused)))
+		unsigned long max_nr_buckets __attribute__((__unused__)))
 {
 	return &cds_lfht_mm_order;
 }
@@ -1764,7 +1764,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 	iter->next = next;
 }
 
-void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((unused)),
+void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((__unused__)),
 		cds_lfht_match_fct match,
 		const void *key, struct cds_lfht_iter *iter)
 {
@@ -1799,7 +1799,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((unused)),
 	iter->next = next;
 }
 
-void cds_lfht_next(struct cds_lfht *ht __attribute__((unused)),
+void cds_lfht_next(struct cds_lfht *ht __attribute__((__unused__)),
 		struct cds_lfht_iter *iter)
 {
 	struct cds_lfht_node *node, *next;
@@ -2279,7 +2279,7 @@ void cds_lfht_resize_lazy_count(struct cds_lfht *ht, unsigned long size,
 	__cds_lfht_resize_lazy_launch(ht);
 }
 
-static void cds_lfht_before_fork(void *priv __attribute__((unused)))
+static void cds_lfht_before_fork(void *priv __attribute__((__unused__)))
 {
 	if (cds_lfht_workqueue_atfork_nesting++)
 		return;
@@ -2289,7 +2289,7 @@ static void cds_lfht_before_fork(void *priv __attribute__((unused)))
 	urcu_workqueue_pause_worker(cds_lfht_workqueue);
 }
 
-static void cds_lfht_after_fork_parent(void *priv __attribute__((unused)))
+static void cds_lfht_after_fork_parent(void *priv __attribute__((__unused__)))
 {
 	if (--cds_lfht_workqueue_atfork_nesting)
 		return;
@@ -2300,7 +2300,7 @@ end:
 	mutex_unlock(&cds_lfht_fork_mutex);
 }
 
-static void cds_lfht_after_fork_child(void *priv __attribute__((unused)))
+static void cds_lfht_after_fork_child(void *priv __attribute__((__unused__)))
 {
 	if (--cds_lfht_workqueue_atfork_nesting)
 		return;

@@ -184,7 +184,7 @@ unsigned long test_compare(const void *key1, size_t key1_len,
 }
 
 static
-void *thr_count(void *arg __attribute__((unused)))
+void *thr_count(void *arg __attribute__((__unused__)))
 {
 	printf_verbose("thread_begin %s, tid %lu\n",
 			"counter", urcu_get_thread_id());

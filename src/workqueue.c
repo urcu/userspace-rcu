@@ -60,7 +60,7 @@ struct urcu_workqueue {
 	void (*worker_after_resume_fct)(struct urcu_workqueue *workqueue, void *priv);
 	void (*worker_before_wait_fct)(struct urcu_workqueue *workqueue, void *priv);
 	void (*worker_after_wake_up_fct)(struct urcu_workqueue *workqueue, void *priv);
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));
 
 struct urcu_workqueue_completion {
 	int barrier_count;
@@ -107,7 +107,7 @@ static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue)
 	return ret;
 }
 #else
-static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue __attribute__((unused)))
+static int set_thread_cpu_affinity(struct urcu_workqueue *workqueue __attribute__((__unused__)))
 {
 	return 0;
 }

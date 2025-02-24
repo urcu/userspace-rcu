@@ -128,8 +128,8 @@ static DEFINE_URCU_TLS(unsigned long long, nr_dequeue_last);
 static unsigned int nr_enqueuers;
 static unsigned int nr_dequeuers;
 
-static struct cds_wfcq_head __attribute__((aligned(CAA_CACHE_LINE_SIZE))) head;
-static struct cds_wfcq_tail __attribute__((aligned(CAA_CACHE_LINE_SIZE))) tail;
+static struct cds_wfcq_head __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) head;
+static struct cds_wfcq_tail __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) tail;
 
 static void *thr_enqueuer(void *_count)
 {
