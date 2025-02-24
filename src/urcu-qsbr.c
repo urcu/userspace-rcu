@@ -39,7 +39,7 @@
 #include <urcu/urcu-qsbr.h>
 #define _LGPL_SOURCE
 
-void __attribute__((destructor)) urcu_qsbr_exit(void);
+void __attribute__((__destructor__)) urcu_qsbr_exit(void);
 static void urcu_call_rcu_exit(void);
 
 /*

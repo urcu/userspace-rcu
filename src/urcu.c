@@ -83,7 +83,7 @@ static int urcu_memb_has_sys_membarrier_private_expedited;
 int urcu_memb_has_sys_membarrier = 0;
 #endif
 
-void __attribute__((constructor)) rcu_init(void);
+void __attribute__((__constructor__)) rcu_init(void);
 #endif
 
 #if defined(RCU_MB)
@@ -92,7 +92,7 @@ void rcu_init(void)
 }
 #endif
 
-void __attribute__((destructor)) rcu_exit(void);
+void __attribute__((__destructor__)) rcu_exit(void);
 static void urcu_call_rcu_exit(void);
 
 /*

@@ -109,7 +109,7 @@ static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
 static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
+unsigned long long __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;

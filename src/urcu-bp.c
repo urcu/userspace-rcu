@@ -62,9 +62,9 @@ void *mremap_wrapper(void *old_address, size_t old_size,
  * This is not generic.
 */
 static
-void *mremap_wrapper(void *old_address __attribute__((unused)),
-		size_t old_size __attribute__((unused)),
-		size_t new_size __attribute__((unused)),
+void *mremap_wrapper(void *old_address __attribute__((__unused__)),
+		size_t old_size __attribute__((__unused__)),
+		size_t new_size __attribute__((__unused__)),
 		int flags)
 {
 	urcu_posix_assert(!(flags & MREMAP_MAYMOVE));
@@ -102,11 +102,11 @@ enum membarrier_cmd {
 };
 
 static
-void __attribute__((constructor)) _urcu_bp_init(void);
+void __attribute__((__constructor__)) _urcu_bp_init(void);
 static
 void urcu_bp_exit(void);
 static
-void __attribute__((destructor)) urcu_bp_exit_destructor(void);
+void __attribute__((__destructor__)) urcu_bp_exit_destructor(void);
 static void urcu_call_rcu_exit(void);
 
 #ifndef CONFIG_RCU_FORCE_SYS_MEMBARRIER

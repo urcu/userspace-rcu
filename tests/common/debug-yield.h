@@ -66,12 +66,12 @@ static inline void rcu_debug_yield_write(void)
 }
 
 static inline void rcu_debug_yield_enable(
-		unsigned int flags __attribute__((unused)))
+		unsigned int flags __attribute__((__unused__)))
 {
 }
 
 static inline void rcu_debug_yield_disable(
-		unsigned int flags __attribute__((unused)))
+		unsigned int flags __attribute__((__unused__)))
 {
 }
 

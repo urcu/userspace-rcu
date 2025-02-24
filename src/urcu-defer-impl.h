@@ -96,7 +96,7 @@ struct defer_queue {
 /* Do not #define _LGPL_SOURCE to ensure we can emit the wrapper symbols */
 #include <urcu/defer.h>
 
-void __attribute__((destructor)) rcu_defer_exit(void);
+void __attribute__((__destructor__)) rcu_defer_exit(void);
 
 extern void synchronize_rcu(void);
 
@@ -366,7 +366,7 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 	wake_up_defer();
 }
 
-static void *thr_defer(void *args __attribute__((unused)))
+static void *thr_defer(void *args __attribute__((__unused__)))
 {
 	for (;;) {
 		/*

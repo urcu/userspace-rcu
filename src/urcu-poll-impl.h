@@ -25,7 +25,7 @@ static struct urcu_poll_worker_state poll_worker_gp_state = {
 };
 
 static
-void urcu_poll_worker_cb(struct rcu_head *head __attribute__((unused)))
+void urcu_poll_worker_cb(struct rcu_head *head __attribute__((__unused__)))
 {
 	mutex_lock(&poll_worker_gp_state.lock);
 	/* A new grace period has been reached. */

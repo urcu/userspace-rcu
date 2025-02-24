@@ -149,7 +149,7 @@ static int do_fork(const char *execname)
 	}
 }
 
-int main(int argc __attribute__((unused)), char **argv)
+int main(int argc __attribute__((__unused__)), char **argv)
 {
 	unsigned int i;
 

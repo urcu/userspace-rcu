@@ -111,7 +111,7 @@ static unsigned int nr_writers;
 
 pthread_mutex_t rcu_copy_mutex = PTHREAD_MUTEX_INITIALIZER;
 static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
+unsigned long long __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
 
 static
 void *thr_reader(void *_count)

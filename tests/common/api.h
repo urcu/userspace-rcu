@@ -208,7 +208,7 @@ static void run_on(int cpu)
 }
 #else
 
-static void run_on(int cpu __attribute__((unused)))
+static void run_on(int cpu __attribute__((__unused__)))
 {}
 #endif /* HAVE_SCHED_SETAFFINITY */
 

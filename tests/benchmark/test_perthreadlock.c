@@ -35,7 +35,7 @@ struct test_array {
 
 struct per_thread_lock {
 	pthread_mutex_t lock;
-} __attribute__((aligned(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
+} __attribute__((__aligned__(CAA_CACHE_LINE_SIZE)));	/* cache-line aligned */
 
 static struct per_thread_lock *per_thread_lock;
 
@@ -105,9 +105,9 @@ static DEFINE_URCU_TLS(unsigned long long, nr_writes);
 static DEFINE_URCU_TLS(unsigned long long, nr_reads);
 
 static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
+unsigned long long __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *tot_nr_writes;
 static
-unsigned long long __attribute__((aligned(CAA_CACHE_LINE_SIZE))) *tot_nr_reads;
+unsigned long long __attribute__((__aligned__(CAA_CACHE_LINE_SIZE))) *tot_nr_reads;
 
 static unsigned int nr_readers;
 static unsigned int nr_writers;
