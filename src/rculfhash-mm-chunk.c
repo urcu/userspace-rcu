@@ -11,22 +11,32 @@
 #include "rculfhash-internal.h"
 
 static
-void cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
+int cds_lfht_alloc_bucket_table(struct cds_lfht *ht, unsigned long order)
 {
 	if (order == 0) {
 		ht->tbl_chunk[0] = ht->alloc->calloc(ht->alloc->state,
 			ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
-		urcu_posix_assert(ht->tbl_chunk[0]);
+		if (ht->tbl_chunk[0] == NULL)
+			return -1;
+
 	} else if (order > ht->min_alloc_buckets_order) {
 		unsigned long i, len = 1UL << (order - 1 - ht->min_alloc_buckets_order);
 
 		for (i = len; i < 2 * len; i++) {
+			urcu_posix_assert(i <  ht->max_nr_buckets / ht->min_nr_alloc_buckets);
 			ht->tbl_chunk[i] = ht->alloc->calloc(ht->alloc->state,
 				ht->min_nr_alloc_buckets, sizeof(struct cds_lfht_node));
-			urcu_posix_assert(ht->tbl_chunk[i]);
+			if (ht->tbl_chunk[i] == NULL) {
+				while (i != len) {
+					--i;
+					poison_free(ht->alloc, ht->tbl_chunk[i]);
+				}
+				return -1;
+			}
 		}
 	}
 	/* Nothing to do for 0 < order && order <= ht->min_alloc_buckets_order */
+	return 0;
 }
 
 /*
@@ -69,7 +79,6 @@ struct cds_lfht *alloc_cds_lfht(unsigned long min_nr_alloc_buckets,
 	nr_chunks = max_nr_buckets / min_nr_alloc_buckets;
 	cds_lfht_size = offsetof(struct cds_lfht, tbl_chunk) +
 			sizeof(struct cds_lfht_node *) * nr_chunks;
-	cds_lfht_size = max(cds_lfht_size, sizeof(struct cds_lfht));
 
 	return __default_alloc_cds_lfht(
 			&cds_lfht_mm_chunk, alloc, cds_lfht_size,

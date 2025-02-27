@@ -130,9 +130,8 @@ static void alloc_cpu_call_rcu_data(void)
 	if (cpus_array_len <= 0) {
 		return;
 	}
-	p = malloc(cpus_array_len * sizeof(*per_cpu_call_rcu_data));
+	p = calloc(cpus_array_len, sizeof(*per_cpu_call_rcu_data));
 	if (p != NULL) {
-		memset(p, '\0', cpus_array_len * sizeof(*per_cpu_call_rcu_data));
 		rcu_set_pointer(&per_cpu_call_rcu_data, p);
 	} else {
 		if (!warned) {
@@ -198,7 +197,7 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 
 	if (crdp->cpu_affinity < 0)
 		return 0;
-	if (++crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
+	if (crdp->gp_count++ & SET_AFFINITY_CHECK_PERIOD_MASK)
 		return 0;
 	if (urcu_sched_getcpu() == crdp->cpu_affinity)
 		return 0;
@@ -318,9 +317,6 @@ static void *call_rcu_thread(void *arg)
 	struct call_rcu_data *crdp = (struct call_rcu_data *) arg;
 	int rt = !!(uatomic_read(&crdp->flags) & URCU_CALL_RCU_RT);
 
-	if (set_thread_cpu_affinity(crdp))
-		urcu_die(errno);
-
 	/*
 	 * If callbacks take a read-side lock, we need to be registered.
 	 */
@@ -333,7 +329,7 @@ static void *call_rcu_thread(void *arg)
 		cmm_smp_mb();
 	}
 	for (;;) {
-		struct cds_wfcq_head cbs_tmp_head;
+		struct __cds_wfcq_head cbs_tmp_head;
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
@@ -358,7 +354,7 @@ static void *call_rcu_thread(void *arg)
 			rcu_register_thread();
 		}
 
-		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
+		__cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &crdp->cbs_head, &crdp->cbs_tail);
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
@@ -377,8 +373,11 @@ static void *call_rcu_thread(void *arg)
 			}
 			uatomic_sub(&crdp->qlen, cbcount);
 		}
+		/*cds_wfcq_destroy(&cbs_tmp_head, &cbs_tmp_tail);*/
+
 		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOP)
 			break;
+
 		rcu_thread_offline();
 		if (!rt) {
 			if (cds_wfcq_empty(&crdp->cbs_head,
@@ -425,10 +424,10 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 	int ret;
 	sigset_t newmask, oldmask;
 
-	crdp = malloc(sizeof(*crdp));
+	crdp = calloc(1, sizeof(*crdp));
 	if (crdp == NULL)
 		urcu_die(errno);
-	memset(crdp, '\0', sizeof(*crdp));
+
 	cds_wfcq_init(&crdp->cbs_head, &crdp->cbs_tail);
 	crdp->qlen = 0;
 	crdp->futex = 0;
