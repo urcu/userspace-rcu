@@ -51,15 +51,27 @@
 # error "Toolchain is not supported."
 #endif
 
-#if defined(__GNUC__)
-# define UATOMIC_HAS_ATOMIC_BYTE  __GCC_ATOMIC_CHAR_LOCK_FREE
-# define UATOMIC_HAS_ATOMIC_SHORT __GCC_ATOMIC_SHORT_LOCK_FREE
-#elif defined(__clang__)
-# define UATOMIC_HAS_ATOMIC_BYTE  __CLANG_ATOMIC_CHAR_LOCK_FREE
-# define UATOMIC_HAS_ATOMIC_SHORT __CLANG_ATOMIC_SHORT_LOCK_FREE
+/*
+ * Use the compiler provided defines, a value of '2' means that the atomic
+ * operations for the type are always lock free and won't require linking with
+ * libatomic.
+ */
+#if defined(__clang__)
+# if __CLANG_ATOMIC_CHAR_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_BYTE
+# endif
+# if __CLANG_ATOMIC_SHORT_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_SHORT
+# endif
+#elif defined(__GNUC__)
+# if __GCC_ATOMIC_CHAR_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_BYTE
+# endif
+# if __GCC_ATOMIC_SHORT_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_SHORT
+# endif
 #else
-/* #  define UATOMIC_HAS_ATOMIC_BYTE  */
-/* #  define UATOMIC_HAS_ATOMIC_SHORT */
+# error "Toolchain is missing lock-free atomic defines."
 #endif
 
 #include <urcu/uatomic/builtins-generic.h>
