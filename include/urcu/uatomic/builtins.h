@@ -39,14 +39,10 @@
 # if !__has_builtin(__atomic_signal_fence)
 #  error "Toolchain does not support __atomic_signal_fence."
 # endif
-#elif defined(__GNUC__)
-# define GCC_VERSION (__GNUC__       * 10000 + \
-		       __GNUC_MINOR__ * 100   + \
-		       __GNUC_PATCHLEVEL__)
-# if  GCC_VERSION < 40700
+#elif defined(URCU_GCC_VERSION)
+# if URCU_GCC_VERSION < 40700
 #  error "GCC version is too old. Version must be 4.7 or greater"
 # endif
-# undef  GCC_VERSION
 #else
 # error "Toolchain is not supported."
 #endif
