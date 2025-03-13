@@ -20,11 +20,15 @@
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
-#define UATOMIC_HAS_ATOMIC_BYTE
-#define UATOMIC_HAS_ATOMIC_SHORT
-
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#define UATOMIC_HAS_ATOMIC_BYTE
+#define UATOMIC_HAS_ATOMIC_SHORT
+#define UATOMIC_HAS_ATOMIC_INT
+#if (CAA_BITS_PER_LONG == 64)
+#define UATOMIC_HAS_ATOMIC_LLONG
 #endif
 
 /*
@@ -87,7 +91,7 @@ unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 			: "memory");
 		return result;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long result = old;
@@ -152,7 +156,7 @@ unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 			: "memory");
 		return result;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long result;
@@ -218,7 +222,7 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 			: "memory");
 		return result + (unsigned int)val;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long result = val;
@@ -278,7 +282,7 @@ void __uatomic_and(void *addr, unsigned long val, int len)
 			: "memory");
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -334,7 +338,7 @@ void __uatomic_or(void *addr, unsigned long val, int len)
 			: "memory");
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -390,7 +394,7 @@ void __uatomic_add(void *addr, unsigned long val, int len)
 			: "memory");
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -447,7 +451,7 @@ void __uatomic_inc(void *addr, int len)
 			: "memory");
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
@@ -500,7 +504,7 @@ void __uatomic_dec(void *addr, int len)
 			: "memory");
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
