@@ -6,6 +6,11 @@
 //
 // SPDX-License-Identifier: LicenseRef-Boehm-GC
 
+/*
+ * Generic uatomic implementation based on GCC __sync built-in functions or the
+ * newer __atomic built-ins if the compiler supports C11.
+ */
+
 #ifndef _URCU_UATOMIC_GENERIC_H
 #define _URCU_UATOMIC_GENERIC_H
 
@@ -184,10 +189,12 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		return __sync_val_compare_and_swap_2((uint16_t *) addr, old,
 				_new);
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 		return __sync_val_compare_and_swap_4((uint32_t *) addr, old,
 				_new);
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 		return __sync_val_compare_and_swap_8((uint64_t *) addr, old,
 				_new);
@@ -220,10 +227,12 @@ void _uatomic_and(void *addr, unsigned long val,
 		__sync_and_and_fetch_2((uint16_t *) addr, val);
 		return;
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 		__sync_and_and_fetch_4((uint32_t *) addr, val);
 		return;
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 		__sync_and_and_fetch_8((uint64_t *) addr, val);
 		return;
@@ -259,10 +268,12 @@ void _uatomic_or(void *addr, unsigned long val,
 		__sync_or_and_fetch_2((uint16_t *) addr, val);
 		return;
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 		__sync_or_and_fetch_4((uint32_t *) addr, val);
 		return;
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 		__sync_or_and_fetch_8((uint64_t *) addr, val);
 		return;
@@ -298,9 +309,11 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 	case 2:
 		return __sync_add_and_fetch_2((uint16_t *) addr, val);
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 		return __sync_add_and_fetch_4((uint32_t *) addr, val);
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 		return __sync_add_and_fetch_8((uint64_t *) addr, val);
 #endif
@@ -349,6 +362,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 		return old;
 	}
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 	{
 		uint32_t old;
@@ -360,7 +374,8 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 		return old;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		uint64_t old;
@@ -419,6 +434,7 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 		} while (oldt != old);
 	}
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 	{
 		uint32_t old, oldt;
@@ -431,7 +447,8 @@ void _uatomic_and(void *addr, unsigned long val, int len)
 
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		uint64_t old, oldt;
@@ -493,6 +510,7 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 		return;
 	}
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 	{
 		uint32_t old, oldt;
@@ -505,7 +523,8 @@ void _uatomic_or(void *addr, unsigned long val, int len)
 
 		return;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		uint64_t old, oldt;
@@ -569,6 +588,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 		return old + val;
 	}
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 	{
 		uint32_t old, oldt;
@@ -582,7 +602,8 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val, int len)
 
 		return old + val;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		uint64_t old, oldt;
@@ -645,6 +666,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 		return old;
 	}
 #endif
+#ifdef UATOMIC_HAS_ATOMIC_INT
 	case 4:
 	{
 		uint32_t old, oldt;
@@ -658,7 +680,8 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 		return old;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#endif
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		uint64_t old, oldt;
