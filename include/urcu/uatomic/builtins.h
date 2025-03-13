@@ -59,12 +59,24 @@
 # if __CLANG_ATOMIC_SHORT_LOCK_FREE == 2
 #  define UATOMIC_HAS_ATOMIC_SHORT
 # endif
+# if __CLANG_ATOMIC_INT_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_INT
+# endif
+# if __CLANG_ATOMIC_LLONG_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_LLONG
+# endif
 #elif defined(__GNUC__)
 # if __GCC_ATOMIC_CHAR_LOCK_FREE == 2
 #  define UATOMIC_HAS_ATOMIC_BYTE
 # endif
 # if __GCC_ATOMIC_SHORT_LOCK_FREE == 2
 #  define UATOMIC_HAS_ATOMIC_SHORT
+# endif
+# if __GCC_ATOMIC_INT_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_INT
+# endif
+# if __GCC_ATOMIC_LLONG_LOCK_FREE == 2
+#  define UATOMIC_HAS_ATOMIC_LLONG
 # endif
 #else
 # error "Toolchain is missing lock-free atomic defines."
