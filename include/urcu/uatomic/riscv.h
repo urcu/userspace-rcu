@@ -37,6 +37,10 @@ extern "C" {
 
 #define UATOMIC_HAS_ATOMIC_BYTE
 #define UATOMIC_HAS_ATOMIC_SHORT
+#define UATOMIC_HAS_ATOMIC_INT
+#if (CAA_BITS_PER_LONG == 64)
+#define UATOMIC_HAS_ATOMIC_LLONG
+#endif
 
 #ifdef __cplusplus
 }
