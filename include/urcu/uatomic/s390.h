@@ -21,6 +21,13 @@
 extern "C" {
 #endif
 
+/* #define UATOMIC_HAS_ATOMIC_BYTE */
+/* #define UATOMIC_HAS_ATOMIC_SHORT */
+#define UATOMIC_HAS_ATOMIC_INT
+#if (CAA_BITS_PER_LONG == 64)
+#define UATOMIC_HAS_ATOMIC_LLONG
+#endif
+
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 2)
 #define COMPILER_HAVE_SHORT_MEM_OPERAND
 #endif
@@ -78,7 +85,7 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 			: "memory", "cc");
 		return old_val;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long old_val;
@@ -122,7 +129,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 			: "memory", "cc");
 		return old_val;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		__asm__ __volatile__(
