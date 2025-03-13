@@ -20,6 +20,13 @@
 extern "C" {
 #endif
 
+/* #define UATOMIC_HAS_ATOMIC_BYTE */
+/* #define UATOMIC_HAS_ATOMIC_SHORT */
+#define UATOMIC_HAS_ATOMIC_INT
+#if (CAA_BITS_PER_LONG == 64)
+#define UATOMIC_HAS_ATOMIC_LLONG
+#endif
+
 #define ILLEGAL_INSTR	".long	0xd00d00"
 
 /*
@@ -67,7 +74,7 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 
 		return result;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long result;
@@ -125,7 +132,7 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 
 		return old_val;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long old_val;
@@ -187,7 +194,7 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 
 		return result;
 	}
-#if (CAA_BITS_PER_LONG == 64)
+#ifdef UATOMIC_HAS_ATOMIC_LLONG
 	case 8:
 	{
 		unsigned long result;
