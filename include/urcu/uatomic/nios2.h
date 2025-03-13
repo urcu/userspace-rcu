@@ -11,6 +11,20 @@
 
 #include <urcu/compiler.h>
 #include <urcu/system.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* #define UATOMIC_HAS_ATOMIC_BYTE */
+/* #define UATOMIC_HAS_ATOMIC_SHORT */
+#define UATOMIC_HAS_ATOMIC_INT
+/* #define UATOMIC_HAS_ATOMIC_LLONG */
+
+#ifdef __cplusplus
+}
+#endif
+
 #include <urcu/uatomic/generic.h>
 
 #endif /* _URCU_UATOMIC_ARCH_NIOS2_H */
