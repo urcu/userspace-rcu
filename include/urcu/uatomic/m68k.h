@@ -18,6 +18,8 @@ extern "C" {
 
 #define UATOMIC_HAS_ATOMIC_BYTE
 #define UATOMIC_HAS_ATOMIC_SHORT
+#define UATOMIC_HAS_ATOMIC_INT
+/* #define UATOMIC_HAS_ATOMIC_LLONG */
 
 #ifdef __cplusplus
 }
