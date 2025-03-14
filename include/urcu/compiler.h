@@ -51,6 +51,18 @@
 #  error "URCU was configured to use atomic builtins, but this toolchain does not support them."
 #endif
 
+#ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
+/*
+ * Fail at compile time if an atomic operation is attempted on an unsupported
+ * type for the current architecture.
+ */
+#define _cmm_static_assert__atomic_lf(size)					\
+	urcu_static_assert(__atomic_always_lock_free(size, 0),			\
+			"The architecture does not support atomic lock-free "	\
+			"operations on this type.",				\
+			_atomic_builtin_type_not_lock_free)
+#endif
+
 /* Make the optimizer believe the variable can be manipulated arbitrarily. */
 #define _CMM_OPTIMIZER_HIDE_VAR(var)		\
 	__asm__ ("" : "+r" (var))
