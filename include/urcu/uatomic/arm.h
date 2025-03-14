@@ -36,6 +36,7 @@ extern "C" {
 #  define uatomic_xchg_mo(addr, v, mo)					\
 	__extension__							\
 	({								\
+		_cmm_static_assert__atomic_lf(sizeof(*(addr)));		\
 		__typeof__((*addr)) _old =				\
 			__atomic_exchange_n(cmm_cast_volatile(addr), v,	\
 					cmm_to_c11(mo));		\

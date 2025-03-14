@@ -89,6 +89,7 @@ extern "C" {
 #  ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
 #    define uatomic_store_mo(addr, v, mo)			\
 	do {							\
+		_cmm_static_assert__atomic_lf(sizeof(*(addr)));	\
 		__atomic_store_n(cmm_cast_volatile(addr), v,	\
 				cmm_to_c11(mo));		\
 		cmm_seq_cst_fence_after_atomic(mo);		\
@@ -114,6 +115,7 @@ extern "C" {
 #    define uatomic_load_mo(addr, mo)					\
 	__extension__							\
 	({								\
+		_cmm_static_assert__atomic_lf(sizeof(*(addr)));		\
 		__typeof__(*(addr)) _value =				\
 			__atomic_load_n(cmm_cast_volatile(addr),	\
 					cmm_to_c11(mo));		\
