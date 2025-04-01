@@ -27,6 +27,9 @@ extern "C" {
 #define UATOMIC_HAS_ATOMIC_LLONG
 #endif
 
+/* Must be included after the UATOMIC_HAS_ATOMIC_* defines. */
+#include <urcu/uatomic/uassert.h>
+
 /* cmpxchg */
 
 static inline __attribute__((__always_inline__))
@@ -61,16 +64,19 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #endif
 	}
-	__builtin_trap();
 	return 0;
 }
 
 
-#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)			\
-	((__typeof__(*(addr))) _uatomic_cmpxchg((addr),			       \
-						caa_cast_long_keep_sign(old),  \
-						caa_cast_long_keep_sign(_new), \
-						sizeof(*(addr))))
+#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)				\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			\
+						caa_cast_long_keep_sign(old),	\
+						caa_cast_long_keep_sign(_new),	\
+						sizeof(*(addr)));		\
+	 })
 
 #ifdef __cplusplus
 }
