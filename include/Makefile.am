@@ -83,6 +83,7 @@ nobase_include_HEADERS = \
 	urcu/uatomic/s390.h \
 	urcu/uatomic/sparc64.h \
 	urcu/uatomic/tile.h \
+	urcu/uatomic/uassert.h \
 	urcu/uatomic/x86.h \
 	urcu/urcu-bp.h \
 	urcu/urcu-futex.h \
