@@ -31,6 +31,9 @@ extern "C" {
 #define UATOMIC_HAS_ATOMIC_LLONG
 #endif
 
+/* Must be included after the UATOMIC_HAS_ATOMIC_* defines. */
+#include <urcu/uatomic/uassert.h>
+
 /*
  * Derived from AO_compare_and_swap() and AO_test_and_set_full().
  */
@@ -105,19 +108,18 @@ unsigned long __uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return 0;
 }
 
-#define _uatomic_cmpxchg(addr, old, _new)				      \
-	((__typeof__(*(addr))) __uatomic_cmpxchg((addr),		      \
-						caa_cast_long_keep_sign(old), \
-						caa_cast_long_keep_sign(_new),\
-						sizeof(*(addr))))
+#define _uatomic_cmpxchg(addr, old, _new)					\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) __uatomic_cmpxchg((addr),			\
+						caa_cast_long_keep_sign(old),	\
+						caa_cast_long_keep_sign(_new),	\
+						sizeof(*(addr)));		\
+	})
 
 /* xchg */
 
@@ -169,18 +171,17 @@ unsigned long __uatomic_exchange(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return 0;
 }
 
-#define _uatomic_xchg(addr, v)						      \
-	((__typeof__(*(addr))) __uatomic_exchange((addr),		      \
-						caa_cast_long_keep_sign(v),   \
-						sizeof(*(addr))))
+#define _uatomic_xchg(addr, v)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) __uatomic_exchange((addr),		\
+						caa_cast_long_keep_sign(v),	\
+						sizeof(*(addr)));		\
+	})
 
 /* uatomic_add_return */
 
@@ -236,18 +237,17 @@ unsigned long __uatomic_add_return(void *addr, unsigned long val,
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return 0;
 }
 
-#define _uatomic_add_return(addr, v)					    \
-	((__typeof__(*(addr))) __uatomic_add_return((addr),		    \
-						caa_cast_long_keep_sign(v), \
-						sizeof(*(addr))))
+#define _uatomic_add_return(addr, v)						\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) __uatomic_add_return((addr),		\
+						caa_cast_long_keep_sign(v),	\
+						sizeof(*(addr)));		\
+	})
 
 /* uatomic_and */
 
@@ -294,16 +294,15 @@ void __uatomic_and(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return;
 }
 
-#define _uatomic_and(addr, v)						   \
-	(__uatomic_and((addr), caa_cast_long_keep_sign(v), sizeof(*(addr))))
+#define _uatomic_and(addr, v)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		__uatomic_and((addr), caa_cast_long_keep_sign(v), sizeof(*(addr)));\
+	})
 
 /* uatomic_or */
 
@@ -350,16 +349,15 @@ void __uatomic_or(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return;
 }
 
-#define _uatomic_or(addr, v)						   \
-	(__uatomic_or((addr), caa_cast_long_keep_sign(v), sizeof(*(addr))))
+#define _uatomic_or(addr, v)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		__uatomic_or((addr), caa_cast_long_keep_sign(v), sizeof(*(addr)));\
+	})
 
 /* uatomic_add */
 
@@ -406,16 +404,15 @@ void __uatomic_add(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return;
 }
 
-#define _uatomic_add(addr, v)						   \
-	(__uatomic_add((addr), caa_cast_long_keep_sign(v), sizeof(*(addr))))
+#define _uatomic_add(addr, v)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		__uatomic_add((addr), caa_cast_long_keep_sign(v), sizeof(*(addr)));\
+	})
 
 
 /* uatomic_inc */
@@ -463,13 +460,15 @@ void __uatomic_inc(void *addr, int len)
 	}
 #endif
 	}
-	/* generate an illegal instruction. Cannot catch this with linker tricks
-	 * when optimizations are disabled. */
-	__asm__ __volatile__("ud2");
 	return;
 }
 
-#define _uatomic_inc(addr)	(__uatomic_inc((addr), sizeof(*(addr))))
+#define _uatomic_inc(addr)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		__uatomic_inc((addr), sizeof(*(addr)));				\
+	})
 
 /* uatomic_dec */
 
@@ -516,15 +515,15 @@ void __uatomic_dec(void *addr, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__("ud2");
 	return;
 }
 
-#define _uatomic_dec(addr)	(__uatomic_dec((addr), sizeof(*(addr))))
+#define _uatomic_dec(addr)							\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		__uatomic_dec((addr), sizeof(*(addr)));				\
+	})
 
 #ifdef URCU_ARCH_X86_NO_CAS
 
