@@ -28,6 +28,9 @@ extern "C" {
 #define UATOMIC_HAS_ATOMIC_LLONG
 #endif
 
+/* Must be included after the UATOMIC_HAS_ATOMIC_* defines. */
+#include <urcu/uatomic/uassert.h>
+
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 2)
 #define COMPILER_HAVE_SHORT_MEM_OPERAND
 #endif
@@ -99,17 +102,19 @@ unsigned long _uatomic_exchange(volatile void *addr, unsigned long val, int len)
 		return old_val;
 	}
 #endif
-	default:
-		__asm__ __volatile__(".long	0xd00d00");
 	}
 
 	return 0;
 }
 
-#define uatomic_xchg_mo(addr, v, mo)					\
-	(__typeof__(*(addr))) _uatomic_exchange((addr),			    \
-						caa_cast_long_keep_sign(v), \
-						sizeof(*(addr)))
+#define uatomic_xchg_mo(addr, v, mo)						\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_exchange((addr),			\
+						caa_cast_long_keep_sign(v),	\
+						sizeof(*(addr)));		\
+	})
 
 /* cmpxchg */
 
@@ -140,18 +145,20 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 		return old;
 	}
 #endif
-	default:
-		__asm__ __volatile__(".long	0xd00d00");
 	}
 
 	return 0;
 }
 
-#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)			\
-	(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			     \
-					       caa_cast_long_keep_sign(old), \
-					       caa_cast_long_keep_sign(_new),\
-					       sizeof(*(addr)))
+#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)				\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			\
+					       caa_cast_long_keep_sign(old),	\
+					       caa_cast_long_keep_sign(_new),	\
+					       sizeof(*(addr)));			\
+	})
 
 #ifdef __cplusplus
 }
