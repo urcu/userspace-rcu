@@ -18,11 +18,11 @@ primitives don't guarantee any memory barrier.
 
 Only atomic operations performed on integers (`int` and `long`, signed
 and unsigned) are supported on all architectures. Some architectures
-also support 1-byte and 2-byte atomic operations. Those respectively
-have `UATOMIC_HAS_ATOMIC_BYTE` and `UATOMIC_HAS_ATOMIC_SHORT` defined when
-`uatomic.h` is included. An architecture trying to perform an atomic write
-to a type size not supported by the architecture will trigger an illegal
-instruction.
+also support 1-byte, 2-byte and 8-byte atomic operations. Those respectively
+have `UATOMIC_HAS_ATOMIC_BYTE`, `UATOMIC_HAS_ATOMIC_SHORT` and
+`UATOMIC_HAS_ATOMIC_LLONG` defined when `uatomic.h` is included. Trying to
+perform an atomic operation on a type size not supported by the architecture
+will result in a static assert at compile time.
 
 In the description below, `type` is a type that can be atomically
 written to by the architecture. It needs to be at most word-sized, and
