@@ -9,29 +9,9 @@
  * System definitions.
  */
 
-#include <urcu/config.h>
 #include <urcu/compiler.h>
 #include <urcu/arch.h>
 
-#ifdef CONFIG_RCU_USE_ATOMIC_BUILTINS
-
-#define CMM_LOAD_SHARED(x)						\
-	__atomic_load_n(cmm_cast_volatile(&(x)), __ATOMIC_RELAXED)
-
-#define _CMM_LOAD_SHARED(x) CMM_LOAD_SHARED(x)
-
-#define CMM_STORE_SHARED(x, v)					\
-	__extension__						\
-	({							\
-		__typeof__(v) _v = (v);				\
-		__atomic_store_n(cmm_cast_volatile(&(x)), _v,	\
-				 __ATOMIC_RELAXED);		\
-		_v;						\
-	})
-
-#define _CMM_STORE_SHARED(x, v) CMM_STORE_SHARED(x, v)
-
-#else
 /*
  * Identify a shared load. A cmm_smp_rmc() or cmm_smp_mc() should come
  * before the load.
@@ -65,7 +45,5 @@
 		cmm_smp_wmc();						\
 		_v = _v;	/* Work around clang "unused result" */	\
 	})
-
-#endif	/* CONFIG_RCU_USE_ATOMIC_BUILTINS */
 
 #endif /* _URCU_SYSTEM_H */
