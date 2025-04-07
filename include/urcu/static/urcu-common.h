@@ -79,8 +79,8 @@ struct urcu_reader {
  */
 static inline void urcu_common_wake_up_gp(struct urcu_gp *gp)
 {
-	if (caa_unlikely(uatomic_read(&gp->futex) == -1)) {
-		uatomic_set(&gp->futex, 0);
+	if (caa_unlikely(uatomic_load(&gp->futex) == -1)) {
+		uatomic_store(&gp->futex, 0);
 		/*
 		 * Ignoring return value until we can make this function
 		 * return something (because urcu_die() is not publicly
@@ -101,7 +101,7 @@ static inline enum urcu_state urcu_common_reader_state(struct urcu_gp *gp,
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = uatomic_load(ctr, CMM_RELAXED);
+	v = uatomic_load(ctr);
 	cmm_annotate_group_mem_acquire(group, ctr);
 
 	if (!(v & URCU_GP_CTR_NEST_MASK))

@@ -67,12 +67,12 @@ extern DECLARE_URCU_TLS(struct urcu_qsbr_reader, urcu_qsbr_reader);
  */
 static inline void urcu_qsbr_wake_up_gp(void)
 {
-	if (caa_unlikely(_CMM_LOAD_SHARED(URCU_TLS(urcu_qsbr_reader).waiting))) {
-		_CMM_STORE_SHARED(URCU_TLS(urcu_qsbr_reader).waiting, 0);
+	if (caa_unlikely(uatomic_load(&URCU_TLS(urcu_qsbr_reader).waiting))) {
+		uatomic_store(&URCU_TLS(urcu_qsbr_reader).waiting, 0);
 		cmm_smp_mb();
-		if (uatomic_read(&urcu_qsbr_gp.futex) != -1)
+		if (uatomic_load(&urcu_qsbr_gp.futex) != -1)
 			return;
-		uatomic_set(&urcu_qsbr_gp.futex, 0);
+		uatomic_store(&urcu_qsbr_gp.futex, 0);
 		/*
 		 * Ignoring return value until we can make this function
 		 * return something (because urcu_die() is not publicly
@@ -88,7 +88,7 @@ static inline enum urcu_state urcu_qsbr_reader_state(unsigned long *ctr,
 {
 	unsigned long v;
 
-	v = uatomic_load(ctr, CMM_RELAXED);
+	v = uatomic_load(ctr);
 	cmm_annotate_group_mem_acquire(group, ctr);
 
 	if (!v)
@@ -169,7 +169,7 @@ static inline void _urcu_qsbr_quiescent_state(void)
 	unsigned long gp_ctr;
 
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
-	gp_ctr = uatomic_load(&urcu_qsbr_gp.ctr, CMM_RELAXED);
+	gp_ctr = uatomic_load(&urcu_qsbr_gp.ctr);
 	if (gp_ctr == URCU_TLS(urcu_qsbr_reader).ctr)
 		return;
 	_urcu_qsbr_quiescent_state_update_and_wakeup(gp_ctr);
@@ -207,9 +207,9 @@ static inline void _urcu_qsbr_thread_online(void)
 
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
-	ctr = uatomic_load(&urcu_qsbr_gp.ctr, CMM_RELAXED);
+	ctr = uatomic_load(&urcu_qsbr_gp.ctr);
 	cmm_annotate_mem_acquire(&urcu_qsbr_gp.ctr);
-	uatomic_store(pctr, ctr, CMM_RELAXED);
+	uatomic_store(pctr, ctr);
 	cmm_smp_mb();
 }
 

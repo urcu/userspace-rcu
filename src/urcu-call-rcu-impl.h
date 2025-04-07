@@ -230,7 +230,7 @@ static void call_rcu_wait(struct call_rcu_data *crdp)
 {
 	/* Read call_rcu list before read futex */
 	cmm_smp_mb();
-	while (uatomic_read(&crdp->futex) == -1) {
+	while (uatomic_load(&crdp->futex) == -1) {
 		if (!futex_async(&crdp->futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
 			/*
 			 * Prior queued wakeups queued by unrelated code
@@ -260,8 +260,8 @@ static void call_rcu_wake_up(struct call_rcu_data *crdp)
 {
 	/* Write to call_rcu list before reading/writing futex */
 	cmm_smp_mb();
-	if (caa_unlikely(uatomic_read(&crdp->futex) == -1)) {
-		uatomic_set(&crdp->futex, 0);
+	if (caa_unlikely(uatomic_load(&crdp->futex) == -1)) {
+		uatomic_store(&crdp->futex, 0);
 		if (futex_async(&crdp->futex, FUTEX_WAKE, 1,
 				NULL, NULL, 0) < 0)
 			urcu_die(errno);
@@ -272,7 +272,7 @@ static void call_rcu_completion_wait(struct call_rcu_completion *completion)
 {
 	/* Read completion barrier count before read futex */
 	cmm_smp_mb();
-	while (uatomic_read(&completion->futex) == -1) {
+	while (uatomic_load(&completion->futex) == -1) {
 		if (!futex_async(&completion->futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
 			/*
 			 * Prior queued wakeups queued by unrelated code
@@ -302,8 +302,8 @@ static void call_rcu_completion_wake_up(struct call_rcu_completion *completion)
 {
 	/* Write to completion barrier count before reading/writing futex */
 	cmm_smp_mb();
-	if (caa_unlikely(uatomic_read(&completion->futex) == -1)) {
-		uatomic_set(&completion->futex, 0);
+	if (caa_unlikely(uatomic_load(&completion->futex) == -1)) {
+		uatomic_store(&completion->futex, 0);
 		if (futex_async(&completion->futex, FUTEX_WAKE, 1,
 				NULL, NULL, 0) < 0)
 			urcu_die(errno);
@@ -316,7 +316,7 @@ static void *call_rcu_thread(void *arg)
 {
 	unsigned long cbcount;
 	struct call_rcu_data *crdp = (struct call_rcu_data *) arg;
-	int rt = !!(uatomic_read(&crdp->flags) & URCU_CALL_RCU_RT);
+	int rt = !!(uatomic_load(&crdp->flags) & URCU_CALL_RCU_RT);
 
 	if (set_thread_cpu_affinity(crdp))
 		urcu_die(errno);
@@ -341,7 +341,7 @@ static void *call_rcu_thread(void *arg)
 		if (set_thread_cpu_affinity(crdp))
 			urcu_die(errno);
 
-		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSE) {
+		if (uatomic_load(&crdp->flags) & URCU_CALL_RCU_PAUSE) {
 			/*
 			 * Pause requested. Become quiescent: remove
 			 * ourself from all global lists, and don't
@@ -351,7 +351,7 @@ static void *call_rcu_thread(void *arg)
 			rcu_unregister_thread();
 			cmm_smp_mb__before_uatomic_or();
 			uatomic_or(&crdp->flags, URCU_CALL_RCU_PAUSED);
-			while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSE) != 0)
+			while ((uatomic_load(&crdp->flags) & URCU_CALL_RCU_PAUSE) != 0)
 				(void) poll(NULL, 0, 1);
 			uatomic_and(&crdp->flags, ~URCU_CALL_RCU_PAUSED);
 			cmm_smp_mb__after_uatomic_and();
@@ -377,7 +377,7 @@ static void *call_rcu_thread(void *arg)
 			}
 			uatomic_sub(&crdp->qlen, cbcount);
 		}
-		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOP)
+		if (uatomic_load(&crdp->flags) & URCU_CALL_RCU_STOP)
 			break;
 		rcu_thread_offline();
 		if (!rt) {
@@ -404,7 +404,7 @@ static void *call_rcu_thread(void *arg)
 		 * Read call_rcu list before write futex.
 		 */
 		cmm_smp_mb();
-		uatomic_set(&crdp->futex, 0);
+		uatomic_store(&crdp->futex, 0);
 	}
 	uatomic_or(&crdp->flags, URCU_CALL_RCU_STOPPED);
 	rcu_unregister_thread();
@@ -692,7 +692,7 @@ int create_all_cpu_call_rcu_data(unsigned long flags)
  */
 static void wake_call_rcu_thread(struct call_rcu_data *crdp)
 {
-	if (!(_CMM_LOAD_SHARED(crdp->flags) & URCU_CALL_RCU_RT))
+	if (!(uatomic_load(&crdp->flags) & URCU_CALL_RCU_RT))
 		call_rcu_wake_up(crdp);
 }
 
@@ -765,10 +765,10 @@ void _call_rcu_data_free(struct call_rcu_data *crdp, unsigned int flags)
 	if (crdp == NULL || crdp == default_call_rcu_data) {
 		return;
 	}
-	if ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOPPED) == 0) {
+	if ((uatomic_load(&crdp->flags) & URCU_CALL_RCU_STOPPED) == 0) {
 		uatomic_or(&crdp->flags, URCU_CALL_RCU_STOP);
 		wake_call_rcu_thread(crdp);
-		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_STOPPED) == 0)
+		while ((uatomic_load(&crdp->flags) & URCU_CALL_RCU_STOPPED) == 0)
 			(void) poll(NULL, 0, 1);
 	}
 	call_rcu_lock(&call_rcu_mutex);
@@ -782,7 +782,7 @@ void _call_rcu_data_free(struct call_rcu_data *crdp, unsigned int flags)
 			&default_call_rcu_data->cbs_tail,
 			&crdp->cbs_head, &crdp->cbs_tail);
 		uatomic_add(&default_call_rcu_data->qlen,
-			    uatomic_read(&crdp->qlen));
+			    uatomic_load(&crdp->qlen));
 		wake_call_rcu_thread(default_call_rcu_data);
 	}
 
@@ -923,7 +923,7 @@ void rcu_barrier(void)
 		uatomic_dec(&completion->futex);
 		/* Decrement futex before reading barrier_count */
 		cmm_smp_mb();
-		if (!uatomic_read(&completion->barrier_count))
+		if (!uatomic_load(&completion->barrier_count))
 			break;
 		call_rcu_completion_wait(completion);
 	}
@@ -958,7 +958,7 @@ void call_rcu_before_fork(void)
 		wake_call_rcu_thread(crdp);
 	}
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
-		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSED) == 0)
+		while ((uatomic_load(&crdp->flags) & URCU_CALL_RCU_PAUSED) == 0)
 			(void) poll(NULL, 0, 1);
 	}
 }
@@ -976,7 +976,7 @@ void call_rcu_after_fork_parent(void)
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list)
 		uatomic_and(&crdp->flags, ~URCU_CALL_RCU_PAUSE);
 	cds_list_for_each_entry(crdp, &call_rcu_data_list, list) {
-		while ((uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSED) != 0)
+		while ((uatomic_load(&crdp->flags) & URCU_CALL_RCU_PAUSED) != 0)
 			(void) poll(NULL, 0, 1);
 	}
 	atfork = registered_rculfhash_atfork;
@@ -1027,7 +1027,7 @@ void call_rcu_after_fork_child(void)
 	cds_list_for_each_entry_safe(crdp, next, &call_rcu_data_list, list) {
 		if (crdp == default_call_rcu_data)
 			continue;
-		uatomic_set(&crdp->flags, URCU_CALL_RCU_STOPPED);
+		uatomic_store(&crdp->flags, URCU_CALL_RCU_STOPPED);
 		/*
 		 * Do not join the thread because it does not exist in
 		 * the child.
@@ -1038,7 +1038,7 @@ void call_rcu_after_fork_child(void)
 
 void urcu_register_rculfhash_atfork(struct urcu_atfork *atfork)
 {
-	if (CMM_LOAD_SHARED(registered_rculfhash_atfork))
+	if (uatomic_load(&registered_rculfhash_atfork))
 		return;
 	call_rcu_lock(&call_rcu_mutex);
 	if (!registered_rculfhash_atfork)

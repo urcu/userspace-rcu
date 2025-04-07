@@ -139,8 +139,8 @@ static void mutex_lock_defer(pthread_mutex_t *mutex)
  */
 static void wake_up_defer(void)
 {
-	if (caa_unlikely(uatomic_read(&defer_thread_futex) == -1)) {
-		uatomic_set(&defer_thread_futex, 0);
+	if (caa_unlikely(uatomic_load(&defer_thread_futex) == -1)) {
+		uatomic_store(&defer_thread_futex, 0);
 		if (futex_noasync(&defer_thread_futex, FUTEX_WAKE, 1,
 				NULL, NULL, 0) < 0)
 			urcu_die(errno);
@@ -154,7 +154,7 @@ static unsigned long rcu_defer_num_callbacks(void)
 
 	mutex_lock_defer(&rcu_defer_mutex);
 	cds_list_for_each_entry(index, &registry_defer, list) {
-		head = CMM_LOAD_SHARED(index->head);
+		head = uatomic_load(&index->head);
 		num_items += head - index->tail;
 	}
 	mutex_unlock(&rcu_defer_mutex);
@@ -170,17 +170,17 @@ static void wait_defer(void)
 	/* Write futex before read queue */
 	/* Write futex before read defer_thread_stop */
 	cmm_smp_mb();
-	if (_CMM_LOAD_SHARED(defer_thread_stop)) {
-		uatomic_set(&defer_thread_futex, 0);
+	if (uatomic_load(&defer_thread_stop)) {
+		uatomic_store(&defer_thread_futex, 0);
 		pthread_exit(0);
 	}
 	if (rcu_defer_num_callbacks()) {
 		cmm_smp_mb();	/* Read queue before write futex */
 		/* Callbacks are queued, don't wait. */
-		uatomic_set(&defer_thread_futex, 0);
+		uatomic_store(&defer_thread_futex, 0);
 	} else {
 		cmm_smp_rmb();	/* Read queue before read futex */
-		while (uatomic_read(&defer_thread_futex) == -1) {
+		while (uatomic_load(&defer_thread_futex) == -1) {
 			if (!futex_noasync(&defer_thread_futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
 				/*
 				 * Prior queued wakeups queued by unrelated code
@@ -224,21 +224,21 @@ static void rcu_defer_barrier_queue(struct defer_queue *queue,
 
 	for (i = queue->tail; i != head;) {
 		cmm_smp_rmb();       /* read head before q[]. */
-		p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+		p = uatomic_load(&(queue->q[i++ & DEFER_QUEUE_MASK]));
 		if (caa_unlikely(DQ_IS_FCT_BIT(p))) {
 			DQ_CLEAR_FCT_BIT(p);
 			queue->last_fct_out = p;
-			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = uatomic_load(&(queue->q[i++ & DEFER_QUEUE_MASK]));
 		} else if (caa_unlikely(p == DQ_FCT_MARK)) {
-			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = uatomic_load(&(queue->q[i++ & DEFER_QUEUE_MASK]));
 			queue->last_fct_out = p;
-			p = CMM_LOAD_SHARED(queue->q[i++ & DEFER_QUEUE_MASK]);
+			p = uatomic_load(&(queue->q[i++ & DEFER_QUEUE_MASK]));
 		}
 		fct = queue->last_fct_out;
 		fct(p);
 	}
 	cmm_smp_mb();	/* push tail after having used q[] */
-	CMM_STORE_SHARED(queue->tail, i);
+	uatomic_store(&queue->tail, i);
 }
 
 static void _rcu_defer_barrier_thread(void)
@@ -283,7 +283,7 @@ void rcu_defer_barrier(void)
 
 	mutex_lock_defer(&rcu_defer_mutex);
 	cds_list_for_each_entry(index, &registry_defer, list) {
-		index->last_head = CMM_LOAD_SHARED(index->head);
+		index->last_head = uatomic_load(&index->head);
 		num_items += index->last_head - index->tail;
 	}
 	if (caa_likely(!num_items)) {
@@ -312,7 +312,7 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 	 * thread.
 	 */
 	head = URCU_TLS(defer_queue).head;
-	tail = CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail);
+	tail = uatomic_load(&URCU_TLS(defer_queue).tail);
 
 	/*
 	 * If queue is full, or reached threshold. Empty queue ourself.
@@ -321,7 +321,7 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 	if (caa_unlikely(head - tail >= DEFER_QUEUE_SIZE - 2)) {
 		urcu_posix_assert(head - tail <= DEFER_QUEUE_SIZE);
 		rcu_defer_barrier_thread();
-		urcu_posix_assert(head - CMM_LOAD_SHARED(URCU_TLS(defer_queue).tail) == 0);
+		urcu_posix_assert(head - uatomic_load(&URCU_TLS(defer_queue).tail) == 0);
 	}
 
 	/*
@@ -345,20 +345,20 @@ static void _defer_rcu(void (*fct)(void *p), void *p)
 			|| p == DQ_FCT_MARK)) {
 		URCU_TLS(defer_queue).last_fct_in = fct;
 		if (caa_unlikely(DQ_IS_FCT_BIT(fct) || fct == DQ_FCT_MARK)) {
-			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
+			uatomic_store(&URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      DQ_FCT_MARK);
-			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
+			uatomic_store(&URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		} else {
 			DQ_SET_FCT_BIT(fct);
-			_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
+			uatomic_store(&URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK],
 				      fct);
 		}
 	}
-	_CMM_STORE_SHARED(URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK], p);
+	uatomic_store(&URCU_TLS(defer_queue).q[head++ & DEFER_QUEUE_MASK], p);
 	cmm_smp_wmb();	/* Publish new pointer before head */
 			/* Write q[] before head. */
-	CMM_STORE_SHARED(URCU_TLS(defer_queue).head, head);
+	uatomic_store(&URCU_TLS(defer_queue).head, head);
 	cmm_smp_mb();	/* Write queue head before read futex */
 	/*
 	 * Wake-up any waiting defer thread.
@@ -415,7 +415,7 @@ static void stop_defer_thread(void)
 	int ret;
 	void *tret;
 
-	_CMM_STORE_SHARED(defer_thread_stop, 1);
+	uatomic_store(&defer_thread_stop, 1);
 	/* Store defer_thread_stop before testing futex */
 	cmm_smp_mb();
 	wake_up_defer();
@@ -423,9 +423,9 @@ static void stop_defer_thread(void)
 	ret = pthread_join(tid_defer, &tret);
 	urcu_posix_assert(!ret);
 
-	CMM_STORE_SHARED(defer_thread_stop, 0);
+	uatomic_store(&defer_thread_stop, 0);
 	/* defer thread should always exit when futex value is 0 */
-	urcu_posix_assert(uatomic_read(&defer_thread_futex) == 0);
+	urcu_posix_assert(uatomic_load(&defer_thread_futex) == 0);
 }
 
 int rcu_defer_register_thread(void)

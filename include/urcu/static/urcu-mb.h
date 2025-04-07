@@ -57,10 +57,10 @@ extern DECLARE_URCU_TLS(struct urcu_reader, urcu_mb_reader);
 static inline void _urcu_mb_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(urcu_mb_reader).ctr, _CMM_LOAD_SHARED(urcu_mb_gp.ctr));
+		uatomic_store(&URCU_TLS(urcu_mb_reader).ctr, uatomic_load(&urcu_mb_gp.ctr));
 		cmm_smp_mb();
 	} else
-		_CMM_STORE_SHARED(URCU_TLS(urcu_mb_reader).ctr, tmp + URCU_GP_COUNT);
+		uatomic_store(&URCU_TLS(urcu_mb_reader).ctr, tmp + URCU_GP_COUNT);
 }
 
 /*
@@ -100,7 +100,7 @@ static inline void _urcu_mb_read_unlock_update_and_wakeup(unsigned long tmp)
 		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_SEQ_CST);
 		urcu_common_wake_up_gp(&urcu_mb_gp);
 	} else {
-		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
+		uatomic_store(ctr, tmp - URCU_GP_COUNT);
 	}
 }
 

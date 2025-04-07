@@ -307,13 +307,13 @@ void urcu_bp_synchronize_rcu(void)
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
 	cmm_annotate_group_mem_release(&release_group, &rcu_gp.ctr);
-	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_BP_GP_CTR_PHASE, CMM_RELAXED);
+	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_BP_GP_CTR_PHASE);
 
 	/*
 	 * Must commit qparity update to memory before waiting for other parity
 	 * quiescent state. Failure to do so could result in the writer waiting
 	 * forever while new readers are always accessing data (no progress).
-	 * Ensured by CMM_STORE_SHARED and CMM_LOAD_SHARED.
+	 * Ensured by uatomic_store and uatomic_load.
 	 */
 
 	/*
@@ -751,7 +751,7 @@ void *urcu_bp_dereference_sym(void *p)
 void *urcu_bp_set_pointer_sym(void **p, void *v)
 {
 	cmm_wmb();
-	uatomic_set(p, v);
+	uatomic_store(p, v);
 	return v;
 }
 

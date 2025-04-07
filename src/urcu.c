@@ -138,9 +138,9 @@ static void mutex_lock(pthread_mutex_t *mutex)
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR)
 			urcu_die(ret);
-		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
+		if (uatomic_load(&URCU_TLS(rcu_reader).need_mb)) {
 			cmm_smp_mb();
-			_CMM_STORE_SHARED(URCU_TLS(rcu_reader).need_mb, 0);
+			uatomic_store(&URCU_TLS(rcu_reader).need_mb, 0);
 			cmm_smp_mb();
 		}
 		(void) poll(NULL, 0, 10);
@@ -191,7 +191,7 @@ static void wait_gp(void)
 	smp_mb_master();
 	/* Temporarily unlock the registry lock. */
 	mutex_unlock(&rcu_registry_lock);
-	while (uatomic_read(&rcu_gp.futex) == -1) {
+	while (uatomic_load(&rcu_gp.futex) == -1) {
 		if (!futex_async(&rcu_gp.futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
 			/*
 			 * Prior queued wakeups queued by unrelated code
@@ -279,7 +279,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master();
-				uatomic_set(&rcu_gp.futex, 0);
+				uatomic_store(&rcu_gp.futex, 0);
 			}
 			break;
 		} else {
@@ -307,7 +307,7 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 			if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
 				/* Read reader_gp before write futex */
 				smp_mb_master();
-				uatomic_set(&rcu_gp.futex, 0);
+				uatomic_store(&rcu_gp.futex, 0);
 			}
 			break;
 		} else {
@@ -408,7 +408,7 @@ void synchronize_rcu(void)
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
 	cmm_annotate_group_mem_release(&release_group, &rcu_gp.ctr);
-	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_GP_CTR_PHASE, CMM_RELAXED);
+	uatomic_store(&rcu_gp.ctr, rcu_gp.ctr ^ URCU_GP_CTR_PHASE);
 
 	/*
 	 * Must commit rcu_gp.ctr update to memory before waiting for quiescent
