@@ -113,9 +113,9 @@ void urcu_wait_node_init(struct urcu_wait_node *node,
 static inline
 void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
-	urcu_posix_assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
+	urcu_posix_assert(uatomic_load(&wait->state) == URCU_WAIT_WAITING);
 	uatomic_store(&wait->state, URCU_WAIT_WAKEUP, CMM_RELEASE);
-	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
+	if (!(uatomic_load(&wait->state) & URCU_WAIT_RUNNING)) {
 		if (futex_noasync(&wait->state, FUTEX_WAKE, 1,
 				NULL, NULL, 0) < 0)
 			urcu_die(errno);
@@ -175,13 +175,13 @@ skip_futex_wait:
 	 * memory allocated for struct urcu_wait.
 	 */
 	for (i = 0; i < URCU_WAIT_ATTEMPTS; i++) {
-		if (uatomic_load(&wait->state, CMM_RELAXED) & URCU_WAIT_TEARDOWN)
+		if (uatomic_load(&wait->state) & URCU_WAIT_TEARDOWN)
 			break;
 		caa_cpu_relax();
 	}
 	while (!(uatomic_load(&wait->state, CMM_ACQUIRE) & URCU_WAIT_TEARDOWN))
 		poll(NULL, 0, 10);
-	urcu_posix_assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
+	urcu_posix_assert(uatomic_load(&wait->state) & URCU_WAIT_TEARDOWN);
 }
 
 static inline
@@ -195,7 +195,7 @@ void urcu_wake_all_waiters(struct urcu_waiters *waiters)
 			caa_container_of(iter, struct urcu_wait_node, node);
 
 		/* Don't wake already running threads */
-		if (uatomic_load(&wait_node->state, CMM_RELAXED) & URCU_WAIT_RUNNING)
+		if (uatomic_load(&wait_node->state) & URCU_WAIT_RUNNING)
 			continue;
 		urcu_adaptative_wake_up(wait_node);
 	}

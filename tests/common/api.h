@@ -103,7 +103,7 @@ static int __smp_thread_id(void)
 	thread_id_t tid = pthread_self();
 
 	for (i = 0; i < NR_THREADS; i++) {
-		if (uatomic_read(&__thread_id_map[i]) == tid) {
+		if (uatomic_load(&__thread_id_map[i]) == tid) {
 			long v = i + 1;  /* must be non-NULL. */
 
 			if (pthread_setspecific(thread_id_key, (void *)v) != 0) {
@@ -168,7 +168,7 @@ static void *wait_thread(thread_id_t tid)
 	void *vp;
 
 	for (i = 0; i < NR_THREADS; i++) {
-		if (uatomic_read(&__thread_id_map[i]) == tid)
+		if (uatomic_load(&__thread_id_map[i]) == tid)
 			break;
 	}
 	if (i >= NR_THREADS){

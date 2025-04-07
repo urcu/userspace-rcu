@@ -111,12 +111,12 @@ static void set_affinity(void)
  */
 static int test_duration_dequeue(void)
 {
-	return !uatomic_load(&test_stop_dequeue, CMM_RELAXED);
+	return !uatomic_load(&test_stop_dequeue);
 }
 
 static int test_duration_enqueue(void)
 {
-	return !uatomic_load(&test_stop_enqueue, CMM_RELAXED);
+	return !uatomic_load(&test_stop_enqueue);
 }
 
 static DEFINE_URCU_TLS(unsigned long long, nr_dequeues);
@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 	uatomic_store(&test_stop_enqueue, 1, CMM_RELEASE);
 
 	if (test_wait_empty) {
-		while (nr_enqueuers != uatomic_read(&test_enqueue_stopped)) {
+		while (nr_enqueuers != uatomic_load(&test_enqueue_stopped)) {
 			sleep(1);
 		}
 		while (!cds_wfs_empty(&s)) {
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	uatomic_store(&test_stop_dequeue, 1, CMM_RELAXED);
+	uatomic_store(&test_stop_dequeue, 1);
 
 	for (i_thr = 0; i_thr < nr_enqueuers; i_thr++) {
 		err = pthread_join(tid_enqueuer[i_thr], &tret);

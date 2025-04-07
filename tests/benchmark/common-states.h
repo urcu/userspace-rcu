@@ -24,7 +24,7 @@ static inline void begin_test(void)
 
 static inline void end_test(void)
 {
-	uatomic_store(&_test_stop, 1, CMM_RELAXED);
+	uatomic_store(&_test_stop, 1);
 }
 
 static inline void test_for(unsigned int duration)
@@ -46,10 +46,10 @@ static inline void wait_until_go(void)
  */
 static inline int test_duration_write(void)
 {
-	return !uatomic_load(&_test_stop, CMM_RELAXED);
+	return !uatomic_load(&_test_stop);
 }
 
 static inline int test_duration_read(void)
 {
-	return !uatomic_load(&_test_stop, CMM_RELAXED);
+	return !uatomic_load(&_test_stop);
 }

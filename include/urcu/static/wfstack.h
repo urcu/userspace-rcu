@@ -110,7 +110,7 @@ static inline bool _cds_wfs_empty(cds_wfs_stack_const_ptr_t u_stack)
 {
 	const struct __cds_wfs_stack *s = u_stack._s;
 
-	return ___cds_wfs_end(uatomic_load(&s->head, CMM_RELAXED));
+	return ___cds_wfs_end(uatomic_load(&s->head));
 }
 
 /*

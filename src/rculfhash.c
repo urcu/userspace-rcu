@@ -657,7 +657,7 @@ static void mutex_lock(pthread_mutex_t *mutex)
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR)
 			urcu_die(ret);
-		if (CMM_LOAD_SHARED(URCU_TLS(rcu_reader).need_mb)) {
+		if (uatomic_load(&URCU_TLS(rcu_reader).need_mb)) {
 			uatomic_store(&URCU_TLS(rcu_reader).need_mb, 0, CMM_SEQ_CST);
 		}
 		(void) poll(NULL, 0, 10);
@@ -807,7 +807,7 @@ void check_resize(struct cds_lfht *ht, unsigned long size, uint32_t chain_len)
 
 	if (!(ht->flags & CDS_LFHT_AUTO_RESIZE))
 		return;
-	count = uatomic_read(&ht->count);
+	count = uatomic_load(&ht->count);
 	/*
 	 * Use bucket-local length for small table expand and for
 	 * environments lacking per-cpu data support.
@@ -913,7 +913,7 @@ unsigned long _uatomic_xchg_monotonic_increase(unsigned long *ptr,
 {
 	unsigned long old1, old2;
 
-	old1 = uatomic_read(ptr);
+	old1 = uatomic_load(ptr);
 	do {
 		old2 = old1;
 		if (old2 >= v) {
@@ -1070,7 +1070,7 @@ int _cds_lfht_replace(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(old_node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, new_node);
 
-	urcu_posix_assert(is_removed(CMM_LOAD_SHARED(old_node->next)));
+	urcu_posix_assert(is_removed(uatomic_load(&old_node->next)));
 	return 0;
 }
 
@@ -1219,7 +1219,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	 * logical removal flag). Return -ENOENT if the node had
 	 * previously been removed.
 	 */
-	next = CMM_LOAD_SHARED(node->next);	/* next is not dereferenced */
+	next = uatomic_load(&node->next);	/* next is not dereferenced */
 	if (caa_unlikely(is_removed(next)))
 		return -ENOENT;
 	urcu_posix_assert(!is_bucket(next));
@@ -1248,7 +1248,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	bucket = lookup_bucket(ht, size, bit_reverse_ulong(node->reverse_hash));
 	_cds_lfht_gc_bucket(bucket, node);
 
-	urcu_posix_assert(is_removed(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(is_removed(uatomic_load(&node->next)));
 	/*
 	 * Last phase: atomically exchange node->next with a version
 	 * having "REMOVAL_OWNER_FLAG" set. If the returned node->next
@@ -1262,7 +1262,7 @@ int _cds_lfht_del(struct cds_lfht *ht, unsigned long size,
 	 * was already set).
 	 */
 	if (!is_removal_owner(uatomic_xchg(&node->next,
-			flag_removal_owner(uatomic_load(&node->next, CMM_RELAXED)))))
+			flag_removal_owner(uatomic_load(&node->next)))))
 		return 0;
 	else
 		return -ENOENT;
@@ -1415,7 +1415,7 @@ void init_table(struct cds_lfht *ht,
 		dbg_printf("init order %lu len: %lu\n", i, len);
 
 		/* Stop expand if the resize target changes under us */
-		if (CMM_LOAD_SHARED(ht->resize_target) < (1UL << i))
+		if (uatomic_load(&ht->resize_target) < (1UL << i))
 			break;
 
 		cds_lfht_alloc_bucket_table(ht, i);
@@ -1434,7 +1434,7 @@ void init_table(struct cds_lfht *ht,
 		uatomic_store(&ht->size, 1UL << i, CMM_RELEASE);
 
 		dbg_printf("init new size: %lu\n", 1UL << i);
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+		if (uatomic_load(&ht->in_progress_destroy))
 			break;
 	}
 }
@@ -1520,11 +1520,11 @@ void fini_table(struct cds_lfht *ht,
 		dbg_printf("fini order %ld len: %lu\n", i, len);
 
 		/* Stop shrink if the resize target changes under us */
-		if (CMM_LOAD_SHARED(ht->resize_target) > (1UL << (i - 1)))
+		if (uatomic_load(&ht->resize_target) > (1UL << (i - 1)))
 			break;
 
 		cmm_smp_wmb();	/* populate data before RCU size */
-		CMM_STORE_SHARED(ht->size, 1UL << (i - 1));
+		uatomic_store(&ht->size, 1UL << (i - 1));
 
 		/*
 		 * We need to wait for all add operations to reach Q.S. (and
@@ -1547,7 +1547,7 @@ void fini_table(struct cds_lfht *ht,
 		free_by_rcu_order = i;
 
 		dbg_printf("fini new size: %lu\n", 1UL << i);
-		if (CMM_LOAD_SHARED(ht->in_progress_destroy))
+		if (uatomic_load(&ht->in_progress_destroy))
 			break;
 	}
 
@@ -1759,7 +1759,7 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		}
 		node = clear_flag(next);
 	}
-	urcu_posix_assert(!node || !is_bucket(CMM_LOAD_SHARED(node->next)));
+	urcu_posix_assert(!node || !is_bucket(uatomic_load(&node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1794,7 +1794,7 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht __attribute__((__unused__)),
 		}
 		node = clear_flag(next);
 	}
-	urcu_posix_assert(!node || !is_bucket(uatomic_load(&node->next, CMM_RELAXED)));
+	urcu_posix_assert(!node || !is_bucket(uatomic_load(&node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1818,7 +1818,7 @@ void cds_lfht_next(struct cds_lfht *ht __attribute__((__unused__)),
 		}
 		node = clear_flag(next);
 	}
-	urcu_posix_assert(!node || !is_bucket(uatomic_load(&node->next, CMM_RELAXED)));
+	urcu_posix_assert(!node || !is_bucket(uatomic_load(&node->next)));
 	iter->node = node;
 	iter->next = next;
 }
@@ -1924,7 +1924,7 @@ int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node)
 
 int cds_lfht_is_node_deleted(const struct cds_lfht_node *node)
 {
-	return is_removed(CMM_LOAD_SHARED(node->next));
+	return is_removed(uatomic_load(&node->next));
 }
 
 static
@@ -2025,7 +2025,7 @@ int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr)
 		if (!cds_lfht_is_empty(ht))
 			return -EPERM;
 		/* Cancel ongoing resize operations. */
-		uatomic_store(&ht->in_progress_destroy, 1, CMM_RELAXED);
+		uatomic_store(&ht->in_progress_destroy, 1);
 		if (attr) {
 			*attr = ht->caller_resize_attr;
 			ht->caller_resize_attr = NULL;
@@ -2066,8 +2066,8 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		int i;
 
 		for (i = 0; i < split_count_mask + 1; i++) {
-			*approx_before += uatomic_read(&ht->split_count[i].add);
-			*approx_before -= uatomic_read(&ht->split_count[i].del);
+			*approx_before += uatomic_load(&ht->split_count[i].add);
+			*approx_before -= uatomic_load(&ht->split_count[i].del);
 		}
 	}
 
@@ -2095,8 +2095,8 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		int i;
 
 		for (i = 0; i < split_count_mask + 1; i++) {
-			*approx_after += uatomic_read(&ht->split_count[i].add);
-			*approx_after -= uatomic_read(&ht->split_count[i].del);
+			*approx_after += uatomic_load(&ht->split_count[i].add);
+			*approx_after -= uatomic_load(&ht->split_count[i].del);
 		}
 	}
 }
@@ -2145,22 +2145,22 @@ void _do_cds_lfht_resize(struct cds_lfht *ht)
 	 * Resize table, re-do if the target size has changed under us.
 	 */
 	do {
-		if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED))
+		if (uatomic_load(&ht->in_progress_destroy))
 			break;
 
-		uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
+		uatomic_store(&ht->resize_initiated, 1);
 
 		old_size = ht->size;
-		new_size = uatomic_load(&ht->resize_target, CMM_RELAXED);
+		new_size = uatomic_load(&ht->resize_target);
 		if (old_size < new_size)
 			_do_cds_lfht_grow(ht, old_size, new_size);
 		else if (old_size > new_size)
 			_do_cds_lfht_shrink(ht, old_size, new_size);
 
-		uatomic_store(&ht->resize_initiated, 0, CMM_RELAXED);
+		uatomic_store(&ht->resize_initiated, 0);
 		/* write resize_initiated before read resize_target */
 		cmm_smp_mb();
-	} while (ht->size != uatomic_load(&ht->resize_target, CMM_RELAXED));
+	} while (ht->size != uatomic_load(&ht->resize_target));
 }
 
 static
@@ -2175,7 +2175,7 @@ void resize_target_update_count(struct cds_lfht *ht,
 {
 	count = max(count, MIN_TABLE_SIZE);
 	count = min(count, ht->max_nr_buckets);
-	uatomic_set(&ht->resize_target, count);
+	uatomic_store(&ht->resize_target, count);
 }
 
 void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
@@ -2185,7 +2185,7 @@ void cds_lfht_resize(struct cds_lfht *ht, unsigned long new_size)
 	/*
 	 * Set flags has early as possible even in contention case.
 	 */
-	uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
+	uatomic_store(&ht->resize_initiated, 1);
 
 	mutex_lock(&ht->resize_mutex);
 	_do_cds_lfht_resize(ht);
@@ -2216,8 +2216,8 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 	 * Store to resize_target is before read resize_initiated as guaranteed
 	 * by either cmpxchg or _uatomic_xchg_monotonic_increase.
 	 */
-	if (!uatomic_load(&ht->resize_initiated, CMM_RELAXED)) {
-		if (uatomic_load(&ht->in_progress_destroy, CMM_RELAXED)) {
+	if (!uatomic_load(&ht->resize_initiated)) {
+		if (uatomic_load(&ht->in_progress_destroy)) {
 			return;
 		}
 		work = ht->alloc->malloc(ht->alloc->state, sizeof(*work));
@@ -2228,7 +2228,7 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 		work->ht = ht;
 		urcu_workqueue_queue_work(cds_lfht_workqueue,
 			&work->work, do_resize_cb);
-		uatomic_store(&ht->resize_initiated, 1, CMM_RELAXED);
+		uatomic_store(&ht->resize_initiated, 1);
 	}
 }
 

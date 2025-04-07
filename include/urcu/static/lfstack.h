@@ -100,7 +100,7 @@ bool ___cds_lfs_empty_head(const struct cds_lfs_head *head)
 static inline
 bool _cds_lfs_empty(cds_lfs_stack_const_ptr_t s)
 {
-	return ___cds_lfs_empty_head(uatomic_load(&s._s->head, CMM_RELAXED));
+	return ___cds_lfs_empty_head(uatomic_load(&s._s->head));
 }
 
 /*
@@ -148,7 +148,7 @@ bool _cds_lfs_push(cds_lfs_stack_ptr_t u_s,
 
 		/*
 		 * node->next is still private at this point, no need to
-		 * perform a _CMM_STORE_SHARED().
+		 * perform a uatomic_store().
 		 */
 		node->next = &head->node;
 		/*
@@ -204,7 +204,7 @@ struct cds_lfs_node *___cds_lfs_pop(cds_lfs_stack_ptr_t u_s)
 		 * memory barrier before uatomic_cmpxchg() in
 		 * cds_lfs_push.
 		 */
-		next = uatomic_load(&head->node.next, CMM_RELAXED);
+		next = uatomic_load(&head->node.next);
 		next_head = caa_container_of(next,
 				struct cds_lfs_head, node);
 		if (uatomic_cmpxchg_mo(&s->head, head, next_head,

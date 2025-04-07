@@ -111,7 +111,7 @@ static void wait_gp(void)
 {
 	/* Read reader_gp before read futex */
 	cmm_smp_rmb();
-	while (uatomic_read(&urcu_qsbr_gp.futex) == -1) {
+	while (uatomic_load(&urcu_qsbr_gp.futex) == -1) {
 		if (!futex_noasync(&urcu_qsbr_gp.futex, FUTEX_WAIT, -1, NULL, NULL, 0)) {
 			/*
 			 * Prior queued wakeups queued by unrelated code
@@ -158,14 +158,14 @@ static void wait_for_readers(struct cds_list_head *input_readers,
 		if (wait_loops < RCU_QS_ACTIVE_ATTEMPTS)
 			wait_loops++;
 		if (wait_loops >= RCU_QS_ACTIVE_ATTEMPTS) {
-			uatomic_set(&urcu_qsbr_gp.futex, -1);
+			uatomic_store(&urcu_qsbr_gp.futex, -1);
 			/*
 			 * Write futex before write waiting (the other side
 			 * reads them in the opposite order).
 			 */
 			cmm_smp_wmb();
 			cds_list_for_each_entry(index, input_readers, node) {
-				_CMM_STORE_SHARED(index->waiting, 1);
+				uatomic_store(&index->waiting, 1);
 			}
 			/* Write futex before read reader_gp */
 			cmm_smp_mb();
@@ -300,7 +300,7 @@ void urcu_qsbr_synchronize_rcu(void)
 
 	/* Switch parity: 0 -> 1, 1 -> 0 */
 	cmm_annotate_group_mem_release(&release_group, &urcu_qsbr_gp.ctr);
-	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr ^ URCU_QSBR_GP_CTR, CMM_RELAXED);
+	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr ^ URCU_QSBR_GP_CTR);
 
 	/*
 	 * Must commit urcu_qsbr_gp.ctr update to memory before waiting for
@@ -395,7 +395,7 @@ void urcu_qsbr_synchronize_rcu(void)
 
 	/* Increment current G.P. */
 	cmm_annotate_group_mem_release(&release_group, &urcu_qsbr_gp.ctr);
-	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr + URCU_QSBR_GP_CTR, CMM_RELAXED);
+	uatomic_store(&urcu_qsbr_gp.ctr, urcu_qsbr_gp.ctr + URCU_QSBR_GP_CTR);
 
 	/*
 	 * Must commit urcu_qsbr_gp.ctr update to memory before waiting for

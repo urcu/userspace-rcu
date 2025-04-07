@@ -84,15 +84,15 @@ static inline void _urcu_memb_read_lock_update(unsigned long tmp)
 
 	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK))) {
 		unsigned long *pgctr = &urcu_memb_gp.ctr;
-		unsigned long gctr = uatomic_load(pgctr, CMM_RELAXED);
+		unsigned long gctr = uatomic_load(pgctr);
 
 		/* Paired with following mb slave. */
 		cmm_annotate_mem_acquire(pgctr);
-		uatomic_store(ctr, gctr, CMM_RELAXED);
+		uatomic_store(ctr, gctr);
 
 		urcu_memb_smp_mb_slave();
 	} else {
-		uatomic_store(ctr, tmp + URCU_GP_COUNT, CMM_RELAXED);
+		uatomic_store(ctr, tmp + URCU_GP_COUNT);
 	}
 }
 
@@ -132,11 +132,11 @@ static inline void _urcu_memb_read_unlock_update_and_wakeup(unsigned long tmp)
 	if (caa_likely((tmp & URCU_GP_CTR_NEST_MASK) == URCU_GP_COUNT)) {
 		urcu_memb_smp_mb_slave();
 		cmm_annotate_mem_release(ctr);
-		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
+		uatomic_store(ctr, tmp - URCU_GP_COUNT);
 		urcu_memb_smp_mb_slave();
 		urcu_common_wake_up_gp(&urcu_memb_gp);
 	} else {
-		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_RELAXED);
+		uatomic_store(ctr, tmp - URCU_GP_COUNT);
 	}
 }
 

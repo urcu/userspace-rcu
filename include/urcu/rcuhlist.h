@@ -14,6 +14,7 @@
 
 #include <urcu/hlist.h>
 #include <urcu/arch.h>
+#include <urcu/uatomic.h>
 #include <urcu-pointer.h>
 
 /* Add new element at the head of the list. */
@@ -34,7 +35,7 @@ void cds_hlist_del_rcu(struct cds_hlist_node *elem)
 {
 	if (elem->next)
 		elem->next->prev = elem->prev;
-	CMM_STORE_SHARED(elem->prev->next, elem->next);
+	uatomic_store(&elem->prev->next, elem->next);
 }
 
 /*

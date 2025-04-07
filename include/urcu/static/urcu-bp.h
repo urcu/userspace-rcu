@@ -115,7 +115,7 @@ static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr,
 	 * Make sure both tests below are done on the same version of *value
 	 * to insure consistency.
 	 */
-	v = uatomic_load(ctr, CMM_RELAXED);
+	v = uatomic_load(ctr);
 	cmm_annotate_group_mem_acquire(group, ctr);
 
 	if (!(v & URCU_BP_GP_CTR_NEST_MASK))
@@ -135,10 +135,10 @@ static inline enum urcu_bp_state urcu_bp_reader_state(unsigned long *ctr,
 static inline void _urcu_bp_read_lock_update(unsigned long tmp)
 {
 	if (caa_likely(!(tmp & URCU_BP_GP_CTR_NEST_MASK))) {
-		_CMM_STORE_SHARED(URCU_TLS(urcu_bp_reader)->ctr, _CMM_LOAD_SHARED(urcu_bp_gp.ctr));
+		uatomic_store(&URCU_TLS(urcu_bp_reader)->ctr, uatomic_load(&urcu_bp_gp.ctr));
 		urcu_bp_smp_mb_slave();
 	} else
-		_CMM_STORE_SHARED(URCU_TLS(urcu_bp_reader)->ctr, tmp + URCU_BP_GP_COUNT);
+		uatomic_store(&URCU_TLS(urcu_bp_reader)->ctr, tmp + URCU_BP_GP_COUNT);
 }
 
 /*
@@ -178,7 +178,7 @@ static inline void _urcu_bp_read_unlock(void)
 	/* Finish using rcu before decrementing the pointer. */
 	urcu_bp_smp_mb_slave();
 	cmm_annotate_mem_release(ctr);
-	uatomic_store(ctr, tmp - URCU_BP_GP_COUNT, CMM_RELAXED);
+	uatomic_store(ctr, tmp - URCU_BP_GP_COUNT);
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 }
 

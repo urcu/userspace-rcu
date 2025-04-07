@@ -31,49 +31,49 @@ do {						\
 	__typeof__(*(ptr)) v;			\
 						\
 	uatomic_add(ptr, 10);			\
-	ok1(uatomic_read(ptr) == 10);	\
+	ok1(uatomic_load(ptr) == 10);	\
 						\
 	uatomic_add(ptr, -11UL);		\
-	ok1(uatomic_read(ptr) == (__typeof__(*(ptr)))-1UL);	\
+	ok1(uatomic_load(ptr) == (__typeof__(*(ptr)))-1UL);	\
 						\
 	v = uatomic_cmpxchg(ptr, -1UL, 22);	\
-	ok1(uatomic_read(ptr) == 22);	\
+	ok1(uatomic_load(ptr) == 22);	\
 	ok1(v == (__typeof__(*(ptr)))-1UL);	\
 						\
 	v = uatomic_cmpxchg(ptr, 33, 44);	\
-	ok1(uatomic_read(ptr) == 22);	\
+	ok1(uatomic_load(ptr) == 22);	\
 	ok1(v == 22);			\
 						\
 	v = uatomic_xchg(ptr, 55);		\
-	ok1(uatomic_read(ptr) == 55);	\
+	ok1(uatomic_load(ptr) == 55);	\
 	ok1(v == 22);			\
 						\
-	uatomic_set(ptr, 22);			\
+	uatomic_store(ptr, 22);			\
 	uatomic_inc(ptr);			\
-	ok1(uatomic_read(ptr) == 23);	\
+	ok1(uatomic_load(ptr) == 23);	\
 						\
 	uatomic_dec(ptr);			\
-	ok1(uatomic_read(ptr) == 22);	\
+	ok1(uatomic_load(ptr) == 22);	\
 						\
 	v = uatomic_add_return(ptr, 74);	\
 	ok1(v == 96);			\
-	ok1(uatomic_read(ptr) == 96);	\
+	ok1(uatomic_load(ptr) == 96);	\
 						\
 	uatomic_or(ptr, 58);			\
-	ok1(uatomic_read(ptr) == 122);	\
+	ok1(uatomic_load(ptr) == 122);	\
 						\
 	v = uatomic_sub_return(ptr, 1);		\
 	ok1(v == 121);			\
 						\
 	uatomic_sub(ptr, (unsigned int) 2);	\
-	ok1(uatomic_read(ptr) == 119);	\
+	ok1(uatomic_load(ptr) == 119);	\
 						\
 	uatomic_inc(ptr);			\
 	uatomic_inc(ptr);			\
-	ok1(uatomic_read(ptr) == 121);	\
+	ok1(uatomic_load(ptr) == 121);	\
 						\
 	uatomic_and(ptr, 129);			\
-	ok1(uatomic_read(ptr) == 1);	\
+	ok1(uatomic_load(ptr) == 1);	\
 						\
 } while (0)
 
