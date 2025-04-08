@@ -75,11 +75,11 @@ extern "C" {
  * expanded directly in non-LGPL code.
  */
 #ifdef URCU_DEREFERENCE_USE_VOLATILE
-#  define _rcu_dereference(p)			\
-	__extension__				\
-	({					\
-		cmm_smp_rmc();			\
-		CMM_ACCESS_ONCE(p);		\
+# define _rcu_dereference(p)						\
+	__extension__ ({						\
+		__typeof__(p) _________p1 = CMM_LOAD_SHARED(p);		\
+		cmm_smp_read_barrier_depends();				\
+		(_________p1);						\
 	})
 #else
 #  define _rcu_dereference(p)			\
