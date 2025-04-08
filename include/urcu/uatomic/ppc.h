@@ -27,7 +27,8 @@ extern "C" {
 #define UATOMIC_HAS_ATOMIC_LLONG
 #endif
 
-#define ILLEGAL_INSTR	".long	0xd00d00"
+/* Must be included after the UATOMIC_HAS_ATOMIC_* defines. */
+#include <urcu/uatomic/uassert.h>
 
 /*
  * Providing sequential consistency semantic with respect to other
@@ -93,18 +94,18 @@ unsigned long _uatomic_exchange(void *addr, unsigned long val, int len)
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }
 
-#define uatomic_xchg_mo(addr, v, mo)					\
-	((__typeof__(*(addr))) _uatomic_exchange((addr),		    \
-						caa_cast_long_keep_sign(v), \
-						sizeof(*(addr))))
+#define uatomic_xchg_mo(addr, v, mo)						\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_exchange((addr),			\
+						caa_cast_long_keep_sign(v),	\
+						sizeof(*(addr)));		\
+	})
+
 /* cmpxchg */
 
 static inline __attribute__((__always_inline__))
@@ -155,20 +156,19 @@ unsigned long _uatomic_cmpxchg(void *addr, unsigned long old,
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }
 
 
-#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)			\
-	((__typeof__(*(addr))) _uatomic_cmpxchg((addr),			      \
-						caa_cast_long_keep_sign(old), \
-						caa_cast_long_keep_sign(_new),\
-						sizeof(*(addr))))
+#define uatomic_cmpxchg_mo(addr, old, _new, mos, mof)				\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_cmpxchg((addr),			\
+						caa_cast_long_keep_sign(old),	\
+						caa_cast_long_keep_sign(_new),	\
+						sizeof(*(addr)));		\
+	})
 
 /* uatomic_add_return */
 
@@ -214,19 +214,18 @@ unsigned long _uatomic_add_return(void *addr, unsigned long val,
 	}
 #endif
 	}
-	/*
-	 * generate an illegal instruction. Cannot catch this with
-	 * linker tricks when optimizations are disabled.
-	 */
-	__asm__ __volatile__(ILLEGAL_INSTR);
 	return 0;
 }
 
 
-#define uatomic_add_return_mo(addr, v, mo)				\
-	((__typeof__(*(addr))) _uatomic_add_return((addr),		    \
-						caa_cast_long_keep_sign(v), \
-						sizeof(*(addr))))
+#define uatomic_add_return_mo(addr, v, mo)					\
+	__extension__								\
+	({									\
+		_uatomic_static_assert_atomic(sizeof(*(addr)));			\
+		(__typeof__(*(addr))) _uatomic_add_return((addr),		\
+						caa_cast_long_keep_sign(v),	\
+						sizeof(*(addr)));		\
+	})
 
 #ifdef __cplusplus
 }
