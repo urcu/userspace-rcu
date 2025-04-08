@@ -19,6 +19,7 @@
 #include <urcu/arch.h>
 #include <urcu/system.h>
 #include <urcu/uatomic.h>
+#include <urcu/annotate.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,9 +81,11 @@ extern "C" {
 #ifdef URCU_DEREFERENCE_USE_VOLATILE
 # define _rcu_dereference(p)						\
 	__extension__ ({						\
-		__typeof__(p) _________p1 = uatomic_load(&(p));		\
+		__typeof__(p) *_________ptr = &(p);			\
+		__typeof__(p) _________res = uatomic_load(_________ptr);\
 		cmm_smp_read_barrier_depends();				\
-		(_________p1);						\
+		cmm_annotate_mem_acquire(_________ptr);			\
+		(_________res);						\
 	})
 #else
 #  define _rcu_dereference(p)			\
