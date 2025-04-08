@@ -52,8 +52,9 @@ extern "C" {
  * not an _Atomic type as required by C11/C++11.
  *
  * By defining URCU_DEREFERENCE_USE_VOLATILE, the user requires use of
- * volatile access to implement rcu_dereference rather than
- * memory_order_consume load from the C11/C++11 standards.
+ * a volatile memory_order_relaxed atomic load to implement
+ * rcu_dereference rather than memory_order_consume load from the
+ * C11/C++11 standards.
  *
  * CAUTION: If URCU_DEREFERENCE_USE_VOLATILE is defined, pointers comparisons
  * _must_ be done using the `cmm_ptr_eq' static inline helper function to
@@ -67,6 +68,8 @@ extern "C" {
  *
  * Note that using volatile accesses for rcu_dereference may cause
  * LTO to generate incorrectly ordered code starting from C11/C++11.
+ * (note: to be confirmed whether this statement also applies to
+ * volatile memory_order_relaxed atomic load).
  *
  * Should match rcu_assign_pointer() or rcu_xchg_pointer().
  *
@@ -77,7 +80,7 @@ extern "C" {
 #ifdef URCU_DEREFERENCE_USE_VOLATILE
 # define _rcu_dereference(p)						\
 	__extension__ ({						\
-		__typeof__(p) _________p1 = CMM_LOAD_SHARED(p);		\
+		__typeof__(p) _________p1 = uatomic_load(&(p));		\
 		cmm_smp_read_barrier_depends();				\
 		(_________p1);						\
 	})
