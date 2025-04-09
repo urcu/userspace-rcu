@@ -75,6 +75,9 @@
 #define caa_min(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#define __CAA_COMBINE_TOKENS(prefix, counter) prefix ## counter
+#define CAA_COMBINE_TOKENS(prefix, counter)   __CAA_COMBINE_TOKENS(prefix, counter)
+
 #if defined(__SIZEOF_LONG__)
 #define CAA_BITS_PER_LONG	(__SIZEOF_LONG__ * 8)
 #elif defined(_LP64)
@@ -220,17 +223,15 @@ volatile T cmm_cast_volatile(T t)
 /*
  * Evaluates the predicate and emit a compilation error on failure.
  *
- * If the predicate evaluates to true, this macro emits a function
- * prototype with an argument type which is an array of size 0.
+ * If the predicate evaluates to true, this macro defines a struct containing
+ * a bitfield of one bit resulting in a successful compilation.
  *
- * If the predicate evaluates to false, this macro emits a function
- * prototype with an argument type which is an array of negative size
- * which is invalid in C and forces a compiler error. The
- * c_identifier_msg parameter is used as the argument identifier so it
- * is printed to the user when the error is reported.
+ * If the predicate evaluates to false, this macro defines a struct containing
+ * a bitfield of zero bit resulting in a compilation error.
  */
 #define urcu_static_assert(predicate, msg, c_identifier_msg)  \
-	void urcu_static_assert_proto(char c_identifier_msg[2*!!(predicate)-1])
+	struct CAA_COMBINE_TOKENS(urcu_assert_, __COUNTER__) \
+		{ int c_identifier_msg: !!(predicate); }
 #endif
 
 #endif /* _URCU_COMPILER_H */
