@@ -17,6 +17,17 @@
 
 #include <urcu/config.h>
 
+/*
+ * URCU_GCC_VERSION is used to blacklist specific GCC versions with known
+ * bugs, clang also defines these macros to an equivalent GCC version it
+ * claims to support, so exclude it.
+ */
+#if defined(__GNUC__) && !defined(__clang__)
+# define URCU_GCC_VERSION	(__GNUC__ * 10000 \
+				+ __GNUC_MINOR__ * 100 \
+				+ __GNUC_PATCHLEVEL__)
+#endif
+
 #define caa_likely(x)	__builtin_expect(!!(x), 1)
 #define caa_unlikely(x)	__builtin_expect(!!(x), 0)
 
@@ -52,15 +63,25 @@
 #endif
 
 #ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
+# if defined (__cplusplus) && \
+	defined(URCU_GCC_VERSION) && (URCU_GCC_VERSION <= 50100)
+/*
+ * Prior to GCC g++ 5.1 the builtin __atomic_always_lock_free() does not
+ * evaluate to a constant expression even if it is documented as such. To keep
+ * support for those older compilers, skip the check.
+ */
+#  define _cmm_static_assert__atomic_lf(size)
+# else
 /*
  * Fail at compile time if an atomic operation is attempted on an unsupported
  * type for the current architecture.
  */
-#define _cmm_static_assert__atomic_lf(size)					\
+#  define _cmm_static_assert__atomic_lf(size)					\
 	urcu_static_assert(__atomic_always_lock_free(size, 0),			\
 			"The architecture does not support atomic lock-free "	\
 			"operations on this type.",				\
 			_atomic_builtin_type_not_lock_free)
+# endif
 #endif
 
 /* Make the optimizer believe the variable can be manipulated arbitrarily. */
@@ -154,17 +175,6 @@
 #endif
 
 #define CAA_ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
-
-/*
- * URCU_GCC_VERSION is used to blacklist specific GCC versions with known
- * bugs, clang also defines these macros to an equivalent GCC version it
- * claims to support, so exclude it.
- */
-#if defined(__GNUC__) && !defined(__clang__)
-# define URCU_GCC_VERSION	(__GNUC__ * 10000 \
-				+ __GNUC_MINOR__ * 100 \
-				+ __GNUC_PATCHLEVEL__)
-#endif
 
 /*
  * Allow user to manually define CMM_SANITIZE_THREAD if their toolchain is not
