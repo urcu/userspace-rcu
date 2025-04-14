@@ -2,6 +2,46 @@
 #
 # SPDX-License-Identifier: CC-BY-4.0
 
+2025-04-14 Userspace RCU 0.15.2
+	* fix: __atomic_always_lock_free() not a constant expression on g++ < 5.1
+	* fix: urcu assert fallback for pre-C11 builds
+	* doc: update uatomic-api for static assert
+	* Add uatomic size static assert for 's390'
+	* Add uatomic size static assert for 'sparc64'
+	* Add uatomic size static assert for 'ppc'
+	* Add uatomic size static assert for 'x86'
+	* Add uatomic size static assert for 'generic'
+	* Add uatomic size static assert
+	* Use UATOMIC_HAS_ATOMIC_INT/LLONG in generic implementation
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for x86
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for tile
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for sparc64
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for s390
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for riscv
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for ppc
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for nios2
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for mips
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for m68k
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for loongarch
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for ia64
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for hppa
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for 'gcc' arch
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for arm
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for alpha
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for aarch64
+	* Add UATOMIC_HAS_ATOMIC_INT/LLONG for atomic builtins
+	* Add builtin atomics size static asserts
+	* cleanup: use URCU_GCC_VERSION from compiler.h
+	* fix: atomic builtins defines for type support
+	* Move back CMM_LOAD/STORE_SHARED to volatile access
+	* Add cmm_annotate_mem_acquire() to URCU_DEREFERENCE_USE_VOLATILE rcu_dereference
+	* Use uatomic_load CMM_RELAXED in URCU_DEREFERENCE_USE_VOLATILE
+	* Fix: Re-introduce URCU_DEREFERENCE_USE_VOLATILE read barrier depends for alpha
+	* Tree-wide: Rename to uatomic_load/uatomic_store
+	* src: Use __*__ for attribute names
+	* API: Use __*__ for attribute names
+	* Fix Changelog 0.15.1 date
+
 2025-02-18 Userspace RCU 0.15.1
 	* uatomic/generic: Add missing #include <stdlib.h>
 	* docs: Clarify that make is required to build the project
