@@ -223,10 +223,10 @@ volatile T cmm_cast_volatile(T t)
  *   static assertion. This parameter must be a valid C identifier as it will
  *   be used as a typedef name.
  */
-#ifdef __cplusplus
+#if (defined(__cplusplus) && (defined(__clang__) || (defined(URCU_GCC_VERSION) && URCU_GCC_VERSION >= 70100)))
 #define urcu_static_assert(predicate, msg, c_identifier_msg)  \
 	static_assert(predicate, msg)
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#elif !defined(__cplusplus) && defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 #define urcu_static_assert(predicate, msg, c_identifier_msg)  \
 	_Static_assert(predicate, msg)
 #else
