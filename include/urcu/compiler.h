@@ -64,7 +64,7 @@
 
 #ifdef _CMM_TOOLCHAIN_SUPPORT_C11_MM
 # if defined (__cplusplus) && \
-	defined(URCU_GCC_VERSION) && (URCU_GCC_VERSION <= 50100)
+	defined(URCU_GCC_VERSION) && (URCU_GCC_VERSION < 50100)
 /*
  * Prior to GCC g++ 5.1 the builtin __atomic_always_lock_free() does not
  * evaluate to a constant expression even if it is documented as such. To keep
