@@ -1,6 +1,10 @@
-# SPDX-FileCopyrightText: 2011-2024 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+# SPDX-FileCopyrightText: 2011-2025 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 #
 # SPDX-License-Identifier: CC-BY-4.0
+
+2025-05-14 Userspace RCU 0.15.3
+	* Fix: Use bitfield static assert with GCC < 7.1.0
+	* Fix: Allow compile-time checks for GCC 5.1
 
 2025-04-14 Userspace RCU 0.15.2
 	* fix: __atomic_always_lock_free() not a constant expression on g++ < 5.1
