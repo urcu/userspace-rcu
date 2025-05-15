@@ -98,7 +98,7 @@ extern "C" {
 
 typedef uint64_t caa_cycles_t;
 
-#ifdef __powerpc64__
+#if defined(__powerpc64__) || defined(__ppc64__)
 static inline caa_cycles_t caa_get_cycles(void)
 {
 	return (caa_cycles_t) mftb();
