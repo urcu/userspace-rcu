@@ -1,7 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later WITH LicenseRef-Autoconf-exception-macro
 # SPDX-FileCopyrightText: 2020 Michael Jeanson <mjeanson@efficios.com>
 # SPDX-FileCopyrightText: 2008 Francesco Salvestrini <salvestrini@users.sourceforge.net>
-#
-# SPDX-License-Identifier: GPL-2.0-or-later WITH LicenseRef-Autoconf-exception-macro
 #
 # SYNOPSIS
 #
@@ -68,7 +67,7 @@
 #   AE_FEATURE() macro if you want the the proper ACTION-IF-ENABLED and
 #   ACTION-IF-NOT-ENABLED to run.
 
-#serial 3
+#serial 4
 
 
 # AE_FEATURE_DEFAULT_ENABLE: The next feature defined with AE_FEATURE will
@@ -113,7 +112,7 @@ m4_pushdef([FEATURE], patsubst([$1], -, _))dnl
 
   AS_IF([test "$enable_[]FEATURE[]" = yes],[ dnl
     $2
-  ],[: dnl
+  ],[:
     $3
   ])
 ])
@@ -135,7 +134,7 @@ m4_pushdef([FEATURE], patsubst([$1], -, _))dnl
 
   AS_IF([test "$enable_[]FEATURE[]" != yes],[ dnl
     $2
-  ],[: dnl
+  ],[:
     $3
   ])
 ])
@@ -150,7 +149,7 @@ m4_pushdef([FEATURE], patsubst([$1], -, _))dnl
 
   AS_IF([test "$enable_[]FEATURE[]" = no],[ dnl
     $2
-  ],[: dnl
+  ],[:
     $3
   ])
 ])
@@ -168,7 +167,7 @@ m4_pushdef([FEATURE], patsubst([$1], -, _))dnl
 
   AS_IF([test "x$enable_[]FEATURE[]" = x],[ dnl
     $2
-  ],[: dnl
+  ],[:
     $3
   ])
 ])
@@ -217,13 +216,13 @@ case "${enableval}" in
 esac
 
 $3
-],[: dnl
+],[:
 $4
 ])
 
-AS_IF([test "$enable_[]FEATURE[]" = yes],[: dnl
+AS_IF([test "$enable_[]FEATURE[]" = yes],[:
   $5
-],[: dnl
+],[:
   $6
 ])
 
