@@ -409,7 +409,7 @@ void expand_arena(struct registry_arena *arena)
 		new_chunk_size_bytes, 0);
 	if (new_chunk != MAP_FAILED) {
 		/* Should not have moved. */
-		assert(new_chunk == last_chunk);
+		urcu_posix_assert(new_chunk == last_chunk);
 		memset((char *) last_chunk + old_chunk_size_bytes, 0,
 			new_chunk_size_bytes - old_chunk_size_bytes);
 		last_chunk->capacity = new_capacity;
