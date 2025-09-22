@@ -96,8 +96,8 @@ struct rcu_flavor_struct;
 typedef int (*cds_lfht_match_fct)(struct cds_lfht_node *node, const void *key);
 
 /*
- * cds_lfht_node_init - initialize a hash table node
- * @node: the node to initialize.
+ * cds_lfht_node_init - Initialize a hash table node
+ * @node: The node to initialize.
  *
  * This function is kept to be eventually used for debugging purposes
  * (detection of memory corruption).
@@ -108,8 +108,8 @@ void cds_lfht_node_init(struct cds_lfht_node *node __attribute__((__unused__)))
 }
 
 /*
- * cds_lfht_node_init_deleted - initialize a hash table node to "removed" state
- * @node: the node to initialize.
+ * cds_lfht_node_init_deleted - Initialize a hash table node to "removed" state
+ * @node: The node to initialize.
  *
  * Initialize the node such that cds_lfht_is_node_deleted() can be used
  * on the node before it is added to a hash table.
@@ -331,9 +331,9 @@ struct cds_lfht *cds_lfht_new(unsigned long init_size,
 #endif /* URCU_API_MAP */
 
 /*
- * cds_lfht_destroy - destroy a hash table.
- * @ht: the hash table to destroy.
- * @attr: (output) resize worker thread attributes, as received by cds_lfht_new.
+ * cds_lfht_destroy - Destroy a hash table.
+ * @ht: The hash table to destroy.
+ * @attr: (output) Resize worker thread attributes, as received by cds_lfht_new.
  *        The caller will typically want to free this pointer if dynamically
  *        allocated. The attr point can be NULL if the caller does not
  *        need to be informed of the value passed to cds_lfht_new().
@@ -355,11 +355,11 @@ extern
 int cds_lfht_destroy(struct cds_lfht *ht, pthread_attr_t **attr);
 
 /*
- * cds_lfht_count_nodes - count the number of nodes in the hash table.
- * @ht: the hash table.
- * @split_count_before: sample the node count split-counter before traversal.
- * @count: traverse the hash table, count the number of nodes observed.
- * @split_count_after: sample the node count split-counter after traversal.
+ * cds_lfht_count_nodes - Count the number of nodes in the hash table.
+ * @ht: The hash table.
+ * @split_count_before: Sample the node count split-counter before traversal.
+ * @count: Traverse the hash table, count the number of nodes observed.
+ * @split_count_after: Sample the node count split-counter after traversal.
  *
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
@@ -371,12 +371,12 @@ void cds_lfht_count_nodes(struct cds_lfht *ht,
 		long *split_count_after);
 
 /*
- * cds_lfht_lookup - lookup a node by key.
- * @ht: the hash table.
- * @hash: the key hash.
- * @match: the key match function.
- * @key: the current node key.
- * @iter: node, if found (output). *iter->node set to NULL if not found.
+ * cds_lfht_lookup - Lookup a node by key.
+ * @ht: The hash table.
+ * @hash: The key hash.
+ * @match: The key match function.
+ * @key: The current node key.
+ * @iter: Node, if found (output). *iter->node set to NULL if not found.
  *
  * Call with rcu_read_lock held.
  * Threads calling this API need to be registered RCU read-side threads.
@@ -388,12 +388,12 @@ void cds_lfht_lookup(struct cds_lfht *ht, unsigned long hash,
 		struct cds_lfht_iter *iter);
 
 /*
- * cds_lfht_next_duplicate - get the next item with same key, after iterator.
- * @ht: the hash table.
- * @match: the key match function.
- * @key: the current node key.
- * @iter: input: current iterator.
- *        output: node, if found. *iter->node set to NULL if not found.
+ * cds_lfht_next_duplicate - Get the next item with same key, after iterator.
+ * @ht: The hash table.
+ * @match: The key match function.
+ * @key: The current node key.
+ * @iter: Input: Current iterator.
+ *        Output: Node, if found. *iter->node set to NULL if not found.
  *
  * Uses an iterator initialized by a lookup or traversal. Important: the
  * iterator _needs_ to be initialized before calling
@@ -413,8 +413,8 @@ void cds_lfht_next_duplicate(struct cds_lfht *ht,
 		struct cds_lfht_iter *iter);
 
 /*
- * cds_lfht_first - get the first node in the table.
- * @ht: the hash table.
+ * cds_lfht_first - Get the first node in the table.
+ * @ht: The hash table.
  * @iter: First node, if exists (output). *iter->node set to NULL if not found.
  *
  * Output in "*iter". *iter->node set to NULL if table is empty.
@@ -426,10 +426,10 @@ extern
 void cds_lfht_first(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
- * cds_lfht_next - get the next node in the table.
- * @ht: the hash table.
- * @iter: input: current iterator.
- *        output: next node, if exists. *iter->node set to NULL if not found.
+ * cds_lfht_next - Get the next node in the table.
+ * @ht: The hash table.
+ * @iter: Input: Current iterator.
+ *        Output: Next node, if exists. *iter->node set to NULL if not found.
  *
  * Input/Output in "*iter". *iter->node set to NULL if *iter was
  * pointing to the last table node.
@@ -441,10 +441,10 @@ extern
 void cds_lfht_next(struct cds_lfht *ht, struct cds_lfht_iter *iter);
 
 /*
- * cds_lfht_add - add a node to the hash table.
- * @ht: the hash table.
- * @hash: the key hash.
- * @node: the node to add.
+ * cds_lfht_add - Add a node to the hash table.
+ * @ht: The hash table.
+ * @hash: The key hash.
+ * @node: The node to add.
  *
  * This function supports adding redundant keys into the table.
  * Call with rcu_read_lock held.
@@ -457,12 +457,12 @@ void cds_lfht_add(struct cds_lfht *ht, unsigned long hash,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_add_unique - add a node to hash table, if key is not present.
- * @ht: the hash table.
- * @hash: the node's hash.
- * @match: the key match function.
- * @key: the node's key.
- * @node: the node to try adding.
+ * cds_lfht_add_unique - Add a node to hash table, if key is not present.
+ * @ht: The hash table.
+ * @hash: The node's hash.
+ * @match: The key match function.
+ * @key: The node's key.
+ * @node: The node to try adding.
  *
  * Return the node added upon success.
  * Return the unique node already present upon failure. If
@@ -491,12 +491,12 @@ struct cds_lfht_node *cds_lfht_add_unique(struct cds_lfht *ht,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_add_replace - replace or add a node within hash table.
- * @ht: the hash table.
- * @hash: the node's hash.
- * @match: the key match function.
- * @key: the node's key.
- * @node: the node to add.
+ * cds_lfht_add_replace - Replace or add a node within hash table.
+ * @ht: The hash table.
+ * @hash: The node's hash.
+ * @match: The key match function.
+ * @key: The node's key.
+ * @node: The node to add.
  *
  * Return the node replaced upon success. If no node matching the key
  * was present, return NULL, which also means the operation succeeded.
@@ -528,13 +528,13 @@ struct cds_lfht_node *cds_lfht_add_replace(struct cds_lfht *ht,
 		struct cds_lfht_node *node);
 
 /*
- * cds_lfht_replace - replace a node pointed to by iter within hash table.
- * @ht: the hash table.
- * @old_iter: the iterator position of the node to replace.
- * @hash: the node's hash.
- * @match: the key match function.
- * @key: the node's key.
- * @new_node: the new node to use as replacement.
+ * cds_lfht_replace - Replace a node pointed to by iter within hash table.
+ * @ht: The hash table.
+ * @old_iter: The iterator position of the node to replace.
+ * @hash: The node's hash.
+ * @match: The key match function.
+ * @key: The node's key.
+ * @new_node: The new node to use as replacement.
  *
  * Return 0 if replacement is successful, negative value otherwise.
  * Replacing a NULL old node or an already removed node will fail with
@@ -565,9 +565,9 @@ int cds_lfht_replace(struct cds_lfht *ht,
 		struct cds_lfht_node *new_node);
 
 /*
- * cds_lfht_del - remove node pointed to by iterator from hash table.
- * @ht: the hash table.
- * @node: the node to delete.
+ * cds_lfht_del - Remove node pointed to by iterator from hash table.
+ * @ht: The hash table.
+ * @node: The node to delete.
  *
  * Return 0 if the node is successfully removed, negative value
  * otherwise.
@@ -589,7 +589,7 @@ extern
 int cds_lfht_del(struct cds_lfht *ht, struct cds_lfht_node *node);
 
 /*
- * cds_lfht_is_node_deleted - query whether a node is removed from hash table.
+ * cds_lfht_is_node_deleted - Query whether a node is removed from hash table.
  *
  * Return non-zero if the node is deleted from the hash table, 0
  * otherwise.
@@ -606,8 +606,8 @@ int cds_lfht_is_node_deleted(const struct cds_lfht_node *node);
 
 /*
  * cds_lfht_resize - Force a hash table resize
- * @ht: the hash table.
- * @new_size: update to this hash table size.
+ * @ht: The hash table.
+ * @new_size: Update to this hash table size.
  *
  * Threads calling this API need to be registered RCU read-side threads.
  * This function does not (necessarily) issue memory barriers.
