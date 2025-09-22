@@ -164,20 +164,32 @@ struct cds_lfht *_cds_lfht_new_with_alloc(unsigned long init_size,
 			pthread_attr_t *attr);
 
 /*
- * cds_lfht_new_flavor - allocate a hash table tied to a RCU flavor.
- * @init_size: number of buckets to allocate initially. Must be power of two.
- * @min_nr_alloc_buckets: the minimum number of allocated buckets.
- *                        (must be power of two)
- * @max_nr_buckets: the maximum number of hash table buckets allowed.
- *                  (must be power of two, 0 is accepted, means
+ * cds_lfht_new_flavor - Allocate a hash table tied to a RCU flavor.
+ * @init_size: Number of buckets to allocate and initialize (chain into
+ *             the hash table) at hash table creation. The resize target
+ *             is initialized to this value. Must a be a power of two.
+ * @min_nr_alloc_buckets: The minimum number of allocated buckets.
+ *                        It acts as a lower bound below which bucket
+ *                        memory will not be freed, but the buckets are
+ *                        still unlinked from the hash table.
+ *                        Must be a power of two. This parameter only
+ *                        affects the hash table when an explicit
+ *                        cds_lfht_resize, or cds_lfht_resize_lazy_count
+ *                        are used, or when the hash table is created
+ *                        with the CDS_LFHT_AUTO_RESIZE flag.
+ *                        It is recommended to use an
+ *                        @init_size <= @min_nr_alloc_buckets for
+ *                        auto-resized hash tables.
+ * @max_nr_buckets: The maximum number of hash table buckets allowed.
+ *                  (must be a power of two, 0 is accepted, means
  *                  "infinite")
- * @flavor: flavor of liburcu to use to synchronize the hash table
- * @flags: hash table creation flags (can be combined with bitwise or: '|').
+ * @flags: Hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
- *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
- *           CDS_LFHT_ACCOUNTING: count the number of node addition
- *                                and removal in the table
- * @attr: optional resize worker thread attributes. NULL for default.
+ *           CDS_LFHT_AUTO_RESIZE: Automatically resize the hash table.
+ *           CDS_LFHT_ACCOUNTING: Count the number of node addition
+ *                                and removal in the table.
+ * @flavor: Flavor of liburcu to use to synchronize the hash table
+ * @attr: Optional resize worker thread attributes. NULL for default.
  *
  * Return NULL on error.
  * Note: the RCU flavor must be already included before the hash table header.
@@ -206,23 +218,35 @@ struct cds_lfht *cds_lfht_new_flavor(unsigned long init_size,
 }
 
 /*
- * cds_lfht_new_with_flavor_alloc - allocate a hash table tied to a RCU flavor.
- * @init_size: number of buckets to allocate initially. Must be power of two.
- * @min_nr_alloc_buckets: the minimum number of allocated buckets.
- *                        (must be power of two)
- * @max_nr_buckets: the maximum number of hash table buckets allowed.
- *                  (must be power of two, 0 is accepted, means
+ * cds_lfht_new_with_flavor_alloc - Allocate a hash table tied to a RCU flavor.
+ * @init_size: Number of buckets to allocate and initialize (chain into
+ *             the hash table) at hash table creation. The resize target
+ *             is initialized to this value. Must be a power of two.
+ * @min_nr_alloc_buckets: The minimum number of allocated buckets.
+ *                        It acts as a lower bound below which bucket
+ *                        memory will not be freed, but the buckets are
+ *                        still unlinked from the hash table.
+ *                        Must be a power of two. This parameter only
+ *                        affects the hash table when an explicit
+ *                        cds_lfht_resize, or cds_lfht_resize_lazy_count
+ *                        are used, or when the hash table is created
+ *                        with the CDS_LFHT_AUTO_RESIZE flag.
+ *                        It is recommended to use an
+ *                        @init_size <= @min_nr_alloc_buckets for
+ *                        auto-resized hash tables.
+ * @max_nr_buckets: The maximum number of hash table buckets allowed.
+ *                  (must be a power of two, 0 is accepted, means
  *                  "infinite")
- * @flavor: flavor of liburcu to use to synchronize the hash table
+ * @flags: Hash table creation flags (can be combined with bitwise or: '|').
+ *           0: no flags.
+ *           CDS_LFHT_AUTO_RESIZE: Automatically resize the hash table.
+ *           CDS_LFHT_ACCOUNTING: Count the number of node addition
+ *                                and removal in the table.
+ * @flavor: Flavor of liburcu to use to synchronize the hash table
  * @alloc: Custom memory allocator for hash table memory management.
  *         NULL for default. If a custom allocator is used, then
  *         the whole interface of struct cds_lfht_alloc must be implemented.
- * @flags: hash table creation flags (can be combined with bitwise or: '|').
- *           0: no flags.
- *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
- *           CDS_LFHT_ACCOUNTING: count the number of node addition
- *                                and removal in the table
- * @attr: optional resize worker thread attributes. NULL for default.
+ * @attr: Optional resize worker thread attributes. NULL for default.
  *
  * Return NULL on error.
  * Note: the RCU flavor must be already included before the hash table header.
@@ -254,19 +278,31 @@ struct cds_lfht *cds_lfht_new_with_flavor_alloc(unsigned long init_size,
 
 #ifdef URCU_API_MAP
 /*
- * cds_lfht_new - allocate a hash table.
- * @init_size: number of buckets to allocate initially. Must be power of two.
- * @min_nr_alloc_buckets: the minimum number of allocated buckets.
- *                        (must be power of two)
- * @max_nr_buckets: the maximum number of hash table buckets allowed.
- *                  (must be power of two, 0 is accepted, means
+ * cds_lfht_new - Allocate a hash table.
+ * @init_size: Number of buckets to allocate and initialize (chain into
+ *             the hash table) at hash table creation. The resize target
+ *             is initialized to this value. Must be a power of two.
+ * @min_nr_alloc_buckets: The minimum number of allocated buckets.
+ *                        It acts as a lower bound below which bucket
+ *                        memory will not be freed, but the buckets are
+ *                        still unlinked from the hash table.
+ *                        Must be a power of two. This parameter only
+ *                        affects the hash table when an explicit
+ *                        cds_lfht_resize, or cds_lfht_resize_lazy_count
+ *                        are used, or when the hash table is created
+ *                        with the CDS_LFHT_AUTO_RESIZE flag.
+ *                        It is recommended to use an
+ *                        @init_size <= @min_nr_alloc_buckets for
+ *                        auto-resized hash tables.
+ * @max_nr_buckets: The maximum number of hash table buckets allowed.
+ *                  (must be a power of two, 0 is accepted, means
  *                  "infinite")
- * @flags: hash table creation flags (can be combined with bitwise or: '|').
+ * @flags: Hash table creation flags (can be combined with bitwise or: '|').
  *           0: no flags.
- *           CDS_LFHT_AUTO_RESIZE: automatically resize hash table.
- *           CDS_LFHT_ACCOUNTING: count the number of node addition
- *                                and removal in the table
- * @attr: optional resize worker thread attributes. NULL for default.
+ *           CDS_LFHT_AUTO_RESIZE: Automatically resize the hash table.
+ *           CDS_LFHT_ACCOUNTING: Count the number of node addition
+ *                                and removal in the table.
+ * @attr: Optional resize worker thread attributes. NULL for default.
  *
  * Return NULL on error.
  * Note: the RCU flavor must be already included before the hash table header.
