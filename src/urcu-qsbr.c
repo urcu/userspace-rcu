@@ -456,19 +456,16 @@ int urcu_qsbr_read_ongoing(void)
 {
 	return _urcu_qsbr_read_ongoing();
 }
-void rcu_read_ongoing_qsbr();
 
 void urcu_qsbr_quiescent_state(void)
 {
 	_urcu_qsbr_quiescent_state();
 }
-void rcu_quiescent_state_qsbr();
 
 void urcu_qsbr_thread_offline(void)
 {
 	_urcu_qsbr_thread_offline();
 }
-void rcu_thread_offline_qsbr();
 
 void urcu_qsbr_thread_online(void)
 {
