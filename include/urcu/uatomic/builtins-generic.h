@@ -12,12 +12,42 @@
 #include <urcu/compiler.h>
 #include <urcu/system.h>
 
+/*
+ * Whether the memory order `CMM_SEQ_CST_FENCE` should emit a fence after an
+ * atomic load operation. Can be overriden by the architecture.
+ *
+ * Default: Emit the memory barrier.
+ */
+#ifndef cmm_seq_cst_fence_after_atomic_load
+#  define cmm_seq_cst_fence_after_atomic_load cmm_seq_cst_fence_after_atomic
+#endif
+
+/*
+ * Whether the memory order `CMM_SEQ_CST_FENCE` should emit a fence after an
+ * atomic store operation. Can be overriden by the architecture.
+ *
+ * Default: Emit the memory barrier.
+ */
+#ifndef cmm_seq_cst_fence_after_atomic_store
+#  define cmm_seq_cst_fence_after_atomic_store cmm_seq_cst_fence_after_atomic
+#endif
+
+/*
+ * Whether the memory order `CMM_SEQ_CST_FENCE` should emit a fence after an
+ * atomic read-modify-write operation. Can be overriden by the architecture.
+ *
+ * Default: Emit the memory barrier.
+ */
+#ifndef cmm_seq_cst_fence_after_atomic_rmw
+#  define cmm_seq_cst_fence_after_atomic_rmw cmm_seq_cst_fence_after_atomic
+#endif
+
 #define uatomic_store_mo(addr, v, mo)				\
 	do {							\
 		_cmm_static_assert__atomic_lf(sizeof(*(addr)));	\
 		__atomic_store_n(cmm_cast_volatile(addr), v,	\
 				cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);		\
+		cmm_seq_cst_fence_after_atomic_store(mo);	\
 	} while (0)
 
 #define uatomic_load_mo(addr, mo)					\
@@ -27,7 +57,7 @@
 		__typeof__(*(addr)) _value =				\
 			__atomic_load_n(cmm_cast_volatile(addr),	\
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_load(mo);		\
 									\
 		_value;							\
 	})
@@ -42,9 +72,9 @@
 							&_old, new, 0,	\
 							cmm_to_c11(mos), \
 							cmm_to_c11(mof))) { \
-			cmm_seq_cst_fence_after_atomic(mos);		\
+			cmm_seq_cst_fence_after_atomic_rmw(mos);	\
 		} else {						\
-			cmm_seq_cst_fence_after_atomic(mof);		\
+			cmm_seq_cst_fence_after_atomic_rmw(mof);	\
 		}							\
 		_old;							\
 	})
@@ -56,7 +86,7 @@
 		__typeof__((*addr)) _old =				\
 			__atomic_exchange_n(cmm_cast_volatile(addr), v,	\
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_rmw(mo);			\
 		_old;							\
 	})
 
@@ -67,7 +97,7 @@
 		__typeof__(*(addr)) _old =				\
 			__atomic_add_fetch(cmm_cast_volatile(addr), v,	\
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_rmw(mo);			\
 		_old;							\
 	})
 
@@ -79,7 +109,7 @@
 		__typeof__(*(addr)) _old =				\
 			__atomic_sub_fetch(cmm_cast_volatile(addr), v,	\
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_rmw(mo);			\
 		_old;							\
 	})
 
@@ -89,7 +119,7 @@
 		_cmm_static_assert__atomic_lf(sizeof(*(addr)));		\
 		(void) __atomic_and_fetch(cmm_cast_volatile(addr), mask, \
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_rmw(mo);			\
 	} while (0)
 
 
@@ -98,7 +128,7 @@
 		_cmm_static_assert__atomic_lf(sizeof(*(addr)));		\
 		(void) __atomic_or_fetch(cmm_cast_volatile(addr), mask,	\
 					cmm_to_c11(mo));		\
-		cmm_seq_cst_fence_after_atomic(mo);			\
+		cmm_seq_cst_fence_after_atomic_rmw(mo);			\
 	} while (0)
 
 
