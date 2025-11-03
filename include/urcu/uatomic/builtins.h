@@ -82,6 +82,10 @@
 # error "Toolchain is missing lock-free atomic defines."
 #endif
 
+#if defined(URCU_ARCH_X86)
+#  include <urcu/uatomic/builtins-x86.h>
+#endif
+
 #include <urcu/uatomic/builtins-generic.h>
 
 #endif	/* _URCU_UATOMIC_BUILTINS_H */
