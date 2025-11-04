@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: CC-BY-4.0
 
+2025-11-04 Userspace RCU 0.15.4
+	* uatomic: Fix redundant memory barriers for atomic builtin operations
+	* Cleanup: Remove useless declarations from urcu-qsbr
+	* src/urcu-bp.c: assert => urcu_posix_assert
+	* ppc.h: improve ppc64 caa_get_cycles on Darwin
+
 2025-05-14 Userspace RCU 0.15.3
 	* Fix: Use bitfield static assert with GCC < 7.1.0
 	* Fix: Allow compile-time checks for GCC 5.1
