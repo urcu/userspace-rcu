@@ -55,7 +55,8 @@ noinst_PROGRAMS = test_urcu test_urcu_dynamic_link test_urcu_timing \
 	test_urcu_wfq_dynlink test_urcu_wfs_dynlink \
 	test_urcu_wfcq_dynlink \
 	test_urcu_lfq_dynlink test_urcu_lfs_dynlink test_urcu_hash \
-	test_urcu_lfs_rcu_dynlink
+	test_urcu_lfs_rcu_dynlink \
+	test_uatomic
 
 URCU_COMMON_LIB=$(top_builddir)/src/liburcu-common.la
 URCU_LIB=$(top_builddir)/src/liburcu.la
@@ -65,6 +66,8 @@ URCU_BP_LIB=$(top_builddir)/src/liburcu-bp.la
 URCU_CDS_LIB=$(top_builddir)/src/liburcu-cds.la
 
 DEBUG_YIELD_LIB=$(builddir)/../common/libdebug-yield.la
+
+test_uatomic_SOURCES = test_uatomic.c
 
 test_urcu_SOURCES = test_urcu.c common-states.c
 test_urcu_LDADD = $(URCU_LIB)
