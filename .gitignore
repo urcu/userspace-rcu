@@ -47,6 +47,7 @@ tests/regression/rcutorture_urcu_signal_cxx
 tests/regression/test_urcu_fork_cxx.tap
 tests/regression/test_urcu_fork.tap
 
+tests/benchmark/test_barrier
 tests/benchmark/test_rwlock_timing
 tests/benchmark/test_urcu
 tests/benchmark/test_urcu_dynamic_link
