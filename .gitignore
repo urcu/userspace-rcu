@@ -62,6 +62,7 @@ tests/benchmark/test_qsbr_gc
 tests/benchmark/test_qsbr_lgc
 tests/benchmark/test_qsbr_timing
 tests/benchmark/test_rwlock
+tests/benchmark/test_uatomic
 tests/benchmark/test_urcu_gc
 tests/benchmark/test_urcu_gc_mb
 tests/benchmark/test_urcu_lgc
