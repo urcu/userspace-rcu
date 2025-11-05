@@ -46,6 +46,12 @@ extern "C" {
 #define cmm_smp_rmb() cmm_barrier()
 #define cmm_smp_wmb() cmm_barrier()
 
+/*
+ * Define cmm_smp_mb() as a "lock; addl" instruction which is faster
+ * than a mfence (tested on AMD Ryzen 7).
+ */
+#define cmm_smp_mb()  __asm__ __volatile__ ("lock; addl $0,0(%%rsp)":::"memory")
+
 #else
 
 /*
