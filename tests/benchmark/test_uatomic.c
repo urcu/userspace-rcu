@@ -61,7 +61,7 @@ static uint64_t gettime(void)
 	do {							\
 		printf("memory-order: " #MO "\n");		\
 		RUN_TEST(uatomic_load_mo, MO);			\
-		RUN_TEST(uatomic_store_mo, 0, MO );		\
+		RUN_TEST(uatomic_store_mo, 0, MO);		\
 		RUN_TEST(uatomic_xchg_mo, 0, MO);		\
 		RUN_TEST(uatomic_cmpxchg_mo, 0, 0, MO, MO);	\
 	} while (0)
