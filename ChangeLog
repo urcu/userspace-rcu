@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: CC-BY-4.0
 
+2025-11-10 Userspace RCU 0.15.5
+	* x86: Define cmm_smp_mb() as lock; addl rather than mfence
+	* Introduce barrier test
+	* Add test_uatomic to gitignore
+	* Cleanup: Remove stray space
+	* benchmark: Add uatomic benchmark
+
 2025-11-04 Userspace RCU 0.15.4
 	* uatomic: Fix redundant memory barriers for atomic builtin operations
 	* Cleanup: Remove useless declarations from urcu-qsbr
