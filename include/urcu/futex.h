@@ -69,7 +69,9 @@ extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 
 #if (defined(__linux__) && defined(__NR_futex))
 
-#include <linux/time_types.h>
+#ifdef __NR_futex_time64
+# include <linux/time_types.h>
+#endif
 
 static inline int futex(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
