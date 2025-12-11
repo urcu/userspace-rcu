@@ -75,11 +75,16 @@ extern int compat_futex_async(int32_t *uaddr, int op, int32_t val,
 
 #if (defined(__linux__) && defined(__NR_futex))
 
+#include <linux/time_types.h>
+
 static inline int futex(int32_t *uaddr, int op, int32_t val,
 		const struct timespec *timeout, int32_t *uaddr2, int32_t val3)
 {
-	return syscall(__NR_futex, uaddr, op, val, timeout,
-			uaddr2, val3);
+#ifdef __NR_futex_time64
+	if (sizeof(struct timespec) == sizeof(struct __kernel_timespec))
+		return syscall(__NR_futex_time64, uaddr, op, val, timeout, uaddr2, val3);
+#endif
+	return syscall(__NR_futex, uaddr, op, val, timeout, uaddr2, val3);
 }
 
 static inline int futex_noasync(int32_t *uaddr, int op, int32_t val,
