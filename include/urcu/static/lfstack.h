@@ -208,7 +208,7 @@ struct cds_lfs_node *___cds_lfs_pop(cds_lfs_stack_ptr_t u_s)
 		next_head = caa_container_of(next,
 				struct cds_lfs_head, node);
 		if (uatomic_cmpxchg_mo(&s->head, head, next_head,
-					CMM_SEQ_CST, CMM_SEQ_CST) == head){
+					CMM_SEQ_CST, CMM_SEQ_CST) == head) {
 			cmm_emit_legacy_smp_mb();
 			return &head->node;
 		}
