@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include <urcu/annotate.h>
 #include <urcu/debug.h>
 #include <urcu/config.h>
 #include <urcu/compiler.h>
@@ -57,9 +58,13 @@ extern DECLARE_URCU_TLS(struct urcu_reader, urcu_mb_reader);
  */
 static inline void _urcu_mb_read_lock_update(unsigned long tmp)
 {
-	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK)))
-		uatomic_store(&URCU_TLS(urcu_mb_reader).ctr, uatomic_load(&urcu_mb_gp.ctr), CMM_SEQ_CST_FENCE);
-	else
+	if (caa_likely(!(tmp & URCU_GP_CTR_NEST_MASK))) {
+		unsigned long *pgctr = &urcu_mb_gp.ctr;
+		unsigned long gctr = uatomic_load(pgctr);
+
+		cmm_annotate_mem_acquire(pgctr);
+		uatomic_store(&URCU_TLS(urcu_mb_reader).ctr, gctr, CMM_SEQ_CST_FENCE);
+	} else
 		uatomic_store(&URCU_TLS(urcu_mb_reader).ctr, tmp + URCU_GP_COUNT);
 }
 
