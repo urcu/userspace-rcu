@@ -87,17 +87,18 @@ static inline void _urcu_mb_read_lock(void)
 /*
  * This is a helper function for _urcu_mb_read_unlock().
  *
- * The first cmm_smp_mb() call ensures that the critical section is
- * seen to precede the store to rcu_reader.ctr.
- * The second cmm_smp_mb() call ensures that we write to rcu_reader.ctr
- * before reading the update-side futex.
+ * The seq-cst-fence store on rcu_reader.ctr acts as a store-release and
+ * ensures that the critical section is seen to precede the store to
+ * rcu_reader.ctr.
+ * The seq-cst-fence store on rcu_reader.ctr ensures that the store to
+ * rcu_reader.ctr is before the load relaxed of the update-side futex.
  */
 static inline void _urcu_mb_read_unlock_update_and_wakeup(unsigned long tmp)
 {
 	unsigned long *ctr = &URCU_TLS(urcu_mb_reader).ctr;
 
 	if (caa_likely((tmp & URCU_GP_CTR_NEST_MASK) == URCU_GP_COUNT)) {
-		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_SEQ_CST);
+		uatomic_store(ctr, tmp - URCU_GP_COUNT, CMM_SEQ_CST_FENCE);
 		urcu_common_wake_up_gp(&urcu_mb_gp);
 	} else {
 		uatomic_store(ctr, tmp - URCU_GP_COUNT);
