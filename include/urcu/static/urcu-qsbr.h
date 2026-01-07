@@ -219,8 +219,7 @@ static inline void _urcu_qsbr_thread_online(void)
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
 	ctr = uatomic_load(&urcu_qsbr_gp.ctr);
 	cmm_annotate_mem_acquire(&urcu_qsbr_gp.ctr);
-	uatomic_store(pctr, ctr);
-	cmm_smp_mb();
+	uatomic_store(pctr, ctr, CMM_SEQ_CST_FENCE);
 }
 
 #ifdef __cplusplus
