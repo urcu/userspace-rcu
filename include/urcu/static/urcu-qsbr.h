@@ -136,16 +136,19 @@ static inline int _urcu_qsbr_read_ongoing(void)
 
 /*
  * This is a helper function for _rcu_quiescent_state().
- * The first cmm_smp_mb() ensures memory accesses in the prior read-side
- * critical sections are not reordered with store to
- * URCU_TLS(urcu_qsbr_reader).ctr, and ensures that mutexes held within an
- * offline section that would happen to end with this
- * urcu_qsbr_quiescent_state() call are not reordered with
- * store to URCU_TLS(urcu_qsbr_reader).ctr.
+ * The seq-cst-fence store on rcu_reader.ctr acts as a store-release and
+ * ensures that the critical section is seen to precede the store to
+ * rcu_reader.ctr, and ensures that mutexes held within an offline
+ * section that would happen to end with this
+ * urcu_qsbr_quiescent_state() call are not reordered with store to
+ * rcu_reader.ctr.
+ * The seq-cst-fence store on rcu_reader.ctr ensures that the store
+ * to rcu_reader.ctr is ordered before the load relaxed of the futex
+ * waiting state.
  */
 static inline void _urcu_qsbr_quiescent_state_update_and_wakeup(unsigned long gp_ctr)
 {
-	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, gp_ctr, CMM_SEQ_CST);
+	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, gp_ctr, CMM_SEQ_CST_FENCE);
 
 	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
 	urcu_qsbr_wake_up_gp();
@@ -179,6 +182,13 @@ static inline void _urcu_qsbr_quiescent_state(void)
  * Take a thread offline, prohibiting it from entering further RCU
  * read-side critical sections.
  *
+ * The seq-cst-fence store on rcu_reader.ctr acts as a store-release and
+ * ensures that the critical section is seen to precede the store to
+ * rcu_reader.ctr.
+ * The seq-cst-fence store on rcu_reader.ctr ensures that the store
+ * to rcu_reader.ctr is ordered before the load relaxed of the futex
+ * waiting state.
+ *
  * This function is less than 10 lines long.  The intent is that this
  * function meets the 10-line criterion for LGPL, allowing this function
  * to be invoked directly from non-LGPL code.
@@ -186,7 +196,7 @@ static inline void _urcu_qsbr_quiescent_state(void)
 static inline void _urcu_qsbr_thread_offline(void)
 {
 	urcu_assert_debug(URCU_TLS(urcu_qsbr_reader).registered);
-	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, 0, CMM_SEQ_CST);
+	uatomic_store(&URCU_TLS(urcu_qsbr_reader).ctr, 0, CMM_SEQ_CST_FENCE);
 	/* write URCU_TLS(urcu_qsbr_reader).ctr before read futex */
 	urcu_qsbr_wake_up_gp();
 	cmm_barrier();	/* Ensure the compiler does not reorder us with mutex */
