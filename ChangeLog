@@ -1,3 +1,9 @@
+2026-01-26 Userspace RCU 0.14.2
+	* Fix: Only include linux/time_types.h when __NR_futex_time64 is defined
+	* Use __NR_futex_time64 in futex syscall wrapper
+	* Cleanup: Remove useless declarations from urcu-qsbr
+	* src/urcu-bp.c: assert => urcu_posix_assert
+
 2024-08-28 Userspace RCU 0.14.1
 	* Fix: missing typename in URCU_FORCE_CAST
 	* Allow building with GCC >= 13.3 on RISC-V
