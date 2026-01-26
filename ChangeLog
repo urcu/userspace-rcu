@@ -1,6 +1,16 @@
-# SPDX-FileCopyrightText: 2011-2025 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+# SPDX-FileCopyrightText: 2011-2026 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 #
 # SPDX-License-Identifier: CC-BY-4.0
+
+2026-01-26 Userspace RCU 0.15.6
+	* urcu-mb: Add missing TSAN annotation to _urcu_mb_read_lock_update
+	* lfstack: Coding style cleanup
+	* urcu-qsbr: Use CMM_SEQ_CST_FENCE for _urcu_qsbr_thread_online
+	* urcu-mb: Use CMM_SEQ_CST_FENCE for _urcu_mb_read_lock_update
+	* urcu-qsbr: Use CMM_SEQ_CST_FENCE for quiescent state update and offline
+	* urcu-mb: Use CMM_SEQ_CST_FENCE for _urcu_mb_read_unlock_update_and_wakeup
+	* Fix: Only include linux/time_types.h when __NR_futex_time64 is defined
+	* Use __NR_futex_time64 in futex syscall wrapper
 
 2025-11-10 Userspace RCU 0.15.5
 	* x86: Define cmm_smp_mb() as lock; addl rather than mfence
