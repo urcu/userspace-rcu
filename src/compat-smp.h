@@ -83,9 +83,10 @@ static inline int _get_max_cpuid_from_sysfs(const char *path)
 
 	/*
 	 * If the max CPU id is out of bound, set it to -1 so it results in a
-	 * CPU num of 0.
+	 * CPU num of 0.  Use `>= INT_MAX` rather than `> INT_MAX` to prevent
+	 * overflow when 1 is added to the return value.
 	 */
-	if (max_cpuid < 0 || max_cpuid > INT_MAX)
+	if (max_cpuid < 0 || max_cpuid >= INT_MAX)
 		max_cpuid = -1;
 
 end:
