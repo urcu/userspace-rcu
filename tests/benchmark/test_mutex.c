@@ -67,28 +67,38 @@ static int use_affinity = 0;
 
 pthread_mutex_t affinity_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static void safe_pthread_mutex_lock(pthread_mutex_t *mutex)
+{
+	int ret = pthread_mutex_lock(mutex);
+	if (ret) {
+		perror("Error in pthread mutex lock");
+		exit(-1);
+	}
+}
+
+static void safe_pthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+	int ret = pthread_mutex_unlock(mutex);
+	if (ret) {
+		perror("Error in pthread mutex unlock");
+		exit(-1);
+	}
+}
+
 static void set_affinity(void)
 {
 #ifdef HAVE_SCHED_SETAFFINITY
 	cpu_set_t mask;
-	int cpu, ret;
+	int cpu;
 #endif /* HAVE_SCHED_SETAFFINITY */
 
 	if (!use_affinity)
 		return;
 
 #ifdef HAVE_SCHED_SETAFFINITY
-	ret = pthread_mutex_lock(&affinity_mutex);
-	if (ret) {
-		perror("Error in pthread mutex lock");
-		exit(-1);
-	}
+	safe_pthread_mutex_lock(&affinity_mutex);
 	cpu = cpu_affinities[next_aff++];
-	ret = pthread_mutex_unlock(&affinity_mutex);
-	if (ret) {
-		perror("Error in pthread mutex unlock");
-		exit(-1);
-	}
+	safe_pthread_mutex_unlock(&affinity_mutex);
 	CPU_ZERO(&mask);
 	CPU_SET(cpu, &mask);
 	sched_setaffinity(0, sizeof(mask), &mask);
@@ -123,12 +133,12 @@ void *thr_reader(void *data)
 	for (;;) {
 		int v;
 
-		pthread_mutex_lock(&lock);
+		safe_pthread_mutex_lock(&lock);
 		v = test_array.a;
 		urcu_posix_assert(v == 8);
 		if (caa_unlikely(rduration))
 			loop_sleep(rduration);
-		pthread_mutex_unlock(&lock);
+		safe_pthread_mutex_unlock(&lock);
 		URCU_TLS(nr_reads)++;
 		if (caa_unlikely(!test_duration_read()))
 			break;
@@ -154,12 +164,12 @@ void *thr_writer(void *data)
 	wait_until_go();
 
 	for (;;) {
-		pthread_mutex_lock(&lock);
+		safe_pthread_mutex_lock(&lock);
 		test_array.a = 0;
 		test_array.a = 8;
 		if (caa_unlikely(wduration))
 			loop_sleep(wduration);
-		pthread_mutex_unlock(&lock);
+		safe_pthread_mutex_unlock(&lock);
 		URCU_TLS(nr_writes)++;
 		if (caa_unlikely(!test_duration_write()))
 			break;
