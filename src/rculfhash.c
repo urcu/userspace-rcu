@@ -2112,6 +2112,7 @@ void _do_cds_lfht_grow(struct cds_lfht *ht,
 	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
+	urcu_posix_assert(old_size > 0);
 	urcu_posix_assert(new_size > old_size);
 	init_table(ht, old_order + 1, new_order);
 }
@@ -2128,6 +2129,7 @@ void _do_cds_lfht_shrink(struct cds_lfht *ht,
 	new_order = cds_lfht_get_count_order_ulong(new_size);
 	dbg_printf("resize from %lu (order %lu) to %lu (order %lu) buckets\n",
 		   old_size, old_order, new_size, new_order);
+	urcu_posix_assert(new_size > 0);
 	urcu_posix_assert(new_size < old_size);
 
 	/* Remove and unlink all bucket nodes to remove. */
