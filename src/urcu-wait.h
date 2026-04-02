@@ -180,7 +180,7 @@ skip_futex_wait:
 		caa_cpu_relax();
 	}
 	while (!(uatomic_load(&wait->state, CMM_ACQUIRE) & URCU_WAIT_TEARDOWN))
-		poll(NULL, 0, 10);
+		(void) poll(NULL, 0, 10);
 	urcu_posix_assert(uatomic_load(&wait->state) & URCU_WAIT_TEARDOWN);
 }
 

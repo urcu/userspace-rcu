@@ -174,7 +174,7 @@ static void mutex_lock(pthread_mutex_t *mutex)
 	while ((ret = pthread_mutex_trylock(mutex)) != 0) {
 		if (ret != EBUSY && ret != EINTR)
 			urcu_die(ret);
-		poll(NULL,0,10);
+		(void) poll(NULL,0,10);
 	}
 #endif /* #else #ifndef DISTRUST_SIGNALS_EXTREME */
 }
