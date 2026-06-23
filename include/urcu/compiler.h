@@ -103,7 +103,18 @@
 #define __rcu
 
 #ifdef __cplusplus
-#define URCU_FORCE_CAST(_type, arg)	(reinterpret_cast<typename std::remove_cv<_type>::type>(arg))
+/*
+ * Force a cast between pointer types, matching the C "(type) arg" behavior of
+ * disregarding any cv-qualifier on the source. Stripping the source qualifiers
+ * is required e.g. for rcu_dereference() of a const-qualified pointer lvalue,
+ * where &(p) has type "T * const *" and must be passed as "void **": a plain
+ * reinterpret_cast cannot cast away that inner const. All users of this macro
+ * cast between (object) pointer types.
+ */
+#define URCU_FORCE_CAST(_type, arg)					\
+	(reinterpret_cast<typename std::remove_cv<_type>::type>(	\
+		const_cast<void *>(					\
+			reinterpret_cast<const volatile void *>(arg))))
 #else
 #define URCU_FORCE_CAST(type, arg)	((type) (arg))
 #endif

@@ -33,6 +33,9 @@
 extern void synchronize_rcu(void);
 
 /*
+ * Kept for ABI compatibility with code built against liburcu releases that
+ * emitted calls to this symbol.
+ *
  * This wrapper receives the RCU-protected pointer by *value*: the load of
  * the pointer therefore already happened in the caller as a plain
  * (non-atomic) access, before this function is even entered. As a result
@@ -51,7 +54,14 @@ extern void synchronize_rcu(void);
  * pointer load is already ordered before any dependent access, and the
  * bug cannot manifest. (TSO permits only store-to-load reordering, which
  * is irrelevant here since the pointer access is a load.) Elide the
- * barrier there to avoid penalising the common case.
+ * barrier there to avoid penalising the common case. Note that the plain
+ * load itself stays in the caller, so it remains a data race reported by
+ * ThreadSanitizer.
+ *
+ * New code emitted by the rcu_dereference() macro calls
+ * rcu_dereference_sym2() instead, which receives the address of the
+ * pointer and performs the consume load on the shared location itself,
+ * avoiding both the ordering and the data-race problems.
  */
 void *rcu_dereference_sym(void *p)
 {
@@ -59,6 +69,17 @@ void *rcu_dereference_sym(void *p)
 	cmm_smp_mb();
 #endif
 	return p;
+}
+
+/*
+ * Receives the address of the RCU-protected pointer, so the
+ * memory_order_consume load is performed on the actual shared location
+ * rather than on a local copy. This preserves the dependency-ordering
+ * guarantee and is free of the data race affecting rcu_dereference_sym().
+ */
+void *rcu_dereference_sym2(void **p)
+{
+	return _rcu_dereference(*p);
 }
 
 void *rcu_set_pointer_sym(void **p, void *v)
