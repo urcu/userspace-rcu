@@ -50,12 +50,22 @@ extern "C" {
 
 #else /* !(defined(_LGPL_SOURCE) || defined(URCU_INLINE_SMALL_FUNCTIONS)) */
 
+/*
+ * rcu_dereference_sym() (taking the pointer by value) is kept exported for
+ * ABI compatibility only: the load of the RCU-protected pointer happened in
+ * the caller as a racy plain access, losing the memory_order_consume
+ * ordering. New code passes the address of the pointer to
+ * rcu_dereference_sym2() so the consume load is performed on the shared
+ * location itself. As with the inlined _rcu_dereference(), @p must be an
+ * lvalue.
+ */
 extern void *rcu_dereference_sym(void *p);
+extern void *rcu_dereference_sym2(void **p);
 #define rcu_dereference(p)						     \
 	__extension__							     \
 	({								     \
 		__typeof__(p) _________p1 =	URCU_FORCE_CAST(__typeof__(p), \
-			rcu_dereference_sym(URCU_FORCE_CAST(void *, p)));    \
+			rcu_dereference_sym2(URCU_FORCE_CAST(void **, &(p)))); \
 		(_________p1);						     \
 	})
 
