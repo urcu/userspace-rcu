@@ -190,17 +190,19 @@ static void call_rcu_unlock(pthread_mutex_t *pmp)
  * cpuset(7).
  */
 #ifdef HAVE_SCHED_SETAFFINITY
+/*
+ * Actually pin the calling thread to crdp->cpu_affinity.  Unconditional
+ * (no rate-limit), so it is used for the initial placement at call_rcu
+ * thread startup; the work loop reaches it through the rate-limited
+ * set_thread_cpu_affinity() wrapper below.
+ */
 static
-int set_thread_cpu_affinity(struct call_rcu_data *crdp)
+int do_set_thread_cpu_affinity(struct call_rcu_data *crdp)
 {
 	cpu_set_t mask;
 	int ret;
 
 	if (crdp->cpu_affinity < 0)
-		return 0;
-	if (++crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
-		return 0;
-	if (urcu_sched_getcpu() == crdp->cpu_affinity)
 		return 0;
 
 	CPU_ZERO(&mask);
@@ -218,7 +220,25 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 	}
 	return ret;
 }
+
+static
+int set_thread_cpu_affinity(struct call_rcu_data *crdp)
+{
+	if (crdp->cpu_affinity < 0)
+		return 0;
+	/* Rate-limit the migration-recovery re-pin in the work loop. */
+	if (++crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
+		return 0;
+	if (urcu_sched_getcpu() == crdp->cpu_affinity)
+		return 0;
+	return do_set_thread_cpu_affinity(crdp);
+}
 #else
+static
+int do_set_thread_cpu_affinity(struct call_rcu_data *crdp __attribute__((__unused__)))
+{
+	return 0;
+}
 static
 int set_thread_cpu_affinity(struct call_rcu_data *crdp __attribute__((__unused__)))
 {
@@ -318,7 +338,8 @@ static void *call_rcu_thread(void *arg)
 	struct call_rcu_data *crdp = (struct call_rcu_data *) arg;
 	int rt = !!(uatomic_load(&crdp->flags) & URCU_CALL_RCU_RT);
 
-	if (set_thread_cpu_affinity(crdp))
+	/* Initial placement: pin immediately, before processing any callback. */
+	if (do_set_thread_cpu_affinity(crdp))
 		urcu_die(errno);
 
 	/*
