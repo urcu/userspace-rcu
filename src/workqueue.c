@@ -189,7 +189,7 @@ static void *workqueue_thread(void *arg)
 		cmm_smp_mb();
 	}
 	for (;;) {
-		struct cds_wfcq_head cbs_tmp_head;
+		struct __cds_wfcq_head cbs_tmp_head;
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
@@ -216,7 +216,7 @@ static void *workqueue_thread(void *arg)
 				workqueue->worker_after_resume_fct(workqueue, workqueue->priv);
 		}
 
-		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
+		__cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &workqueue->cbs_head, &workqueue->cbs_tail);
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
@@ -357,6 +357,7 @@ void urcu_workqueue_destroy(struct urcu_workqueue *workqueue)
 		urcu_die(errno);
 	}
 	urcu_posix_assert(cds_wfcq_empty(&workqueue->cbs_head, &workqueue->cbs_tail));
+	cds_wfcq_destroy(&workqueue->cbs_head, &workqueue->cbs_tail);
 	free(workqueue);
 }
 
