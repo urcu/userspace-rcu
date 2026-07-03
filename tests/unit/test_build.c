@@ -81,7 +81,7 @@ static void test_wfstack(void)
 	struct cds_wfs_stack s;
 
 	cds_wfs_init(&s);
-	ok(cds_wfs_empty(&s), "cds_lfs_empty");
+	ok(cds_wfs_empty(&s), "cds_wfs_empty");
 }
 
 static void test_wfcqueue(void)
