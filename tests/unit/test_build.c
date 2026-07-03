@@ -76,6 +76,7 @@ static void test_wfcqueue(void)
 
 	cds_wfcq_init(&head, &tail);
 	ok(cds_wfcq_empty(&head, &tail), "cds_wfcq_empty");
+	cds_wfcq_destroy(&head, &tail);
 }
 
 static

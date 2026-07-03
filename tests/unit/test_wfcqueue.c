@@ -27,6 +27,11 @@ struct queue {
 	struct cds_wfcq_tail tail;
 };
 
+struct on_stack_queue {
+	struct __cds_wfcq_head head;
+	struct cds_wfcq_tail tail;
+};
+
 static void async_run(struct queue *queue)
 {
 	struct cds_wfcq_node *node = malloc(sizeof(*node));
@@ -35,15 +40,16 @@ static void async_run(struct queue *queue)
 
 	cds_wfcq_enqueue(&queue->head, &queue->tail, node);
 }
+
 static void do_async_loop(size_t *k, struct queue *queue)
 {
-	struct queue my_queue;
+	struct on_stack_queue my_queue;
 	enum cds_wfcq_ret state;
 	struct cds_wfcq_node *node, *next;
 
-	cds_wfcq_init(&my_queue.head, &my_queue.tail);
+	__cds_wfcq_init(&my_queue.head, &my_queue.tail);
 
-	state = cds_wfcq_splice_blocking(&my_queue.head,
+	state = __cds_wfcq_splice_blocking(&my_queue.head,
 					&my_queue.tail,
 					&queue->head,
 					&queue->tail);
@@ -100,6 +106,7 @@ int main(void)
 	for (size_t k = 0; k < NR_PRODUCERS; ++k) {
 		pthread_join(producers[k], NULL);
 	}
+	cds_wfcq_destroy(&queue.head, &queue.tail);
 
 	ok1("No race conditions");
 
