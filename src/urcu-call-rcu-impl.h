@@ -354,7 +354,7 @@ static void *call_rcu_thread(void *arg)
 		cmm_smp_mb();
 	}
 	for (;;) {
-		struct cds_wfcq_head cbs_tmp_head;
+		struct __cds_wfcq_head cbs_tmp_head;
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
@@ -379,7 +379,7 @@ static void *call_rcu_thread(void *arg)
 			rcu_register_thread();
 		}
 
-		cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
+		__cds_wfcq_init(&cbs_tmp_head, &cbs_tmp_tail);
 		splice_ret = __cds_wfcq_splice_blocking(&cbs_tmp_head,
 			&cbs_tmp_tail, &crdp->cbs_head, &crdp->cbs_tail);
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
@@ -817,6 +817,7 @@ void _call_rcu_data_free(struct call_rcu_data *crdp, unsigned int flags)
 		if (ret)
 			urcu_die(ret);
 	}
+	cds_wfcq_destroy(&crdp->cbs_head, &crdp->cbs_tail);
 	free(crdp);
 }
 
