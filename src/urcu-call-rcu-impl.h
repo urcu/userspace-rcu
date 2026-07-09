@@ -67,6 +67,7 @@ struct call_rcu_data {
 	pthread_t tid;
 	int cpu_affinity;
 	unsigned long gp_count;
+	bool affinity_init;
 	struct cds_list_head list;
 } __attribute__((aligned(CAA_CACHE_LINE_SIZE)));
 
@@ -204,12 +205,6 @@ static void call_rcu_unlock(pthread_mutex_t *pmp)
  * cpuset(7).
  */
 #ifdef HAVE_SCHED_SETAFFINITY
-/*
- * Actually pin the calling thread to crdp->cpu_affinity.  Unconditional
- * (no rate-limit), so it is used for the initial placement at call_rcu
- * thread startup; the work loop reaches it through the rate-limited
- * set_thread_cpu_affinity() wrapper below.
- */
 static
 int do_set_thread_cpu_affinity(struct call_rcu_data *crdp)
 {
@@ -240,11 +235,18 @@ int set_thread_cpu_affinity(struct call_rcu_data *crdp)
 {
 	if (crdp->cpu_affinity < 0)
 		return 0;
-	/* Rate-limit the migration-recovery re-pin in the work loop. */
-	if (++crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
-		return 0;
-	if (urcu_sched_getcpu() == crdp->cpu_affinity)
-		return 0;
+	crdp->gp_count++;
+	/* Force setting the affinity if it was not already initialized. */
+	if (!crdp->affinity_init) {
+		crdp->affinity_init = true;
+	} else {
+		/* Rate-limit the migration-recovery re-pin in the work loop. */
+		if (crdp->gp_count & SET_AFFINITY_CHECK_PERIOD_MASK)
+			return 0;
+		/* Only set affinity if we happen to be running on the wrong CPU. */
+		if (urcu_sched_getcpu() == crdp->cpu_affinity)
+			return 0;
+	}
 	return do_set_thread_cpu_affinity(crdp);
 }
 #else
@@ -352,10 +354,6 @@ static void *call_rcu_thread(void *arg)
 	struct call_rcu_data *crdp = (struct call_rcu_data *) arg;
 	int rt = !!(uatomic_read(&crdp->flags) & URCU_CALL_RCU_RT);
 
-	/* Initial placement: pin immediately, before processing any callback. */
-	if (do_set_thread_cpu_affinity(crdp))
-		urcu_die(errno);
-
 	/*
 	 * If callbacks take a read-side lock, we need to be registered.
 	 */
@@ -372,9 +370,6 @@ static void *call_rcu_thread(void *arg)
 		struct cds_wfcq_tail cbs_tmp_tail;
 		struct cds_wfcq_node *cbs, *cbs_tmp_n;
 		enum cds_wfcq_ret splice_ret;
-
-		if (set_thread_cpu_affinity(crdp))
-			urcu_die(errno);
 
 		if (uatomic_read(&crdp->flags) & URCU_CALL_RCU_PAUSE) {
 			/*
@@ -399,6 +394,8 @@ static void *call_rcu_thread(void *arg)
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_WOULDBLOCK);
 		urcu_posix_assert(splice_ret != CDS_WFCQ_RET_DEST_NON_EMPTY);
 		if (splice_ret != CDS_WFCQ_RET_SRC_EMPTY) {
+			if (set_thread_cpu_affinity(crdp))
+				urcu_die(errno);
 			synchronize_rcu();
 			cbcount = 0;
 			__cds_wfcq_for_each_blocking_safe(&cbs_tmp_head,
@@ -471,6 +468,7 @@ static void call_rcu_data_init(struct call_rcu_data **crdpp,
 	cds_list_add(&crdp->list, &call_rcu_data_list);
 	crdp->cpu_affinity = cpu_affinity;
 	crdp->gp_count = 0;
+	crdp->affinity_init = false;
 	rcu_set_pointer(crdpp, crdp);
 
 	ret = sigfillset(&newmask);
