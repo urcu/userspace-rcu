@@ -2226,9 +2226,9 @@ void __cds_lfht_resize_lazy_launch(struct cds_lfht *ht)
 			return;
 		}
 		work->ht = ht;
+		uatomic_store(&ht->resize_initiated, 1);
 		urcu_workqueue_queue_work(cds_lfht_workqueue,
 			&work->work, do_resize_cb);
-		uatomic_store(&ht->resize_initiated, 1);
 	}
 }
 
